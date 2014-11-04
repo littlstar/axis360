@@ -1,0 +1,15 @@
+{
+  "name": "slant-frame",
+  "version": "0.0.1",
+  "description": "Core video frame API for slant",
+  "scripts": ["index.js"],
+  "styles": ["frame.css"],
+  "templates": ["template.html"],
+  "dependencies": {
+    "components/three.js": "*",
+    "component/emitter": "*",
+    "component/events": "*",
+    "component/domify": "*",
+    "component/raf": "*"
+  }
+}
