@@ -1,3 +1,6 @@
+
+;(function(){
+
 /**
  * Require the module at `name`.
  *
@@ -36028,4 +36031,11 @@ Frame.prototype.setViewOffset = function () {
 
 require.define("slant-frame/template.html", "<section class=\"slant frame\">\n  <div class=\"slant container\">\n    <video class=\"slant\"></video>\n  </div>\n</section>\n");
 
-require("slant-frame");
+if (typeof exports == "object") {
+  module.exports = require("slant-frame");
+} else if (typeof define == "function" && define.amd) {
+  define("SlantFrame", [], function(){ return require("slant-frame"); });
+} else {
+  (this || window)["SlantFrame"] = require("slant-frame");
+}
+})()
