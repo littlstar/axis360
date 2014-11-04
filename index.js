@@ -22,7 +22,7 @@ module.exports = Frame;
 function Frame (parent, opts) {
   if (!(this instanceof Frame)) {
     return new Frame(opts);
-  } else if (!(Element instanceof el)) {
+  } else if (!(Element instanceof parent)) {
     throw new TypeError("Expecting DOM Element");
   }
 
