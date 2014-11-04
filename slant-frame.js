@@ -35573,7 +35573,7 @@ module.exports = Frame;
 function Frame (parent, opts) {
   if (!(this instanceof Frame)) {
     return new Frame(opts);
-  } else if (!(Element instanceof el)) {
+  } else if (!(parent instanceof Element)) {
     throw new TypeError("Expecting DOM Element");
   }
 
