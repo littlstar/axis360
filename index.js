@@ -114,8 +114,10 @@ function Frame (parent, opts) {
     lastvolume: this.video.volume,
     timestamp: Date.now(),
     dragstart: {},
+    duration: 0,
     dragloop: null,
     dragpos: [],
+    played: 0,
     height: opts.height,
     width: opts.width,
     muted: Boolean(opts.muted),
@@ -123,6 +125,7 @@ function Frame (parent, opts) {
     event: null,
     theta: 0,
     scroll: null == opts.scroll ? 0.09 : opts.scroll,
+    time: 0,
     phi: 0,
     lat: 0,
     lon: 0,
@@ -191,7 +194,9 @@ Frame.prototype.onprogress = function (e) {
 
 Frame.prototype.ontimeupdate = function (e) {
   e.percent = this.video.currentTime / this.video.duration * 100;
-  this.state.percentloaded = e.percent;
+  this.state.time = this.video.currentTime;
+  this.state.duration = this.video.duration;
+  this.state.played = e.percent;
   this.emit('timeupdate', e);
   this.emit('state', this.state);
 };
