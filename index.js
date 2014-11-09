@@ -31,7 +31,9 @@ function Frame (parent, opts) {
   this.opts = (opts = opts || {});
   this.events = {};
 
-  opts.fov = opts.fov || opts.fieldOfView || 36;
+  if ('undefined' == typeof opts.pov) {
+    opts.fov = opts.fieldOfView || 36;
+  }
 
   // init view
   this.el = dom(tpl);
@@ -135,10 +137,6 @@ function Frame (parent, opts) {
   // add mesh to scene
   this.scene.add(this.mesh);
 
-  raf(function loop () {
-    self.refresh();
-    raf(loop);
-  });
 }
 
 // mixin `Emitter'
@@ -152,12 +150,15 @@ emitter(Frame.prototype);
  */
 
 Frame.prototype.oncanplaythrough = function (e) {
-  if (true == this.opts.autoplay) {
-    this.video.play();
-  }
+  this.state.time = this.video.currentTime;
+  this.state.duration = this.video.duration;
 
   this.emit('canplaythrough', e);
   this.emit('ready');
+
+  if (true == this.opts.autoplay) {
+    this.video.play();
+  }
 };
 
 /**
@@ -179,7 +180,7 @@ Frame.prototype.onprogress = function (e) {
     } catch (e) { }
   }
 
-  e.percent = percent;
+  e.percent = percent * 100;
   this.state.percentloaded = percent;
   this.emit('progress', e);
   this.emit('state', this.state);
@@ -421,6 +422,43 @@ Frame.prototype.refresh = function () {
 };
 
 /**
+ * Seek to time
+ *
+ * @api public
+ * @param {Number} time
+ */
+
+Frame.prototype.seek = function (value) {
+  if (value >= 0 && value <= this.video.duration) {
+    this.video.currentTime = value;
+  }
+
+  return this;
+};
+
+/**
+ * Fast forward `n' amount of seconds
+ *
+ * @api public
+ * @param {Number} seconds
+ */
+
+Frame.prototype.foward = function (seconds) {
+  return this.seek(this.video.currentTime + seconds);
+};
+
+/**
+ * Rewind `n' amount of seconds
+ *
+ * @api public
+ * @param {Number} seconds
+ */
+
+Frame.prototype.rewind = function (seconds) {
+  return this.seek(this.video.currentTime - seconds);
+};
+
+/**
  * Use plugin with frame
  *
  * @api public
@@ -462,6 +500,20 @@ Frame.prototype.draw = function () {
 
   this.emit('draw');
   this.emit('state', this.state);
+  return this;
+};
+
+/**
+ *
+ * @api public
+ */
+
+Frame.prototype.render = function () {
+  var self = this;
+  raf(function loop () {
+    self.refresh();
+    raf(loop);
+  });
   return this;
 };
 
