@@ -35605,7 +35605,7 @@ function Frame (parent, opts) {
   this.events = {};
 
   if ('undefined' == typeof opts.pov) {
-    opts.fov = opts.fieldOfView || 36;
+    opts.fov = opts.fieldOfView || 35;
   }
 
   // init view
@@ -35628,7 +35628,6 @@ function Frame (parent, opts) {
   this.src(opts.src);
   this.parent = parent;
 
-  parent.appendChild(this.el);
 
   // event delagation
   this.events = {};
@@ -35660,20 +35659,17 @@ function Frame (parent, opts) {
     new three.CanvasRenderer()
   );
 
+  // attach renderer to instance node container
+  this.el.querySelector('.container').appendChild(this.renderer.domElement);
+
   this.renderer.autoClear = opts.autoClear || false;
   this.renderer.setClearColor(opts.clearColor || 0x000, 1);
 
-  // init video texture
-  this.texture = new three.Texture(this.video);
-  this.texture.format = three.RGBFormat;
-  this.texture.minFilter = three.LinearFilter;
-  this.texture.magFilter = three.LinearFilter;
-  this.texture.generateMipmaps = false;
+  this.texture = null;
 
-  this.geo = new three.SphereGeometry(500, 80, 50);
-  this.material = new three.MeshBasicMaterial({map: this.texture});
-  this.mesh = new three.Mesh(this.geo, this.material);
-  this.mesh.scale.x = -1; // mesh
+  this.geo = null;
+  this.material = null;
+  this.mesh = null;
 
   if (opts.muted) {
     this.mute(true);
@@ -35703,8 +35699,6 @@ function Frame (parent, opts) {
     fov: opts.fov
   };
 
-  // add mesh to scene
-  this.scene.add(this.mesh);
 
 }
 
@@ -35981,9 +35975,14 @@ Frame.prototype.unmute = function (mute) {
 
 Frame.prototype.refresh = function () {
   var now = Date.now();
-  if (now - this.state.timestamp >= 32) {
-    this.state.timestamp = now;
-    this.texture.needsUpdate = true;
+  var video = this.video;
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    if (now - this.state.timestamp >= 32) {
+      this.state.timestamp = now;
+      if ('undefined' != typeof this.texture) {
+        this.texture.needsUpdate = true;
+      }
+    }
   }
   this.emit('refresh');
   this.emit('state', this.state);
@@ -36084,20 +36083,35 @@ Frame.prototype.render = function () {
   var height = this.state.height || parseFloat(style.height);
   var width = this.state.width || parseFloat(style.width);
 
+  // attach dom node to parent
+  this.parent.appendChild(this.el);
+
+  this.texture = new three.Texture(this.video);
+  this.texture.format = three.RGBFormat;
+  this.texture.minFilter = three.LinearFilter;
+  this.texture.magFilter = three.LinearFilter;
+  this.texture.generateMipmaps = false;
+
+  this.geo = new three.SphereGeometry(500, 80, 50);
+  this.material = new three.MeshBasicMaterial({map: this.texture});
+  this.mesh = new three.Mesh(this.geo, this.material);
+  this.mesh.scale.x = -1; // mesh
+
   this.size(width, height);
 
   // init camera
   this.camera = new three.PerspectiveCamera(
     fov, (width / height) | 0, 0.1, 1000);
 
-  // attach renderer to instance node container
-  this.el.querySelector('.container').appendChild(this.renderer.domElement);
+  // add mesh to scene
+  this.scene.add(this.mesh);
 
-
+  // start refresh loop
   raf(function loop () {
     self.refresh();
     raf(loop);
   });
+
   return this;
 };
 

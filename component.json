@@ -10,6 +10,7 @@
     "component/emitter": "*",
     "component/events": "*",
     "component/domify": "*",
-    "component/raf": "*"
+    "component/raf": "*",
+    "jb55/has-webgl": "*"
   }
 }
