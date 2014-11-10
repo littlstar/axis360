@@ -35551,6 +35551,24 @@ exports.cancel = function(id){
 
 });
 
+require.register("jb55~has-webgl@v0.0.1", function (exports, module) {
+/**
+ * @author alteredq / http://alteredqualia.com/
+ * @author mr.doob / http://mrdoob.com/
+ */
+
+module.exports = (function() {
+  try { 
+    return !!window.WebGLRenderingContext && 
+           !!document.createElement('canvas').getContext('experimental-webgl'); 
+  } 
+  catch(e) { 
+    return false; 
+  }
+})();
+
+});
+
 require.register("slant-frame", function (exports, module) {
 
 /**
@@ -35563,6 +35581,7 @@ var three = require('components~three.js@0.0.69')
   , emitter = require('component~emitter@1.1.3')
   , events = require('component~events@1.0.9')
   , raf = require('component~raf@1.2.0')
+  , hasWebGL = require('jb55~has-webgl@v0.0.1')
 
 /**
  * `Frame' constructor
@@ -35585,7 +35604,9 @@ function Frame (parent, opts) {
   this.opts = (opts = opts || {});
   this.events = {};
 
-  opts.fov = opts.fov || opts.fieldOfView || 36;
+  if ('undefined' == typeof opts.pov) {
+    opts.fov = opts.fieldOfView || 36;
+  }
 
   // init view
   this.el = dom(tpl);
@@ -35605,6 +35626,7 @@ function Frame (parent, opts) {
   set('muted');
 
   this.src(opts.src);
+  this.parent = parent;
 
   parent.appendChild(this.el);
 
@@ -35625,21 +35647,19 @@ function Frame (parent, opts) {
   this.events.element.bind('mousedown');
   this.events.element.bind('mouseup');
 
-  opts.width = parseInt(opts.width || getComputedStyle(parent).width);
-  opts.height = parseInt(opts.height || getComputedStyle(parent).height);
-
   // init scene
   this.scene = new three.Scene();
 
   // init camera
-  this.camera = new three.PerspectiveCamera(
-    opts.fov,
-    (opts.width / opts.height) | 0,
-    0.1, 1000);
+  this.camera = null;
 
   // init renderer
-  this.renderer = new three.WebGLRenderer();
-  this.renderer.setSize(opts.width, opts.height);
+  this.renderer = opts.renderer || (
+    hasWebGL ?
+    new three.WebGLRenderer() :
+    new three.CanvasRenderer()
+  );
+
   this.renderer.autoClear = opts.autoClear || false;
   this.renderer.setClearColor(opts.clearColor || 0x000, 1);
 
@@ -35655,9 +35675,6 @@ function Frame (parent, opts) {
   this.mesh = new three.Mesh(this.geo, this.material);
   this.mesh.scale.x = -1; // mesh
 
-  // attach renderer to instance node container
-  this.el.querySelector('.container').appendChild(this.renderer.domElement);
-
   if (opts.muted) {
     this.mute(true);
   }
@@ -35668,8 +35685,10 @@ function Frame (parent, opts) {
     lastvolume: this.video.volume,
     timestamp: Date.now(),
     dragstart: {},
+    duration: 0,
     dragloop: null,
     dragpos: [],
+    played: 0,
     height: opts.height,
     width: opts.width,
     muted: Boolean(opts.muted),
@@ -35677,6 +35696,7 @@ function Frame (parent, opts) {
     event: null,
     theta: 0,
     scroll: null == opts.scroll ? 0.09 : opts.scroll,
+    time: 0,
     phi: 0,
     lat: 0,
     lon: 0,
@@ -35686,10 +35706,6 @@ function Frame (parent, opts) {
   // add mesh to scene
   this.scene.add(this.mesh);
 
-  raf(function loop () {
-    self.refresh();
-    raf(loop);
-  });
 }
 
 // mixin `Emitter'
@@ -35703,12 +35719,15 @@ emitter(Frame.prototype);
  */
 
 Frame.prototype.oncanplaythrough = function (e) {
-  if (true == this.opts.autoplay) {
-    this.video.play();
-  }
+  this.state.time = this.video.currentTime;
+  this.state.duration = this.video.duration;
 
   this.emit('canplaythrough', e);
   this.emit('ready');
+
+  if (true == this.opts.autoplay) {
+    this.video.play();
+  }
 };
 
 /**
@@ -35730,7 +35749,7 @@ Frame.prototype.onprogress = function (e) {
     } catch (e) { }
   }
 
-  e.percent = percent;
+  e.percent = percent * 100;
   this.state.percentloaded = percent;
   this.emit('progress', e);
   this.emit('state', this.state);
@@ -35745,7 +35764,9 @@ Frame.prototype.onprogress = function (e) {
 
 Frame.prototype.ontimeupdate = function (e) {
   e.percent = this.video.currentTime / this.video.duration * 100;
-  this.state.percentloaded = e.percent;
+  this.state.time = this.video.currentTime;
+  this.state.duration = this.video.duration;
+  this.state.played = e.percent;
   this.emit('timeupdate', e);
   this.emit('state', this.state);
 };
@@ -35970,6 +35991,43 @@ Frame.prototype.refresh = function () {
 };
 
 /**
+ * Seek to time
+ *
+ * @api public
+ * @param {Number} time
+ */
+
+Frame.prototype.seek = function (value) {
+  if (value >= 0 && value <= this.video.duration) {
+    this.video.currentTime = value;
+  }
+
+  return this;
+};
+
+/**
+ * Fast forward `n' amount of seconds
+ *
+ * @api public
+ * @param {Number} seconds
+ */
+
+Frame.prototype.foward = function (seconds) {
+  return this.seek(this.video.currentTime + seconds);
+};
+
+/**
+ * Rewind `n' amount of seconds
+ *
+ * @api public
+ * @param {Number} seconds
+ */
+
+Frame.prototype.rewind = function (seconds) {
+  return this.seek(this.video.currentTime - seconds);
+};
+
+/**
  * Use plugin with frame
  *
  * @api public
@@ -36015,6 +36073,35 @@ Frame.prototype.draw = function () {
 };
 
 /**
+ *
+ * @api public
+ */
+
+Frame.prototype.render = function () {
+  var self = this;
+  var style = getComputedStyle(this.parent).width;
+  var fov = this.state.fov;
+  var height = this.state.height || parseFloat(style.height);
+  var width = this.state.width || parseFloat(style.width);
+
+  this.size(width, height);
+
+  // init camera
+  this.camera = new three.PerspectiveCamera(
+    fov, (width / height) | 0, 0.1, 1000);
+
+  // attach renderer to instance node container
+  this.el.querySelector('.container').appendChild(this.renderer.domElement);
+
+
+  raf(function loop () {
+    self.refresh();
+    raf(loop);
+  });
+  return this;
+};
+
+/**
  * Sets view offset
  *
  * @api publc
@@ -36024,6 +36111,38 @@ Frame.prototype.offset =
 Frame.prototype.setViewOffset = function () {
   // @see http://threejs.org/docs/#Reference/Cameras/PerspectiveCamera
   this.camera.setViewOffset.apply(this.camera, arguments);
+  return this;
+};
+
+/**
+ * Set or get height
+ *
+ * @api public
+ * @param {Number} height - optional
+ */
+
+Frame.prototype.height = function (height) {
+  if (null == height) {
+    return this.state.height;
+  }
+
+  this.state.height = height;
+  return this;
+};
+
+/**
+ * Set or get width
+ *
+ * @api public
+ * @param {Number} width - optional
+ */
+
+Frame.prototype.width = function (width) {
+  if (null == width) {
+    return this.state.width;
+  }
+
+  this.state.width = width;
   return this;
 };
 
