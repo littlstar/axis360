@@ -506,7 +506,7 @@ Frame.prototype.render = function () {
   var height = this.state.height || parseFloat(style.height);
   var width = this.state.width || parseFloat(style.width);
 
-  this.renderer.setSize(width, height);
+  this.size(width, height);
 
   // init camera
   this.camera = new three.PerspectiveCamera(
