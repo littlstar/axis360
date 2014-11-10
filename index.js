@@ -9,6 +9,7 @@ var three = require('three.js')
   , emitter = require('emitter')
   , events = require('events')
   , raf = require('raf')
+  , hasWebGL = require('has-webgl')
 
 /**
  * `Frame' constructor
@@ -81,7 +82,12 @@ function Frame (parent, opts) {
   this.camera = null;
 
   // init renderer
-  this.renderer = new three.WebGLRenderer();
+  this.renderer = opts.renderer || (
+    hasWebGL ?
+    new three.WebGLRenderer() :
+    new three.CanvasRenderer()
+  );
+
   this.renderer.autoClear = opts.autoClear || false;
   this.renderer.setClearColor(opts.clearColor || 0x000, 1);
 
