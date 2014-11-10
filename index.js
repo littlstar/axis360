@@ -53,6 +53,7 @@ function Frame (parent, opts) {
   set('muted');
 
   this.src(opts.src);
+  this.parent = parent;
 
   parent.appendChild(this.el);
 
@@ -73,21 +74,14 @@ function Frame (parent, opts) {
   this.events.element.bind('mousedown');
   this.events.element.bind('mouseup');
 
-  opts.width = parseInt(opts.width || getComputedStyle(parent).width);
-  opts.height = parseInt(opts.height || getComputedStyle(parent).height);
-
   // init scene
   this.scene = new three.Scene();
 
   // init camera
-  this.camera = new three.PerspectiveCamera(
-    opts.fov,
-    (opts.width / opts.height) | 0,
-    0.1, 1000);
+  this.camera = null;
 
   // init renderer
   this.renderer = new three.WebGLRenderer();
-  this.renderer.setSize(opts.width, opts.height);
   this.renderer.autoClear = opts.autoClear || false;
   this.renderer.setClearColor(opts.clearColor || 0x000, 1);
 
@@ -102,9 +96,6 @@ function Frame (parent, opts) {
   this.material = new three.MeshBasicMaterial({map: this.texture});
   this.mesh = new three.Mesh(this.geo, this.material);
   this.mesh.scale.x = -1; // mesh
-
-  // attach renderer to instance node container
-  this.el.querySelector('.container').appendChild(this.renderer.domElement);
 
   if (opts.muted) {
     this.mute(true);
@@ -510,6 +501,21 @@ Frame.prototype.draw = function () {
 
 Frame.prototype.render = function () {
   var self = this;
+  var style = getComputedStyle(this.parent).width;
+  var fov = this.state.fov;
+  var height = this.state.height || parseFloat(style.height);
+  var width = this.state.width || parseFloat(style.width);
+
+  this.renderer.setSize(width, height);
+
+  // init camera
+  this.camera = new three.PerspectiveCamera(
+    fov, (width / height) | 0, 0.1, 1000);
+
+  // attach renderer to instance node container
+  this.el.querySelector('.container').appendChild(this.renderer.domElement);
+
+
   raf(function loop () {
     self.refresh();
     raf(loop);
@@ -527,5 +533,37 @@ Frame.prototype.offset =
 Frame.prototype.setViewOffset = function () {
   // @see http://threejs.org/docs/#Reference/Cameras/PerspectiveCamera
   this.camera.setViewOffset.apply(this.camera, arguments);
+  return this;
+};
+
+/**
+ * Set or get height
+ *
+ * @api public
+ * @param {Number} height - optional
+ */
+
+Frame.prototype.height = function (height) {
+  if (null == height) {
+    return this.state.height;
+  }
+
+  this.state.height = height;
+  return this;
+};
+
+/**
+ * Set or get width
+ *
+ * @api public
+ * @param {Number} width - optional
+ */
+
+Frame.prototype.width = function (width) {
+  if (null == width) {
+    return this.state.width;
+  }
+
+  this.state.width = width;
   return this;
 };
