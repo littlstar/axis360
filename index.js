@@ -4,12 +4,12 @@
  */
 
 var three = require('three.js')
-  , tpl = require('./template.html')
   , dom = require('domify')
   , emitter = require('emitter')
   , events = require('events')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
+  , tpl = require('./template.html')
 
 // default field of view
 var DEFAULT_FOV = 35;
@@ -52,7 +52,7 @@ function Frame (parent, opts) {
 
   function set (p) {
     if (opts[p]) {
-      this.video[p] = opts[p];
+      self.video[p] = opts[p];
     }
   }
 
