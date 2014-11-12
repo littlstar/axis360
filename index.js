@@ -11,6 +11,9 @@ var three = require('three.js')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
 
+// default field of view
+var DEFAULT_FOV = 35;
+
 /**
  * `Frame' constructor
  *
@@ -30,10 +33,16 @@ function Frame (parent, opts) {
   var self = this;
 
   this.opts = (opts = opts || {});
+
+  // DOM event bindings
   this.events = {};
 
+  // parent DOM node
+  this.parent = parent;
+
+  // set defualt FOV
   if ('undefined' == typeof opts.pov) {
-    opts.fov = opts.fieldOfView || 35;
+    opts.fov = opts.fieldOfView || DEFAULT_FOV;
   }
 
   // init view
@@ -47,15 +56,15 @@ function Frame (parent, opts) {
     }
   }
 
+  // set video options
   set('preload');
   set('autoplay');
   set('crossorigin');
   set('loop');
   set('muted');
 
+  // initialize video source
   this.src(opts.src);
-  this.parent = parent;
-
 
   // event delagation
   this.events = {};
@@ -72,6 +81,7 @@ function Frame (parent, opts) {
   this.events.element.bind('mousemove');
   this.events.element.bind('mousewheel');
   this.events.element.bind('mousedown');
+  this.events.element.bind('touchstart', 'onmousedown');
   this.events.element.bind('mouseup');
 
   // init scene
@@ -87,17 +97,17 @@ function Frame (parent, opts) {
     new three.CanvasRenderer()
   );
 
-  // attach renderer to instance node container
-  this.el.querySelector('.container').appendChild(this.renderer.domElement);
-
+  // renderer options
   this.renderer.autoClear = opts.autoClear || false;
   this.renderer.setClearColor(opts.clearColor || 0x000, 1);
 
-  this.texture = null;
+  // attach renderer to instance node container
+  this.el.querySelector('.container').appendChild(this.renderer.domElement);
 
-  this.geo = null;
   this.material = null;
+  this.texture = null;
   this.mesh = null;
+  this.geo = null;
 
   if (opts.muted) {
     this.mute(true);
@@ -126,8 +136,6 @@ function Frame (parent, opts) {
     lon: 0,
     fov: opts.fov
   };
-
-
 }
 
 // mixin `Emitter'
@@ -306,6 +314,7 @@ Frame.prototype.onmousewheel = function (e) {
  */
 
 Frame.prototype.size = function (width, height) {
+  this.emit('size', width, height);
   this.renderer.setSize(
     (this.state.width = width),
     (this.state.height = height));
@@ -320,6 +329,7 @@ Frame.prototype.size = function (width, height) {
  */
 
 Frame.prototype.src = function (src) {
+  this.emit('source', src);
   return (src ?
     ((this.video.src = src), this) :
     this.video.src);
@@ -361,6 +371,7 @@ Frame.prototype.volume = function (n) {
     return this.video.volume;
   }
   this.video.volume = n
+  this.emit('volume', n);
   return this;
 };
 
@@ -380,6 +391,7 @@ Frame.prototype.mute = function (mute) {
   } else {
     this.video.muted = true;
     this.volume(0);
+    this.emit('mute');
   }
   return this;
 };
@@ -392,7 +404,9 @@ Frame.prototype.mute = function (mute) {
  */
 
 Frame.prototype.unmute = function (mute) {
-  return this.mute(false);
+  this.mute(false);
+  this.emit('unmute');
+  return this;
 };
 
 /**
@@ -418,17 +432,17 @@ Frame.prototype.refresh = function () {
 };
 
 /**
- * Seek to time
+ * Seek to time in seconds
  *
  * @api public
- * @param {Number} time
+ * @param {Number} seconds
  */
 
-Frame.prototype.seek = function (value) {
-  if (value >= 0 && value <= this.video.duration) {
-    this.video.currentTime = value;
+Frame.prototype.seek = function (seconds) {
+  if (seconds >= 0 && seconds <= this.video.duration) {
+    this.video.currentTime = seconds;
+    this.emit('seek', seconds);
   }
-
   return this;
 };
 
@@ -440,7 +454,9 @@ Frame.prototype.seek = function (value) {
  */
 
 Frame.prototype.foward = function (seconds) {
-  return this.seek(this.video.currentTime + seconds);
+  this.seek(this.video.currentTime + seconds);
+  this.emit('forward', seconds);
+  return this;
 };
 
 /**
@@ -451,7 +467,9 @@ Frame.prototype.foward = function (seconds) {
  */
 
 Frame.prototype.rewind = function (seconds) {
-  return this.seek(this.video.currentTime - seconds);
+  this.seek(this.video.currentTime - seconds);
+  this.emit('rewind', seconds);
+  return this;
 };
 
 /**
@@ -540,6 +558,8 @@ Frame.prototype.render = function () {
     raf(loop);
   });
 
+  this.emit('render');
+
   return this;
 };
 
@@ -569,6 +589,7 @@ Frame.prototype.height = function (height) {
   }
 
   this.state.height = height;
+  this.emit('height', height);
   return this;
 };
 
@@ -585,5 +606,6 @@ Frame.prototype.width = function (width) {
   }
 
   this.state.width = width;
+  this.emit('width', width);
   return this;
 };
