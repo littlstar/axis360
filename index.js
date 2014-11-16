@@ -14,6 +14,9 @@ var three = require('three.js')
 // default field of view
 var DEFAULT_FOV = 35;
 
+// frame click threshold
+var FRAME_CLICK_THRESHOLD = 200;
+
 /**
  * `Frame' constructor
  *
@@ -135,6 +138,7 @@ function Frame (parent, opts) {
     height: opts.height,
     width: opts.width,
     muted: Boolean(opts.muted),
+    ended: false,
     wheel: false,
     event: null,
     theta: 0,
@@ -158,6 +162,16 @@ emitter(Frame.prototype);
  */
 
 Frame.prototype.onclick = function (e) {
+  var now = Date.now();
+  var ts = this.state.mousedownts;
+
+  if ((now - ts) > FRAME_CLICK_THRESHOLD) {
+    return false;
+  } else {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   if (this.state.playing) {
     this.pause();
   } else {
@@ -195,6 +209,7 @@ Frame.prototype.oncanplaythrough = function (e) {
 
 Frame.prototype.onplay = function (e) {
   this.state.paused = false;
+  this.state.ended = false;
   this.emit('play', e);
 };
 
@@ -295,6 +310,7 @@ Frame.prototype.ontimeupdate = function (e) {
  */
 
 Frame.prototype.onended = function (e) {
+  this.state.ended = true;
   this.emit('end');
   this.emit('ended');
 };
@@ -307,6 +323,7 @@ Frame.prototype.onended = function (e) {
  */
 
 Frame.prototype.onmousedown = function (e) {
+  this.state.mousedownts = Date.now();
   this.state.dragstart.x = e.pageX;
   this.state.dragstart.y = e.pageY;
   this.state.mousedown = true;
@@ -428,6 +445,9 @@ Frame.prototype.src = function (src) {
  */
 
 Frame.prototype.play = function () {
+  if (true == this.state.ended) {
+    this.seek(0);
+  }
   this.video.play();
   return this;
 };
