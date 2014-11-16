@@ -163,6 +163,8 @@ Frame.prototype.onclick = function (e) {
   } else {
     this.play();
   }
+
+  this.emit('click', e);
 };
 
 /**
@@ -193,6 +195,7 @@ Frame.prototype.oncanplaythrough = function (e) {
 
 Frame.prototype.onplay = function (e) {
   this.state.paused = false;
+  this.emit('play', e);
 };
 
 /**
@@ -205,6 +208,7 @@ Frame.prototype.onplay = function (e) {
 Frame.prototype.onpause = function (e) {
   this.state.paused = true;
   this.state.playing = false;
+  this.emit('pause', e);
 };
 
 /**
@@ -217,6 +221,7 @@ Frame.prototype.onpause = function (e) {
 Frame.prototype.onplaying = function (e) {
   this.state.playing = true;
   this.state.paused = false;
+  this.emit('playing', e);
 };
 
 /**
@@ -424,7 +429,6 @@ Frame.prototype.src = function (src) {
 
 Frame.prototype.play = function () {
   this.video.play();
-  this.emit('play');
   return this;
 };
 
@@ -436,9 +440,6 @@ Frame.prototype.play = function () {
 
 Frame.prototype.pause = function () {
   this.video.pause();
-  this.state.playing = false;
-  this.state.paused = true;
-  this.emit('pause');
   return this;
 };
 
