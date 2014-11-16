@@ -15,7 +15,7 @@ var three = require('three.js')
 var DEFAULT_FOV = 35;
 
 // frame click threshold
-var FRAME_CLICK_THRESHOLD = 200;
+var FRAME_CLICK_THRESHOLD = 250;
 
 /**
  * `Frame' constructor
