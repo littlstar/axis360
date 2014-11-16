@@ -72,12 +72,19 @@ function Frame (parent, opts) {
   // init video events
   this.events.video = events(this.video, this);
   this.events.video.bind('canplaythrough');
+  this.events.video.bind('play');
+  this.events.video.bind('pause');
+  this.events.video.bind('playing');
   this.events.video.bind('progress');
   this.events.video.bind('timeupdate');
+  this.events.video.bind('loadstart');
+  this.events.video.bind('waiting');
   this.events.video.bind('ended');
 
   // init dom element events
   this.events.element = events(this.el, this);
+  this.events.element.bind('click');
+  this.events.element.bind('touch', 'onclick');
   this.events.element.bind('mousemove');
   this.events.element.bind('mousewheel');
   this.events.element.bind('mousedown');
@@ -121,6 +128,8 @@ function Frame (parent, opts) {
     dragstart: {},
     duration: 0,
     dragloop: null,
+    playing: false,
+    paused: false,
     dragpos: [],
     played: 0,
     height: opts.height,
@@ -142,6 +151,21 @@ function Frame (parent, opts) {
 emitter(Frame.prototype);
 
 /**
+ * Handle `onclick' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onclick = function (e) {
+  if (this.state.playing) {
+    this.pause();
+  } else {
+    this.play();
+  }
+};
+
+/**
  * Handle `oncanplaythrough' event
  *
  * @api private
@@ -158,6 +182,63 @@ Frame.prototype.oncanplaythrough = function (e) {
   if (true == this.opts.autoplay) {
     this.video.play();
   }
+};
+
+/**
+ * Handle `onplay' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onplay = function (e) {
+  this.state.paused = false;
+};
+
+/**
+ * Handle `onpause' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onpause = function (e) {
+  this.state.paused = true;
+  this.state.playing = false;
+};
+
+/**
+ * Handle `onplaying' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onplaying = function (e) {
+  this.state.playing = true;
+  this.state.paused = false;
+};
+
+/**
+ * Handle `onwaiting' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onwaiting = function (e) {
+  this.emit('wait', e);
+};
+
+/**
+ * Handle `onloadstart' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onloadstart = function (e) {
+  this.emit('loadstart', e);
 };
 
 /**
@@ -355,6 +436,8 @@ Frame.prototype.play = function () {
 
 Frame.prototype.pause = function () {
   this.video.pause();
+  this.state.playing = false;
+  this.state.paused = true;
   this.emit('pause');
   return this;
 };

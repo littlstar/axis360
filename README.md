@@ -60,6 +60,8 @@ Inherits from
 * `mousemove` - mouse move event
 * `mousewheel` - mouse wheel event (scroll must be anled in constructor)
 * `play` - Video playback start
+* `waiting` - Video playback buffering
+* `loadstart` - Video playback loading started
 * `pause` - Video playback stop
 * `refresh` - Frame refresh
 * `draw` - Frame draw
