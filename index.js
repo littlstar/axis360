@@ -628,7 +628,7 @@ Frame.prototype.draw = function () {
 
 Frame.prototype.render = function () {
   var self = this;
-  var style = getComputedStyle(this.parent).width;
+  var style = getComputedStyle(this.parent);
   var fov = this.state.fov;
   var height = this.state.height || parseFloat(style.height);
   var width = this.state.width || parseFloat(style.width);
