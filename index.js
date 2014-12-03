@@ -11,6 +11,9 @@ var three = require('three.js')
   , hasWebGL = require('has-webgl')
   , tpl = require('./template.html')
 
+// add three.CanvasRenderer
+require('three-canvas-renderer')(three);
+
 // default field of view
 var DEFAULT_FOV = 35;
 
