@@ -1,144 +1,806 @@
+(function outer(modules, cache, entries){
 
-;(function(){
+  /**
+   * Global
+   */
+
+  var global = (function(){ return this; })();
+
+  /**
+   * Require `name`.
+   *
+   * @param {String} name
+   * @param {Boolean} jumped
+   * @api public
+   */
+
+  function require(name, jumped){
+    if (cache[name]) return cache[name].exports;
+    if (modules[name]) return call(name, require);
+    throw new Error('cannot find module "' + name + '"');
+  }
+
+  /**
+   * Call module `id` and cache it.
+   *
+   * @param {Number} id
+   * @param {Function} require
+   * @return {Function}
+   * @api private
+   */
+
+  function call(id, require){
+    var m = cache[id] = { exports: {} };
+    var mod = modules[id];
+    var name = mod[2];
+    var fn = mod[0];
+
+    fn.call(m.exports, function(req){
+      var dep = modules[id][1][req];
+      return require(dep ? dep : req);
+    }, m, m.exports, outer, modules, cache, entries);
+
+    // expose as `name`.
+    if (name) cache[name] = cache[id];
+
+    return cache[id].exports;
+  }
+
+  /**
+   * Require all entries exposing them on global if needed.
+   */
+
+  for (var id in entries) {
+    if (entries[id]) {
+      global[entries[id]] = require(id);
+    } else {
+      require(id);
+    }
+  }
+
+  /**
+   * Duo flag.
+   */
+
+  require.duo = true;
+
+  /**
+   * Expose cache.
+   */
+
+  require.cache = cache;
+
+  /**
+   * Expose modules
+   */
+
+  require.modules = modules;
+
+  /**
+   * Return newest require.
+   */
+
+   return require;
+})({
+1: [function(require, module, exports) {
 
 /**
- * Require the module at `name`.
+ * Module dependencies
+ */
+
+var three = require('three.js')
+  , dom = require('domify')
+  , emitter = require('emitter')
+  , events = require('events')
+  , raf = require('raf')
+  , hasWebGL = require('has-webgl')
+  , tpl = require('./template.html')
+
+// default field of view
+var DEFAULT_FOV = 35;
+
+// frame click threshold
+var FRAME_CLICK_THRESHOLD = 250;
+
+/**
+ * `Frame' constructor
  *
- * @param {String} name
- * @return {Object} exports
+ * @api public
+ * @param {Object} parent
+ * @param {Object} opts
+ */
+
+module.exports = Frame;
+function Frame (parent, opts) {
+  if (!(this instanceof Frame)) {
+    return new Frame(opts);
+  } else if (!(parent instanceof Element)) {
+    throw new TypeError("Expecting DOM Element");
+  }
+
+  var self = this;
+
+  this.opts = (opts = opts || {});
+
+  // DOM event bindings
+  this.events = {};
+
+  // parent DOM node
+  this.parent = parent;
+
+  // set defualt FOV
+  if ('undefined' == typeof opts.pov) {
+    opts.fov = opts.fieldOfView || DEFAULT_FOV;
+  }
+
+  // init view
+  this.el = dom(tpl);
+  this.video = this.el.querySelector('video');
+  this.video.style.display = 'none';
+
+  function set (p) {
+    if (opts[p]) {
+      self.video[p] = opts[p];
+    }
+  }
+
+  // set video options
+  set('preload');
+  set('autoplay');
+  set('crossorigin');
+  set('loop');
+  set('muted');
+
+  // initialize video source
+  this.src(opts.src);
+
+  // event delagation
+  this.events = {};
+
+  // init video events
+  this.events.video = events(this.video, this);
+  this.events.video.bind('canplaythrough');
+  this.events.video.bind('play');
+  this.events.video.bind('pause');
+  this.events.video.bind('playing');
+  this.events.video.bind('progress');
+  this.events.video.bind('timeupdate');
+  this.events.video.bind('loadstart');
+  this.events.video.bind('waiting');
+  this.events.video.bind('ended');
+
+  // init dom element events
+  this.events.element = events(this.el, this);
+  this.events.element.bind('click');
+  this.events.element.bind('touch', 'onclick');
+  this.events.element.bind('mousemove');
+  this.events.element.bind('mousewheel');
+  this.events.element.bind('mousedown');
+  this.events.element.bind('touchstart', 'onmousedown');
+  this.events.element.bind('mouseup');
+
+  // init scene
+  this.scene = new three.Scene();
+
+  // init camera
+  this.camera = null;
+
+  // init renderer
+  this.renderer = opts.renderer || (
+    hasWebGL ?
+    new three.WebGLRenderer() :
+    new three.CanvasRenderer()
+  );
+
+  // renderer options
+  this.renderer.autoClear = opts.autoClear || false;
+  this.renderer.setClearColor(opts.clearColor || 0x000, 1);
+
+  // attach renderer to instance node container
+  this.el.querySelector('.container').appendChild(this.renderer.domElement);
+
+  this.material = null;
+  this.texture = null;
+  this.mesh = null;
+  this.geo = null;
+
+  if (opts.muted) {
+    this.mute(true);
+  }
+
+  // viewport state
+  this.state = {
+    percentloaded: 0,
+    lastvolume: this.video.volume,
+    timestamp: Date.now(),
+    dragstart: {},
+    duration: 0,
+    dragloop: null,
+    playing: false,
+    paused: false,
+    dragpos: [],
+    played: 0,
+    height: opts.height,
+    width: opts.width,
+    muted: Boolean(opts.muted),
+    ended: false,
+    wheel: false,
+    event: null,
+    theta: 0,
+    scroll: null == opts.scroll ? 0.09 : opts.scroll,
+    time: 0,
+    phi: 0,
+    lat: 0,
+    lon: 0,
+    fov: opts.fov
+  };
+}
+
+// mixin `Emitter'
+emitter(Frame.prototype);
+
+/**
+ * Handle `onclick' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onclick = function (e) {
+  var now = Date.now();
+  var ts = this.state.mousedownts;
+
+  if ((now - ts) > FRAME_CLICK_THRESHOLD) {
+    return false;
+  } else {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  if (this.state.playing) {
+    this.pause();
+  } else {
+    this.play();
+  }
+
+  this.emit('click', e);
+};
+
+/**
+ * Handle `oncanplaythrough' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.oncanplaythrough = function (e) {
+  this.state.time = this.video.currentTime;
+  this.state.duration = this.video.duration;
+
+  this.emit('canplaythrough', e);
+  this.emit('ready');
+
+  if (true == this.opts.autoplay) {
+    this.video.play();
+  }
+};
+
+/**
+ * Handle `onplay' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onplay = function (e) {
+  this.state.paused = false;
+  this.state.ended = false;
+  this.emit('play', e);
+};
+
+/**
+ * Handle `onpause' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onpause = function (e) {
+  this.state.paused = true;
+  this.state.playing = false;
+  this.emit('pause', e);
+};
+
+/**
+ * Handle `onplaying' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onplaying = function (e) {
+  this.state.playing = true;
+  this.state.paused = false;
+  this.emit('playing', e);
+};
+
+/**
+ * Handle `onwaiting' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onwaiting = function (e) {
+  this.emit('wait', e);
+};
+
+/**
+ * Handle `onloadstart' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onloadstart = function (e) {
+  this.emit('loadstart', e);
+};
+
+/**
+ * Handle `onprogress' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onprogress = function (e) {
+  var video = this.video;
+  var percent = 0;
+
+  try {
+    percent = video.buffered.end(0) / video.duration;
+  } catch (e) {
+    try {
+      percent = video.bufferedBytes / video.bytesTotal;
+    } catch (e) { }
+  }
+
+  e.percent = percent * 100;
+  this.state.percentloaded = percent;
+  this.emit('progress', e);
+  this.emit('state', this.state);
+};
+
+/**
+ * Handle `ontimeupdate' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.ontimeupdate = function (e) {
+  e.percent = this.video.currentTime / this.video.duration * 100;
+  this.state.time = this.video.currentTime;
+  this.state.duration = this.video.duration;
+  this.state.played = e.percent;
+  this.emit('timeupdate', e);
+  this.emit('state', this.state);
+};
+
+/**
+ * Handle `onended' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onended = function (e) {
+  this.state.ended = true;
+  this.emit('end');
+  this.emit('ended');
+};
+
+/**
+ * Handle `onmousedown' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onmousedown = function (e) {
+  this.state.mousedownts = Date.now();
+  this.state.dragstart.x = e.pageX;
+  this.state.dragstart.y = e.pageY;
+  this.state.mousedown = true;
+  this.emit('mousedown', e);
+  this.emit('state', this.state);
+};
+
+/**
+ * Handle `onmouseup' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onmouseup = function (e) {
+  this.state.mousedown = false;
+  this.emit('mouseup', e);
+  this.emit('state', this.state);
+};
+
+/**
+ * Handle `onmousemove' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onmousemove = function (e) {
+  var x = 0;
+  var y = 0;
+
+  if (true == this.state.mousedown) {
+    x = e.pageX - this.state.dragstart.x;
+    y = e.pageY - this.state.dragstart.y;
+
+    this.state.dragstart.x = e.pageX;
+    this.state.dragstart.y = e.pageY;
+
+    this.state.lon += x;
+    this.state.lat -= y;
+  }
+
+  this.emit('mousemove', e);
+  this.emit('state', this.state);
+};
+
+/**
+ * Handle `onmousewheel' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onmousewheel = function (e) {
+  var min = 3;
+  var max = 100;
+  var vel = this.state.scroll; // velocity
+
+  if ('number' != typeof this.state.scroll ||false == this.state.wheel) {
+    return false;
+  }
+
+  e.preventDefault();
+
+  if (null != e.wheelDeltaY) { // chrome
+    this.state.fov -= e.wheelDeltaY * vel;
+  } else if (null != e.wheelDelta ) { // ie
+    this.state.fov -= event.wheelDelta * vel;
+  } else if (null != e.detail) { // firefox
+    this.state.fov += e.detail * 1.0;
+  }
+
+  if (this.state.fov < min) {
+    this.state.fov = min;
+  } else if (this.fov > max) {
+    this.state.fov = max;
+  }
+
+  this.camera.setLens(this.state.fov);
+
+  this.emit('mousewheel', e);
+  this.emit('state', this.state);
+};
+
+/**
+ * Sets frame size
+ *
+ * @api public
+ * @param {Number} width
+ * @param {Number} height
+ */
+
+Frame.prototype.size = function (width, height) {
+  this.emit('size', width, height);
+  this.renderer.setSize(
+    (this.state.width = width),
+    (this.state.height = height));
+  return this;
+};
+
+/**
+ * Sets or gets video src
+ *
+ * @api public
+ * @param {String} src - optional
+ */
+
+Frame.prototype.src = function (src) {
+  this.emit('source', src);
+  return (src ?
+    ((this.video.src = src), this) :
+    this.video.src);
+};
+
+/**
+ * Plays video frame
+ *
  * @api public
  */
 
-function require(name) {
-  var module = require.modules[name];
-  if (!module) throw new Error('failed to require "' + name + '"');
-
-  if (!('exports' in module) && typeof module.definition === 'function') {
-    module.client = module.component = true;
-    module.definition.call(this, module.exports = {}, module);
-    delete module.definition;
+Frame.prototype.play = function () {
+  if (true == this.state.ended) {
+    this.seek(0);
   }
-
-  return module.exports;
-}
-
-/**
- * Meta info, accessible in the global scope unless you use AMD option.
- */
-
-require.loader = 'component';
-
-/**
- * Internal helper object, contains a sorting function for semantiv versioning
- */
-require.helper = {};
-require.helper.semVerSort = function(a, b) {
-  var aArray = a.version.split('.');
-  var bArray = b.version.split('.');
-  for (var i=0; i<aArray.length; ++i) {
-    var aInt = parseInt(aArray[i], 10);
-    var bInt = parseInt(bArray[i], 10);
-    if (aInt === bInt) {
-      var aLex = aArray[i].substr((""+aInt).length);
-      var bLex = bArray[i].substr((""+bInt).length);
-      if (aLex === '' && bLex !== '') return 1;
-      if (aLex !== '' && bLex === '') return -1;
-      if (aLex !== '' && bLex !== '') return aLex > bLex ? 1 : -1;
-      continue;
-    } else if (aInt > bInt) {
-      return 1;
-    } else {
-      return -1;
-    }
-  }
-  return 0;
-}
-
-/**
- * Find and require a module which name starts with the provided name.
- * If multiple modules exists, the highest semver is used. 
- * This function can only be used for remote dependencies.
-
- * @param {String} name - module name: `user~repo`
- * @param {Boolean} returnPath - returns the canonical require path if true, 
- *                               otherwise it returns the epxorted module
- */
-require.latest = function (name, returnPath) {
-  function showError(name) {
-    throw new Error('failed to find latest module of "' + name + '"');
-  }
-  // only remotes with semvers, ignore local files conataining a '/'
-  var versionRegexp = /(.*)~(.*)@v?(\d+\.\d+\.\d+[^\/]*)$/;
-  var remoteRegexp = /(.*)~(.*)/;
-  if (!remoteRegexp.test(name)) showError(name);
-  var moduleNames = Object.keys(require.modules);
-  var semVerCandidates = [];
-  var otherCandidates = []; // for instance: name of the git branch
-  for (var i=0; i<moduleNames.length; i++) {
-    var moduleName = moduleNames[i];
-    if (new RegExp(name + '@').test(moduleName)) {
-        var version = moduleName.substr(name.length+1);
-        var semVerMatch = versionRegexp.exec(moduleName);
-        if (semVerMatch != null) {
-          semVerCandidates.push({version: version, name: moduleName});
-        } else {
-          otherCandidates.push({version: version, name: moduleName});
-        } 
-    }
-  }
-  if (semVerCandidates.concat(otherCandidates).length === 0) {
-    showError(name);
-  }
-  if (semVerCandidates.length > 0) {
-    var module = semVerCandidates.sort(require.helper.semVerSort).pop().name;
-    if (returnPath === true) {
-      return module;
-    }
-    return require(module);
-  }
-  // if the build contains more than one branch of the same module
-  // you should not use this funciton
-  var module = otherCandidates.pop().name;
-  if (returnPath === true) {
-    return module;
-  }
-  return require(module);
-}
-
-/**
- * Registered modules.
- */
-
-require.modules = {};
-
-/**
- * Register module at `name` with callback `definition`.
- *
- * @param {String} name
- * @param {Function} definition
- * @api private
- */
-
-require.register = function (name, definition) {
-  require.modules[name] = {
-    definition: definition
-  };
+  this.video.play();
+  return this;
 };
 
 /**
- * Define a module's exports immediately with `exports`.
+ * Pauses video frame
  *
- * @param {String} name
- * @param {Generic} exports
- * @api private
+ * @api public
  */
 
-require.define = function (name, exports) {
-  require.modules[name] = {
-    exports: exports
-  };
+Frame.prototype.pause = function () {
+  this.video.pause();
+  return this;
 };
-require.register("components~three.js@0.0.69", function (exports, module) {
+
+/**
+ * Set or get volume on frame
+ *
+ * @api public
+ * @param {Number} n
+ */
+
+Frame.prototype.volume = function (n) {
+  if (null == n) {
+    return this.video.volume;
+  }
+  this.video.volume = n
+  this.emit('volume', n);
+  return this;
+};
+
+/**
+ * Mutes volume
+ *
+ * @api public
+ * @param {Boolean} mute - optional
+ */
+
+Frame.prototype.mute = function (mute) {
+  if (false == mute) {
+    this.video.muted = false;
+    if (0 == this.volume()) {
+      this.volume(this.state.lastvolume);
+    }
+  } else {
+    this.video.muted = true;
+    this.volume(0);
+    this.emit('mute');
+  }
+  return this;
+};
+
+/**
+ * Unmute volume
+ *
+ * @api public
+ * @param {Boolean} mute - optional
+ */
+
+Frame.prototype.unmute = function (mute) {
+  this.mute(false);
+  this.emit('unmute');
+  return this;
+};
+
+/**
+ * Refresh frame
+ *
+ * @api public
+ */
+
+Frame.prototype.refresh = function () {
+  var now = Date.now();
+  var video = this.video;
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    if (now - this.state.timestamp >= 32) {
+      this.state.timestamp = now;
+      if ('undefined' != typeof this.texture) {
+        this.texture.needsUpdate = true;
+      }
+    }
+  }
+  this.emit('refresh');
+  this.emit('state', this.state);
+  return this.draw();
+};
+
+/**
+ * Seek to time in seconds
+ *
+ * @api public
+ * @param {Number} seconds
+ */
+
+Frame.prototype.seek = function (seconds) {
+  if (seconds >= 0 && seconds <= this.video.duration) {
+    this.video.currentTime = seconds;
+    this.emit('seek', seconds);
+  }
+  return this;
+};
+
+/**
+ * Fast forward `n' amount of seconds
+ *
+ * @api public
+ * @param {Number} seconds
+ */
+
+Frame.prototype.foward = function (seconds) {
+  this.seek(this.video.currentTime + seconds);
+  this.emit('forward', seconds);
+  return this;
+};
+
+/**
+ * Rewind `n' amount of seconds
+ *
+ * @api public
+ * @param {Number} seconds
+ */
+
+Frame.prototype.rewind = function (seconds) {
+  this.seek(this.video.currentTime - seconds);
+  this.emit('rewind', seconds);
+  return this;
+};
+
+/**
+ * Use plugin with frame
+ *
+ * @api public
+ * @param {Function} fn
+ */
+
+Frame.prototype.use = function (fn) {
+  fn(this);
+  return this;
+};
+
+/**
+ * Draws video frame
+ *
+ * @api public
+ */
+
+Frame.prototype.draw = function () {
+  var camera = this.camera;
+  var scene = this.scene;
+  var renderer = this.renderer;
+
+  var theta = this.state.theta = this.state.lon * Math.PI / 180;
+  var lat = this.state.lat = Math.max(-85, Math.min(85, this.state.lat));
+  var phi = this.state.phi = (90 - this.state.lat) * Math.PI / 180;
+
+  var x = 500 * Math.sin(this.state.phi) * Math.cos(this.state.theta);
+  var y = 500 * Math.cos(this.state.phi);
+  var z = 500 * Math.sin(this.state.phi) * Math.sin(this.state.theta);
+
+  var vec = new three.Vector3(x, y, z);
+  camera.lookAt(vec);
+  camera.position.x = -x;
+  camera.position.y = -y;
+  camera.position.z = -z;
+
+  renderer.clear();
+  renderer.render(scene, camera);
+
+  this.emit('draw');
+  this.emit('state', this.state);
+  return this;
+};
+
+/**
+ *
+ * @api public
+ */
+
+Frame.prototype.render = function () {
+  var self = this;
+  var style = getComputedStyle(this.parent);
+  var fov = this.state.fov;
+  var height = this.state.height || parseFloat(style.height);
+  var width = this.state.width || parseFloat(style.width);
+
+  // attach dom node to parent
+  this.parent.appendChild(this.el);
+
+  this.texture = new three.Texture(this.video);
+  this.texture.format = three.RGBFormat;
+  this.texture.minFilter = three.LinearFilter;
+  this.texture.magFilter = three.LinearFilter;
+  this.texture.generateMipmaps = false;
+
+  this.geo = new three.SphereGeometry(500, 80, 50);
+  this.material = new three.MeshBasicMaterial({map: this.texture});
+  this.mesh = new three.Mesh(this.geo, this.material);
+  this.mesh.scale.x = -1; // mesh
+
+  this.size(width, height);
+
+  // init camera
+  this.camera = new three.PerspectiveCamera(
+    fov, (width / height) | 0, 0.1, 1000);
+
+  // add mesh to scene
+  this.scene.add(this.mesh);
+
+  // start refresh loop
+  raf(function loop () {
+    self.refresh();
+    raf(loop);
+  });
+
+  this.emit('render');
+
+  return this;
+};
+
+/**
+ * Sets view offset
+ *
+ * @api publc
+ */
+
+Frame.prototype.offset =
+Frame.prototype.setViewOffset = function () {
+  // @see http://threejs.org/docs/#Reference/Cameras/PerspectiveCamera
+  this.camera.setViewOffset.apply(this.camera, arguments);
+  return this;
+};
+
+/**
+ * Set or get height
+ *
+ * @api public
+ * @param {Number} height - optional
+ */
+
+Frame.prototype.height = function (height) {
+  if (null == height) {
+    return this.state.height;
+  }
+
+  this.state.height = height;
+  this.emit('height', height);
+  return this;
+};
+
+/**
+ * Set or get width
+ *
+ * @api public
+ * @param {Number} width - optional
+ */
+
+Frame.prototype.width = function (width) {
+  if (null == width) {
+    return this.state.width;
+  }
+
+  this.state.width = width;
+  this.emit('width', width);
+  return this;
+};
+
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"./template.html":8}],
+2: [function(require, module, exports) {
 // File:src/Three.js
 
 /**
@@ -34870,9 +35532,118 @@ THREE.MorphBlendMesh.prototype.update = function ( delta ) {
 };
 
 
-});
+}, {}],
+3: [function(require, module, exports) {
 
-require.register("component~emitter@1.1.3", function (exports, module) {
+/**
+ * Expose `parse`.
+ */
+
+module.exports = parse;
+
+/**
+ * Tests for browser support.
+ */
+
+var div = document.createElement('div');
+// Setup
+div.innerHTML = '  <link/><table></table><a href="/a">a</a><input type="checkbox"/>';
+// Make sure that link elements get serialized correctly by innerHTML
+// This requires a wrapper element in IE
+var innerHTMLBug = !div.getElementsByTagName('link').length;
+div = undefined;
+
+/**
+ * Wrap map from jquery.
+ */
+
+var map = {
+  legend: [1, '<fieldset>', '</fieldset>'],
+  tr: [2, '<table><tbody>', '</tbody></table>'],
+  col: [2, '<table><tbody></tbody><colgroup>', '</colgroup></table>'],
+  // for script/link/style tags to work in IE6-8, you have to wrap
+  // in a div with a non-whitespace character in front, ha!
+  _default: innerHTMLBug ? [1, 'X<div>', '</div>'] : [0, '', '']
+};
+
+map.td =
+map.th = [3, '<table><tbody><tr>', '</tr></tbody></table>'];
+
+map.option =
+map.optgroup = [1, '<select multiple="multiple">', '</select>'];
+
+map.thead =
+map.tbody =
+map.colgroup =
+map.caption =
+map.tfoot = [1, '<table>', '</table>'];
+
+map.text =
+map.circle =
+map.ellipse =
+map.line =
+map.path =
+map.polygon =
+map.polyline =
+map.rect = [1, '<svg xmlns="http://www.w3.org/2000/svg" version="1.1">','</svg>'];
+
+/**
+ * Parse `html` and return a DOM Node instance, which could be a TextNode,
+ * HTML DOM Node of some kind (<div> for example), or a DocumentFragment
+ * instance, depending on the contents of the `html` string.
+ *
+ * @param {String} html - HTML string to "domify"
+ * @param {Document} doc - The `document` instance to create the Node for
+ * @return {DOMNode} the TextNode, DOM Node, or DocumentFragment instance
+ * @api private
+ */
+
+function parse(html, doc) {
+  if ('string' != typeof html) throw new TypeError('String expected');
+
+  // default to the global `document` object
+  if (!doc) doc = document;
+
+  // tag name
+  var m = /<([\w:]+)/.exec(html);
+  if (!m) return doc.createTextNode(html);
+
+  html = html.replace(/^\s+|\s+$/g, ''); // Remove leading/trailing whitespace
+
+  var tag = m[1];
+
+  // body support
+  if (tag == 'body') {
+    var el = doc.createElement('html');
+    el.innerHTML = html;
+    return el.removeChild(el.lastChild);
+  }
+
+  // wrap map
+  var wrap = map[tag] || map._default;
+  var depth = wrap[0];
+  var prefix = wrap[1];
+  var suffix = wrap[2];
+  var el = doc.createElement('div');
+  el.innerHTML = prefix + html + suffix;
+  while (depth--) el = el.lastChild;
+
+  // one element
+  if (el.firstChild == el.lastChild) {
+    return el.removeChild(el.firstChild);
+  }
+
+  // several elements
+  var fragment = doc.createDocumentFragment();
+  while (el.firstChild) {
+    fragment.appendChild(el.removeChild(el.firstChild));
+  }
+
+  return fragment;
+}
+
+}, {}],
+4: [function(require, module, exports) {
 
 /**
  * Expose `Emitter`.
@@ -35038,198 +35809,15 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-});
-
-require.register("component~event@0.1.4", function (exports, module) {
-var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
-    unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
-    prefix = bind !== 'addEventListener' ? 'on' : '';
-
-/**
- * Bind `el` event `type` to `fn`.
- *
- * @param {Element} el
- * @param {String} type
- * @param {Function} fn
- * @param {Boolean} capture
- * @return {Function}
- * @api public
- */
-
-exports.bind = function(el, type, fn, capture){
-  el[bind](prefix + type, fn, capture || false);
-  return fn;
-};
-
-/**
- * Unbind `el` event `type`'s callback `fn`.
- *
- * @param {Element} el
- * @param {String} type
- * @param {Function} fn
- * @param {Boolean} capture
- * @return {Function}
- * @api public
- */
-
-exports.unbind = function(el, type, fn, capture){
-  el[unbind](prefix + type, fn, capture || false);
-  return fn;
-};
-});
-
-require.register("component~query@0.0.3", function (exports, module) {
-function one(selector, el) {
-  return el.querySelector(selector);
-}
-
-exports = module.exports = function(selector, el){
-  el = el || document;
-  return one(selector, el);
-};
-
-exports.all = function(selector, el){
-  el = el || document;
-  return el.querySelectorAll(selector);
-};
-
-exports.engine = function(obj){
-  if (!obj.one) throw new Error('.one callback required');
-  if (!obj.all) throw new Error('.all callback required');
-  one = obj.one;
-  exports.all = obj.all;
-  return exports;
-};
-
-});
-
-require.register("component~matches-selector@0.1.5", function (exports, module) {
-/**
- * Module dependencies.
- */
-
-var query = require('component~query@0.0.3');
-
-/**
- * Element prototype.
- */
-
-var proto = Element.prototype;
-
-/**
- * Vendor function.
- */
-
-var vendor = proto.matches
-  || proto.webkitMatchesSelector
-  || proto.mozMatchesSelector
-  || proto.msMatchesSelector
-  || proto.oMatchesSelector;
-
-/**
- * Expose `match()`.
- */
-
-module.exports = match;
-
-/**
- * Match `el` to `selector`.
- *
- * @param {Element} el
- * @param {String} selector
- * @return {Boolean}
- * @api public
- */
-
-function match(el, selector) {
-  if (!el || el.nodeType !== 1) return false;
-  if (vendor) return vendor.call(el, selector);
-  var nodes = query.all(selector, el.parentNode);
-  for (var i = 0; i < nodes.length; ++i) {
-    if (nodes[i] == el) return true;
-  }
-  return false;
-}
-
-});
-
-require.register("component~closest@0.1.4", function (exports, module) {
-var matches = require('component~matches-selector@0.1.5')
-
-module.exports = function (element, selector, checkYoSelf, root) {
-  element = checkYoSelf ? {parentNode: element} : element
-
-  root = root || document
-
-  // Make sure `element !== document` and `element != null`
-  // otherwise we get an illegal invocation
-  while ((element = element.parentNode) && element !== document) {
-    if (matches(element, selector))
-      return element
-    // After `matches` on the edge case that
-    // the selector matches the root
-    // (when the root is not the document)
-    if (element === root)
-      return
-  }
-}
-
-});
-
-require.register("component~delegate@0.2.3", function (exports, module) {
-/**
- * Module dependencies.
- */
-
-var closest = require('component~closest@0.1.4')
-  , event = require('component~event@0.1.4');
-
-/**
- * Delegate event `type` to `selector`
- * and invoke `fn(e)`. A callback function
- * is returned which may be passed to `.unbind()`.
- *
- * @param {Element} el
- * @param {String} selector
- * @param {String} type
- * @param {Function} fn
- * @param {Boolean} capture
- * @return {Function}
- * @api public
- */
-
-exports.bind = function(el, selector, type, fn, capture){
-  return event.bind(el, type, function(e){
-    var target = e.target || e.srcElement;
-    e.delegateTarget = closest(target, selector, true, el);
-    if (e.delegateTarget) fn.call(el, e);
-  }, capture);
-};
-
-/**
- * Unbind event `type`'s callback `fn`.
- *
- * @param {Element} el
- * @param {String} type
- * @param {Function} fn
- * @param {Boolean} capture
- * @api public
- */
-
-exports.unbind = function(el, type, fn, capture){
-  event.unbind(el, type, fn, capture);
-};
-
-});
-
-require.register("component~events@1.0.9", function (exports, module) {
+}, {}],
+5: [function(require, module, exports) {
 
 /**
  * Module dependencies.
  */
 
-var events = require('component~event@0.1.4');
-var delegate = require('component~delegate@0.2.3');
+var events = require('event');
+var delegate = require('delegate');
 
 /**
  * Expose `Events`.
@@ -35400,120 +35988,185 @@ function parse(event) {
   }
 }
 
-});
-
-require.register("component~domify@1.3.1", function (exports, module) {
-
-/**
- * Expose `parse`.
- */
-
-module.exports = parse;
+}, {"event":9,"delegate":10}],
+9: [function(require, module, exports) {
+var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
+    unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
+    prefix = bind !== 'addEventListener' ? 'on' : '';
 
 /**
- * Tests for browser support.
+ * Bind `el` event `type` to `fn`.
+ *
+ * @param {Element} el
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @return {Function}
+ * @api public
  */
 
-var div = document.createElement('div');
-// Setup
-div.innerHTML = '  <link/><table></table><a href="/a">a</a><input type="checkbox"/>';
-// Make sure that link elements get serialized correctly by innerHTML
-// This requires a wrapper element in IE
-var innerHTMLBug = !div.getElementsByTagName('link').length;
-div = undefined;
-
-/**
- * Wrap map from jquery.
- */
-
-var map = {
-  legend: [1, '<fieldset>', '</fieldset>'],
-  tr: [2, '<table><tbody>', '</tbody></table>'],
-  col: [2, '<table><tbody></tbody><colgroup>', '</colgroup></table>'],
-  // for script/link/style tags to work in IE6-8, you have to wrap
-  // in a div with a non-whitespace character in front, ha!
-  _default: innerHTMLBug ? [1, 'X<div>', '</div>'] : [0, '', '']
+exports.bind = function(el, type, fn, capture){
+  el[bind](prefix + type, fn, capture || false);
+  return fn;
 };
 
-map.td =
-map.th = [3, '<table><tbody><tr>', '</tr></tbody></table>'];
-
-map.option =
-map.optgroup = [1, '<select multiple="multiple">', '</select>'];
-
-map.thead =
-map.tbody =
-map.colgroup =
-map.caption =
-map.tfoot = [1, '<table>', '</table>'];
-
-map.text =
-map.circle =
-map.ellipse =
-map.line =
-map.path =
-map.polygon =
-map.polyline =
-map.rect = [1, '<svg xmlns="http://www.w3.org/2000/svg" version="1.1">','</svg>'];
-
 /**
- * Parse `html` and return a DOM Node instance, which could be a TextNode,
- * HTML DOM Node of some kind (<div> for example), or a DocumentFragment
- * instance, depending on the contents of the `html` string.
+ * Unbind `el` event `type`'s callback `fn`.
  *
- * @param {String} html - HTML string to "domify"
- * @param {Document} doc - The `document` instance to create the Node for
- * @return {DOMNode} the TextNode, DOM Node, or DocumentFragment instance
- * @api private
+ * @param {Element} el
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @return {Function}
+ * @api public
  */
 
-function parse(html, doc) {
-  if ('string' != typeof html) throw new TypeError('String expected');
+exports.unbind = function(el, type, fn, capture){
+  el[unbind](prefix + type, fn, capture || false);
+  return fn;
+};
+}, {}],
+10: [function(require, module, exports) {
+/**
+ * Module dependencies.
+ */
 
-  // default to the global `document` object
-  if (!doc) doc = document;
+var closest = require('closest')
+  , event = require('event');
 
-  // tag name
-  var m = /<([\w:]+)/.exec(html);
-  if (!m) return doc.createTextNode(html);
+/**
+ * Delegate event `type` to `selector`
+ * and invoke `fn(e)`. A callback function
+ * is returned which may be passed to `.unbind()`.
+ *
+ * @param {Element} el
+ * @param {String} selector
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @return {Function}
+ * @api public
+ */
 
-  html = html.replace(/^\s+|\s+$/g, ''); // Remove leading/trailing whitespace
+exports.bind = function(el, selector, type, fn, capture){
+  return event.bind(el, type, function(e){
+    var target = e.target || e.srcElement;
+    e.delegateTarget = closest(target, selector, true, el);
+    if (e.delegateTarget) fn.call(el, e);
+  }, capture);
+};
 
-  var tag = m[1];
+/**
+ * Unbind event `type`'s callback `fn`.
+ *
+ * @param {Element} el
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @api public
+ */
 
-  // body support
-  if (tag == 'body') {
-    var el = doc.createElement('html');
-    el.innerHTML = html;
-    return el.removeChild(el.lastChild);
+exports.unbind = function(el, type, fn, capture){
+  event.unbind(el, type, fn, capture);
+};
+
+}, {"closest":11,"event":9}],
+11: [function(require, module, exports) {
+var matches = require('matches-selector')
+
+module.exports = function (element, selector, checkYoSelf, root) {
+  element = checkYoSelf ? {parentNode: element} : element
+
+  root = root || document
+
+  // Make sure `element !== document` and `element != null`
+  // otherwise we get an illegal invocation
+  while ((element = element.parentNode) && element !== document) {
+    if (matches(element, selector))
+      return element
+    // After `matches` on the edge case that
+    // the selector matches the root
+    // (when the root is not the document)
+    if (element === root)
+      return
   }
-
-  // wrap map
-  var wrap = map[tag] || map._default;
-  var depth = wrap[0];
-  var prefix = wrap[1];
-  var suffix = wrap[2];
-  var el = doc.createElement('div');
-  el.innerHTML = prefix + html + suffix;
-  while (depth--) el = el.lastChild;
-
-  // one element
-  if (el.firstChild == el.lastChild) {
-    return el.removeChild(el.firstChild);
-  }
-
-  // several elements
-  var fragment = doc.createDocumentFragment();
-  while (el.firstChild) {
-    fragment.appendChild(el.removeChild(el.firstChild));
-  }
-
-  return fragment;
 }
 
-});
+}, {"matches-selector":12}],
+12: [function(require, module, exports) {
+/**
+ * Module dependencies.
+ */
 
-require.register("component~raf@1.2.0", function (exports, module) {
+var query = require('query');
+
+/**
+ * Element prototype.
+ */
+
+var proto = Element.prototype;
+
+/**
+ * Vendor function.
+ */
+
+var vendor = proto.matches
+  || proto.webkitMatchesSelector
+  || proto.mozMatchesSelector
+  || proto.msMatchesSelector
+  || proto.oMatchesSelector;
+
+/**
+ * Expose `match()`.
+ */
+
+module.exports = match;
+
+/**
+ * Match `el` to `selector`.
+ *
+ * @param {Element} el
+ * @param {String} selector
+ * @return {Boolean}
+ * @api public
+ */
+
+function match(el, selector) {
+  if (!el || el.nodeType !== 1) return false;
+  if (vendor) return vendor.call(el, selector);
+  var nodes = query.all(selector, el.parentNode);
+  for (var i = 0; i < nodes.length; ++i) {
+    if (nodes[i] == el) return true;
+  }
+  return false;
+}
+
+}, {"query":13}],
+13: [function(require, module, exports) {
+function one(selector, el) {
+  return el.querySelector(selector);
+}
+
+exports = module.exports = function(selector, el){
+  el = el || document;
+  return one(selector, el);
+};
+
+exports.all = function(selector, el){
+  el = el || document;
+  return el.querySelectorAll(selector);
+};
+
+exports.engine = function(obj){
+  if (!obj.one) throw new Error('.one callback required');
+  if (!obj.all) throw new Error('.all callback required');
+  one = obj.one;
+  exports.all = obj.all;
+  return exports;
+};
+
+}, {}],
+6: [function(require, module, exports) {
 /**
  * Expose `requestAnimationFrame()`.
  */
@@ -35549,9 +36202,8 @@ exports.cancel = function(id){
   cancel.call(window, id);
 };
 
-});
-
-require.register("jb55~has-webgl@v0.0.1", function (exports, module) {
+}, {}],
+7: [function(require, module, exports) {
 /**
  * @author alteredq / http://alteredqualia.com/
  * @author mr.doob / http://mrdoob.com/
@@ -35567,734 +36219,7 @@ module.exports = (function() {
   }
 })();
 
-});
-
-require.register("slant-frame", function (exports, module) {
-
-/**
- * Module dependencies
- */
-
-var three = require('components~three.js@0.0.69')
-  , dom = require('component~domify@1.3.1')
-  , emitter = require('component~emitter@1.1.3')
-  , events = require('component~events@1.0.9')
-  , raf = require('component~raf@1.2.0')
-  , hasWebGL = require('jb55~has-webgl@v0.0.1')
-  , tpl = require('slant-frame/template.html')
-
-// default field of view
-var DEFAULT_FOV = 35;
-
-// frame click threshold
-var FRAME_CLICK_THRESHOLD = 200;
-
-/**
- * `Frame' constructor
- *
- * @api public
- * @param {Object} parent
- * @param {Object} opts
- */
-
-module.exports = Frame;
-function Frame (parent, opts) {
-  if (!(this instanceof Frame)) {
-    return new Frame(opts);
-  } else if (!(parent instanceof Element)) {
-    throw new TypeError("Expecting DOM Element");
-  }
-
-  var self = this;
-
-  this.opts = (opts = opts || {});
-
-  // DOM event bindings
-  this.events = {};
-
-  // parent DOM node
-  this.parent = parent;
-
-  // set defualt FOV
-  if ('undefined' == typeof opts.pov) {
-    opts.fov = opts.fieldOfView || DEFAULT_FOV;
-  }
-
-  // init view
-  this.el = dom(tpl);
-  this.video = this.el.querySelector('video');
-  this.video.style.display = 'none';
-
-  function set (p) {
-    if (opts[p]) {
-      self.video[p] = opts[p];
-    }
-  }
-
-  // set video options
-  set('preload');
-  set('autoplay');
-  set('crossorigin');
-  set('loop');
-  set('muted');
-
-  // initialize video source
-  this.src(opts.src);
-
-  // event delagation
-  this.events = {};
-
-  // init video events
-  this.events.video = events(this.video, this);
-  this.events.video.bind('canplaythrough');
-  this.events.video.bind('play');
-  this.events.video.bind('pause');
-  this.events.video.bind('playing');
-  this.events.video.bind('progress');
-  this.events.video.bind('timeupdate');
-  this.events.video.bind('loadstart');
-  this.events.video.bind('waiting');
-  this.events.video.bind('ended');
-
-  // init dom element events
-  this.events.element = events(this.el, this);
-  this.events.element.bind('click');
-  this.events.element.bind('touch', 'onclick');
-  this.events.element.bind('mousemove');
-  this.events.element.bind('mousewheel');
-  this.events.element.bind('mousedown');
-  this.events.element.bind('touchstart', 'onmousedown');
-  this.events.element.bind('mouseup');
-
-  // init scene
-  this.scene = new three.Scene();
-
-  // init camera
-  this.camera = null;
-
-  // init renderer
-  this.renderer = opts.renderer || (
-    hasWebGL ?
-    new three.WebGLRenderer() :
-    new three.CanvasRenderer()
-  );
-
-  // renderer options
-  this.renderer.autoClear = opts.autoClear || false;
-  this.renderer.setClearColor(opts.clearColor || 0x000, 1);
-
-  // attach renderer to instance node container
-  this.el.querySelector('.container').appendChild(this.renderer.domElement);
-
-  this.material = null;
-  this.texture = null;
-  this.mesh = null;
-  this.geo = null;
-
-  if (opts.muted) {
-    this.mute(true);
-  }
-
-  // viewport state
-  this.state = {
-    percentloaded: 0,
-    lastvolume: this.video.volume,
-    timestamp: Date.now(),
-    dragstart: {},
-    duration: 0,
-    dragloop: null,
-    playing: false,
-    paused: false,
-    dragpos: [],
-    played: 0,
-    height: opts.height,
-    width: opts.width,
-    muted: Boolean(opts.muted),
-    ended: false,
-    wheel: false,
-    event: null,
-    theta: 0,
-    scroll: null == opts.scroll ? 0.09 : opts.scroll,
-    time: 0,
-    phi: 0,
-    lat: 0,
-    lon: 0,
-    fov: opts.fov
-  };
-}
-
-// mixin `Emitter'
-emitter(Frame.prototype);
-
-/**
- * Handle `onclick' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onclick = function (e) {
-  var now = Date.now();
-  var ts = this.state.mousedownts;
-
-  if ((now - ts) > FRAME_CLICK_THRESHOLD) {
-    return false;
-  } else {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  if (this.state.playing) {
-    this.pause();
-  } else {
-    this.play();
-  }
-
-  this.emit('click', e);
-};
-
-/**
- * Handle `oncanplaythrough' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.oncanplaythrough = function (e) {
-  this.state.time = this.video.currentTime;
-  this.state.duration = this.video.duration;
-
-  this.emit('canplaythrough', e);
-  this.emit('ready');
-
-  if (true == this.opts.autoplay) {
-    this.video.play();
-  }
-};
-
-/**
- * Handle `onplay' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onplay = function (e) {
-  this.state.paused = false;
-  this.state.ended = false;
-  this.emit('play', e);
-};
-
-/**
- * Handle `onpause' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onpause = function (e) {
-  this.state.paused = true;
-  this.state.playing = false;
-  this.emit('pause', e);
-};
-
-/**
- * Handle `onplaying' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onplaying = function (e) {
-  this.state.playing = true;
-  this.state.paused = false;
-  this.emit('playing', e);
-};
-
-/**
- * Handle `onwaiting' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onwaiting = function (e) {
-  this.emit('wait', e);
-};
-
-/**
- * Handle `onloadstart' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onloadstart = function (e) {
-  this.emit('loadstart', e);
-};
-
-/**
- * Handle `onprogress' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onprogress = function (e) {
-  var video = this.video;
-  var percent = 0;
-
-  try {
-    percent = video.buffered.end(0) / video.duration;
-  } catch (e) {
-    try {
-      percent = video.bufferedBytes / video.bytesTotal;
-    } catch (e) { }
-  }
-
-  e.percent = percent * 100;
-  this.state.percentloaded = percent;
-  this.emit('progress', e);
-  this.emit('state', this.state);
-};
-
-/**
- * Handle `ontimeupdate' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.ontimeupdate = function (e) {
-  e.percent = this.video.currentTime / this.video.duration * 100;
-  this.state.time = this.video.currentTime;
-  this.state.duration = this.video.duration;
-  this.state.played = e.percent;
-  this.emit('timeupdate', e);
-  this.emit('state', this.state);
-};
-
-/**
- * Handle `onended' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onended = function (e) {
-  this.state.ended = true;
-  this.emit('end');
-  this.emit('ended');
-};
-
-/**
- * Handle `onmousedown' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onmousedown = function (e) {
-  this.state.mousedownts = Date.now();
-  this.state.dragstart.x = e.pageX;
-  this.state.dragstart.y = e.pageY;
-  this.state.mousedown = true;
-  this.emit('mousedown', e);
-  this.emit('state', this.state);
-};
-
-/**
- * Handle `onmouseup' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onmouseup = function (e) {
-  this.state.mousedown = false;
-  this.emit('mouseup', e);
-  this.emit('state', this.state);
-};
-
-/**
- * Handle `onmousemove' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onmousemove = function (e) {
-  var x = 0;
-  var y = 0;
-
-  if (true == this.state.mousedown) {
-    x = e.pageX - this.state.dragstart.x;
-    y = e.pageY - this.state.dragstart.y;
-
-    this.state.dragstart.x = e.pageX;
-    this.state.dragstart.y = e.pageY;
-
-    this.state.lon += x;
-    this.state.lat -= y;
-  }
-
-  this.emit('mousemove', e);
-  this.emit('state', this.state);
-};
-
-/**
- * Handle `onmousewheel' event
- *
- * @api private
- * @param {Event} e
- */
-
-Frame.prototype.onmousewheel = function (e) {
-  var min = 3;
-  var max = 100;
-  var vel = this.state.scroll; // velocity
-
-  if ('number' != typeof this.state.scroll ||false == this.state.wheel) {
-    return false;
-  }
-
-  e.preventDefault();
-
-  if (null != e.wheelDeltaY) { // chrome
-    this.state.fov -= e.wheelDeltaY * vel;
-  } else if (null != e.wheelDelta ) { // ie
-    this.state.fov -= event.wheelDelta * vel;
-  } else if (null != e.detail) { // firefox
-    this.state.fov += e.detail * 1.0;
-  }
-
-  if (this.state.fov < min) {
-    this.state.fov = min;
-  } else if (this.fov > max) {
-    this.state.fov = max;
-  }
-
-  this.camera.setLens(this.state.fov);
-
-  this.emit('mousewheel', e);
-  this.emit('state', this.state);
-};
-
-/**
- * Sets frame size
- *
- * @api public
- * @param {Number} width
- * @param {Number} height
- */
-
-Frame.prototype.size = function (width, height) {
-  this.emit('size', width, height);
-  this.renderer.setSize(
-    (this.state.width = width),
-    (this.state.height = height));
-  return this;
-};
-
-/**
- * Sets or gets video src
- *
- * @api public
- * @param {String} src - optional
- */
-
-Frame.prototype.src = function (src) {
-  this.emit('source', src);
-  return (src ?
-    ((this.video.src = src), this) :
-    this.video.src);
-};
-
-/**
- * Plays video frame
- *
- * @api public
- */
-
-Frame.prototype.play = function () {
-  if (true == this.state.ended) {
-    this.seek(0);
-  }
-  this.video.play();
-  return this;
-};
-
-/**
- * Pauses video frame
- *
- * @api public
- */
-
-Frame.prototype.pause = function () {
-  this.video.pause();
-  return this;
-};
-
-/**
- * Set or get volume on frame
- *
- * @api public
- * @param {Number} n
- */
-
-Frame.prototype.volume = function (n) {
-  if (null == n) {
-    return this.video.volume;
-  }
-  this.video.volume = n
-  this.emit('volume', n);
-  return this;
-};
-
-/**
- * Mutes volume
- *
- * @api public
- * @param {Boolean} mute - optional
- */
-
-Frame.prototype.mute = function (mute) {
-  if (false == mute) {
-    this.video.muted = false;
-    if (0 == this.volume()) {
-      this.volume(this.state.lastvolume);
-    }
-  } else {
-    this.video.muted = true;
-    this.volume(0);
-    this.emit('mute');
-  }
-  return this;
-};
-
-/**
- * Unmute volume
- *
- * @api public
- * @param {Boolean} mute - optional
- */
-
-Frame.prototype.unmute = function (mute) {
-  this.mute(false);
-  this.emit('unmute');
-  return this;
-};
-
-/**
- * Refresh frame
- *
- * @api public
- */
-
-Frame.prototype.refresh = function () {
-  var now = Date.now();
-  var video = this.video;
-  if (video.readyState === video.HAVE_ENOUGH_DATA) {
-    if (now - this.state.timestamp >= 32) {
-      this.state.timestamp = now;
-      if ('undefined' != typeof this.texture) {
-        this.texture.needsUpdate = true;
-      }
-    }
-  }
-  this.emit('refresh');
-  this.emit('state', this.state);
-  return this.draw();
-};
-
-/**
- * Seek to time in seconds
- *
- * @api public
- * @param {Number} seconds
- */
-
-Frame.prototype.seek = function (seconds) {
-  if (seconds >= 0 && seconds <= this.video.duration) {
-    this.video.currentTime = seconds;
-    this.emit('seek', seconds);
-  }
-  return this;
-};
-
-/**
- * Fast forward `n' amount of seconds
- *
- * @api public
- * @param {Number} seconds
- */
-
-Frame.prototype.foward = function (seconds) {
-  this.seek(this.video.currentTime + seconds);
-  this.emit('forward', seconds);
-  return this;
-};
-
-/**
- * Rewind `n' amount of seconds
- *
- * @api public
- * @param {Number} seconds
- */
-
-Frame.prototype.rewind = function (seconds) {
-  this.seek(this.video.currentTime - seconds);
-  this.emit('rewind', seconds);
-  return this;
-};
-
-/**
- * Use plugin with frame
- *
- * @api public
- * @param {Function} fn
- */
-
-Frame.prototype.use = function (fn) {
-  fn(this);
-  return this;
-};
-
-/**
- * Draws video frame
- *
- * @api public
- */
-
-Frame.prototype.draw = function () {
-  var camera = this.camera;
-  var scene = this.scene;
-  var renderer = this.renderer;
-
-  var theta = this.state.theta = this.state.lon * Math.PI / 180;
-  var lat = this.state.lat = Math.max(-85, Math.min(85, this.state.lat));
-  var phi = this.state.phi = (90 - this.state.lat) * Math.PI / 180;
-
-  var x = 500 * Math.sin(this.state.phi) * Math.cos(this.state.theta);
-  var y = 500 * Math.cos(this.state.phi);
-  var z = 500 * Math.sin(this.state.phi) * Math.sin(this.state.theta);
-
-  var vec = new three.Vector3(x, y, z);
-  camera.lookAt(vec);
-  camera.position.x = -x;
-  camera.position.y = -y;
-  camera.position.z = -z;
-
-  renderer.clear();
-  renderer.render(scene, camera);
-
-  this.emit('draw');
-  this.emit('state', this.state);
-  return this;
-};
-
-/**
- *
- * @api public
- */
-
-Frame.prototype.render = function () {
-  var self = this;
-  var style = getComputedStyle(this.parent).width;
-  var fov = this.state.fov;
-  var height = this.state.height || parseFloat(style.height);
-  var width = this.state.width || parseFloat(style.width);
-
-  // attach dom node to parent
-  this.parent.appendChild(this.el);
-
-  this.texture = new three.Texture(this.video);
-  this.texture.format = three.RGBFormat;
-  this.texture.minFilter = three.LinearFilter;
-  this.texture.magFilter = three.LinearFilter;
-  this.texture.generateMipmaps = false;
-
-  this.geo = new three.SphereGeometry(500, 80, 50);
-  this.material = new three.MeshBasicMaterial({map: this.texture});
-  this.mesh = new three.Mesh(this.geo, this.material);
-  this.mesh.scale.x = -1; // mesh
-
-  this.size(width, height);
-
-  // init camera
-  this.camera = new three.PerspectiveCamera(
-    fov, (width / height) | 0, 0.1, 1000);
-
-  // add mesh to scene
-  this.scene.add(this.mesh);
-
-  // start refresh loop
-  raf(function loop () {
-    self.refresh();
-    raf(loop);
-  });
-
-  this.emit('render');
-
-  return this;
-};
-
-/**
- * Sets view offset
- *
- * @api publc
- */
-
-Frame.prototype.offset =
-Frame.prototype.setViewOffset = function () {
-  // @see http://threejs.org/docs/#Reference/Cameras/PerspectiveCamera
-  this.camera.setViewOffset.apply(this.camera, arguments);
-  return this;
-};
-
-/**
- * Set or get height
- *
- * @api public
- * @param {Number} height - optional
- */
-
-Frame.prototype.height = function (height) {
-  if (null == height) {
-    return this.state.height;
-  }
-
-  this.state.height = height;
-  this.emit('height', height);
-  return this;
-};
-
-/**
- * Set or get width
- *
- * @api public
- * @param {Number} width - optional
- */
-
-Frame.prototype.width = function (width) {
-  if (null == width) {
-    return this.state.width;
-  }
-
-  this.state.width = width;
-  this.emit('width', width);
-  return this;
-};
-
-});
-
-require.define("slant-frame/template.html", "<section class=\"slant frame\">\n  <div class=\"slant container\">\n    <video class=\"slant\"></video>\n  </div>\n</section>\n");
-
-if (typeof exports == "object") {
-  module.exports = require("slant-frame");
-} else if (typeof define == "function" && define.amd) {
-  define("SlantFrame", [], function(){ return require("slant-frame"); });
-} else {
-  (this || window)["SlantFrame"] = require("slant-frame");
-}
-})()
+}, {}],
+8: [function(require, module, exports) {
+module.exports = '<section class="slant frame">\n  <div class="slant container">\n    <video class="slant"></video>\n  </div>\n</section>\n';
+}, {}]}, {}, {"1":"SlantFrame"})

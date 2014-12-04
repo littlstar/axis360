@@ -1,0 +1,8 @@
+{
+  "name": "slant-frame",
+  "version": "0.0.0",
+  "private": true,
+  "devDependencies": {
+    "duo": "^0.8.10"
+  }
+}
