@@ -30,7 +30,7 @@ where `opts` is an object of:
 * `fov` or `fieldOfView` - Field of view
   ([fov](http://en.wikipedia.org/wiki/Field_of_view) and
 [3js](http://threejs.org/docs/#Reference/Cameras/PerspectiveCamera))
-(Default: `36`)
+(Default: `35`)
 * `width` - Frame width (required)
 * `height` - Frame height (required)
 * `preload` - Preload video frame (Default: `false`)
