@@ -610,17 +610,38 @@ Frame.prototype.draw = function () {
   var y = 500 * Math.cos(this.state.phi);
   var z = 500 * Math.sin(this.state.phi) * Math.sin(this.state.theta);
 
-  var vec = new three.Vector3(x, y, z);
-  camera.lookAt(vec);
-  camera.position.x = -x;
-  camera.position.y = -y;
-  camera.position.z = -z;
-
-  renderer.clear();
-  renderer.render(scene, camera);
+  this.lookAt(x, y, z);
 
   this.emit('draw');
   this.emit('state', this.state);
+  return this;
+};
+
+/**
+ * Look at a position in a [x, y, z) vector
+ *
+ * @api public
+ * @param {Number} x
+ * @param {Number} y
+ * @param {Number} z
+ */
+
+Frame.prototype.lookAt = function (x, y, z) {
+  var vec = new three.Vector3(x, y, z);
+
+  this.camera.lookAt(vec);
+  this.camera.position.x = -x;
+  this.camera.position.y = -y;
+  this.camera.position.z = -z;
+
+  this.renderer.clear();
+  this.renderer.render(this.scene, this.camera);
+
+  this.emit('lookat',
+            {x: this.camera.position.x,
+             y: this.camera.position.y,
+             z: this.camera.position.z});
+
   return this;
 };
 
