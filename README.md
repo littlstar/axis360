@@ -65,6 +65,7 @@ Inherits from
 * `pause` - Video playback stop
 * `refresh` - Frame refresh
 * `draw` - Frame draw
+* `lookat` - Called when `#lookAt(x, y, z)` has been called
 
 ### Frame#size(width, height)
 
@@ -177,6 +178,15 @@ Sets frame camera view offset
 frame.offset(1920 * 2, 1080 * 2);
 ```
 
+### Frame#lookAt
+
+Positions camera view at `x`, `y`, and `z`.
+
+```js
+frame.lookAt(-176, 453, 118)
+```
+
 ## license
 
 MIT
+
