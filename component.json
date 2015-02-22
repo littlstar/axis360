@@ -1,6 +1,6 @@
 {
   "name": "slant-frame",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Core video frame API for slant",
   "scripts": [
     "index.js"
