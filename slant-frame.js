@@ -97,13 +97,21 @@ var three = require('three.js')
   , tpl = require('./template.html')
 
 // add three.CanvasRenderer
+Frame.THREE = three;
 require('three-canvas-renderer')(three);
 
 // default field of view
-var DEFAULT_FOV = 35;
+var DEFAULT_FOV = 50;
 
 // frame click threshold
 var FRAME_CLICK_THRESHOLD = 250;
+
+// min/max wheel distances
+var MIN_WHEEL_DISTANCE = 5;
+var MAX_WHEEL_DISTANCE = 500;
+
+// default projection
+var DEFAULT_PROJECTION = 'normal';
 
 /**
  * `Frame' constructor
@@ -204,8 +212,6 @@ function Frame (parent, opts) {
 
   this.material = null;
   this.texture = null;
-  this.mesh = null;
-  this.geo = null;
 
   if (opts.muted) {
     this.mute(true);
@@ -214,6 +220,7 @@ function Frame (parent, opts) {
   // viewport state
   this.state = {
     percentloaded: 0,
+    projection: 'normal',
     lastvolume: this.video.volume,
     timestamp: Date.now(),
     dragstart: {},
@@ -227,7 +234,8 @@ function Frame (parent, opts) {
     width: opts.width,
     muted: Boolean(opts.muted),
     ended: false,
-    wheel: false,
+    wheel: Boolean(opts.wheel),
+    cache: {},
     event: null,
     theta: 0,
     scroll: null == opts.scroll ? 0.09 : opts.scroll,
@@ -237,6 +245,62 @@ function Frame (parent, opts) {
     lon: 0,
     fov: opts.fov
   };
+
+  // viewport projections
+  this.projections = {
+    'normal': function () {
+      var geo = new three.SphereGeometry(500, 80, 50);
+      var material = new three.MeshBasicMaterial({map: self.texture});
+      var mesh = new three.Mesh(geo, material);
+      var width = self.width();
+      var height = self.height();
+      var fov = 110
+
+      mesh.scale.x = -1;
+      // init camera
+      self.camera = new three.PerspectiveCamera(
+        fov, (width / height) | 0, 0.1, 1100);
+
+      // add mesh to scene
+      self.scene = new three.Scene();
+      self.scene.add(mesh);
+
+      if ('little planet' == self.state.projection) {
+        self.state.lon = 0;
+        self.state.lat = 0;
+      }
+
+      self.camera.fov = DEFAULT_FOV;
+      self.state.fov = DEFAULT_FOV;
+      self.camera.updateProjectionMatrix();
+      self.refresh();
+    },
+
+    'little planet': function () {
+      var f = self.height() / 100;
+      self.projection('normal');
+      self.state.lat = -85;
+      self.state.lon = 0;
+      self.state.fov = f;
+      self.camera.setLens(f);
+      self.refresh();
+    },
+
+    'fish eye': function () { self.projections['fisheye'](); },
+    'fisheye': function () {
+      var z = self.height() / 100;
+      var fov = 75;
+      self.projection('normal');
+      self.camera.position.z = z;
+      self.state.fov = fov;
+      self.camera.fov = fov;
+      self.camera.updateProjectionMatrix();
+      self.refresh();
+    }
+  };
+
+  // set projection
+ this.projection(DEFAULT_PROJECTION);
 }
 
 // mixin `Emitter'
@@ -466,8 +530,8 @@ Frame.prototype.onmousemove = function (e) {
  */
 
 Frame.prototype.onmousewheel = function (e) {
-  var min = 3;
-  var max = 100;
+  var min = MIN_WHEEL_DISTANCE;
+  var max = MAX_WHEEL_DISTANCE;
   var vel = this.state.scroll; // velocity
 
   if ('number' != typeof this.state.scroll ||false == this.state.wheel) {
@@ -520,10 +584,13 @@ Frame.prototype.size = function (width, height) {
  */
 
 Frame.prototype.src = function (src) {
-  this.emit('source', src);
-  return (src ?
-    ((this.video.src = src), this) :
-    this.video.src);
+  if (src) {
+    this.video.src = src;
+    this.emit('source', src);
+    return this;
+  } else {
+    return this.video.src;
+  }
 };
 
 /**
@@ -618,6 +685,7 @@ Frame.prototype.refresh = function () {
       }
     }
   }
+
   this.emit('refresh');
   this.emit('state', this.state);
   return this.draw();
@@ -745,25 +813,18 @@ Frame.prototype.render = function () {
   // attach dom node to parent
   this.parent.appendChild(this.el);
 
+  // initialize texture
   this.texture = new three.Texture(this.video);
   this.texture.format = three.RGBFormat;
   this.texture.minFilter = three.LinearFilter;
   this.texture.magFilter = three.LinearFilter;
   this.texture.generateMipmaps = false;
 
-  this.geo = new three.SphereGeometry(500, 80, 50);
-  this.material = new three.MeshBasicMaterial({map: this.texture});
-  this.mesh = new three.Mesh(this.geo, this.material);
-  this.mesh.scale.x = -1; // mesh
-
+  // initialize size
   this.size(width, height);
 
-  // init camera
-  this.camera = new three.PerspectiveCamera(
-    fov, (width / height) | 0, 0.1, 1000);
-
-  // add mesh to scene
-  this.scene.add(this.mesh);
+  // initialize projection
+  this.projection(this.state.projection);
 
   // start refresh loop
   raf(function loop () {
@@ -821,6 +882,24 @@ Frame.prototype.width = function (width) {
   this.state.width = width;
   this.emit('width', width);
   return this;
+};
+
+/**
+ * Set or get projection
+ *
+ * @api public
+ * @param {String} type - optional
+ */
+
+Frame.prototype.projection = function (type) {
+  var fn = this.projections[type];
+  if (type && 'function' == typeof fn) {
+    fn(this);
+    this.state.projection = type;
+    return this;
+  } else {
+    return this.state.projection;
+  }
 };
 
 }, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"./template.html":8,"three-canvas-renderer":9}],
@@ -35417,14 +35496,15 @@ map.colgroup =
 map.caption =
 map.tfoot = [1, '<table>', '</table>'];
 
-map.text =
-map.circle =
+map.polyline =
 map.ellipse =
+map.polygon =
+map.circle =
+map.text =
 map.line =
 map.path =
-map.polygon =
-map.polyline =
-map.rect = [1, '<svg xmlns="http://www.w3.org/2000/svg" version="1.1">','</svg>'];
+map.rect =
+map.g = [1, '<svg xmlns="http://www.w3.org/2000/svg" version="1.1">','</svg>'];
 
 /**
  * Parse `html` and return a DOM Node instance, which could be a TextNode,
