@@ -9,7 +9,7 @@ var three = require('three.js')
   , events = require('events')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
-  , tpl = require('./template.html')
+  , tpl = require('./src/template.html')
 
 // add three.CanvasRenderer
 Frame.THREE = three;

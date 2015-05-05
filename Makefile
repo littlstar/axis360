@@ -1,35 +1,96 @@
 
+##
+# Node modules bin directory
+#
 BIN := node_modules/.bin
-JS = index.js
-CSS = frame.css
-TEMPLATE = template.html
-C8 = component.json
-JS_SRC = $(JS) $(TEMPLATE) $(C8)
 
+##
+# Path to `duo' bin file
+#
+DUO := $(BIN)/duo
+
+##
+# CSS source files
+#
+CSS := src/*.css
+
+##
+# Module source (js, html, json)
+#
+SRC := src/*.js src/*.html component.json
+
+##
+# Main javascript entry
+#
+MAIN = src/index.js
+
+##
+# Global namespace target
+#
+GLOBAL_NAMESPACE = SlantFrame
+
+##
+# Ensures parent directory is built
+#
+define BUILD_PARENT_DIRECTORY
+	mkdir -p $(dir $@)
+endef
+
+##
+# Builds everything
+#
+all: build dist
+
+##
+# Builds all files
+#
 build: build/build.js build/build.css
 
-dist: slant-frame.js slant-frame.css
+##
+# Builds javascript and html templates
+#
+build/build.js: node_modules $(SRC)
+	$(BUILD_PARENT_DIRECTORY)
+	$(DUO) --type js --development < $(MAIN) > $@
 
-build/build.js: node_modules $(JS_SRC)
-	@mkdir -p $(dir $@)
-	@$(BIN)/duo --type js --development < index.js > $@
-
+##
+# Builds CSS source files
+#
 build/build.css: node_modules $(CSS)
-	@mkdir -p $(dir $@)
-	@$(BIN)/duo --type css < frame.css > $@
+	$(BUILD_PARENT_DIRECTORY)
+	cat $(CSS) | $(DUO) --type css > $@
 
-slant-frame.js: node_modules $(JS_SRC)
-	@$(BIN)/duo --type js --global SlantFrame < index.js > $@
+##
+# Builds all dist files
+#
+dist: dist/slant-frame.js dist/slant-frame.css
 
-slant-frame.css: node_modules $(CSS)
-	@$(BIN)/duo --type css < frame.css > $@
+##
+# Builds javascript dist file
+#
+dist/slant-frame.js: node_modules $(SRC)
+	$(BUILD_PARENT_DIRECTORY)
+	$(DUO) --type js --global $(GLOBAL_NAMESPACE) < $(MAIN) > $@
 
+##
+# Builds CSS dist file
+#
+dist/slant-frame.css: node_modules $(CSS)
+	$(BUILD_PARENT_DIRECTORY)
+	cat $(CSS) | $(DUO) --type css > $@
+
+##
+# Builds node modules
+#
 node_modules: package.json
-	@npm install
-	@touch $@
+	npm install
 
+##
+# Cleans all built files
+#
+.PHONY: clean
 clean:
-	rm -rf build components
-	rm -f slant-frame.css slant-frame.js
+	rm -rf build
+	rm -rf components
+	rm -rf node_modules
 
-.PHONY: dist clean

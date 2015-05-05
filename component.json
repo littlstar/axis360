@@ -2,15 +2,10 @@
   "name": "slant-frame",
   "version": "0.1.6",
   "description": "Core video frame API for slant",
-  "scripts": [
-    "index.js"
-  ],
-  "styles": [
-    "frame.css"
-  ],
-  "templates": [
-    "template.html"
-  ],
+  "paths": ["src"],
+  "scripts": ["src/index.js"],
+  "styles": ["src/frame.css"],
+  "templates": ["src/template.html"],
   "dependencies": {
     "components/three.js": "*",
     "component/emitter": "*",
