@@ -94,7 +94,7 @@ var three = require('three.js')
   , events = require('events')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
-  , tpl = require('./template.html')
+  , tpl = require('./src/template.html')
 
 // add three.CanvasRenderer
 Frame.THREE = three;
@@ -902,7 +902,7 @@ Frame.prototype.projection = function (type) {
   }
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"./template.html":8,"three-canvas-renderer":9}],
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"./src/template.html":8,"three-canvas-renderer":9}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
