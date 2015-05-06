@@ -152,8 +152,10 @@ function Frame (parent, opts) {
     resizable: opts.resizable ? true : false,
     dragstart: {},
     inverted: (opts.inverted || opts.invertMouse) ? true : false,
+    keyboard: false !== opts.keyboard ? true : false,
     duration: 0,
     dragloop: null,
+    keydown: false,
     playing: false,
     paused: false,
     dragpos: [],
@@ -229,6 +231,11 @@ function Frame (parent, opts) {
 
   // set projection
  this.projection(DEFAULT_PROJECTION);
+
+ // enable keyboard control if not disabled
+ if (false !== opts.keyboard) {
+   var k = require('k')(this.el);
+ }
 }
 
 // mixin `Emitter'
