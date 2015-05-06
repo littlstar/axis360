@@ -9,6 +9,7 @@ var three = require('three.js')
   , events = require('events')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
+  , fullscreen = require('fullscreen')
   , tpl = require('./src/template.html')
 
 // add three.CanvasRenderer
@@ -86,6 +87,9 @@ function Frame (parent, opts) {
   // event delagation
   this.events = {};
 
+  // enable fullscreen callback
+  fullscreen.on('change', this.onfullscreenchange.bind(this));
+
   // init window events
   this.events.window = events(this.window, this);
   this.events.window.bind('resize');
@@ -142,16 +146,21 @@ function Frame (parent, opts) {
   // viewport state
   this.state = {
     percentloaded: 0,
-    originalSize: {
+    originalsize: {
       width: null,
       height: null
     },
     projection: 'normal',
     lastvolume: this.video.volume,
+    fullscreen: false,
     timestamp: Date.now(),
     resizable: opts.resizable ? true : false,
     dragstart: {},
     duration: 0,
+    lastsize: {
+      width: null,
+      height: null
+    },
     dragloop: null,
     playing: false,
     paused: false,
@@ -441,20 +450,21 @@ Frame.prototype.onresize = function (e) {
     var aspectRatio = canvasWidth / canvasHeight;
     var resized = false;
 
-    // adjust for width (then check for height)
+    // adjust for width while accounting for height
     if (canvasWidth > containerWidth ||
         canvasWidth < containerWidth &&
-        canvasWidth < this.state.originalSize.width) {
+        canvasWidth < this.state.originalsize.width) {
       var newWidth = containerWidth;
       var newHeight = containerWidth / aspectRatio;
       resized = true;
     } else if (canvasHeight > containerHeight ||
         (canvasHeight > containerHeight &&
-        canvasHeight < this.state.originalSize.height)) {
+        canvasHeight < this.state.originalsize.height)) {
       var newHeight = containerHeight;
       var newWidth = containerHeight * aspectRatio;
       resized = true;
     }
+
     if (resized) {
       this.size(newWidth, newHeight);
       this.emit('resize', {
@@ -462,6 +472,33 @@ Frame.prototype.onresize = function (e) {
         height: this.state.height
       });
     }
+  }
+};
+
+
+/**
+ * Handle `onfullscreenchange' event
+ *
+ * @api private
+ * @param {Boolean} fullscreen
+ */
+
+Frame.prototype.onfullscreenchange = function(fullscreen) {
+  if (fullscreen) {
+    this.state.fullscreen = true;
+    this.emit('enterfullscreen');
+  } else {
+    this.size(this.state.lastsize.width, this.state.lastsize.height);
+    this.emit('resize', {
+      width: this.state.lastsize.width,
+      height: this.state.lastsize.height
+    });
+
+    this.state.fullscreen = false;
+    this.state.lastsize.width = null;
+    this.state.lastsize.height = null;
+
+    this.emit('exitfullscreen');
   }
 };
 
@@ -544,11 +581,11 @@ Frame.prototype.size = function (width, height) {
   this.renderer.setSize(
     (this.state.width = width),
     (this.state.height = height));
-    if (this.state.originalSize.width == null) {
-      this.state.originalSize.width = width;
+    if (this.state.originalsize.width == null) {
+      this.state.originalsize.width = width;
     }
-    if (this.state.originalSize.height == null) {
-      this.state.originalSize.height = height;
+    if (this.state.originalsize.height == null) {
+      this.state.originalsize.height = height;
     }
   return this;
 };
@@ -593,6 +630,37 @@ Frame.prototype.play = function () {
 Frame.prototype.pause = function () {
   this.video.pause();
   return this;
+};
+
+/**
+ * Takes video to fullscreen
+ *
+ * @api public
+ */
+
+Frame.prototype.fullscreen = function () {
+  if (! fullscreen.supported) return;
+  if (! this.state.fullscreen) {
+    var canvasStyle = getComputedStyle(this.renderer.domElement);
+    var canvasWidth = parseFloat(canvasStyle.width);
+    var canvasHeight = parseFloat(canvasStyle.height);
+    var aspectRatio = canvasWidth / canvasHeight;
+    var windowWidth = this.window.innerWidth;
+
+    this.state.lastsize.width = canvasWidth;
+    this.state.lastsize.height = canvasHeight;
+
+    newWidth = windowWidth;
+    newHeight = newWidth / aspectRatio;
+
+    this.size(newWidth, newHeight);
+    this.emit('resize', {
+      width: newWidth,
+      height: newHeight
+    });
+
+    fullscreen(this.renderer.domElement);
+  }
 };
 
 /**
