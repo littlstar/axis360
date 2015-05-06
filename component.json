@@ -7,12 +7,13 @@
   "styles": ["src/frame.css"],
   "templates": ["src/template.html"],
   "dependencies": {
+    "littlstar/three-canvas-renderer": "*",
     "components/three.js": "*",
     "component/emitter": "*",
     "component/events": "*",
     "component/domify": "*",
     "component/raf": "*",
     "jb55/has-webgl": "*",
-    "littlstar/three-canvas-renderer": "*"
+    "timoxley/offset": "*"
   }
 }
