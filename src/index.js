@@ -55,9 +55,6 @@ function Frame (parent, opts) {
   // parent DOM node
   this.parent = parent;
 
-  // window object (used for resizing)
-  this.window = window;
-
   // set defualt FOV
   if ('undefined' == typeof opts.pov) {
     opts.fov = opts.fieldOfView || DEFAULT_FOV;
@@ -91,7 +88,7 @@ function Frame (parent, opts) {
   fullscreen.on('change', this.onfullscreenchange.bind(this));
 
   // init window events
-  this.events.window = events(this.window, this);
+  this.events.window = events(window, this);
   this.events.window.bind('resize');
 
   // init video events
@@ -493,11 +490,9 @@ Frame.prototype.onfullscreenchange = function(fullscreen) {
       width: this.state.lastsize.width,
       height: this.state.lastsize.height
     });
-
     this.state.fullscreen = false;
     this.state.lastsize.width = null;
     this.state.lastsize.height = null;
-
     this.emit('exitfullscreen');
   }
 };
@@ -636,22 +631,30 @@ Frame.prototype.pause = function () {
  * Takes video to fullscreen
  *
  * @api public
+ * @param {Boolean} maintainaspectratio
  */
 
-Frame.prototype.fullscreen = function () {
+Frame.prototype.fullscreen = function (maintainAspectRatio) {
   if (! fullscreen.supported) return;
+  if (typeof maintainAspectRatio !== 'boolean') maintainAspectRatio = false;
   if (! this.state.fullscreen) {
     var canvasStyle = getComputedStyle(this.renderer.domElement);
     var canvasWidth = parseFloat(canvasStyle.width);
     var canvasHeight = parseFloat(canvasStyle.height);
     var aspectRatio = canvasWidth / canvasHeight;
-    var windowWidth = this.window.innerWidth;
+    var newWidth = null;
+    var newHeight = null;
+
+    if (maintainAspectRatio) {
+      newWidth = window.innerWidth;
+      newHeight = newWidth / aspectRatio;
+    } else {
+      newWidth = window.screen.width;
+      newHeight = window.screen.height;
+    }
 
     this.state.lastsize.width = canvasWidth;
     this.state.lastsize.height = canvasHeight;
-
-    newWidth = windowWidth;
-    newHeight = newWidth / aspectRatio;
 
     this.size(newWidth, newHeight);
     this.emit('resize', {
