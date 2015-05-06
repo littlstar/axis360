@@ -263,6 +263,7 @@ function Frame (parent, opts) {
     resizable: opts.resizable ? true : false,
     dragstart: {},
     animating: false,
+    inverted: (opts.inverted || opts.invertMouse) ? true : false,
     duration: 0,
     dragloop: null,
     playing: false,
@@ -697,12 +698,17 @@ Frame.prototype.onmousemove = function (e) {
     this.state.dragstart.x = e.pageX;
     this.state.dragstart.y = e.pageY;
 
-    this.state.lon += x;
-    this.state.lat -= y;
-
     if (PROJECTION_LITTLE_PLANET != this.state.projection) {
       this.state.cache.lat = this.state.lat;
       this.state.cache.lon = this.state.lon;
+    }
+
+    if (this.state.inverted) {
+      this.state.lon -= x;
+      this.state.lat += y;
+    } else {
+      this.state.lon += x;
+      this.state.lat -= y;
     }
   }
 
