@@ -94,6 +94,7 @@ var three = require('three.js')
   , events = require('events')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
+  , fullscreen = require('fullscreen')
   , tpl = require('./src/template.html')
 
 // add three.CanvasRenderer
@@ -171,6 +172,9 @@ function Frame (parent, opts) {
   // event delagation
   this.events = {};
 
+  // enable fullscreen callback
+  fullscreen.on('change', this.onfullscreenchange.bind(this));
+
   // init window events
   this.events.window = events(this.window, this);
   this.events.window.bind('resize');
@@ -227,16 +231,21 @@ function Frame (parent, opts) {
   // viewport state
   this.state = {
     percentloaded: 0,
-    originalSize: {
+    originalsize: {
       width: null,
       height: null
     },
     projection: 'normal',
     lastvolume: this.video.volume,
+    fullscreen: false,
     timestamp: Date.now(),
     resizable: opts.resizable ? true : false,
     dragstart: {},
     duration: 0,
+    lastsize: {
+      width: null,
+      height: null
+    },
     dragloop: null,
     playing: false,
     paused: false,
@@ -526,20 +535,21 @@ Frame.prototype.onresize = function (e) {
     var aspectRatio = canvasWidth / canvasHeight;
     var resized = false;
 
-    // adjust for width (then check for height)
+    // adjust for width while accounting for height
     if (canvasWidth > containerWidth ||
         canvasWidth < containerWidth &&
-        canvasWidth < this.state.originalSize.width) {
+        canvasWidth < this.state.originalsize.width) {
       var newWidth = containerWidth;
       var newHeight = containerWidth / aspectRatio;
       resized = true;
     } else if (canvasHeight > containerHeight ||
         (canvasHeight > containerHeight &&
-        canvasHeight < this.state.originalSize.height)) {
+        canvasHeight < this.state.originalsize.height)) {
       var newHeight = containerHeight;
       var newWidth = containerHeight * aspectRatio;
       resized = true;
     }
+
     if (resized) {
       this.size(newWidth, newHeight);
       this.emit('resize', {
@@ -547,6 +557,33 @@ Frame.prototype.onresize = function (e) {
         height: this.state.height
       });
     }
+  }
+};
+
+
+/**
+ * Handle `onfullscreenchange' event
+ *
+ * @api private
+ * @param {Boolean} fullscreen
+ */
+
+Frame.prototype.onfullscreenchange = function(fullscreen) {
+  if (fullscreen) {
+    this.state.fullscreen = true;
+    this.emit('enterfullscreen');
+  } else {
+    this.size(this.state.lastsize.width, this.state.lastsize.height);
+    this.emit('resize', {
+      width: this.state.lastsize.width,
+      height: this.state.lastsize.height
+    });
+
+    this.state.fullscreen = false;
+    this.state.lastsize.width = null;
+    this.state.lastsize.height = null;
+
+    this.emit('exitfullscreen');
   }
 };
 
@@ -629,11 +666,11 @@ Frame.prototype.size = function (width, height) {
   this.renderer.setSize(
     (this.state.width = width),
     (this.state.height = height));
-    if (this.state.originalSize.width == null) {
-      this.state.originalSize.width = width;
+    if (this.state.originalsize.width == null) {
+      this.state.originalsize.width = width;
     }
-    if (this.state.originalSize.height == null) {
-      this.state.originalSize.height = height;
+    if (this.state.originalsize.height == null) {
+      this.state.originalsize.height = height;
     }
   return this;
 };
@@ -678,6 +715,37 @@ Frame.prototype.play = function () {
 Frame.prototype.pause = function () {
   this.video.pause();
   return this;
+};
+
+/**
+ * Takes video to fullscreen
+ *
+ * @api public
+ */
+
+Frame.prototype.fullscreen = function () {
+  if (! fullscreen.supported) return;
+  if (! this.state.fullscreen) {
+    var canvasStyle = getComputedStyle(this.renderer.domElement);
+    var canvasWidth = parseFloat(canvasStyle.width);
+    var canvasHeight = parseFloat(canvasStyle.height);
+    var aspectRatio = canvasWidth / canvasHeight;
+    var windowWidth = this.window.innerWidth;
+
+    this.state.lastsize.width = canvasWidth;
+    this.state.lastsize.height = canvasHeight;
+
+    newWidth = windowWidth;
+    newHeight = newWidth / aspectRatio;
+
+    this.size(newWidth, newHeight);
+    this.emit('resize', {
+      width: newWidth,
+      height: newHeight
+    });
+
+    fullscreen(this.renderer.domElement);
+  }
 };
 
 /**
@@ -976,7 +1044,7 @@ Frame.prototype.projection = function (type) {
   }
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"./src/template.html":8,"three-canvas-renderer":9}],
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"./src/template.html":9,"three-canvas-renderer":10}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
@@ -35978,8 +36046,8 @@ function parse(event) {
   }
 }
 
-}, {"event":10,"delegate":11}],
-10: [function(require, module, exports) {
+}, {"event":11,"delegate":12}],
+11: [function(require, module, exports) {
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
     prefix = bind !== 'addEventListener' ? 'on' : '';
@@ -36016,7 +36084,7 @@ exports.unbind = function(el, type, fn, capture){
   return fn;
 };
 }, {}],
-11: [function(require, module, exports) {
+12: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36060,8 +36128,8 @@ exports.unbind = function(el, type, fn, capture){
   event.unbind(el, type, fn, capture);
 };
 
-}, {"closest":12,"event":10}],
-12: [function(require, module, exports) {
+}, {"closest":13,"event":11}],
+13: [function(require, module, exports) {
 var matches = require('matches-selector')
 
 module.exports = function (element, selector, checkYoSelf, root) {
@@ -36082,8 +36150,8 @@ module.exports = function (element, selector, checkYoSelf, root) {
   }
 }
 
-}, {"matches-selector":13}],
-13: [function(require, module, exports) {
+}, {"matches-selector":14}],
+14: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36131,8 +36199,8 @@ function match(el, selector) {
   return false;
 }
 
-}, {"query":14}],
-14: [function(require, module, exports) {
+}, {"query":15}],
+15: [function(require, module, exports) {
 function one(selector, el) {
   return el.querySelector(selector);
 }
@@ -36211,9 +36279,92 @@ module.exports = (function() {
 
 }, {}],
 8: [function(require, module, exports) {
+
+/**
+ * Module dependencies.
+ */
+
+var Emitter = require('emitter');
+
+/**
+ * Expose `fullscreen()`.
+ */
+
+exports = module.exports = fullscreen;
+
+/**
+ * Mixin emitter.
+ */
+
+Emitter(exports);
+
+/**
+ * document element.
+ */
+
+var element = document.documentElement;
+
+/**
+ * fullscreen supported flag.
+ */
+
+exports.supported = !!(element.requestFullscreen
+  || element.webkitRequestFullscreen
+  || element.mozRequestFullScreen);
+
+/**
+ * Enter fullscreen mode for `el`.
+ *
+ * @param {Element} [el]
+ * @api public
+ */
+
+function fullscreen(el){
+  el = el || element;
+  if (el.requestFullscreen) return el.requestFullscreen();
+  if (el.mozRequestFullScreen) return el.mozRequestFullScreen();
+  if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+}
+
+/**
+ * Exit fullscreen.
+ *
+ * @api public
+ */
+
+exports.exit = function(){
+  var doc = document;
+  if (doc.exitFullscreen) return doc.exitFullscreen();
+  if (doc.mozCancelFullScreen) return doc.mozCancelFullScreen();
+  if (doc.webkitCancelFullScreen) return doc.webkitCancelFullScreen();
+};
+
+/**
+ * Change handler function.
+ */
+
+function change(prop) {
+  return function(){
+    var val = document[prop];
+    exports.emit('change', val);
+  }
+}
+
+/**
+ * Handle events.
+ */
+
+if (document.addEventListener) {
+  document.addEventListener('fullscreenchange', change('fullscreen'));
+  document.addEventListener('mozfullscreenchange', change('mozFullScreen'));
+  document.addEventListener('webkitfullscreenchange', change('webkitIsFullScreen'));
+}
+
+}, {"emitter":4}],
+9: [function(require, module, exports) {
 module.exports = '<section class="slant frame">\n  <div class="slant container">\n    <video class="slant"></video>\n  </div>\n</section>\n';
 }, {}],
-9: [function(require, module, exports) {
+10: [function(require, module, exports) {
 
 /**
  * Add CanvasRenderer stuff to the given `THREE` instance.

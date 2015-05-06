@@ -12,6 +12,7 @@
     "component/events": "*",
     "component/domify": "*",
     "component/raf": "*",
+    "component/fullscreen": "*",
     "jb55/has-webgl": "*",
     "littlstar/three-canvas-renderer": "*"
   }
