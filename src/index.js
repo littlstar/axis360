@@ -48,7 +48,7 @@ var MAX_LAT_VALUE = 85;
 
 // projection types
 var PROJECTION_NORMAL = 'normal';
-var PROJECTION_LITTLE_PLANET = 'little planet';
+var PROJECTION_LITTLE_PLANET = 'littleplanet';
 var PROJECTION_FISHEYE = 'fisheye';
 
 // default projection
@@ -80,6 +80,9 @@ function Frame (parent, opts) {
   // parent DOM node
   this.parent = parent;
 
+  // window object (used for resizing)
+  this.window = window;
+
   // set defualt FOV
   if ('undefined' == typeof opts.fov) {
     opts.fov = opts.fieldOfView || DEFAULT_FOV;
@@ -108,6 +111,10 @@ function Frame (parent, opts) {
 
   // event delagation
   this.events = {};
+
+  // init window events
+  this.events.window = events(this.window, this);
+  this.events.window.bind('resize');
 
   // init video events
   this.events.video = events(this.video, this);
@@ -161,9 +168,14 @@ function Frame (parent, opts) {
   // viewport state
   this.state = {
     percentloaded: 0,
+    originalSize: {
+      width: null,
+      height: null
+    },
     projection: 'normal',
     lastvolume: this.video.volume,
     timestamp: Date.now(),
+    resizable: opts.resizable ? true : false,
     dragstart: {},
     animating: false,
     duration: 0,
@@ -539,6 +551,50 @@ Frame.prototype.onmouseup = function (e) {
 };
 
 /**
+ * Handle `onresize' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.onresize = function (e) {
+  if (this.state.resizable) {
+    var containerStyle = getComputedStyle(this.el);
+    var canvasStyle = getComputedStyle(this.renderer.domElement);
+    var containerWidth = parseFloat(containerStyle.width);
+    var containerHeight = parseFloat(containerStyle.width);
+    var canvasWidth = parseFloat(canvasStyle.width);
+    var canvasHeight = parseFloat(canvasStyle.height);
+    var aspectRatio = canvasWidth / canvasHeight;
+    var resized = false;
+    var newWidth = 0;
+    var newHeight = 0;
+
+    // adjust for width (then check for height)
+    if (canvasWidth > containerWidth ||
+        canvasWidth < containerWidth &&
+        canvasWidth < this.state.originalSize.width) {
+      newWidth = containerWidth;
+      newHeight = containerWidth / aspectRatio;
+      resized = true;
+    } else if (canvasHeight > containerHeight ||
+        (canvasHeight > containerHeight &&
+        canvasHeight < this.state.originalSize.height)) {
+      newHeight = containerHeight;
+      newWidth = containerHeight * aspectRatio;
+      resized = true;
+    }
+    if (resized) {
+      this.size(newWidth, newHeight);
+      this.emit('resize', {
+        width: this.state.width,
+        height: this.state.height
+      });
+    }
+  }
+};
+
+/**
  * Handle `onmousemove' event
  *
  * @api private
@@ -617,9 +673,17 @@ Frame.prototype.onmousewheel = function (e) {
 
 Frame.prototype.size = function (width, height) {
   this.emit('size', width, height);
+  this.camera.aspect = width / height;
+  this.camera.updateProjectionMatrix();
   this.renderer.setSize(
     (this.state.width = width),
     (this.state.height = height));
+    if (this.state.originalSize.width == null) {
+      this.state.originalSize.width = width;
+    }
+    if (this.state.originalSize.height == null) {
+      this.state.originalSize.height = height;
+    }
   return this;
 };
 
@@ -749,6 +813,18 @@ Frame.prototype.refresh = function () {
 };
 
 /**
+ * Refresh frame
+ *
+ * @api public
+ */
+
+Frame.prototype.resizable = function(resizable) {
+  if (typeof resizable === 'undefined') return this.state.resizable;
+  this.state.resizable = resizable;
+  return this;
+};
+
+/**
  * Seek to time in seconds
  *
  * @api public
@@ -866,13 +942,16 @@ Frame.prototype.render = function () {
   var style = getComputedStyle(this.parent);
   var fov = this.state.fov;
   var width = this.state.width || parseFloat(style.width);
-  var height = this.state.height || parseFloat(style.height)
+  var height = this.state.height || parseFloat(style.height);
+  var aspectRatio = 0;
 
   // attach dom node to parent
   this.parent.appendChild(this.el);
 
   if (0 == height) {
-    height = Math.min(width, window.innerHeight) - offset(this.el).top;
+    height = Math.min(width, window.innerHeight);
+    aspectRatio = width / height;
+    height = height / aspectRatio;
   }
 
   // initialize texture
@@ -955,6 +1034,7 @@ Frame.prototype.width = function (width) {
  */
 
 Frame.prototype.projection = function (type, cb) {
+  type = type ? type.replace(/\s+/g, '') : null;
   var fn = this.projections[type];
   if (type && 'function' == typeof fn) {
     fn(this, cb);
