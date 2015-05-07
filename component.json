@@ -17,6 +17,7 @@
     "jb55/has-webgl": "*",
     "littlstar/three-canvas-renderer": "*",
     "yields/keycode": "*",
-    "timoxley/offset": "*"
+    "timoxley/offset": "*",
+    "component/event": "*"
   }
 }
