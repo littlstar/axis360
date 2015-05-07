@@ -11,13 +11,27 @@ var three = require('three.js')
   , hasWebGL = require('has-webgl')
   , fullscreen = require('fullscreen')
   , tpl = require('./src/template.html')
+  , offset = require('offset')
+
+/**
+ * Outputs debug info if `window.DEBUG' is
+ * defined
+ *
+ * @api private
+ */
+
+function debug () {
+  if (window.DEBUG) {
+    console.debug.apply(console, arguments);
+  }
+}
 
 // add three.CanvasRenderer
 Frame.THREE = three;
 require('three-canvas-renderer')(three);
 
 // default field of view
-var DEFAULT_FOV = 50;
+var DEFAULT_FOV = 40;
 
 // frame click threshold
 var FRAME_CLICK_THRESHOLD = 250;
@@ -26,8 +40,20 @@ var FRAME_CLICK_THRESHOLD = 250;
 var MIN_WHEEL_DISTANCE = 5;
 var MAX_WHEEL_DISTANCE = 500;
 
+// max little planet projection camera lens value
+var MAX_LITTLE_PLANET_CAMERA_LENS_VALUE = 7.5;
+
+// min/max lat/lon values
+var MIN_LAT_VALUE = -85;
+var MAX_LAT_VALUE = 85;
+
+// projection types
+var PROJECTION_NORMAL = 'normal';
+var PROJECTION_LITTLE_PLANET = 'littleplanet';
+var PROJECTION_FISHEYE = 'fisheye';
+
 // default projection
-var DEFAULT_PROJECTION = 'normal';
+var DEFAULT_PROJECTION = PROJECTION_NORMAL;
 
 /**
  * `Frame' constructor
@@ -56,7 +82,7 @@ function Frame (parent, opts) {
   this.parent = parent;
 
   // set defualt FOV
-  if ('undefined' == typeof opts.pov) {
+  if ('undefined' == typeof opts.fov) {
     opts.fov = opts.fieldOfView || DEFAULT_FOV;
   }
 
@@ -153,6 +179,7 @@ function Frame (parent, opts) {
     timestamp: Date.now(),
     resizable: opts.resizable ? true : false,
     dragstart: {},
+    animating: false,
     inverted: (opts.inverted || opts.invertMouse) ? true : false,
     duration: 0,
     lastsize: {
@@ -181,56 +208,156 @@ function Frame (parent, opts) {
   };
 
   // viewport projections
-  this.projections = {
-    'normal': function () {
-      var geo = new three.SphereGeometry(500, 80, 50);
-      var material = new three.MeshBasicMaterial({map: self.texture});
-      var mesh = new three.Mesh(geo, material);
-      var width = self.width();
-      var height = self.height();
-      var fov = 110
+  this.projections = {};
+  this.projections[PROJECTION_NORMAL] = function normal (_, cb) {
+    var geo = new three.SphereGeometry(500, 80, 50);
+    var material = new three.MeshBasicMaterial({map: self.texture});
+    var mesh = new three.Mesh(geo, material);
+    var width = self.width();
+    var height = self.height();
+    var fov = self.state.fov;
+    var projection = self.state.projection;
 
-      mesh.scale.x = -1;
-      // init camera
-      self.camera = new three.PerspectiveCamera(
-        fov, (width / height) | 0, 0.1, 1100);
+    //self.state.fov = DEFAULT_FOV;
+    mesh.scale.x = -1;
+    // init camera
+    self.camera = new three.PerspectiveCamera(DEFAULT_FOV,
+                                              (width / height),
+                                              0.1, 1100);
 
-      // add mesh to scene
-      self.scene = new three.Scene();
-      self.scene.add(mesh);
+    // add mesh to scene
+    self.scene = new three.Scene();
+    self.scene.add(mesh);
 
-      if ('little planet' == self.state.projection) {
-        self.state.lon = 0;
-        self.state.lat = 0;
+    self.state.animating = true;
+    raf(function animate () {
+      if (PROJECTION_LITTLE_PLANET == projection) {
+        self.state.lon = self.state.cache.lon;
+        self.state.lat = self.state.cache.lat;
+      }
+      var factor = 6;
+      if (false == self.state.animating) { return; }
+      debug("animate: NORMAL");
+      if (DEFAULT_FOV == self.state.fov && 0 == self.state.lon && 0 == self.state.lat) {
+        self.state.animating = false;
+        self.refresh();
+        if ('function' == typeof cb) { cb(); }
+        return;
       }
 
-      self.camera.fov = DEFAULT_FOV;
-      self.state.fov = DEFAULT_FOV;
-      self.camera.updateProjectionMatrix();
-      self.refresh();
-    },
+      if (fov > DEFAULT_FOV) {
+        fov -= factor;
+        fov = Math.max(fov, DEFAULT_FOV);
+      } else if (fov < DEFAULT_FOV) {
+        fov += factor;
+        fov = Math.min(fov, DEFAULT_FOV);
+      } else {
+        fov = DEFAULT_FOV;
+      }
 
-    'little planet': function () {
-      var f = self.height() / 100;
-      self.projection('normal');
-      self.state.lat = -85;
-      self.state.lon = 0;
-      self.state.fov = f;
-      self.camera.setLens(f);
-      self.refresh();
-    },
-
-    'fish eye': function () { self.projections['fisheye'](); },
-    'fisheye': function () {
-      var z = self.height() / 100;
-      var fov = 75;
-      self.projection('normal');
-      self.camera.position.z = z;
       self.state.fov = fov;
-      self.camera.fov = fov;
-      self.camera.updateProjectionMatrix();
+
+      if (PROJECTION_LITTLE_PLANET == projection) {
+        if (self.state.lon > 0) {
+          self.state.lon -= factor;
+          self.state.lon = Math.max(0, self.state.lon);
+        } else if (self.state.lon < 0) {
+          self.state.lon += factor;
+          self.state.lon = Math.min(0, self.state.lon);
+        }
+
+        if (self.state.lat > 0) {
+          self.state.lat -= factor;
+          self.state.lat = Math.max(0, self.state.lat);
+        } else if (self.state.lat < 0) {
+          self.state.lat += factor;
+          self.state.lat = Math.min(0, self.state.lat);
+        }
+      }
+
       self.refresh();
+      raf(animate);
+
+    });
+  };
+
+  this.projections[PROJECTION_LITTLE_PLANET] = function littleplanet (_, cb) {
+    if (PROJECTION_LITTLE_PLANET != self.state.projection) {
+      self.state.cache.lon = self.state.lon;
+      self.state.cache.lat = self.state.lat;
     }
+    self.state.animating = true;
+    raf(function animate () {
+      var factor = 6;
+      if (false == self.state.animating) { return; }
+      debug("animate: LITTLE_PLANET");
+      if (self.state.lat > MIN_LAT_VALUE || self.state.lon != 0) {
+        self.state.animating = true;
+
+        if (self.state.lat > MIN_LAT_VALUE) {
+          self.state.lat -= factor;
+        } else {
+          self.state.lat = MIN_LAT_VALUE;
+        }
+
+        if (self.state.lon > 0) {
+          self.state.lon -= factor;
+          self.state.lon = Math.max(0, self.state.lon);
+        } else if (self.state.lon < 0) {
+          self.state.lon += factor;
+          self.state.lon = Math.min(0, self.state.lon);
+        }
+
+        self.camera.setLens(MAX_LITTLE_PLANET_CAMERA_LENS_VALUE);
+        self.state.fov = self.camera.fov;
+        raf(animate);
+      } else {
+        self.state.animating = false;
+        self.refresh();
+        if ('function' == typeof cb) { cb(); }
+      }
+    });
+  };
+
+  this.projections[PROJECTION_FISHEYE] = function () {
+    var z = (self.height() / 100)|0;
+    var f = 6;
+    var fov = 75;
+
+    self.state.lon = self.state.cache.lon;
+    self.state.lat = self.state.cache.lat;
+
+    self.state.animating = true;
+
+    raf(function animate () {
+      if (false == self.state.animating) { return; }
+      debug("animate: FISHEYE");
+      if (fov == self.state.fov) {
+        self.state.animating = false;
+        self.refresh();
+        if ('function' == typeof cb) { cb(); }
+        return;
+      }
+
+      if (self.state.fov < fov) {
+        self.state.fov += f;
+        self.state.fov = Math.min(fov, self.state.fov);
+      } else if (self.state.fov > fov) {
+        self.state.fov -= f;
+        self.state.fov = Math.max(fov, self.state.fov);
+      }
+
+      if (self.camera.position.z < z) {
+        self.camera.position.z++;
+        self.camera.position.z = Math.min(z, self.camera.position.z);
+      } else if (self.camera.position.z > z) {
+        self.camera.position.z--;
+        self.camera.position.z = Math.max(z, self.camera.position.z);
+      }
+
+      self.refresh();
+      raf(animate);
+    });
   };
 
   // set projection
@@ -447,19 +574,21 @@ Frame.prototype.onresize = function (e) {
     var canvasHeight = parseFloat(canvasStyle.height);
     var aspectRatio = canvasWidth / canvasHeight;
     var resized = false;
+    var newWidth = 0;
+    var newHeight = 0;
 
     // adjust for width while accounting for height
     if (canvasWidth > containerWidth ||
         canvasWidth < containerWidth &&
         canvasWidth < this.state.originalsize.width) {
-      var newWidth = containerWidth;
-      var newHeight = containerWidth / aspectRatio;
+      newWidth = containerWidth;
+      newHeight = containerWidth / aspectRatio;
       resized = true;
     } else if (canvasHeight > containerHeight ||
         (canvasHeight > containerHeight &&
         canvasHeight < this.state.originalsize.height)) {
-      var newHeight = containerHeight;
-      var newWidth = containerHeight * aspectRatio;
+      newHeight = containerHeight;
+      newWidth = containerHeight * aspectRatio;
       resized = true;
     }
 
@@ -522,6 +651,11 @@ Frame.prototype.onmousemove = function (e) {
     } else {
       this.state.lon += x;
       this.state.lat -= y;
+    }
+
+    if (PROJECTION_LITTLE_PLANET != this.state.projection) {
+      this.state.cache.lat = this.state.lat;
+      this.state.cache.lon = this.state.lon;
     }
   }
 
@@ -740,6 +874,16 @@ Frame.prototype.refresh = function () {
     }
   }
 
+  if (this.camera) {
+    this.camera.fov = this.state.fov;
+    this.camera.updateProjectionMatrix();
+  }
+
+  if (PROJECTION_LITTLE_PLANET != this.state.projection) {
+    this.state.cache.lat = this.state.lat;
+    this.state.cache.lon = this.state.lon;
+  }
+
   this.emit('refresh');
   this.emit('state', this.state);
   return this.draw();
@@ -822,7 +966,7 @@ Frame.prototype.draw = function () {
   var renderer = this.renderer;
 
   var theta = this.state.theta = this.state.lon * Math.PI / 180;
-  var lat = this.state.lat = Math.max(-85, Math.min(85, this.state.lat));
+  var lat = this.state.lat = Math.max(MIN_LAT_VALUE, Math.min(85, this.state.lat));
   var phi = this.state.phi = (90 - this.state.lat) * Math.PI / 180;
 
   var x = 500 * Math.sin(this.state.phi) * Math.cos(this.state.theta);
@@ -865,6 +1009,7 @@ Frame.prototype.lookAt = function (x, y, z) {
 };
 
 /**
+ * Renders the frame
  *
  * @api public
  */
@@ -873,11 +1018,18 @@ Frame.prototype.render = function () {
   var self = this;
   var style = getComputedStyle(this.parent);
   var fov = this.state.fov;
-  var height = this.state.height || parseFloat(style.height);
   var width = this.state.width || parseFloat(style.width);
+  var height = this.state.height || parseFloat(style.height);
+  var aspectRatio = 0;
 
   // attach dom node to parent
   this.parent.appendChild(this.el);
+
+  if (0 == height) {
+    height = Math.min(width, window.innerHeight);
+    aspectRatio = width / height;
+    height = height / aspectRatio;
+  }
 
   // initialize texture
   this.texture = new three.Texture(this.video);
@@ -955,12 +1107,14 @@ Frame.prototype.width = function (width) {
  *
  * @api public
  * @param {String} type - optional
+ * @param {Function} cb - optional
  */
 
-Frame.prototype.projection = function (type) {
+Frame.prototype.projection = function (type, cb) {
+  type = type ? type.replace(/\s+/g, '') : null;
   var fn = this.projections[type];
   if (type && 'function' == typeof fn) {
-    fn(this);
+    fn(this, cb);
     this.state.projection = type;
     return this;
   } else {
