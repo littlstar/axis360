@@ -18,6 +18,6 @@
     "littlstar/three-canvas-renderer": "*",
     "yields/keycode": "*",
     "timoxley/offset": "*",
-    "component/event": "*"
+    "component/path": "*"
   }
 }
