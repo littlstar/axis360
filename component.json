@@ -7,6 +7,7 @@
   "styles": ["src/frame.css"],
   "templates": ["src/template.html"],
   "dependencies": {
+    "littlstar/three-canvas-renderer": "*",
     "components/three.js": "*",
     "component/emitter": "*",
     "component/events": "*",
@@ -14,6 +15,7 @@
     "component/raf": "*",
     "jb55/has-webgl": "*",
     "littlstar/three-canvas-renderer": "*",
-    "yields/keycode": "*"
+    "yields/keycode": "*",
+    "timoxley/offset": "*"
   }
 }
