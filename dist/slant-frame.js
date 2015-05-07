@@ -290,8 +290,10 @@ function Frame (parent, opts) {
   this.events.element.bind('mousemove');
   this.events.element.bind('mousewheel');
   this.events.element.bind('mousedown');
-  this.events.element.bind('touchstart', 'onmousedown');
   this.events.element.bind('mouseup');
+  this.events.element.bind('touchmove');
+  this.events.element.bind('touchstart');
+  this.events.element.bind('touchend');
 
   // init scene
   this.scene = new three.Scene();
@@ -720,6 +722,35 @@ Frame.prototype.onmouseup = function (e) {
 };
 
 /**
+ * Handle `ontouchstart' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.ontouchstart = function (e) {
+  if (e.touches.length) {
+    this.state.mousedownts = Date.now();
+    this.state.dragstart.x = e.touches[0].pageX;
+    this.state.dragstart.y = e.touches[0].pageY;
+    this.state.mousedown = true;
+    this.emit('touchstart', e);
+  }
+};
+
+/**
+ * Handle `ontouchend' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.ontouchend = function(e) {
+  this.state.mousedown = false;
+  this.emit('touchend', e);
+};
+
+/**
  * Handle `onresize' event
  *
  * @api private
@@ -823,6 +854,33 @@ Frame.prototype.onmousemove = function (e) {
 
   this.emit('mousemove', e);
   this.emit('state', this.state);
+};
+
+/**
+ * Handle `ontouchmove' event
+ *
+ * @api private
+ * @param {Event} e
+ */
+
+Frame.prototype.ontouchmove = function(e) {
+  if (e.touches.length) {
+    var x = e.touches[0].pageX - this.state.dragstart.x;
+    var y = e.touches[0].pageY - this.state.dragstart.y;
+
+    this.state.dragstart.x = e.touches[0].pageX;
+    this.state.dragstart.y = e.touches[0].pageY;
+
+    this.state.lon += x;
+    this.state.lat -= y;
+
+    if (PROJECTION_LITTLE_PLANET != this.state.projection) {
+      this.state.cache.lat = this.state.lat;
+      this.state.cache.lon = this.state.lon;
+    }
+
+  }
+  this.emit('touchmove', e);
 };
 
 /**
