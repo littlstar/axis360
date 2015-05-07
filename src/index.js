@@ -13,6 +13,26 @@ var three = require('three.js')
   , tpl = require('./src/template.html')
   , keycode = require('keycode')
   , offset = require('offset')
+  , path = require('path')
+
+/**
+ * Detect if file path is an image
+ * based on the file path extension
+ *
+ * @api private
+ * @param {String} file
+ */
+
+function isImage (file) {
+  var ext = path.extname(file).toLowerCase();
+  switch (ext) {
+    case '.png':
+    case '.jpg':
+    case '.jpeg':
+      return true;
+    default: return false;
+  }
+}
 
 /**
  * Outputs debug info if `window.DEBUG' is
@@ -104,9 +124,6 @@ function Frame (parent, opts) {
   set('crossorigin');
   set('loop');
   set('muted');
-
-  // initialize video source
-  this.src(opts.src);
 
   // event delagation
   this.events = {};
@@ -215,7 +232,6 @@ function Frame (parent, opts) {
   this.material = null;
   this.texture = null;
 
-
   if (opts.muted) {
     this.mute(true);
   }
@@ -257,7 +273,9 @@ function Frame (parent, opts) {
     cache: {},
     event: null,
     theta: 0,
+    image: opts.image ? true : false,
     scroll: null == opts.scroll ? 0.09 : opts.scroll,
+    rafid: null,
     time: 0,
     keys: {
       up: false,
@@ -268,7 +286,8 @@ function Frame (parent, opts) {
     phi: 0,
     lat: 0,
     lon: 0,
-    fov: opts.fov
+    fov: opts.fov,
+    src: null
   };
 
   // viewport projections
@@ -426,6 +445,9 @@ function Frame (parent, opts) {
 
   // set projection
  this.projection(DEFAULT_PROJECTION);
+
+ // initialize frame source
+ this.src(opts.src);
 }
 
 // mixin `Emitter'
@@ -449,10 +471,12 @@ Frame.prototype.onclick = function (e) {
     e.stopPropagation();
   }
 
-  if (this.state.playing) {
-    this.pause();
-  } else {
-    this.play();
+  if (false == this.state.image) {
+    if (this.state.playing) {
+      this.pause();
+    } else {
+      this.play();
+    }
   }
 
   this.emit('click', e);
@@ -854,11 +878,19 @@ Frame.prototype.size = function (width, height) {
 
 Frame.prototype.src = function (src) {
   if (src) {
-    this.video.src = src;
+    this.state.src = src;
+
+    if (isImage(src)) {
+      this.state.image = true;
+    } else {
+      this.state.image = false;
+      this.video.src = src;
+    }
+
     this.emit('source', src);
     return this;
   } else {
-    return this.video.src;
+    return this.state.src;
   }
 };
 
@@ -869,10 +901,12 @@ Frame.prototype.src = function (src) {
  */
 
 Frame.prototype.play = function () {
-  if (true == this.state.ended) {
-    this.seek(0);
+  if (false == this.state.image) {
+    if (true == this.state.ended) {
+      this.seek(0);
+    }
+    this.video.play();
   }
-  this.video.play();
   return this;
 };
 
@@ -883,7 +917,9 @@ Frame.prototype.play = function () {
  */
 
 Frame.prototype.pause = function () {
-  this.video.pause();
+  if (false == this.state.image) {
+    this.video.pause();
+  }
   return this;
 };
 
@@ -932,11 +968,13 @@ Frame.prototype.fullscreen = function () {
  */
 
 Frame.prototype.volume = function (n) {
-  if (null == n) {
-    return this.video.volume;
+  if (false == this.state.image) {
+    if (null == n) {
+      return this.video.volume;
+    }
+    this.video.volume = n
+    this.emit('volume', n);
   }
-  this.video.volume = n
-  this.emit('volume', n);
   return this;
 };
 
@@ -969,8 +1007,10 @@ Frame.prototype.mute = function (mute) {
  */
 
 Frame.prototype.unmute = function (mute) {
-  this.mute(false);
-  this.emit('unmute');
+  if (false == this.state.image) {
+    this.mute(false);
+    this.emit('unmute');
+  }
   return this;
 };
 
@@ -983,17 +1023,19 @@ Frame.prototype.unmute = function (mute) {
 Frame.prototype.refresh = function () {
   var now = Date.now();
   var video = this.video;
-  if (video.readyState === video.HAVE_ENOUGH_DATA) {
-    if (now - this.state.timestamp >= 32) {
-      this.state.timestamp = now;
-      if ('undefined' != typeof this.texture) {
-        this.texture.needsUpdate = true;
+  if (false == this.state.image) {
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      if (now - this.state.timestamp >= 32) {
+        this.state.timestamp = now;
+        if ('undefined' != typeof this.texture) {
+          this.texture.needsUpdate = true;
+        }
       }
     }
   }
 
   // @TODO(werle) - make this delta configurable
-  var delta = 6;
+  var delta = 4;
   delta = this.state.inverted ? -delta : delta;
 
   if (this.state.keys.up) {
@@ -1043,9 +1085,11 @@ Frame.prototype.resizable = function(resizable) {
  */
 
 Frame.prototype.seek = function (seconds) {
-  if (seconds >= 0 && seconds <= this.video.duration) {
-    this.video.currentTime = seconds;
-    this.emit('seek', seconds);
+  if (false == this.state.image) {
+    if (seconds >= 0 && seconds <= this.video.duration) {
+      this.video.currentTime = seconds;
+      this.emit('seek', seconds);
+    }
   }
   return this;
 };
@@ -1058,8 +1102,10 @@ Frame.prototype.seek = function (seconds) {
  */
 
 Frame.prototype.foward = function (seconds) {
-  this.seek(this.video.currentTime + seconds);
-  this.emit('forward', seconds);
+  if (false == this.state.image) {
+    this.seek(this.video.currentTime + seconds);
+    this.emit('forward', seconds);
+  }
   return this;
 };
 
@@ -1071,8 +1117,10 @@ Frame.prototype.foward = function (seconds) {
  */
 
 Frame.prototype.rewind = function (seconds) {
-  this.seek(this.video.currentTime - seconds);
-  this.emit('rewind', seconds);
+  if (false == this.state.image) {
+    this.seek(this.video.currentTime - seconds);
+    this.emit('rewind', seconds);
+  }
   return this;
 };
 
@@ -1089,7 +1137,7 @@ Frame.prototype.use = function (fn) {
 };
 
 /**
- * Draws video frame
+ * Draws frame
  *
  * @api public
  */
@@ -1157,7 +1205,13 @@ Frame.prototype.render = function () {
   var aspectRatio = 0;
 
   // attach dom node to parent
-  this.parent.appendChild(this.el);
+  if (false == this.parent.contains(this.el)) {
+    this.parent.appendChild(this.el);
+  }
+
+  /*if (this.video.parentElement && this.video.parentElement.contains(this.video)) {
+    this.video.parentElement.removeChild(this.video);
+  }*/
 
   if (0 == height) {
     height = Math.min(width, window.innerHeight);
@@ -1166,11 +1220,15 @@ Frame.prototype.render = function () {
   }
 
   // initialize texture
-  this.texture = new three.Texture(this.video);
-  this.texture.format = three.RGBFormat;
-  this.texture.minFilter = three.LinearFilter;
-  this.texture.magFilter = three.LinearFilter;
-  this.texture.generateMipmaps = false;
+  if (false == this.state.image) {
+    this.texture = new three.Texture(this.video);
+    this.texture.format = three.RGBFormat;
+    this.texture.minFilter = three.LinearFilter;
+    this.texture.magFilter = three.LinearFilter;
+    this.texture.generateMipmaps = false;
+  } else {
+    this.texture = three.ImageUtils.loadTexture(this.src());
+  }
 
   // initialize size
   this.size(width, height);
@@ -1179,9 +1237,15 @@ Frame.prototype.render = function () {
   this.projection(this.state.projection);
 
   // start refresh loop
-  raf(function loop () {
-    self.refresh();
-    raf(loop);
+  if (null != this.state.rafid) {
+    raf.cancel(this.state.rafid);
+  }
+
+  this.state.rafid = raf(function loop () {
+    if (self.el.parentElement && self.el.parentElement.contains(self.el)) {
+      self.refresh();
+      raf(loop);
+    }
   });
 
   this.emit('render');
@@ -1254,4 +1318,26 @@ Frame.prototype.projection = function (type, cb) {
   } else {
     return this.state.projection;
   }
+};
+
+/**
+ * Destroys frame
+ *
+ * @api public
+ */
+
+Frame.prototype.destroy = function () {
+  this.scene = null;
+  this.texture = null;
+  this.camera = null;
+  this.stop();
+  this.state.animating = false;
+  this.renderer.resetGLState();
+  raf.cancel(this.state.rafid);
+  empty(el);
+  this.el.parentElement.removeChild(this.el);
+  function empty (el) {
+    while (el.lastChild) el.removeChild(el);
+  }
+  return this;
 };
