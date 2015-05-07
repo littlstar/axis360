@@ -96,6 +96,7 @@ var three = require('three.js')
   , hasWebGL = require('has-webgl')
   , fullscreen = require('fullscreen')
   , tpl = require('./src/template.html')
+  , keycode = require('keycode')
   , offset = require('offset')
 
 /**
@@ -116,7 +117,7 @@ Frame.THREE = three;
 require('three-canvas-renderer')(three);
 
 // default field of view
-var DEFAULT_FOV = 40;
+var DEFAULT_FOV = 30;
 
 // frame click threshold
 var FRAME_CLICK_THRESHOLD = 250;
@@ -202,6 +203,56 @@ function Frame (parent, opts) {
   this.events.window = events(window, this);
   this.events.window.bind('resize');
 
+  // init document events
+  this.events.document = events(document, {
+    onmousedown: function (e) {
+      if (e.target == self.renderer.domElement) {
+        self.state.focused = true;
+      } else {
+        self.state.focused = false;
+      }
+    },
+
+    onkeydown: function (e) {
+      var code = e.which;
+      function detect (n) {
+        if (code == keycode(n)) {
+          e.preventDefault();
+          self.state.keys[n] = true;
+        }
+      }
+
+      if (self.state.focused) {
+        detect('up');
+        detect('down');
+        detect('left');
+        detect('right');
+      }
+    },
+
+    onkeyup: function (e) {
+      var code = e.which;
+      function detect (n) {
+        if (code == keycode(n)) {
+          e.preventDefault();
+          self.state.keys[n] = false;
+        }
+      }
+
+      if (self.state.focused) {
+        e.preventDefault();
+        detect('up');
+        detect('down');
+        detect('left');
+        detect('right');
+      }
+    }
+  });
+
+  this.events.document.bind('mousedown');
+  this.events.document.bind('keydown');
+  this.events.document.bind('keyup');
+
   // init video events
   this.events.video = events(this.video, this);
   this.events.video.bind('canplaythrough');
@@ -247,12 +298,14 @@ function Frame (parent, opts) {
   this.material = null;
   this.texture = null;
 
+
   if (opts.muted) {
     this.mute(true);
   }
 
   // viewport state
   this.state = {
+    maintainaspectratio: opts.maintainaspectratio ? true : false,
     percentloaded: 0,
     originalsize: {
       width: null,
@@ -266,12 +319,15 @@ function Frame (parent, opts) {
     dragstart: {},
     animating: false,
     inverted: (opts.inverted || opts.invertMouse) ? true : false,
+    keyboard: false !== opts.keyboard ? true : false,
     duration: 0,
     lastsize: {
       width: null,
       height: null
     },
     dragloop: null,
+    focused: false,
+    keydown: false,
     playing: false,
     paused: false,
     dragpos: [],
@@ -286,6 +342,12 @@ function Frame (parent, opts) {
     theta: 0,
     scroll: null == opts.scroll ? 0.09 : opts.scroll,
     time: 0,
+    keys: {
+      up: false,
+      down: false,
+      left: false,
+      right: false
+    },
     phi: 0,
     lat: 0,
     lon: 0,
@@ -856,12 +918,10 @@ Frame.prototype.pause = function () {
  * Takes video to fullscreen
  *
  * @api public
- * @param {Boolean} maintainaspectratio
  */
 
-Frame.prototype.fullscreen = function (maintainAspectRatio) {
+Frame.prototype.fullscreen = function () {
   if (! fullscreen.supported) return;
-  if (typeof maintainAspectRatio !== 'boolean') maintainAspectRatio = false;
   if (! this.state.fullscreen) {
     var canvasStyle = getComputedStyle(this.renderer.domElement);
     var canvasWidth = parseFloat(canvasStyle.width);
@@ -870,7 +930,7 @@ Frame.prototype.fullscreen = function (maintainAspectRatio) {
     var newWidth = null;
     var newHeight = null;
 
-    if (maintainAspectRatio) {
+    if (this.state.maintainaspectratio) {
       newWidth = window.innerWidth;
       newHeight = newWidth / aspectRatio;
     } else {
@@ -957,6 +1017,22 @@ Frame.prototype.refresh = function () {
         this.texture.needsUpdate = true;
       }
     }
+  }
+
+  // @TODO(werle) - make this delta configurable
+  var delta = 6;
+  delta = this.state.inverted ? -delta : delta;
+
+  if (this.state.keys.up) {
+    this.state.lat += delta;
+  } else if (this.state.keys.down) {
+    this.state.lat -= delta;
+  }
+
+  if (this.state.keys.left) {
+    this.state.lon -= delta;
+  } else if (this.state.keys.right) {
+    this.state.lon += delta;
   }
 
   if (this.camera) {
@@ -1207,7 +1283,7 @@ Frame.prototype.projection = function (type, cb) {
   }
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"./src/template.html":9,"offset":10,"three-canvas-renderer":11}],
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"./src/template.html":9,"keycode":10,"offset":11,"three-canvas-renderer":12}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
@@ -36209,8 +36285,8 @@ function parse(event) {
   }
 }
 
-}, {"event":12,"delegate":13}],
-12: [function(require, module, exports) {
+}, {"event":13,"delegate":14}],
+13: [function(require, module, exports) {
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
     prefix = bind !== 'addEventListener' ? 'on' : '';
@@ -36247,7 +36323,7 @@ exports.unbind = function(el, type, fn, capture){
   return fn;
 };
 }, {}],
-13: [function(require, module, exports) {
+14: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36291,8 +36367,8 @@ exports.unbind = function(el, type, fn, capture){
   event.unbind(el, type, fn, capture);
 };
 
-}, {"closest":14,"event":12}],
-14: [function(require, module, exports) {
+}, {"closest":15,"event":13}],
+15: [function(require, module, exports) {
 var matches = require('matches-selector')
 
 module.exports = function (element, selector, checkYoSelf, root) {
@@ -36313,8 +36389,8 @@ module.exports = function (element, selector, checkYoSelf, root) {
   }
 }
 
-}, {"matches-selector":15}],
-15: [function(require, module, exports) {
+}, {"matches-selector":16}],
+16: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36362,8 +36438,8 @@ function match(el, selector) {
   return false;
 }
 
-}, {"query":16}],
-16: [function(require, module, exports) {
+}, {"query":17}],
+17: [function(require, module, exports) {
 function one(selector, el) {
   return el.querySelector(selector);
 }
@@ -36528,6 +36604,68 @@ if (document.addEventListener) {
 module.exports = '<section class="slant frame">\n  <div class="slant container">\n    <video class="slant"></video>\n  </div>\n</section>\n';
 }, {}],
 10: [function(require, module, exports) {
+
+/**
+ * map
+ */
+
+var map = {
+    backspace: 8
+  , command: 91
+  , tab: 9
+  , clear: 12
+  , enter: 13
+  , shift: 16
+  , ctrl: 17
+  , alt: 18
+  , capslock: 20
+  , escape: 27
+  , esc: 27
+  , space: 32
+  , left: 37
+  , up: 38
+  , right: 39
+  , down: 40
+  , del: 46
+  , comma: 188
+  , f1: 112
+  , f2: 113
+  , f3: 114
+  , f4: 115
+  , f5: 116
+  , f6: 117
+  , f7: 118
+  , f8: 119
+  , f9: 120
+  , f10: 121
+  , f11: 122
+  , f12: 123
+  , ',': 188
+  , '.': 190
+  , '/': 191
+  , '`': 192
+  , '-': 189
+  , '=': 187
+  , ';': 186
+  , '[': 219
+  , '\\': 220
+  , ']': 221
+  , '\'': 222
+};
+
+/**
+ * find a keycode.
+ *
+ * @param {String} name
+ * @return {Number}
+ */
+
+module.exports = function(name){
+  return map[name.toLowerCase()] || name.toUpperCase().charCodeAt(0);
+};
+
+}, {}],
+11: [function(require, module, exports) {
 var support = require('dom-support')
 var getDocument = require('get-document')
 var withinElement = require('within-element')
@@ -36603,8 +36741,8 @@ function bodyOffset(body) {
   }
 }
 
-}, {"dom-support":17,"get-document":18,"within-element":19}],
-17: [function(require, module, exports) {
+}, {"dom-support":18,"get-document":19,"within-element":20}],
+18: [function(require, module, exports) {
 var domready = require('domready')
 
 module.exports = (function() {
@@ -36874,8 +37012,8 @@ module.exports = (function() {
 	return support;
 })();
 
-}, {"domready":20}],
-20: [function(require, module, exports) {
+}, {"domready":21}],
+21: [function(require, module, exports) {
 /*!
   * domready (c) Dustin Diaz 2014 - License MIT
   */
@@ -36908,7 +37046,7 @@ module.exports = (function() {
 });
 
 }, {}],
-18: [function(require, module, exports) {
+19: [function(require, module, exports) {
 
 /**
  * Module exports.
@@ -36968,7 +37106,7 @@ function getDocument(node) {
 }
 
 }, {}],
-19: [function(require, module, exports) {
+20: [function(require, module, exports) {
 
 /**
  * Check if the DOM element `child` is within the given `parent` DOM element.
@@ -36997,7 +37135,7 @@ module.exports = function within (child, parent) {
 };
 
 }, {}],
-11: [function(require, module, exports) {
+12: [function(require, module, exports) {
 
 /**
  * Add CanvasRenderer stuff to the given `THREE` instance.
