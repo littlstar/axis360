@@ -128,12 +128,13 @@ function Frame (parent, opts) {
   // event delagation
   this.events = {};
 
-  // enable fullscreen callback
+  // listen for fullscreen changes
   fullscreen.on('change', this.onfullscreenchange.bind(this));
 
   // init window events
   this.events.window = events(window, this);
   this.events.window.bind('resize');
+  this.events.window.bind('deviceorientation');
 
   // init document events
   this.events.document = events(document, {
@@ -238,10 +239,8 @@ function Frame (parent, opts) {
   this.state = {
     maintainaspectratio: opts.maintainaspectratio ? true : false,
     percentloaded: 0,
-    originalsize: {
-      width: null,
-      height: null
-    },
+    originalsize: {width: null, height: null},
+    orientation: null,
     projection: 'normal',
     lastvolume: this.video.volume,
     fullscreen: false,
@@ -252,10 +251,7 @@ function Frame (parent, opts) {
     inverted: (opts.inverted || opts.invertMouse) ? true : false,
     keyboard: false !== opts.keyboard ? true : false,
     duration: 0,
-    lastsize: {
-      width: null,
-      height: null
-    },
+    lastsize: {width: null, height: null},
     dragloop: null,
     focused: false,
     keydown: false,
@@ -275,12 +271,7 @@ function Frame (parent, opts) {
     scroll: null == opts.scroll ? 0.09 : opts.scroll,
     rafid: null,
     time: 0,
-    keys: {
-      up: false,
-      down: false,
-      left: false,
-      right: false
-    },
+    keys: {up: false, down: false, left: false, right: false},
     phi: 0,
     lat: 0,
     lon: 0,
@@ -785,6 +776,24 @@ Frame.prototype.onmousewheel = function (e) {
 
   this.emit('mousewheel', e);
   this.emit('state', this.state);
+};
+
+/**
+ * Handle `ondeviceorientation' event
+ *
+ * @api private
+ * @param {String} orientation
+ * @param {Object} e
+ */
+
+Frame.prototype.ondeviceorientation = function (e) {
+  // @TODO(werle) - make this factor configurable
+  var f = 0.08;
+  var alpha = e.alpha;
+  var beta = e.beta;
+  var gamma = e.gamma;
+  this.state.lat = (beta + f);
+  this.state.lon = -(gamma + f);
 };
 
 /**
