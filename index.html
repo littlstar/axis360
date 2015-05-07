@@ -96,6 +96,7 @@
       </span>
     </div>
     <div id="video"></div>
+    <button id="go-fullscreen">Go fullscreen</button>
     <script type="text/javascript" charset="utf-8">
       var frame = new SlantFrame(document.querySelector('#video'), {
         src: 'test.webm',
@@ -105,6 +106,12 @@
       });
 
       frame.render();
+    </script>
+    <script type="text/javascript">
+      var el = document.getElementById('go-fullscreen');
+      el.onclick = function() {
+        frame.fullscreen();
+      };
     </script>
   </body>
 </html>

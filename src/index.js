@@ -9,6 +9,7 @@ var three = require('three.js')
   , events = require('events')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
+  , fullscreen = require('fullscreen')
   , tpl = require('./src/template.html')
   , keycode = require('keycode')
   , offset = require('offset')
@@ -81,9 +82,6 @@ function Frame (parent, opts) {
   // parent DOM node
   this.parent = parent;
 
-  // window object (used for resizing)
-  this.window = window;
-
   // set defualt FOV
   if ('undefined' == typeof opts.fov) {
     opts.fov = opts.fieldOfView || DEFAULT_FOV;
@@ -113,8 +111,11 @@ function Frame (parent, opts) {
   // event delagation
   this.events = {};
 
+  // enable fullscreen callback
+  fullscreen.on('change', this.onfullscreenchange.bind(this));
+
   // init window events
-  this.events.window = events(this.window, this);
+  this.events.window = events(window, this);
   this.events.window.bind('resize');
 
   // init document events
@@ -219,13 +220,15 @@ function Frame (parent, opts) {
 
   // viewport state
   this.state = {
+    maintainaspectratio: opts.maintainaspectratio ? true : false,
     percentloaded: 0,
-    originalSize: {
+    originalsize: {
       width: null,
       height: null
     },
     projection: 'normal',
     lastvolume: this.video.volume,
+    fullscreen: false,
     timestamp: Date.now(),
     resizable: opts.resizable ? true : false,
     dragstart: {},
@@ -233,6 +236,10 @@ function Frame (parent, opts) {
     inverted: (opts.inverted || opts.invertMouse) ? true : false,
     keyboard: false !== opts.keyboard ? true : false,
     duration: 0,
+    lastsize: {
+      width: null,
+      height: null
+    },
     dragloop: null,
     focused: false,
     keydown: false,
@@ -632,20 +639,21 @@ Frame.prototype.onresize = function (e) {
     var newWidth = 0;
     var newHeight = 0;
 
-    // adjust for width (then check for height)
+    // adjust for width while accounting for height
     if (canvasWidth > containerWidth ||
         canvasWidth < containerWidth &&
-        canvasWidth < this.state.originalSize.width) {
+        canvasWidth < this.state.originalsize.width) {
       newWidth = containerWidth;
       newHeight = containerWidth / aspectRatio;
       resized = true;
     } else if (canvasHeight > containerHeight ||
         (canvasHeight > containerHeight &&
-        canvasHeight < this.state.originalSize.height)) {
+        canvasHeight < this.state.originalsize.height)) {
       newHeight = containerHeight;
       newWidth = containerHeight * aspectRatio;
       resized = true;
     }
+
     if (resized) {
       this.size(newWidth, newHeight);
       this.emit('resize', {
@@ -653,6 +661,31 @@ Frame.prototype.onresize = function (e) {
         height: this.state.height
       });
     }
+  }
+};
+
+
+/**
+ * Handle `onfullscreenchange' event
+ *
+ * @api private
+ * @param {Boolean} fullscreen
+ */
+
+Frame.prototype.onfullscreenchange = function(fullscreen) {
+  if (fullscreen) {
+    this.state.fullscreen = true;
+    this.emit('enterfullscreen');
+  } else {
+    this.size(this.state.lastsize.width, this.state.lastsize.height);
+    this.emit('resize', {
+      width: this.state.lastsize.width,
+      height: this.state.lastsize.height
+    });
+    this.state.fullscreen = false;
+    this.state.lastsize.width = null;
+    this.state.lastsize.height = null;
+    this.emit('exitfullscreen');
   }
 };
 
@@ -674,17 +707,17 @@ Frame.prototype.onmousemove = function (e) {
     this.state.dragstart.x = e.pageX;
     this.state.dragstart.y = e.pageY;
 
-    if (PROJECTION_LITTLE_PLANET != this.state.projection) {
-      this.state.cache.lat = this.state.lat;
-      this.state.cache.lon = this.state.lon;
-    }
-
     if (this.state.inverted) {
       this.state.lon -= x;
       this.state.lat += y;
     } else {
       this.state.lon += x;
       this.state.lat -= y;
+    }
+
+    if (PROJECTION_LITTLE_PLANET != this.state.projection) {
+      this.state.cache.lat = this.state.lat;
+      this.state.cache.lon = this.state.lon;
     }
   }
 
@@ -745,11 +778,11 @@ Frame.prototype.size = function (width, height) {
   this.renderer.setSize(
     (this.state.width = width),
     (this.state.height = height));
-    if (this.state.originalSize.width == null) {
-      this.state.originalSize.width = width;
+    if (this.state.originalsize.width == null) {
+      this.state.originalsize.width = width;
     }
-    if (this.state.originalSize.height == null) {
-      this.state.originalSize.height = height;
+    if (this.state.originalsize.height == null) {
+      this.state.originalsize.height = height;
     }
   return this;
 };
@@ -794,6 +827,43 @@ Frame.prototype.play = function () {
 Frame.prototype.pause = function () {
   this.video.pause();
   return this;
+};
+
+/**
+ * Takes video to fullscreen
+ *
+ * @api public
+ */
+
+Frame.prototype.fullscreen = function () {
+  if (! fullscreen.supported) return;
+  if (! this.state.fullscreen) {
+    var canvasStyle = getComputedStyle(this.renderer.domElement);
+    var canvasWidth = parseFloat(canvasStyle.width);
+    var canvasHeight = parseFloat(canvasStyle.height);
+    var aspectRatio = canvasWidth / canvasHeight;
+    var newWidth = null;
+    var newHeight = null;
+
+    if (this.state.maintainaspectratio) {
+      newWidth = window.innerWidth;
+      newHeight = newWidth / aspectRatio;
+    } else {
+      newWidth = window.screen.width;
+      newHeight = window.screen.height;
+    }
+
+    this.state.lastsize.width = canvasWidth;
+    this.state.lastsize.height = canvasHeight;
+
+    this.size(newWidth, newHeight);
+    this.emit('resize', {
+      width: newWidth,
+      height: newHeight
+    });
+
+    fullscreen(this.renderer.domElement);
+  }
 };
 
 /**
