@@ -11,6 +11,7 @@ var three = require('three.js')
   , hasWebGL = require('has-webgl')
   , fullscreen = require('fullscreen')
   , tpl = require('./src/template.html')
+  , keycode = require('keycode')
   , offset = require('offset')
 
 /**
@@ -31,7 +32,7 @@ Frame.THREE = three;
 require('three-canvas-renderer')(three);
 
 // default field of view
-var DEFAULT_FOV = 40;
+var DEFAULT_FOV = 30;
 
 // frame click threshold
 var FRAME_CLICK_THRESHOLD = 250;
@@ -117,6 +118,56 @@ function Frame (parent, opts) {
   this.events.window = events(window, this);
   this.events.window.bind('resize');
 
+  // init document events
+  this.events.document = events(document, {
+    onmousedown: function (e) {
+      if (e.target == self.renderer.domElement) {
+        self.state.focused = true;
+      } else {
+        self.state.focused = false;
+      }
+    },
+
+    onkeydown: function (e) {
+      var code = e.which;
+      function detect (n) {
+        if (code == keycode(n)) {
+          e.preventDefault();
+          self.state.keys[n] = true;
+        }
+      }
+
+      if (self.state.focused) {
+        detect('up');
+        detect('down');
+        detect('left');
+        detect('right');
+      }
+    },
+
+    onkeyup: function (e) {
+      var code = e.which;
+      function detect (n) {
+        if (code == keycode(n)) {
+          e.preventDefault();
+          self.state.keys[n] = false;
+        }
+      }
+
+      if (self.state.focused) {
+        e.preventDefault();
+        detect('up');
+        detect('down');
+        detect('left');
+        detect('right');
+      }
+    }
+  });
+
+  this.events.document.bind('mousedown');
+  this.events.document.bind('keydown');
+  this.events.document.bind('keyup');
+
   // init video events
   this.events.video = events(this.video, this);
   this.events.video.bind('canplaythrough');
@@ -162,6 +213,7 @@ function Frame (parent, opts) {
   this.material = null;
   this.texture = null;
 
+
   if (opts.muted) {
     this.mute(true);
   }
@@ -182,12 +234,15 @@ function Frame (parent, opts) {
     dragstart: {},
     animating: false,
     inverted: (opts.inverted || opts.invertMouse) ? true : false,
+    keyboard: false !== opts.keyboard ? true : false,
     duration: 0,
     lastsize: {
       width: null,
       height: null
     },
     dragloop: null,
+    focused: false,
+    keydown: false,
     playing: false,
     paused: false,
     dragpos: [],
@@ -202,6 +257,12 @@ function Frame (parent, opts) {
     theta: 0,
     scroll: null == opts.scroll ? 0.09 : opts.scroll,
     time: 0,
+    keys: {
+      up: false,
+      down: false,
+      left: false,
+      right: false
+    },
     phi: 0,
     lat: 0,
     lon: 0,
@@ -871,6 +932,22 @@ Frame.prototype.refresh = function () {
         this.texture.needsUpdate = true;
       }
     }
+  }
+
+  // @TODO(werle) - make this delta configurable
+  var delta = 6;
+  delta = this.state.inverted ? -delta : delta;
+
+  if (this.state.keys.up) {
+    this.state.lat += delta;
+  } else if (this.state.keys.down) {
+    this.state.lat -= delta;
+  }
+
+  if (this.state.keys.left) {
+    this.state.lon -= delta;
+  } else if (this.state.keys.right) {
+    this.state.lon += delta;
   }
 
   if (this.camera) {
