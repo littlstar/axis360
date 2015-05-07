@@ -109,6 +109,7 @@ function Frame (parent, opts) {
 
   // init view
   this.el = dom(tpl);
+  this.holdframe = this.el.querySelector('.slant.holdframe');
   this.video = this.el.querySelector('video');
   this.video.style.display = 'none';
 
@@ -250,6 +251,7 @@ function Frame (parent, opts) {
     resizable: opts.resizable ? true : false,
     dragstart: {},
     animating: false,
+    holdframe: opts.holdframe,
     inverted: (opts.inverted || opts.invertMouse) ? true : false,
     keyboard: false !== opts.keyboard ? true : false,
     duration: 0,
@@ -262,6 +264,7 @@ function Frame (parent, opts) {
     dragpos: [],
     played: 0,
     height: opts.height,
+    ready: false,
     width: opts.width,
     muted: Boolean(opts.muted),
     ended: false,
@@ -486,6 +489,7 @@ Frame.prototype.oncanplaythrough = function (e) {
 
   this.emit('canplaythrough', e);
   this.emit('ready');
+  this.state.ready = true;
 
   if (true == this.opts.autoplay) {
     this.video.play();
@@ -500,9 +504,12 @@ Frame.prototype.oncanplaythrough = function (e) {
  */
 
 Frame.prototype.onplay = function (e) {
-  this.state.paused = false;
-  this.state.ended = false;
-  this.emit('play', e);
+  raf(function() {
+    this.holdframe.style.display = 'none';
+    this.state.paused = false;
+    this.state.ended = false;
+    this.emit('play', e);
+  }.bind(this));
 };
 
 /**
@@ -719,6 +726,7 @@ Frame.prototype.onresize = function (e) {
  */
 
 Frame.prototype.onfullscreenchange = function(fullscreen) {
+  this.state.focused = true;
   if (fullscreen) {
     this.state.fullscreen = true;
     this.emit('enterfullscreen');
@@ -1081,7 +1089,7 @@ Frame.prototype.refresh = function () {
  */
 
 Frame.prototype.resizable = function(resizable) {
-  if (typeof resizable === 'undefined') return this.state.resizable;
+  if (typeof resizable == 'undefined') return this.state.resizable;
   this.state.resizable = resizable;
   return this;
 };
@@ -1213,14 +1221,16 @@ Frame.prototype.render = function () {
   var height = this.state.height || parseFloat(style.height);
   var aspectRatio = 0;
 
+  if (typeof this.state.holdframe == 'string') {
+    this.holdframe.style.backgroundImage = 'url(' + this.state.holdframe + ')';
+  } else {
+    this.holdframe.style.display = 'none';
+  }
+
   // attach dom node to parent
   if (false == this.parent.contains(this.el)) {
     this.parent.appendChild(this.el);
   }
-
-  /*if (this.video.parentElement && this.video.parentElement.contains(this.video)) {
-    this.video.parentElement.removeChild(this.video);
-  }*/
 
   if (0 == height) {
     height = Math.min(width, window.innerHeight);
