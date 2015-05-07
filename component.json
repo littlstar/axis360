@@ -14,6 +14,6 @@
     "component/raf": "*",
     "jb55/has-webgl": "*",
     "littlstar/three-canvas-renderer": "*",
-    "yields/k": "*"
+    "yields/keycode": "*"
   }
 }

@@ -95,13 +95,14 @@ var three = require('three.js')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
   , tpl = require('./src/template.html')
+  , keycode = require('keycode')
 
 // add three.CanvasRenderer
 Frame.THREE = three;
 require('three-canvas-renderer')(three);
 
 // default field of view
-var DEFAULT_FOV = 50;
+var DEFAULT_FOV = 30;
 
 // frame click threshold
 var FRAME_CLICK_THRESHOLD = 250;
@@ -175,6 +176,56 @@ function Frame (parent, opts) {
   this.events.window = events(this.window, this);
   this.events.window.bind('resize');
 
+  // init document events
+  this.events.document = events(document, {
+    onmousedown: function (e) {
+      if (e.target == self.renderer.domElement) {
+        self.state.focused = true;
+      } else {
+        self.state.focused = false;
+      }
+    },
+
+    onkeydown: function (e) {
+      var code = e.which;
+      function detect (n) {
+        if (code == keycode(n)) {
+          e.preventDefault();
+          self.state.keys[n] = true;
+        }
+      }
+
+      if (self.state.focused) {
+        detect('up');
+        detect('down');
+        detect('left');
+        detect('right');
+      }
+    },
+
+    onkeyup: function (e) {
+      var code = e.which;
+      function detect (n) {
+        if (code == keycode(n)) {
+          e.preventDefault();
+          self.state.keys[n] = false;
+        }
+      }
+
+      if (self.state.focused) {
+        e.preventDefault();
+        detect('up');
+        detect('down');
+        detect('left');
+        detect('right');
+      }
+    }
+  });
+
+  this.events.document.bind('mousedown');
+  this.events.document.bind('keydown');
+  this.events.document.bind('keyup');
+
   // init video events
   this.events.video = events(this.video, this);
   this.events.video.bind('canplaythrough');
@@ -220,6 +271,7 @@ function Frame (parent, opts) {
   this.material = null;
   this.texture = null;
 
+
   if (opts.muted) {
     this.mute(true);
   }
@@ -240,6 +292,7 @@ function Frame (parent, opts) {
     keyboard: false !== opts.keyboard ? true : false,
     duration: 0,
     dragloop: null,
+    focused: false,
     keydown: false,
     playing: false,
     paused: false,
@@ -255,6 +308,12 @@ function Frame (parent, opts) {
     theta: 0,
     scroll: null == opts.scroll ? 0.09 : opts.scroll,
     time: 0,
+    keys: {
+      up: false,
+      down: false,
+      left: false,
+      right: false
+    },
     phi: 0,
     lat: 0,
     lon: 0,
@@ -316,11 +375,6 @@ function Frame (parent, opts) {
 
   // set projection
  this.projection(DEFAULT_PROJECTION);
-
- // enable keyboard control if not disabled
- if (false !== opts.keyboard) {
-   var k = require('k')(this.el);
- }
 }
 
 // mixin `Emitter'
@@ -761,6 +815,22 @@ Frame.prototype.refresh = function () {
     }
   }
 
+  // @TODO(werle) - make this delta configurable
+  var delta = 6;
+  delta = this.state.inverted ? -delta : delta;
+
+  if (this.state.keys.up) {
+    this.state.lat += delta;
+  } else if (this.state.keys.down) {
+    this.state.lat -= delta;
+  }
+
+  if (this.state.keys.left) {
+    this.state.lon -= delta;
+  } else if (this.state.keys.right) {
+    this.state.lon += delta;
+  }
+
   this.emit('refresh');
   this.emit('state', this.state);
   return this.draw();
@@ -989,7 +1059,7 @@ Frame.prototype.projection = function (type) {
   }
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"./src/template.html":8,"three-canvas-renderer":9,"k":10}],
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"./src/template.html":8,"keycode":9,"three-canvas-renderer":10}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
@@ -36229,6 +36299,68 @@ module.exports = '<section class="slant frame">\n  <div class="slant container">
 9: [function(require, module, exports) {
 
 /**
+ * map
+ */
+
+var map = {
+    backspace: 8
+  , command: 91
+  , tab: 9
+  , clear: 12
+  , enter: 13
+  , shift: 16
+  , ctrl: 17
+  , alt: 18
+  , capslock: 20
+  , escape: 27
+  , esc: 27
+  , space: 32
+  , left: 37
+  , up: 38
+  , right: 39
+  , down: 40
+  , del: 46
+  , comma: 188
+  , f1: 112
+  , f2: 113
+  , f3: 114
+  , f4: 115
+  , f5: 116
+  , f6: 117
+  , f7: 118
+  , f8: 119
+  , f9: 120
+  , f10: 121
+  , f11: 122
+  , f12: 123
+  , ',': 188
+  , '.': 190
+  , '/': 191
+  , '`': 192
+  , '-': 189
+  , '=': 187
+  , ';': 186
+  , '[': 219
+  , '\\': 220
+  , ']': 221
+  , '\'': 222
+};
+
+/**
+ * find a keycode.
+ *
+ * @param {String} name
+ * @return {Number}
+ */
+
+module.exports = function(name){
+  return map[name.toLowerCase()] || name.toUpperCase().charCodeAt(0);
+};
+
+}, {}],
+10: [function(require, module, exports) {
+
+/**
  * Add CanvasRenderer stuff to the given `THREE` instance.
  *
  * @param {Object} THREE
@@ -37340,532 +37472,6 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 };
 
-};
-
-}, {}],
-10: [function(require, module, exports) {
-
-/**
- * Module Dependencies.
- */
-
-var event = require('event')
-var proto = require('./proto')
-var bind = require('bind');
-
-/**
- * Create a new dispatcher with `el`.
- *
- * example:
- *
- *      var k = require('k')(window);
- *      k('shift + tab', function(){});
- *
- * @param {Element} el
- * @return {Function}
- * @api public
- */
-
-module.exports = function(el){
-  function k(e, fn){ k.handle(e, fn) };
-  k._handle = bind(k, proto.handle);
-  k._clear = bind(k, proto.clear);
-  k._reset = bind(k, proto.reset);
-  event.bind(el, 'keydown', k._handle, false);
-  event.bind(el, 'keyup', k._handle, false);
-  event.bind(el, 'keyup', k._clear, false);
-  event.bind(el, 'focus', k._reset, false);
-  for (var p in proto) k[p] = proto[p];
-  k.listeners = [];
-  k.active = 0;
-  k.el = el;
-  return k;
-};
-
-}, {"event":11,"./proto":16,"bind":17}],
-16: [function(require, module, exports) {
-
-/**
- * Module Dependencies.
- */
-
-var sequence = require('k-sequence');
-var keycode = require('keycode');
-var event = require('event');
-var os = require('os');
-
-/**
- * modifiers.
- */
-
-var modifiers = {
-  224: 'command',
-  91: 'command',
-  93: 'command',
-  16: 'shift',
-  17: 'ctrl',
-  18: 'alt'
-};
-
-/**
- * Super key.
- * (must use subscript vs. dot notation to avoid issues with older browsers)
- */
-
-exports['super'] = 'mac' == os
-  ? 'command'
-  : 'ctrl';
-
-/**
- * Handle the given `KeyboardEvent` or bind
- * a new `keys` handler.
- *
- * @param {String|KeyboardEvent} e
- * @param {Function} fn
- * @api private
- */
-
-exports.handle = function(e, fn){
-  var ignore = this.ignore;
-  var event = e.type;
-  var code = e.which;
-
-  // bind
-  if (fn) return this.bind(e, fn);
-
-  // modifiers
-  var mod = modifiers[code];
-  if ('keydown' == event && mod) {
-    this['super'] = exports['super'] == mod;
-    this[mod] = true;
-    this.modifiers = true;
-    this.active++;
-    return;
-  }
-
-  // ignore
-  if (ignore && ignore(e)) return;
-
-  // listeners
-  var all = this.listeners;
-
-  // match
-  for (var i = 0; i < all.length; ++i) {
-    var invoke = true;
-    var obj = all[i];
-    var seq = obj.seq;
-    var mods = obj.mods;
-    var fn = seq || obj.fn;
-
-    if (!seq && code != obj.code) continue;
-    if (event != obj.event) continue;
-    if (this.active != obj.mods.length) continue;
-
-    for (var j = 0; j < mods.length; ++j) {
-      if (!this[mods[j]]) {
-        invoke = null;
-        break;
-      }
-    }
-
-    invoke && fn(e);
-  }
-};
-
-/**
- * Destroy this `k` dispatcher instance.
- *
- * @api public
- */
-
-exports.destroy = function(){
-  event.unbind(this.el, 'keydown', this._handle);
-  event.unbind(this.el, 'keyup', this._handle);
-  event.unbind(this.el, 'keyup', this._clear);
-  event.unbind(this.el, 'focus', this._clear);
-  this.listeners = [];
-};
-
-/**
- * Unbind the given `keys` with optional `fn`.
- *
- * Example:
- *
- *      k.unbind('enter, tab', myListener); // unbind `myListener` from `enter, tab` keys
- *      k.unbind('enter, tab'); // unbind all `enter, tab` listeners
- *      k.unbind(); // unbind all listeners
- *
- * @param {String} keys
- * @param {Function} fn
- * @return {k}
- * @api public
- */
-
-exports.unbind = function(keys, fn){
-  var fns = this.listeners
-  var len = fns.length;
-  var all;
-
-  // unbind all
-  if (0 == arguments.length) {
-    this.listeners = [];
-    return this;
-  }
-
-  // parse
-  all = parseKeys(keys);
-
-  // unbind
-  for (var i = 0; i < all.length; ++i) {
-    for (var j = 0, obj; j < len; ++j) {
-      obj = fns[j];
-      if (!obj) continue;
-      if (fn && obj.fn != fn) continue;
-      if (obj.key != all[i].key) continue;
-      if (!matches(obj, all[i])) continue;
-      fns.splice(j--, 1);
-    }
-  }
-
-  return this;
-};
-
-/**
- * Bind the given `keys` to `fn` with optional `event`
- *
- * Example:
- *
- *      k.bind('shift + tab, ctrl + a', function(e){});
- *
- * @param {String} event
- * @param {String} keys
- * @param {Function} fn
- * @return {k}
- * @api public
- */
-
-exports.bind = function(event, keys, fn){
-  var fns = this.listeners
-  var len;
-  var all;
-
-  if (2 == arguments.length) {
-    fn = keys;
-    keys = event;
-    event = 'keydown';
-  }
-
-  all = parseKeys(keys);
-  len = all.length;
-
-  for (var i = 0; i < len; ++i) {
-    var obj = all[i];
-    obj.seq = obj.seq && sequence(obj.key, fn);
-    obj.event = event;
-    obj.fn = fn;
-    fns.push(obj);
-  }
-
-  return this;
-};
-
-/**
- * Bind keyup with `keys` and `fn`.
- *
- * @param {String} keys
- * @param {Function} fn
- * @return {k}
- * @api public
- */
-
-exports.up = function(keys, fn){
-  return this.bind('keyup', keys, fn);
-};
-
-/**
- * Bind keydown with `keys` and `fn`.
- *
- * @param {String} keys
- * @param {Function} fn
- * @return {k}
- * @api public
- */
-
-exports.down = function(keys, fn){
-  return this.bind('keydown', keys, fn);
-};
-
-/**
- * Clear all modifiers on `keyup`.
- *
- * @api private
- */
-
-exports.clear = function(e){
-  var code = e.keyCode || e.which;
-  if (!(code in modifiers)) return;
-  this.active--;
-  this[modifiers[code]] = null;
-  this.modifiers = this.command
-    || this.shift
-    || this.ctrl
-    || this.alt;
-};
-
-/**
- * Clear all modifiers on `focus`.
- *
- * @api private
- */
-
-exports.reset = function(e){
-  this.active = 0;
-  this.modifiers =
-  this.command =
-  this.shift =
-  this.ctrl =
-  this.alt = null;
-};
-
-/**
- * Ignore all input elements by default.
- *
- * @param {Event} e
- * @return {Boolean}
- * @api private
- */
-
-exports.ignore = function(e){
-  var el = e.target || e.srcElement;
-  var name = el.tagName.toLowerCase();
-  return 'textarea' == name
-    || 'select' == name
-    || 'input' == name;
-};
-
-/**
- * Parse the given `keys`.
- *
- * @param {String} keys
- * @return {Array}
- * @api private
- */
-
-function parseKeys(keys){
-  keys = keys.replace('super', exports['super']);
-
-  var all = ',' != keys
-    ? keys.split(/ *, */)
-    : [','];
-
-  var ret = [];
-  for (var i = 0; i < all.length; ++i) {
-    if ('' == all[i]) continue;
-    var mods = all[i].split(/ *\+ */);
-    var key = mods.pop() || ',';
-
-    ret.push({
-      seq: !! (~key.indexOf(' ') || ~key.indexOf('*')),
-      code: keycode(key),
-      mods: mods,
-      key: key
-    });
-  }
-
-  return ret;
-}
-
-/**
- * Check if the given `a` matches `b`.
- *
- * @param {Object} a
- * @param {Object} b
- * @return {Boolean}
- * @api private
- */
-
-function matches(a, b){
-  return 0 == b.mods.length || eql(a, b);
-}
-
-/**
- * Shallow eql util.
- *
- * TODO: move to yields/eql
- *
- * @param {Array} a
- * @param {Array} b
- * @return {Boolean}
- * @api private
- */
-
-function eql(a, b){
-  a = a.mods.sort().toString();
-  b = b.mods.sort().toString();
-  return a == b;
-}
-
-}, {"k-sequence":18,"keycode":19,"event":11,"os":20}],
-18: [function(require, module, exports) {
-
-/**
- * dependencies
- */
-
-var keycode = require('keycode');
-
-/**
- * Export `sequence`
- */
-
-module.exports = sequence;
-
-/**
- * Create sequence fn with `keys`.
- * optional `ms` which defaults
- * to `500ms` and `fn`.
- *
- * Example:
- *
- *      seq = sequence('a b c', fn);
- *      el.addEventListener('keydown', seq);
- *
- * @param {String} keys
- * @param {Number} ms
- * @param {Function} fn
- * @return {Function}
- * @api public
- */
-
-function sequence(keys, ms, fn){
-  var codes = keys.split(/ +/).map(keycode)
-    , clen = codes.length
-    , seq = []
-    , i = 0
-    , prev;
-
-  if (2 == arguments.length) {
-    fn = ms;
-    ms = 500;
-  }
-
-  return function(e){
-    var code = codes[i++];
-    if (42 != code && code != e.which) return reset();
-    if (prev && new Date - prev > ms) return reset();
-    var len = seq.push(e.which);
-    prev = new Date;
-    if (len != clen) return;
-    reset();
-    fn(e);
-  };
-
-  function reset(){
-    prev = null;
-    seq = [];
-    i = 0;
-  }
-};
-
-}, {"keycode":19}],
-19: [function(require, module, exports) {
-
-/**
- * map
- */
-
-var map = {
-    backspace: 8
-  , command: 91
-  , tab: 9
-  , clear: 12
-  , enter: 13
-  , shift: 16
-  , ctrl: 17
-  , alt: 18
-  , capslock: 20
-  , escape: 27
-  , esc: 27
-  , space: 32
-  , left: 37
-  , up: 38
-  , right: 39
-  , down: 40
-  , del: 46
-  , comma: 188
-  , f1: 112
-  , f2: 113
-  , f3: 114
-  , f4: 115
-  , f5: 116
-  , f6: 117
-  , f7: 118
-  , f8: 119
-  , f9: 120
-  , f10: 121
-  , f11: 122
-  , f12: 123
-  , ',': 188
-  , '.': 190
-  , '/': 191
-  , '`': 192
-  , '-': 189
-  , '=': 187
-  , ';': 186
-  , '[': 219
-  , '\\': 220
-  , ']': 221
-  , '\'': 222
-};
-
-/**
- * find a keycode.
- *
- * @param {String} name
- * @return {Number}
- */
-
-module.exports = function(name){
-  return map[name.toLowerCase()] || name.toUpperCase().charCodeAt(0);
-};
-
-}, {}],
-20: [function(require, module, exports) {
-
-
-module.exports = os();
-
-function os() {
-  var ua = navigator.userAgent;
-  if (/mac/i.test(ua)) return 'mac';
-  if (/win/i.test(ua)) return 'windows';
-  if (/linux/i.test(ua)) return 'linux';
-}
-
-}, {}],
-17: [function(require, module, exports) {
-/**
- * Slice reference.
- */
-
-var slice = [].slice;
-
-/**
- * Bind `obj` to `fn`.
- *
- * @param {Object} obj
- * @param {Function|String} fn or string
- * @return {Function}
- * @api public
- */
-
-module.exports = function(obj, fn){
-  if ('string' == typeof fn) fn = obj[fn];
-  if ('function' != typeof fn) throw new Error('bind() requires a function');
-  var args = slice.call(arguments, 2);
-  return function(){
-    return fn.apply(obj, args.concat(slice.call(arguments)));
-  }
 };
 
 }, {}]}, {}, {"1":"SlantFrame"})
