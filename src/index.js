@@ -31,7 +31,7 @@ Frame.THREE = three;
 require('three-canvas-renderer')(three);
 
 // default field of view
-var DEFAULT_FOV = 40;
+var DEFAULT_FOV = 30;
 
 // frame click threshold
 var FRAME_CLICK_THRESHOLD = 250;
