@@ -1,4 +1,3 @@
-
 .slant.frame {
   position: relative;
   margin: 0;
@@ -6,8 +5,8 @@
 }
 
 .slant.frame .container {
-  display: block;
   position: relative;
+  display: block;
   margin: 0;
   padding: 0;
 }
@@ -17,8 +16,20 @@
 }
 
 .slant.frame canvas {
-  display: block;
   position: relative;
+  display: block;
   margin: 0 auto;
   padding: 0;
+}
+
+.slant.holdframe {
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  position: absolute;
+  display: block;
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+  left: 0;
+  top: 0;
 }

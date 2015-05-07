@@ -100,10 +100,10 @@
     <script type="text/javascript" charset="utf-8">
       var frame = new SlantFrame(document.querySelector('#video'), {
         src: 'test.webm',
-        width: 1000,
+        resizable: true,
         autoplay: true,
+        holdframe: 'holdframe.png',
         wheel: true,
-        resizable: true
       });
 
       frame.render();
