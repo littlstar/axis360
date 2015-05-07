@@ -168,6 +168,7 @@ function Frame (parent, opts) {
 
   // viewport state
   this.state = {
+    maintainaspectratio: opts.maintainaspectratio ? true : false,
     percentloaded: 0,
     originalsize: {
       width: null,
@@ -771,12 +772,10 @@ Frame.prototype.pause = function () {
  * Takes video to fullscreen
  *
  * @api public
- * @param {Boolean} maintainaspectratio
  */
 
-Frame.prototype.fullscreen = function (maintainAspectRatio) {
+Frame.prototype.fullscreen = function () {
   if (! fullscreen.supported) return;
-  if (typeof maintainAspectRatio !== 'boolean') maintainAspectRatio = false;
   if (! this.state.fullscreen) {
     var canvasStyle = getComputedStyle(this.renderer.domElement);
     var canvasWidth = parseFloat(canvasStyle.width);
@@ -785,7 +784,7 @@ Frame.prototype.fullscreen = function (maintainAspectRatio) {
     var newWidth = null;
     var newHeight = null;
 
-    if (maintainAspectRatio) {
+    if (this.state.maintainaspectratio) {
       newWidth = window.innerWidth;
       newHeight = newWidth / aspectRatio;
     } else {
