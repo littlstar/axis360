@@ -94,6 +94,7 @@ var three = require('three.js')
   , events = require('events')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
+  , fullscreen = require('fullscreen')
   , tpl = require('./src/template.html')
   , offset = require('offset')
 
@@ -165,9 +166,6 @@ function Frame (parent, opts) {
   // parent DOM node
   this.parent = parent;
 
-  // window object (used for resizing)
-  this.window = window;
-
   // set defualt FOV
   if ('undefined' == typeof opts.fov) {
     opts.fov = opts.fieldOfView || DEFAULT_FOV;
@@ -197,8 +195,11 @@ function Frame (parent, opts) {
   // event delagation
   this.events = {};
 
+  // enable fullscreen callback
+  fullscreen.on('change', this.onfullscreenchange.bind(this));
+
   // init window events
-  this.events.window = events(this.window, this);
+  this.events.window = events(window, this);
   this.events.window.bind('resize');
 
   // init video events
@@ -253,18 +254,23 @@ function Frame (parent, opts) {
   // viewport state
   this.state = {
     percentloaded: 0,
-    originalSize: {
+    originalsize: {
       width: null,
       height: null
     },
     projection: 'normal',
     lastvolume: this.video.volume,
+    fullscreen: false,
     timestamp: Date.now(),
     resizable: opts.resizable ? true : false,
     dragstart: {},
     animating: false,
     inverted: (opts.inverted || opts.invertMouse) ? true : false,
     duration: 0,
+    lastsize: {
+      width: null,
+      height: null
+    },
     dragloop: null,
     playing: false,
     paused: false,
@@ -656,20 +662,21 @@ Frame.prototype.onresize = function (e) {
     var newWidth = 0;
     var newHeight = 0;
 
-    // adjust for width (then check for height)
+    // adjust for width while accounting for height
     if (canvasWidth > containerWidth ||
         canvasWidth < containerWidth &&
-        canvasWidth < this.state.originalSize.width) {
+        canvasWidth < this.state.originalsize.width) {
       newWidth = containerWidth;
       newHeight = containerWidth / aspectRatio;
       resized = true;
     } else if (canvasHeight > containerHeight ||
         (canvasHeight > containerHeight &&
-        canvasHeight < this.state.originalSize.height)) {
+        canvasHeight < this.state.originalsize.height)) {
       newHeight = containerHeight;
       newWidth = containerHeight * aspectRatio;
       resized = true;
     }
+
     if (resized) {
       this.size(newWidth, newHeight);
       this.emit('resize', {
@@ -677,6 +684,31 @@ Frame.prototype.onresize = function (e) {
         height: this.state.height
       });
     }
+  }
+};
+
+
+/**
+ * Handle `onfullscreenchange' event
+ *
+ * @api private
+ * @param {Boolean} fullscreen
+ */
+
+Frame.prototype.onfullscreenchange = function(fullscreen) {
+  if (fullscreen) {
+    this.state.fullscreen = true;
+    this.emit('enterfullscreen');
+  } else {
+    this.size(this.state.lastsize.width, this.state.lastsize.height);
+    this.emit('resize', {
+      width: this.state.lastsize.width,
+      height: this.state.lastsize.height
+    });
+    this.state.fullscreen = false;
+    this.state.lastsize.width = null;
+    this.state.lastsize.height = null;
+    this.emit('exitfullscreen');
   }
 };
 
@@ -698,17 +730,17 @@ Frame.prototype.onmousemove = function (e) {
     this.state.dragstart.x = e.pageX;
     this.state.dragstart.y = e.pageY;
 
-    if (PROJECTION_LITTLE_PLANET != this.state.projection) {
-      this.state.cache.lat = this.state.lat;
-      this.state.cache.lon = this.state.lon;
-    }
-
     if (this.state.inverted) {
       this.state.lon -= x;
       this.state.lat += y;
     } else {
       this.state.lon += x;
       this.state.lat -= y;
+    }
+
+    if (PROJECTION_LITTLE_PLANET != this.state.projection) {
+      this.state.cache.lat = this.state.lat;
+      this.state.cache.lon = this.state.lon;
     }
   }
 
@@ -769,11 +801,11 @@ Frame.prototype.size = function (width, height) {
   this.renderer.setSize(
     (this.state.width = width),
     (this.state.height = height));
-    if (this.state.originalSize.width == null) {
-      this.state.originalSize.width = width;
+    if (this.state.originalsize.width == null) {
+      this.state.originalsize.width = width;
     }
-    if (this.state.originalSize.height == null) {
-      this.state.originalSize.height = height;
+    if (this.state.originalsize.height == null) {
+      this.state.originalsize.height = height;
     }
   return this;
 };
@@ -818,6 +850,45 @@ Frame.prototype.play = function () {
 Frame.prototype.pause = function () {
   this.video.pause();
   return this;
+};
+
+/**
+ * Takes video to fullscreen
+ *
+ * @api public
+ * @param {Boolean} maintainaspectratio
+ */
+
+Frame.prototype.fullscreen = function (maintainAspectRatio) {
+  if (! fullscreen.supported) return;
+  if (typeof maintainAspectRatio !== 'boolean') maintainAspectRatio = false;
+  if (! this.state.fullscreen) {
+    var canvasStyle = getComputedStyle(this.renderer.domElement);
+    var canvasWidth = parseFloat(canvasStyle.width);
+    var canvasHeight = parseFloat(canvasStyle.height);
+    var aspectRatio = canvasWidth / canvasHeight;
+    var newWidth = null;
+    var newHeight = null;
+
+    if (maintainAspectRatio) {
+      newWidth = window.innerWidth;
+      newHeight = newWidth / aspectRatio;
+    } else {
+      newWidth = window.screen.width;
+      newHeight = window.screen.height;
+    }
+
+    this.state.lastsize.width = canvasWidth;
+    this.state.lastsize.height = canvasHeight;
+
+    this.size(newWidth, newHeight);
+    this.emit('resize', {
+      width: newWidth,
+      height: newHeight
+    });
+
+    fullscreen(this.renderer.domElement);
+  }
 };
 
 /**
@@ -1136,7 +1207,7 @@ Frame.prototype.projection = function (type, cb) {
   }
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"./src/template.html":8,"offset":9,"three-canvas-renderer":10}],
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"./src/template.html":9,"offset":10,"three-canvas-renderer":11}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
@@ -36138,8 +36209,8 @@ function parse(event) {
   }
 }
 
-}, {"event":11,"delegate":12}],
-11: [function(require, module, exports) {
+}, {"event":12,"delegate":13}],
+12: [function(require, module, exports) {
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
     prefix = bind !== 'addEventListener' ? 'on' : '';
@@ -36176,7 +36247,7 @@ exports.unbind = function(el, type, fn, capture){
   return fn;
 };
 }, {}],
-12: [function(require, module, exports) {
+13: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36220,8 +36291,8 @@ exports.unbind = function(el, type, fn, capture){
   event.unbind(el, type, fn, capture);
 };
 
-}, {"closest":13,"event":11}],
-13: [function(require, module, exports) {
+}, {"closest":14,"event":12}],
+14: [function(require, module, exports) {
 var matches = require('matches-selector')
 
 module.exports = function (element, selector, checkYoSelf, root) {
@@ -36242,8 +36313,8 @@ module.exports = function (element, selector, checkYoSelf, root) {
   }
 }
 
-}, {"matches-selector":14}],
-14: [function(require, module, exports) {
+}, {"matches-selector":15}],
+15: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36291,8 +36362,8 @@ function match(el, selector) {
   return false;
 }
 
-}, {"query":15}],
-15: [function(require, module, exports) {
+}, {"query":16}],
+16: [function(require, module, exports) {
 function one(selector, el) {
   return el.querySelector(selector);
 }
@@ -36371,9 +36442,92 @@ module.exports = (function() {
 
 }, {}],
 8: [function(require, module, exports) {
+
+/**
+ * Module dependencies.
+ */
+
+var Emitter = require('emitter');
+
+/**
+ * Expose `fullscreen()`.
+ */
+
+exports = module.exports = fullscreen;
+
+/**
+ * Mixin emitter.
+ */
+
+Emitter(exports);
+
+/**
+ * document element.
+ */
+
+var element = document.documentElement;
+
+/**
+ * fullscreen supported flag.
+ */
+
+exports.supported = !!(element.requestFullscreen
+  || element.webkitRequestFullscreen
+  || element.mozRequestFullScreen);
+
+/**
+ * Enter fullscreen mode for `el`.
+ *
+ * @param {Element} [el]
+ * @api public
+ */
+
+function fullscreen(el){
+  el = el || element;
+  if (el.requestFullscreen) return el.requestFullscreen();
+  if (el.mozRequestFullScreen) return el.mozRequestFullScreen();
+  if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+}
+
+/**
+ * Exit fullscreen.
+ *
+ * @api public
+ */
+
+exports.exit = function(){
+  var doc = document;
+  if (doc.exitFullscreen) return doc.exitFullscreen();
+  if (doc.mozCancelFullScreen) return doc.mozCancelFullScreen();
+  if (doc.webkitCancelFullScreen) return doc.webkitCancelFullScreen();
+};
+
+/**
+ * Change handler function.
+ */
+
+function change(prop) {
+  return function(){
+    var val = document[prop];
+    exports.emit('change', val);
+  }
+}
+
+/**
+ * Handle events.
+ */
+
+if (document.addEventListener) {
+  document.addEventListener('fullscreenchange', change('fullscreen'));
+  document.addEventListener('mozfullscreenchange', change('mozFullScreen'));
+  document.addEventListener('webkitfullscreenchange', change('webkitIsFullScreen'));
+}
+
+}, {"emitter":4}],
+9: [function(require, module, exports) {
 module.exports = '<section class="slant frame">\n  <div class="slant container">\n    <video class="slant"></video>\n  </div>\n</section>\n';
 }, {}],
-9: [function(require, module, exports) {
+10: [function(require, module, exports) {
 var support = require('dom-support')
 var getDocument = require('get-document')
 var withinElement = require('within-element')
@@ -36449,8 +36603,8 @@ function bodyOffset(body) {
   }
 }
 
-}, {"dom-support":16,"get-document":17,"within-element":18}],
-16: [function(require, module, exports) {
+}, {"dom-support":17,"get-document":18,"within-element":19}],
+17: [function(require, module, exports) {
 var domready = require('domready')
 
 module.exports = (function() {
@@ -36720,8 +36874,8 @@ module.exports = (function() {
 	return support;
 })();
 
-}, {"domready":19}],
-19: [function(require, module, exports) {
+}, {"domready":20}],
+20: [function(require, module, exports) {
 /*!
   * domready (c) Dustin Diaz 2014 - License MIT
   */
@@ -36754,7 +36908,7 @@ module.exports = (function() {
 });
 
 }, {}],
-17: [function(require, module, exports) {
+18: [function(require, module, exports) {
 
 /**
  * Module exports.
@@ -36814,7 +36968,7 @@ function getDocument(node) {
 }
 
 }, {}],
-18: [function(require, module, exports) {
+19: [function(require, module, exports) {
 
 /**
  * Check if the DOM element `child` is within the given `parent` DOM element.
@@ -36843,7 +36997,7 @@ module.exports = function within (child, parent) {
 };
 
 }, {}],
-10: [function(require, module, exports) {
+11: [function(require, module, exports) {
 
 /**
  * Add CanvasRenderer stuff to the given `THREE` instance.
