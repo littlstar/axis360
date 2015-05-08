@@ -51,14 +51,14 @@ build: build/build.js build/build.css
 #
 build/build.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
-	$(DUO) --type js --development < $(MAIN) > $@
+	$(DUO) -C --type js --development < $(MAIN) > $@
 
 ##
 # Builds CSS source files
 #
 build/build.css: node_modules $(CSS)
 	$(BUILD_PARENT_DIRECTORY)
-	cat $(CSS) | $(DUO) --type css > $@
+	cat $(CSS) | $(DUO) -C --type css > $@
 
 ##
 # Builds all dist files
@@ -70,14 +70,14 @@ dist: dist/slant-frame.js dist/slant-frame.css
 #
 dist/slant-frame.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
-	$(DUO) --type js --global $(GLOBAL_NAMESPACE) < $(MAIN) > $@
+	$(DUO) -C --type js --global $(GLOBAL_NAMESPACE) < $(MAIN) > $@
 
 ##
 # Builds CSS dist file
 #
 dist/slant-frame.css: node_modules $(CSS)
 	$(BUILD_PARENT_DIRECTORY)
-	cat $(CSS) | $(DUO) --type css > $@
+	cat $(CSS) | $(DUO) -C --type css > $@
 
 ##
 # Builds node modules

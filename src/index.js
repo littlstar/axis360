@@ -12,7 +12,6 @@ var three = require('three.js')
   , fullscreen = require('fullscreen')
   , tpl = require('./src/template.html')
   , keycode = require('keycode')
-  , offset = require('offset')
   , path = require('path')
 
 /**
@@ -115,7 +114,7 @@ function Frame (parent, opts) {
 
   function set (p) {
     if (opts[p]) {
-      self.video[p] = opts[p];
+      self.video.setAttribute(p, opts[p]);
     }
   }
 
