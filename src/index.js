@@ -14,6 +14,9 @@ var three = require('three.js')
   , keycode = require('keycode')
   , path = require('path')
 
+// uncomment to enable debugging
+//window.DEBUG = true;
+
 /**
  * Detect if file path is an image
  * based on the file path extension
@@ -64,8 +67,8 @@ var MAX_WHEEL_DISTANCE = 500;
 var MAX_LITTLE_PLANET_CAMERA_LENS_VALUE = 7.5;
 
 // min/max lat/lon values
-var MIN_LAT_VALUE = -85;
-var MAX_LAT_VALUE = 85;
+var MIN_LAT_VALUE = -90;
+var MAX_LAT_VALUE = 90;
 
 // projection types
 var PROJECTION_NORMAL = 'normal';
@@ -135,6 +138,7 @@ function Frame (parent, opts) {
   this.events.window = events(window, this);
   this.events.window.bind('resize');
   this.events.window.bind('deviceorientation');
+  this.events.window.bind('orientationchange');
 
   // init document events
   this.events.document = events(document, {
@@ -183,6 +187,7 @@ function Frame (parent, opts) {
   });
 
   this.events.document.bind('mousedown');
+  this.events.document.bind('touch', 'onmousedown');
   this.events.document.bind('keydown');
   this.events.document.bind('keyup');
 
@@ -240,15 +245,17 @@ function Frame (parent, opts) {
   // viewport state
   this.state = {
     maintainaspectratio: opts.maintainaspectratio ? true : false,
+    deviceorientation: {lat: 0, lon: 0},
     percentloaded: 0,
     originalsize: {width: null, height: null},
-    orientation: null,
+    orientation: window.orientation || 0,
     projection: 'normal',
     lastvolume: this.video.volume,
     fullscreen: false,
     timestamp: Date.now(),
     resizable: opts.resizable ? true : false,
-    dragstart: {},
+    mousedown: false,
+    dragstart: {x:0, y:0},
     animating: false,
     holdframe: opts.holdframe,
     inverted: (opts.inverted || opts.invertMouse) ? true : false,
@@ -259,10 +266,12 @@ function Frame (parent, opts) {
     focused: false,
     keydown: false,
     playing: false,
-    paused: false,
     dragpos: [],
+    paused: false,
+    center: {lat: null, lon: null},
     played: 0,
     height: opts.height,
+    touch: {lat: 0, lon: 0},
     ready: false,
     width: opts.width,
     muted: Boolean(opts.muted),
@@ -270,13 +279,11 @@ function Frame (parent, opts) {
     wheel: Boolean(opts.wheel),
     cache: {},
     event: null,
-    theta: 0,
     image: opts.image ? true : false,
     scroll: null == opts.scroll ? 0.09 : opts.scroll,
     rafid: null,
     time: 0,
     keys: {up: false, down: false, left: false, right: false},
-    phi: 0,
     lat: 0,
     lon: 0,
     fov: opts.fov,
@@ -296,10 +303,13 @@ function Frame (parent, opts) {
 
     //self.state.fov = DEFAULT_FOV;
     mesh.scale.x = -1;
+
     // init camera
-    self.camera = new three.PerspectiveCamera(DEFAULT_FOV,
-                                              (width / height),
-                                              0.1, 1100);
+    if (null == self.camera) {
+      self.camera = new three.PerspectiveCamera(DEFAULT_FOV,
+                                                (width / height),
+                                                0.1, 1100);
+    }
 
     // add mesh to scene
     self.scene = new three.Scene();
@@ -316,7 +326,7 @@ function Frame (parent, opts) {
       debug("animate: NORMAL");
       if (DEFAULT_FOV == self.state.fov && 0 == self.state.lon && 0 == self.state.lat) {
         self.state.animating = false;
-        self.refresh();
+        self.refresh().draw();
         if ('function' == typeof cb) { cb(); }
         return;
       }
@@ -351,7 +361,7 @@ function Frame (parent, opts) {
         }
       }
 
-      self.refresh();
+      self.refresh().draw();
       raf(animate);
 
     });
@@ -389,7 +399,7 @@ function Frame (parent, opts) {
         raf(animate);
       } else {
         self.state.animating = false;
-        self.refresh();
+        self.refresh().draw();
         if ('function' == typeof cb) { cb(); }
       }
     });
@@ -431,7 +441,7 @@ function Frame (parent, opts) {
         self.camera.position.z = Math.max(z, self.camera.position.z);
       }
 
-      self.refresh();
+      self.refresh().draw();
       raf(animate);
     });
   };
@@ -650,13 +660,11 @@ Frame.prototype.onmouseup = function (e) {
  */
 
 Frame.prototype.ontouchstart = function (e) {
-  if (e.touches.length) {
-    this.state.mousedownts = Date.now();
-    this.state.dragstart.x = e.touches[0].pageX;
-    this.state.dragstart.y = e.touches[0].pageY;
-    this.state.mousedown = true;
-    this.emit('touchstart', e);
-  }
+  this.state.mousedownts = Date.now();
+  this.state.dragstart.x = e.touches[0].pageX;
+  this.state.dragstart.y = e.touches[0].pageY;
+  this.state.mousedown = true;
+  this.emit('touchstart', e);
 };
 
 /**
@@ -787,21 +795,32 @@ Frame.prototype.onmousemove = function (e) {
 
 Frame.prototype.ontouchmove = function(e) {
   if (e.touches.length) {
+    e.preventDefault();
+
     var x = e.touches[0].pageX - this.state.dragstart.x;
     var y = e.touches[0].pageY - this.state.dragstart.y;
 
     this.state.dragstart.x = e.touches[0].pageX;
     this.state.dragstart.y = e.touches[0].pageY;
 
-    this.state.lon += x;
-    this.state.lat -= y;
+    // @TODO(werle) - Make friction configurable
+    y *=.2;
+    x *=.255;
 
-    if (PROJECTION_LITTLE_PLANET != this.state.projection) {
-      this.state.cache.lat = this.state.lat;
-      this.state.cache.lon = this.state.lon;
+    if (this.state.inverted) {
+      this.state.lat -= y;
+      this.state.lon += x;
+    } else {
+      this.state.lat += y;
+      this.state.lon -= x;
     }
 
+    this.state.touch.lat = this.state.lat;
+    this.state.touch.lon = this.state.lon;
+
+    this.refresh();
   }
+
   this.emit('touchmove', e);
 };
 
@@ -847,18 +866,70 @@ Frame.prototype.onmousewheel = function (e) {
  * Handle `ondeviceorientation' event
  *
  * @api private
- * @param {String} orientation
  * @param {Object} e
  */
 
 Frame.prototype.ondeviceorientation = function (e) {
-  // @TODO(werle) - make this factor configurable
-  var f = 0.08;
+  var orientation = this.state.orientation;
   var alpha = e.alpha;
   var beta = e.beta;
   var gamma = e.gamma;
-  this.state.lat = (beta + f);
-  this.state.lon = -(gamma + f);
+  var lat = 0;
+  var lon = 0;
+
+  if (PROJECTION_LITTLE_PLANET == this.state.projection) {
+    return false;
+  }
+
+  debug('orientation=%s',
+        0 == orientation ? 'portrait(0)' :
+        90 == orientation ? 'landscape(90)' :
+        -90 == orientation ? 'landscape(-90)' :
+        'unknown('+ orientation +')');
+
+  if (0 == orientation) {
+    lat = beta;
+    lon = gamma;
+  } else if (90 == orientation) {
+    lat = gamma;
+    lon = beta;
+  } else {
+    lat = gamma * -1;
+    lon = beta * -1;
+  }
+
+  if (this.state.inverted) {
+    lat = lat * -1;
+    lon = Math.abs(lon);
+  }
+
+  if (lat >= MAX_LAT_VALUE || lat <= MIN_LAT_VALUE) {
+    return false;
+  }
+
+  if (null == this.state.center.lat) {
+    this.state.center.lat = lat;
+  }
+
+  if (null == this.state.center.lon) {
+    this.state.center.lon = lon;
+  }
+
+  this.state.deviceorientation.lat = lat;
+  this.state.deviceorientation.lon = lon;
+};
+
+/**
+ * Handle `onorientationchange' event
+ *
+ * @api private
+ * @param {Object} e
+ */
+
+Frame.prototype.onorientationchange = function (e) {
+  this.state.orientation = window.orientation;
+  this.state.center.lat = this.state.deviceorientation.lat;
+  this.state.center.lon = this.state.deviceorientation.lon;
 };
 
 /**
@@ -1004,10 +1075,12 @@ Frame.prototype.volume = function (n) {
 Frame.prototype.mute = function (mute) {
   if (false == mute) {
     this.video.muted = false;
+    this.state.muted = false;
     if (0 == this.volume()) {
       this.volume(this.state.lastvolume);
     }
   } else {
+    this.state.muted = true;
     this.video.muted = true;
     this.volume(0);
     this.emit('mute');
@@ -1066,6 +1139,18 @@ Frame.prototype.refresh = function () {
     this.state.lon += delta;
   }
 
+  if (false == this.state.mousedown && this.state.deviceorientation.lat) {
+    var dlat = this.state.deviceorientation.lat - this.state.center.lat;
+    var dlon = this.state.deviceorientation.lon - this.state.center.lon;
+
+    // @TODO(werle) - Make this friction configurable
+    dlat *= .4;
+    dlon *= .2;
+
+    this.state.lat = dlat + this.state.touch.lat;
+    this.state.lon = dlon + this.state.touch.lon;
+  }
+
   if (this.camera) {
     this.camera.fov = this.state.fov;
     this.camera.updateProjectionMatrix();
@@ -1078,7 +1163,7 @@ Frame.prototype.refresh = function () {
 
   this.emit('refresh');
   this.emit('state', this.state);
-  return this.draw();
+  return this;
 };
 
 /**
@@ -1127,7 +1212,7 @@ Frame.prototype.foward = function (seconds) {
 
 /**
  * Rewind `n' amount of seconds
- *
+ e
  * @api public
  * @param {Number} seconds
  */
@@ -1159,27 +1244,32 @@ Frame.prototype.use = function (fn) {
  */
 
 Frame.prototype.draw = function () {
+  var renderer = this.renderer;
   var camera = this.camera;
   var scene = this.scene;
-  var renderer = this.renderer;
+  var dtor = Math.PI / 180; // degree to radian conversion
 
-  var theta = this.state.theta = this.state.lon * Math.PI / 180;
-  var lat = this.state.lat = Math.max(MIN_LAT_VALUE, Math.min(85, this.state.lat));
-  var phi = this.state.phi = (90 - this.state.lat) * Math.PI / 180;
+  var lat = this.state.lat;
+  var lon = this.state.lon;
 
-  var x = 500 * Math.sin(this.state.phi) * Math.cos(this.state.theta);
-  var y = 500 * Math.cos(this.state.phi);
-  var z = 500 * Math.sin(this.state.phi) * Math.sin(this.state.theta);
+  lat = Math.max(MIN_LAT_VALUE, Math.min(MAX_LAT_VALUE, lat));
+
+  var theta = lon * dtor;
+  var phi = (90 - lat) * dtor;
+
+  var x = 500 * Math.sin(phi) * Math.cos(theta);
+  var y = 500 * Math.cos(phi);
+  var z = 500 * Math.sin(phi) * Math.sin(theta);
 
   this.lookAt(x, y, z);
-
   this.emit('draw');
   this.emit('state', this.state);
+
   return this;
 };
 
 /**
- * Look at a position in a [x, y, z) vector
+ * Look at a position in a [x, y, z] vector
  *
  * @api public
  * @param {Number} x
@@ -1261,8 +1351,9 @@ Frame.prototype.render = function () {
 
   this.state.rafid = raf(function loop () {
     if (self.el.parentElement && self.el.parentElement.contains(self.el)) {
-      self.refresh();
       raf(loop);
+      self.refresh();
+      self.draw();
     }
   });
 
@@ -1296,7 +1387,7 @@ Frame.prototype.height = function (height) {
     return this.state.height;
   }
 
-  this.state.height = height;
+  this.size(this.state.width, height);
   this.emit('height', height);
   return this;
 };
@@ -1313,7 +1404,7 @@ Frame.prototype.width = function (width) {
     return this.state.width;
   }
 
-  this.state.width = width;
+  this.size(width, this.state.height);
   this.emit('width', width);
   return this;
 };
