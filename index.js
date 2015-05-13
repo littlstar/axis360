@@ -10,7 +10,7 @@ var three = require('three.js')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
   , fullscreen = require('fullscreen')
-  , tpl = require('./src/template.html')
+  , tpl = require('./template.html')
   , keycode = require('keycode')
   , path = require('path')
 

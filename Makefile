@@ -12,17 +12,17 @@ DUO := $(BIN)/duo
 ##
 # CSS source files
 #
-CSS := src/*.css
+CSS := *.css
 
 ##
 # Module source (js, html, json)
 #
-SRC := src/*.js src/*.html component.json
+SRC := index.js template.html component.json
 
 ##
 # Main javascript entry
 #
-MAIN = src/index.js
+MAIN = index.js
 
 ##
 # Global namespace target
