@@ -2,10 +2,9 @@
   "name": "slant-frame",
   "version": "1.0.0",
   "description": "Core video frame API for slant",
-  "paths": ["src"],
-  "scripts": ["src/index.js"],
-  "styles": ["src/frame.css"],
-  "templates": ["src/template.html"],
+  "scripts": ["index.js"],
+  "styles": ["frame.css"],
+  "templates": ["template.html"],
   "dependencies": {
     "littlstar/three-canvas-renderer": "*",
     "components/three.js": "*",

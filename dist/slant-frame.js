@@ -95,7 +95,7 @@ var three = require('three.js')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
   , fullscreen = require('fullscreen')
-  , tpl = require('./src/template.html')
+  , tpl = require('./template.html')
   , keycode = require('keycode')
   , path = require('path')
 
@@ -1536,7 +1536,7 @@ Frame.prototype.destroy = function () {
   return this;
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"./src/template.html":9,"keycode":10,"path":11,"three-canvas-renderer":12}],
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"./template.html":9,"keycode":10,"path":11,"three-canvas-renderer":12}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
