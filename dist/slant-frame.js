@@ -148,8 +148,8 @@ var FRAME_CLICK_THRESHOLD = 250;
 var MIN_WHEEL_DISTANCE = 5;
 var MAX_WHEEL_DISTANCE = 500;
 
-// max little planet projection camera lens value
-var MAX_LITTLE_PLANET_CAMERA_LENS_VALUE = 7.5;
+// max tiny planet projection camera lens value
+var MAX_TINY_PLANET_CAMERA_LENS_VALUE = 7.5;
 
 // min/max lat/lon values
 var MIN_LAT_VALUE = -90;
@@ -157,7 +157,7 @@ var MAX_LAT_VALUE = 90;
 
 // projection types
 var PROJECTION_NORMAL = 'normal';
-var PROJECTION_LITTLE_PLANET = 'littleplanet';
+var PROJECTION_TINY_PLANET = 'tinyplanet';
 var PROJECTION_FISHEYE = 'fisheye';
 
 // default projection
@@ -402,7 +402,7 @@ function Frame (parent, opts) {
 
     self.state.animating = true;
     raf(function animate () {
-      if (PROJECTION_LITTLE_PLANET == projection) {
+      if (PROJECTION_TINY_PLANET == projection) {
         self.state.lon = self.state.cache.lon;
         self.state.lat = self.state.cache.lat;
       }
@@ -428,7 +428,7 @@ function Frame (parent, opts) {
 
       self.state.fov = fov;
 
-      if (PROJECTION_LITTLE_PLANET == projection) {
+      if (PROJECTION_TINY_PLANET == projection) {
         if (self.state.lon > 0) {
           self.state.lon -= factor;
           self.state.lon = Math.max(0, self.state.lon);
@@ -452,8 +452,8 @@ function Frame (parent, opts) {
     });
   };
 
-  this.projections[PROJECTION_LITTLE_PLANET] = function littleplanet (_, cb) {
-    if (PROJECTION_LITTLE_PLANET != self.state.projection) {
+  this.projections[PROJECTION_TINY_PLANET] = function tinyplanet (_, cb) {
+    if (PROJECTION_TINY_PLANET != self.state.projection) {
       self.state.cache.lon = self.state.lon;
       self.state.cache.lat = self.state.lat;
     }
@@ -461,7 +461,7 @@ function Frame (parent, opts) {
     raf(function animate () {
       var factor = 6;
       if (false == self.state.animating) { return; }
-      debug("animate: LITTLE_PLANET");
+      debug("animate: TINY_PLANET");
       if (self.state.lat > MIN_LAT_VALUE || self.state.lon != 0) {
         self.state.animating = true;
 
@@ -479,7 +479,7 @@ function Frame (parent, opts) {
           self.state.lon = Math.min(0, self.state.lon);
         }
 
-        self.camera.setLens(MAX_LITTLE_PLANET_CAMERA_LENS_VALUE);
+        self.camera.setLens(MAX_TINY_PLANET_CAMERA_LENS_VALUE);
         self.state.fov = self.camera.fov;
         raf(animate);
       } else {
@@ -861,7 +861,7 @@ Frame.prototype.onmousemove = function (e) {
       this.state.lat -= y;
     }
 
-    if (PROJECTION_LITTLE_PLANET != this.state.projection) {
+    if (PROJECTION_TINY_PLANET != this.state.projection) {
       this.state.cache.lat = this.state.lat;
       this.state.cache.lon = this.state.lon;
     }
@@ -962,7 +962,7 @@ Frame.prototype.ondeviceorientation = function (e) {
   var lat = 0;
   var lon = 0;
 
-  if (PROJECTION_LITTLE_PLANET == this.state.projection) {
+  if (PROJECTION_TINY_PLANET == this.state.projection) {
     return false;
   }
 
@@ -1241,7 +1241,7 @@ Frame.prototype.refresh = function () {
     this.camera.updateProjectionMatrix();
   }
 
-  if (PROJECTION_LITTLE_PLANET != this.state.projection) {
+  if (PROJECTION_TINY_PLANET != this.state.projection) {
     this.state.cache.lat = this.state.lat;
     this.state.cache.lon = this.state.lon;
   }
