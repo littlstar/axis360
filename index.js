@@ -1102,6 +1102,7 @@ Frame.prototype.volume = function (n) {
     if (null == n) {
       return this.video.volume;
     }
+    this.state.lastvolume = this.video.volume;
     this.video.volume = n
     this.emit('volume', n);
   }
