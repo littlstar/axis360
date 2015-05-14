@@ -12,9 +12,9 @@
     "component/events": "*",
     "component/domify": "*",
     "component/raf": "*",
-    "component/fullscreen": "*",
+    "littlstar/fullscreen": "master",
     "jb55/has-webgl": "*",
-    "littlstar/three-canvas-renderer": "*",
+    "littlstar/three-vr-effect": "*",
     "yields/keycode": "*",
     "timoxley/offset": "*",
     "component/path": "*"
