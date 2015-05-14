@@ -27,7 +27,7 @@ MAIN = index.js
 ##
 # Global namespace target
 #
-GLOBAL_NAMESPACE = SlantFrame
+GLOBAL_NAMESPACE = Bubble
 
 ##
 # Ensures parent directory is built
@@ -63,19 +63,19 @@ build/build.css: node_modules $(CSS)
 ##
 # Builds all dist files
 #
-dist: dist/slant-frame.js dist/slant-frame.css
+dist: dist/bubble.js dist/bubble.css
 
 ##
 # Builds javascript dist file
 #
-dist/slant-frame.js: node_modules $(SRC)
+dist/bubble.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
 	$(DUO) -C --type js --global $(GLOBAL_NAMESPACE) < $(MAIN) > $@
 
 ##
 # Builds CSS dist file
 #
-dist/slant-frame.css: node_modules $(CSS)
+dist/bubble.css: node_modules $(CSS)
 	$(BUILD_PARENT_DIRECTORY)
 	cat $(CSS) | $(DUO) -C --type css > $@
 
