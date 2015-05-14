@@ -1,28 +1,28 @@
-.slant.frame {
+.bubble.frame {
   position: relative;
   margin: 0;
   padding: 0;
 }
 
-.slant.frame .container {
+.bubble.frame .container {
   position: relative;
   display: block;
   margin: 0;
   padding: 0;
 }
 
-.slant.frame video {
+.bubble.frame video {
   display: none;
 }
 
-.slant.frame canvas {
+.bubble.frame canvas {
   position: relative;
   display: block;
   margin: 0 auto;
   padding: 0;
 }
 
-.slant.holdframe {
+.bubble.holdframe {
   background-repeat: no-repeat;
   background-size: 100% 100%;
   position: absolute;

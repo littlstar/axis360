@@ -111,7 +111,7 @@ function Frame (parent, opts) {
 
   // init view
   this.el = dom(tpl);
-  this.holdframe = this.el.querySelector('.slant.holdframe');
+  this.holdframe = this.el.querySelector('.bubble.holdframe');
   this.video = this.el.querySelector('video');
   this.video.style.display = 'none';
 
@@ -156,6 +156,7 @@ function Frame (parent, opts) {
         if (code == keycode(n)) {
           e.preventDefault();
           self.state.keys[n] = true;
+          self.state.animating = false;
         }
       }
 
@@ -258,6 +259,7 @@ function Frame (parent, opts) {
     dragstart: {x:0, y:0},
     animating: false,
     holdframe: opts.holdframe,
+    geometry: null,
     inverted: (opts.inverted || opts.invertMouse) ? true : false,
     keyboard: false !== opts.keyboard ? true : false,
     duration: 0,
@@ -267,6 +269,7 @@ function Frame (parent, opts) {
     keydown: false,
     playing: false,
     dragpos: [],
+    radius: opts.radius || 400,
     paused: false,
     center: {lat: null, lon: null},
     played: 0,
@@ -292,14 +295,38 @@ function Frame (parent, opts) {
 
   // viewport projections
   this.projections = {};
-  this.projections[PROJECTION_NORMAL] = function normal (_, cb) {
-    var geo = new three.SphereGeometry(500, 80, 50);
+  this.projections[PROJECTION_NORMAL] = function normal () {
+    if (false == self.state.ready) { return; }
+    var videoHeight = self.video.videoHeight;
+    var videoWidth = self.video.videoWidth;
+    var radius = self.state.radius;
+    var phi = 100;
+    var geo = null;
+    var maxFov = DEFAULT_FOV;
+    var ratio = (videoWidth / videoHeight);
+
+    if (0 == videoWidth || 0 == videoHeight) {
+      return;
+    }
+
+    if (ratio == ratio && 2 == ratio) {
+      geo = new three.SphereGeometry(radius, 80, 50, phi);
+      self.state.geometry = 'sphere';
+    } else {
+      var zoom = -6;
+      self.state.fov += zoom;
+      maxFov += zoom;
+      self.state.geometry = 'cylinder';
+      geo = new three.CylinderGeometry(radius, radius, videoHeight,
+                                         64, 1, true);
+    }
+
     var material = new three.MeshBasicMaterial({map: self.texture});
     var mesh = new three.Mesh(geo, material);
     var width = self.width();
     var height = self.height();
-    var fov = self.state.fov;
     var projection = self.state.projection;
+    var fov = self.state.fov;
 
     //self.state.fov = DEFAULT_FOV;
     mesh.scale.x = -1;
@@ -324,21 +351,20 @@ function Frame (parent, opts) {
       var factor = 6;
       if (false == self.state.animating) { return; }
       debug("animate: NORMAL");
-      if (DEFAULT_FOV == self.state.fov && 0 == self.state.lon && 0 == self.state.lat) {
+      if (maxFov == self.state.fov && 0 == self.state.lon && 0 == self.state.lat) {
         self.state.animating = false;
         self.refresh().draw();
-        if ('function' == typeof cb) { cb(); }
         return;
       }
 
-      if (fov > DEFAULT_FOV) {
+      if (fov > maxFov) {
         fov -= factor;
-        fov = Math.max(fov, DEFAULT_FOV);
-      } else if (fov < DEFAULT_FOV) {
+        fov = Math.max(fov, maxFov);
+      } else if (fov < maxFov) {
         fov += factor;
-        fov = Math.min(fov, DEFAULT_FOV);
+        fov = Math.min(fov, maxFov);
       } else {
-        fov = DEFAULT_FOV;
+        fov = maxFov;
       }
 
       self.state.fov = fov;
@@ -367,7 +393,9 @@ function Frame (parent, opts) {
     });
   };
 
-  this.projections[PROJECTION_TINY_PLANET] = function tinyplanet (_, cb) {
+  this.projections[PROJECTION_TINY_PLANET] = function tinyplanet () {
+    if (false == self.state.ready) { return; }
+    else if ('cylinder' == self.state.geometry) { return; }
     if (PROJECTION_TINY_PLANET != self.state.projection) {
       self.state.cache.lon = self.state.lon;
       self.state.cache.lat = self.state.lat;
@@ -400,12 +428,12 @@ function Frame (parent, opts) {
       } else {
         self.state.animating = false;
         self.refresh().draw();
-        if ('function' == typeof cb) { cb(); }
       }
     });
   };
 
   this.projections[PROJECTION_FISHEYE] = function () {
+    if (false == self.state.ready) { return; }
     var z = (self.height() / 100)|0;
     var f = 6;
     var fov = 75;
@@ -420,8 +448,7 @@ function Frame (parent, opts) {
       debug("animate: FISHEYE");
       if (fov == self.state.fov) {
         self.state.animating = false;
-        self.refresh();
-        if ('function' == typeof cb) { cb(); }
+        self.refresh().draw();
         return;
       }
 
@@ -446,11 +473,14 @@ function Frame (parent, opts) {
     });
   };
 
-  // set projection
- this.projection(DEFAULT_PROJECTION);
+  // initialize projection
+  this.projection(DEFAULT_PROJECTION);
 
- // initialize frame source
- this.src(opts.src);
+  // initialize frame source
+  this.src(opts.src);
+  this.on('ready', function () {
+    this.state.ready = true;
+  });
 }
 
 // mixin `Emitter'
@@ -497,8 +527,11 @@ Frame.prototype.oncanplaythrough = function (e) {
   this.state.duration = this.video.duration;
 
   this.emit('canplaythrough', e);
-  this.emit('ready');
   this.state.ready = true;
+
+  setTimeout(function () {
+    this.emit('ready');
+  }.bind(this));
 
   if (true == this.opts.autoplay) {
     this.video.play();
@@ -632,6 +665,7 @@ Frame.prototype.onended = function (e) {
 
 Frame.prototype.onmousedown = function (e) {
   this.state.mousedownts = Date.now();
+  this.state.animating = false;
   this.state.dragstart.x = e.pageX;
   this.state.dragstart.y = e.pageY;
   this.state.mousedown = true;
@@ -941,18 +975,27 @@ Frame.prototype.onorientationchange = function (e) {
  */
 
 Frame.prototype.size = function (width, height) {
+  this.state.width = width;
+  this.state.height = height;
+
+  if (this.camera) {
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+  }
+
+  if (this.renderer) {
+    this.renderer.setSize(width, height);
+  }
+
+  if (this.state.originalsize.width == null) {
+    this.state.originalsize.width = width;
+  }
+
+  if (this.state.originalsize.height == null) {
+    this.state.originalsize.height = height;
+  }
+
   this.emit('size', width, height);
-  this.camera.aspect = width / height;
-  this.camera.updateProjectionMatrix();
-  this.renderer.setSize(
-    (this.state.width = width),
-    (this.state.height = height));
-    if (this.state.originalsize.width == null) {
-      this.state.originalsize.width = width;
-    }
-    if (this.state.originalsize.height == null) {
-      this.state.originalsize.height = height;
-    }
   return this;
 };
 
@@ -1161,6 +1204,10 @@ Frame.prototype.refresh = function () {
     this.state.cache.lon = this.state.lon;
   }
 
+  if ('cylinder' == this.state.geometry) {
+    this.state.lat = 0;
+  }
+
   this.emit('refresh');
   this.emit('state', this.state);
   return this;
@@ -1245,6 +1292,7 @@ Frame.prototype.use = function (fn) {
 
 Frame.prototype.draw = function () {
   var renderer = this.renderer;
+  var radius = this.state.radius;
   var camera = this.camera;
   var scene = this.scene;
   var dtor = Math.PI / 180; // degree to radian conversion
@@ -1257,9 +1305,9 @@ Frame.prototype.draw = function () {
   var theta = lon * dtor;
   var phi = (90 - lat) * dtor;
 
-  var x = 500 * Math.sin(phi) * Math.cos(theta);
-  var y = 500 * Math.cos(phi);
-  var z = 500 * Math.sin(phi) * Math.sin(theta);
+  var x = radius * Math.sin(phi) * Math.cos(theta);
+  var y = radius * Math.cos(phi);
+  var z = radius * Math.sin(phi) * Math.sin(theta);
 
   this.lookAt(x, y, z);
   this.emit('draw');
@@ -1280,18 +1328,18 @@ Frame.prototype.draw = function () {
 Frame.prototype.lookAt = function (x, y, z) {
   var vec = new three.Vector3(x, y, z);
 
-  this.camera.lookAt(vec);
-  this.camera.position.x = -x;
-  this.camera.position.y = -y;
-  this.camera.position.z = -z;
+  if (this.camera) {
+    this.camera.lookAt(vec);
+    x = this.camera.position.x = -x;
+    y = this.camera.position.y = -y;
+    z = this.camera.position.z = -z;
 
-  this.renderer.clear();
-  this.renderer.render(this.scene, this.camera);
-
-  this.emit('lookat',
-            {x: this.camera.position.x,
-             y: this.camera.position.y,
-             z: this.camera.position.z});
+    if (this.renderer) {
+      this.renderer.clear();
+      this.renderer.render(this.scene, this.camera);
+      this.emit('lookat', {x: x, y: y, z: z});
+    }
+  }
 
   return this;
 };
@@ -1335,7 +1383,9 @@ Frame.prototype.render = function () {
     this.texture.magFilter = three.LinearFilter;
     this.texture.generateMipmaps = false;
   } else {
-    this.texture = three.ImageUtils.loadTexture(this.src());
+    this.texture = three.ImageUtils.loadTexture(this.src(),
+                                                null,
+                                                this.emit.bind(this, 'ready'));
   }
 
   // initialize size
@@ -1369,7 +1419,7 @@ Frame.prototype.render = function () {
  */
 
 Frame.prototype.offset =
-Frame.prototype.setViewOffset = function () {
+  Frame.prototype.setViewOffset = function () {
   // @see http://threejs.org/docs/#Reference/Cameras/PerspectiveCamera
   this.camera.setViewOffset.apply(this.camera, arguments);
   return this;
@@ -1417,16 +1467,24 @@ Frame.prototype.width = function (width) {
  * @param {Function} cb - optional
  */
 
-Frame.prototype.projection = function (type, cb) {
+Frame.prototype.projection = function (type) {
   type = type ? type.replace(/\s+/g, '') : null;
   var fn = this.projections[type];
-  if (type && 'function' == typeof fn) {
-    fn(this, cb);
-    this.state.projection = type;
-    return this;
+  if (this.state.ready) {
+    if (type && 'function' == typeof fn) {
+      fn(this);
+      this.state.projection = type;
+      return this;
+    } else {
+      return this.state.projection;
+    }
   } else {
-    return this.state.projection;
+    this.once('ready', function () {
+      this.projection(type);
+    });
   }
+
+  return this;
 };
 
 /**
@@ -1450,3 +1508,6 @@ Frame.prototype.destroy = function () {
   }
   return this;
 };
+
+/**
+ * Sets */
