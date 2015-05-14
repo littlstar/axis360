@@ -2,10 +2,10 @@
 <html>
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <title>Slant Core Video Frame</title>
+    <title>Bubble Core Video Frame</title>
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css" type="text/css" />
-    <link rel="stylesheet" href="dist/slant-frame.css" type="text/css" />
-    <script type="text/javascript" charset="utf-8" src="dist/slant-frame.js"></script>
+    <link rel="stylesheet" href="dist/bubble-frame.css" type="text/css" />
+    <script type="text/javascript" charset="utf-8" src="dist/bubble-frame.js"></script>
     <style type="text/css" media="all">
       body {
         display: block;
@@ -85,20 +85,20 @@
   </head>
   <body>
     <h3 id="title">
-      <i class="fa fa-video-camera"></i>Slant Core video frame API
+      <i class="fa fa-video-camera"></i>Bubble 360 Video Test
     </h3>
     <span id="heading">Click and drag to navigate the 360 video</span>
     <div id="meta">
       <span id="version"><i class="fa fa-tag"></i>v0.0.1</span>
       <span id="github-source">
         <i class="fa fa-github"></i>
-        <a href="https://github.com/littlstar/slant-frame">View Source</a>
+        <a href="https://github.com/littlstar/bubble">View Source</a>
       </span>
     </div>
     <div id="video"></div>
     <button id="go-fullscreen">Go fullscreen</button>
     <script type="text/javascript" charset="utf-8">
-      var frame = new SlantFrame(document.querySelector('#video'), {
+      var frame = new Bubble(document.querySelector('#video'), {
         src: 'test.webm',
         resizable: true,
         autoplay: true,

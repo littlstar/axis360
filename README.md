@@ -1,18 +1,20 @@
-slant-frame
-==========
+Bubble
+======
+
+Bubble is a 360 video rendering engine. It supports 
 
 ## install
 
 with **component:**
 
 ```sh
-$ component install littlstar/slant-frame
+$ component install littlstar/bubble
 ```
 
 ## usage
 
 ```js
-var Frame = require('slant-frame');
+var Bubble = require('bubble');
 var el = document.querySelector('#video');
 var frame = new Frame(el, {src: '/path/to/video.mp4'});
 ```
