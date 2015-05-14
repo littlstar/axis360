@@ -1,7 +1,7 @@
 {
-  "name": "slant-frame",
+  "name": "bubble",
   "version": "1.1.0",
-  "description": "Core video frame API for slant",
+  "description": "360 video rendering engine",
   "scripts": ["index.js"],
   "styles": ["frame.css"],
   "templates": ["template.html"],
