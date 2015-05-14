@@ -2,10 +2,10 @@
 <html>
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <title>Bubble Core Video Frame</title>
+    <title>Bubble - 360 Video Rendering Engine</title>
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css" type="text/css" />
-    <link rel="stylesheet" href="dist/bubble-frame.css" type="text/css" />
-    <script type="text/javascript" charset="utf-8" src="dist/bubble-frame.js"></script>
+    <link rel="stylesheet" href="dist/bubble.css" type="text/css" />
+    <script type="text/javascript" charset="utf-8" src="dist/bubble.js"></script>
     <style type="text/css" media="all">
       body {
         display: block;
@@ -43,7 +43,7 @@
         background: #cecece;
       }
 
-      #video {
+      .video {
         display: block;
         position: relative;
         width: 100%;
@@ -95,25 +95,36 @@
         <a href="https://github.com/littlstar/bubble">View Source</a>
       </span>
     </div>
-    <div id="video"></div>
+    <div class="normal video"></div>
+    <div class="vsn video"></div>
     <button id="go-fullscreen">Go fullscreen</button>
     <script type="text/javascript" charset="utf-8">
-      var frame = new Bubble(document.querySelector('#video'), {
+      var frame = new Bubble(document.querySelector('.normal.video'), {
         src: 'test.webm',
         resizable: true,
         autoplay: true,
         holdframe: 'holdframe.png',
-        wheel: true,
         crossorigin: true
       });
 
       frame.render();
-    </script>
-    <script type="text/javascript">
       var el = document.getElementById('go-fullscreen');
       el.onclick = function() {
         frame.fullscreen();
       };
+
+      var vsn = new Bubble(document.querySelector('.vsn.video'), {
+        src: 'vsn.webm',
+        resizable: true,
+        autoplay: true,
+        wheel: true,
+        crossorigin: true
+      });
+
+      vsn.render();
+
+    </script>
+    <script type="text/javascript">
     </script>
   </body>
 </html>
