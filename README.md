@@ -3,7 +3,7 @@ Bubble
 
 Bubble is a 360 video rendering engine.
 
-![](https://github.com/littlstar/bubble/tree/assets/tiny-planet.png)
+![](assets/tiny-planet.png)
 
 ## Status
 
