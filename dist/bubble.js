@@ -30,15 +30,18 @@
    */
 
   function call(id, require){
-    var m = cache[id] = { exports: {} };
+    var m = { exports: {} };
     var mod = modules[id];
     var name = mod[2];
     var fn = mod[0];
 
     fn.call(m.exports, function(req){
       var dep = modules[id][1][req];
-      return require(dep ? dep : req);
+      return require(dep || req);
     }, m, m.exports, outer, modules, cache, entries);
+
+    // store to cache after successful resolve
+    cache[id] = m;
 
     // expose as `name`.
     if (name) cache[name] = cache[id];
@@ -100,7 +103,7 @@ var three = require('three.js')
   , path = require('path')
 
 // uncomment to enable debugging
-//window.DEBUG = true;
+window.DEBUG = true;
 
 /**
  * Detect if file path is an image
@@ -137,6 +140,7 @@ function debug () {
 // add three.CanvasRenderer
 Frame.THREE = three;
 require('three-canvas-renderer')(three);
+require('three-vr-effect')(three);
 
 // default field of view
 var DEFAULT_FOV = 30;
@@ -314,8 +318,12 @@ function Frame (parent, opts) {
     new three.CanvasRenderer()
   );
 
+  // initialize vreffect
+  this.vreffect = new three.VREffect(this.renderer, debug.bind(null, 'VREffect:'));
+
   // renderer options
-  this.renderer.autoClear = opts.autoClear || false;
+  this.renderer.autoClear = null != opts.autoClear ? opts.autoClear : true;
+  this.renderer.setPixelRatio(opts.devicePixelRatio || window.devicePixelRatio);
   this.renderer.setClearColor(opts.clearColor || 0x000, 1);
 
   // attach renderer to instance node container
@@ -375,7 +383,8 @@ function Frame (parent, opts) {
     lat: 0,
     lon: 0,
     fov: opts.fov,
-    src: null
+    src: null,
+    vr: opts.vr || false
   };
 
   // viewport projections
@@ -396,6 +405,7 @@ function Frame (parent, opts) {
 
     if (ratio == ratio && 2 == ratio) {
       geo = new three.SphereGeometry(radius, 80, 50, phi);
+      //geo.applyMatrix(new three.Matrix4().makeScale(-1, 1, 1));
       self.state.geometry = 'sphere';
     } else {
       var zoom = -6;
@@ -421,6 +431,7 @@ function Frame (parent, opts) {
       self.camera = new three.PerspectiveCamera(DEFAULT_FOV,
                                                 (width / height),
                                                 0.1, 1100);
+      self.camera.target = new three.Vector3(0, 0, 0);
     }
 
     // add mesh to scene
@@ -709,7 +720,6 @@ Frame.prototype.onprogress = function (e) {
   e.percent = percent * 100;
   this.state.percentloaded = percent;
   this.emit('progress', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -725,7 +735,6 @@ Frame.prototype.ontimeupdate = function (e) {
   this.state.duration = this.video.duration;
   this.state.played = e.percent;
   this.emit('timeupdate', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -755,7 +764,6 @@ Frame.prototype.onmousedown = function (e) {
   this.state.dragstart.y = e.pageY;
   this.state.mousedown = true;
   this.emit('mousedown', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -768,7 +776,6 @@ Frame.prototype.onmousedown = function (e) {
 Frame.prototype.onmouseup = function (e) {
   this.state.mousedown = false;
   this.emit('mouseup', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -853,10 +860,16 @@ Frame.prototype.onresize = function (e) {
 
 Frame.prototype.onfullscreenchange = function(fullscreen) {
   this.state.focused = true;
+  this.state.animating = false;
   if (fullscreen) {
     this.state.fullscreen = true;
     this.emit('enterfullscreen');
   } else {
+    if (this.state.vr) {
+      // @TODO(werle) - not sure how to fix this bug but the scene
+      // needs to be re-rendered
+      raf(function () { this.render(); }.bind(this));
+    }
     this.size(this.state.lastsize.width, this.state.lastsize.height);
     this.emit('resize', {
       width: this.state.lastsize.width,
@@ -902,7 +915,6 @@ Frame.prototype.onmousemove = function (e) {
   }
 
   this.emit('mousemove', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -978,7 +990,6 @@ Frame.prototype.onmousewheel = function (e) {
   this.camera.setLens(this.state.fov);
 
   this.emit('mousewheel', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -1145,8 +1156,12 @@ Frame.prototype.pause = function () {
  */
 
 Frame.prototype.fullscreen = function () {
-  if (! fullscreen.supported) return;
-  if (! this.state.fullscreen) {
+  var opts = null;
+  if (! fullscreen.supported) {
+    return;
+  } else if (this.state.vr) {
+    opts = {vrDisplay: this.vreffect._vrHMD};
+  } else if (! this.state.fullscreen) {
     var canvasStyle = getComputedStyle(this.renderer.domElement);
     var canvasWidth = parseFloat(canvasStyle.width);
     var canvasHeight = parseFloat(canvasStyle.height);
@@ -1171,8 +1186,9 @@ Frame.prototype.fullscreen = function () {
       height: newHeight
     });
 
-    fullscreen(this.renderer.domElement);
   }
+
+  fullscreen(this.renderer.domElement, opts);
 };
 
 /**
@@ -1289,12 +1305,12 @@ Frame.prototype.refresh = function () {
     this.state.cache.lon = this.state.lon;
   }
 
+
   if ('cylinder' == this.state.geometry) {
     this.state.lat = 0;
   }
 
   this.emit('refresh');
-  this.emit('state', this.state);
   return this;
 };
 
@@ -1395,8 +1411,55 @@ Frame.prototype.draw = function () {
   var z = radius * Math.sin(phi) * Math.sin(theta);
 
   this.lookAt(x, y, z);
+
+  if (this.state.vr) {
+    var hmd = this.vreffect._vrHMD;
+    if (hmd) {
+      // use left eye for rotation reference
+      var sensor = this.vreffect._sensor;
+      // get state
+      var vrstate = sensor.getImmediateState();
+      // get orientation
+      var orientation = vrstate.orientation;
+      // get position
+      var position = vrstate.position;
+      // create quat
+      var quat = new three.Quaternion(orientation.x,
+                                      orientation.y,
+                                      orientation.z,
+                                      orientation.w);
+      /*// create euler rotation from quat where phi = +X, beta = +Y, gamma = +Z
+      // calculate phi from quat
+      var phi = Math.atan2(2 * ((q[0] * q[1]) + (q[2] * q)));
+      // calculate beta from quat
+      var beta = 1 - 2 * (Math.pow(q[1], 2) + Math.pow(q[2], 2)) *
+        Math.asin(2 * ((q[0] * q[2]) - (q[3] * q[1]))) *
+        Math.atan2(2 * ((q[0] * q[2]) - (q[3] * q[1])))
+      // calculate gamma from quat
+      var gamma = 1 - 2 * (Math.pow(q[2], 2) + Math.pow(q[3], 2));
+
+      console.log(orientation.w, orientation.z, orientation.y, orientation.x);*/
+
+     if (this.camera) {
+       this.camera.quaternion.copy(quat);
+       if (position) {
+         this.camera.position.applyQuaternion(position).multiplyScalar(1);
+       }
+
+       this.camera.updateProjectionMatrix();
+     }
+    }
+  }
+
+  if (this.renderer && this.scene && this.camera) {
+    if (this.state.vr) {
+      this.vreffect.render(this.scene, this.camera);
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
+  }
+
   this.emit('draw');
-  this.emit('state', this.state);
 
   return this;
 };
@@ -1414,16 +1477,12 @@ Frame.prototype.lookAt = function (x, y, z) {
   var vec = new three.Vector3(x, y, z);
 
   if (this.camera) {
-    this.camera.lookAt(vec);
-    x = this.camera.position.x = -x;
-    y = this.camera.position.y = -y;
-    z = this.camera.position.z = -z;
-
-    if (this.renderer) {
-      this.renderer.clear();
-      this.renderer.render(this.scene, this.camera);
-      this.emit('lookat', {x: x, y: y, z: z});
-    }
+    x = this.camera.target.x = x;
+    y = this.camera.target.y = y;
+    z = this.camera.target.z = z;
+    this.camera.lookAt(this.camera.target);
+    this.camera.position.copy(this.camera.target).negate();
+    this.emit('lookat', {x: x, y: y, z: z});
   }
 
   return this;
@@ -1476,8 +1535,10 @@ Frame.prototype.render = function () {
   // initialize size
   this.size(width, height);
 
-  // initialize projection
-  this.projection(this.state.projection);
+  // initialize projection if camera has not been created
+  if (null == this.camera) {
+    this.projection(this.state.projection);
+  }
 
   // start refresh loop
   if (null != this.state.rafid) {
@@ -1595,9 +1656,19 @@ Frame.prototype.destroy = function () {
 };
 
 /**
- * Sets */
+ * Stops playback if applicable
+ *
+ * @api public
+ */
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"./template.html":9,"keycode":10,"path":11,"three-canvas-renderer":12}],
+Frame.prototype.stop = function () {
+  if (false == this.state.image) { return; }
+  this.pause();
+  this.video.currentTime = 0;
+  return this;
+};
+
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"./template.html":9,"keycode":10,"path":11,"three-canvas-renderer":12,"three-vr-effect":13}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
@@ -36599,8 +36670,8 @@ function parse(event) {
   }
 }
 
-}, {"event":13,"delegate":14}],
-13: [function(require, module, exports) {
+}, {"event":14,"delegate":15}],
+14: [function(require, module, exports) {
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
     prefix = bind !== 'addEventListener' ? 'on' : '';
@@ -36637,7 +36708,7 @@ exports.unbind = function(el, type, fn, capture){
   return fn;
 };
 }, {}],
-14: [function(require, module, exports) {
+15: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36681,8 +36752,8 @@ exports.unbind = function(el, type, fn, capture){
   event.unbind(el, type, fn, capture);
 };
 
-}, {"closest":15,"event":13}],
-15: [function(require, module, exports) {
+}, {"closest":16,"event":14}],
+16: [function(require, module, exports) {
 var matches = require('matches-selector')
 
 module.exports = function (element, selector, checkYoSelf, root) {
@@ -36703,8 +36774,8 @@ module.exports = function (element, selector, checkYoSelf, root) {
   }
 }
 
-}, {"matches-selector":16}],
-16: [function(require, module, exports) {
+}, {"matches-selector":17}],
+17: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36752,8 +36823,8 @@ function match(el, selector) {
   return false;
 }
 
-}, {"query":17}],
-17: [function(require, module, exports) {
+}, {"query":18}],
+18: [function(require, module, exports) {
 function one(selector, el) {
   return el.querySelector(selector);
 }
@@ -36869,14 +36940,15 @@ exports.supported = !!(element.requestFullscreen
  * Enter fullscreen mode for `el`.
  *
  * @param {Element} [el]
+ * @param {Object} opts - optional
  * @api public
  */
 
-function fullscreen(el){
+function fullscreen(el, opts){
   el = el || element;
-  if (el.requestFullscreen) return el.requestFullscreen();
-  if (el.mozRequestFullScreen) return el.mozRequestFullScreen();
-  if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+  if (el.requestFullscreen) return el.requestFullscreen(opts);
+  if (el.mozRequestFullScreen) return el.mozRequestFullScreen(opts);
+  if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen(opts);
 }
 
 /**
@@ -38110,6 +38182,261 @@ THREE.CanvasRenderer = function ( parameters ) {
 
 };
 
+};
+
+}, {}],
+13: [function(require, module, exports) {
+
+module.exports = function (THREE) {
+  /**
+   * @author dmarcos / https://github.com/dmarcos
+   * @author mrdoob / http://mrdoob.com
+   *
+   * WebVR Spec: http://mozvr.github.io/webvr-spec/webvr.html
+   *
+   * Firefox: http://mozvr.com/downloads/
+   * Chromium: https://drive.google.com/folderview?id=0BzudLt22BqGRbW9WTHMtOWMzNjQ&usp=sharing#list
+   *
+   */
+
+  THREE.VREffect = function ( renderer, onError ) {
+
+    var self = this;
+    var vrHMD;
+    var vrSensor;
+    var eyeTranslationL, eyeFOVL;
+    var eyeTranslationR, eyeFOVR;
+
+    function gotVRDevices( devices ) {
+
+      for ( var i = 0; i < devices.length; i ++ ) {
+
+        if (null == vrHMD && devices[ i ] instanceof HMDVRDevice ) {
+
+          vrHMD = devices[ i ];
+
+          if ( vrHMD.getEyeParameters !== undefined ) {
+
+            var eyeParamsL = vrHMD.getEyeParameters( 'left' );
+            var eyeParamsR = vrHMD.getEyeParameters( 'right' );
+
+            eyeTranslationL = eyeParamsL.eyeTranslation;
+            eyeTranslationR = eyeParamsR.eyeTranslation;
+            eyeFOVL = eyeParamsL.recommendedFieldOfView;
+            eyeFOVR = eyeParamsR.recommendedFieldOfView;
+
+          } else {
+
+            // TODO: This is an older code path and not spec compliant.
+            // It should be removed at some point in the near future.
+            eyeTranslationL = vrHMD.getEyeTranslation( 'left' );
+            eyeTranslationR = vrHMD.getEyeTranslation( 'right' );
+            eyeFOVL = vrHMD.getRecommendedEyeFieldOfView( 'left' );
+            eyeFOVR = vrHMD.getRecommendedEyeFieldOfView( 'right' );
+
+          }
+
+        } else if (null == vrSensor && devices[i] instanceof PositionSensorVRDevice) {
+          vrSensor = devices[i];
+        } else {
+          break;
+        }
+      }
+
+      if ( vrHMD === undefined ) {
+
+        if ( onError ) onError( 'HMD not available' );
+
+      }
+
+      self._vrHMD = vrHMD;
+      self._sensor = vrSensor;
+    }
+
+    if ( navigator.getVRDevices ) {
+
+      navigator.getVRDevices().then( gotVRDevices );
+
+    }
+
+    //
+
+    this.scale = 1;
+
+    this.setSize = function( width, height ) {
+
+      renderer.setSize( width, height );
+
+    };
+
+    // fullscreen
+
+    var isFullscreen = false;
+
+    var canvas = renderer.domElement;
+    var fullscreenchange = canvas.mozRequestFullScreen ? 'mozfullscreenchange' : 'webkitfullscreenchange';
+
+    document.addEventListener( fullscreenchange, function ( event ) {
+
+      isFullscreen = document.mozFullScreenElement || document.webkitFullscreenElement;
+
+    }, false );
+
+    this.setFullScreen = function ( boolean ) {
+
+      if ( vrHMD === undefined ) return;
+      if ( isFullscreen === boolean ) return;
+
+      if ( canvas.mozRequestFullScreen ) {
+
+        canvas.mozRequestFullScreen( { vrDisplay: vrHMD } );
+
+      } else if ( canvas.webkitRequestFullscreen ) {
+
+        canvas.webkitRequestFullscreen( { vrDisplay: vrHMD } );
+
+      }
+
+    };
+
+    // render
+
+    var cameraL = new THREE.PerspectiveCamera();
+    var cameraR = new THREE.PerspectiveCamera();
+
+    this.render = function ( scene, camera ) {
+
+      if ( vrHMD ) {
+
+        var sceneL, sceneR;
+
+        if ( scene instanceof Array ) {
+
+          sceneL = scene[ 0 ];
+          sceneR = scene[ 1 ];
+
+        } else {
+
+          sceneL = scene;
+          sceneR = scene;
+
+        }
+
+        var size = {width: renderer.domElement.width, height: renderer.domElement.height};
+        size.width /= 2;
+
+        renderer.enableScissorTest( true );
+        renderer.clear();
+
+        if ( camera.parent === undefined ) camera.updateMatrixWorld();
+
+        cameraL.projectionMatrix = fovToProjection( eyeFOVL, true, camera.near, camera.far );
+        cameraR.projectionMatrix = fovToProjection( eyeFOVR, true, camera.near, camera.far );
+
+        camera.matrixWorld.decompose( cameraL.position, cameraL.quaternion, cameraL.scale );
+        camera.matrixWorld.decompose( cameraR.position, cameraR.quaternion, cameraR.scale );
+
+        cameraL.translateX( eyeTranslationL.x * this.scale );
+        cameraR.translateX( eyeTranslationR.x * this.scale );
+
+        // render left eye
+        renderer.setViewport( 0, 0, size.width, size.height );
+        renderer.setScissor( 0, 0, size.width, size.height );
+        renderer.render( sceneL, cameraL );
+
+        // render right eye
+        renderer.setViewport( size.width, 0, size.width, size.height );
+        renderer.setScissor( size.width, 0, size.width, size.height );
+        renderer.render( sceneR, cameraR );
+
+        renderer.enableScissorTest( false );
+
+        return;
+
+      }
+
+      // Regular render mode if not HMD
+
+      if ( scene instanceof Array ) scene = scene[ 0 ];
+
+      renderer.render( scene, camera );
+
+    };
+
+    //
+
+    function fovToNDCScaleOffset( fov ) {
+
+      var pxscale = 2.0 / (fov.leftTan + fov.rightTan);
+      var pxoffset = (fov.leftTan - fov.rightTan) * pxscale * 0.5;
+      var pyscale = 2.0 / (fov.upTan + fov.downTan);
+      var pyoffset = (fov.upTan - fov.downTan) * pyscale * 0.5;
+      return { scale: [ pxscale, pyscale ], offset: [ pxoffset, pyoffset ] };
+
+    }
+
+    function fovPortToProjection( fov, rightHanded, zNear, zFar ) {
+
+      rightHanded = rightHanded === undefined ? true : rightHanded;
+      zNear = zNear === undefined ? 0.01 : zNear;
+      zFar = zFar === undefined ? 10000.0 : zFar;
+
+      var handednessScale = rightHanded ? -1.0 : 1.0;
+
+      // start with an identity matrix
+      var mobj = new THREE.Matrix4();
+      var m = mobj.elements;
+
+      // and with scale/offset info for normalized device coords
+      var scaleAndOffset = fovToNDCScaleOffset(fov);
+
+      // X result, map clip edges to [-w,+w]
+      m[0 * 4 + 0] = scaleAndOffset.scale[0];
+      m[0 * 4 + 1] = 0.0;
+      m[0 * 4 + 2] = scaleAndOffset.offset[0] * handednessScale;
+      m[0 * 4 + 3] = 0.0;
+
+      // Y result, map clip edges to [-w,+w]
+      // Y offset is negated because this proj matrix transforms from world coords with Y=up,
+      // but the NDC scaling has Y=down (thanks D3D?)
+      m[1 * 4 + 0] = 0.0;
+      m[1 * 4 + 1] = scaleAndOffset.scale[1];
+      m[1 * 4 + 2] = -scaleAndOffset.offset[1] * handednessScale;
+      m[1 * 4 + 3] = 0.0;
+
+      // Z result (up to the app)
+      m[2 * 4 + 0] = 0.0;
+      m[2 * 4 + 1] = 0.0;
+      m[2 * 4 + 2] = zFar / (zNear - zFar) * -handednessScale;
+      m[2 * 4 + 3] = (zFar * zNear) / (zNear - zFar);
+
+      // W result (= Z in)
+      m[3 * 4 + 0] = 0.0;
+      m[3 * 4 + 1] = 0.0;
+      m[3 * 4 + 2] = handednessScale;
+      m[3 * 4 + 3] = 0.0;
+
+      mobj.transpose();
+
+      return mobj;
+    }
+
+    function fovToProjection( fov, rightHanded, zNear, zFar ) {
+
+      var DEG2RAD = Math.PI / 180.0;
+
+      var fovPort = {
+        upTan: Math.tan( fov.upDegrees * DEG2RAD ),
+        downTan: Math.tan( fov.downDegrees * DEG2RAD ),
+        leftTan: Math.tan( fov.leftDegrees * DEG2RAD ),
+        rightTan: Math.tan( fov.rightDegrees * DEG2RAD )
+      };
+
+      return fovPortToProjection( fovPort, rightHanded, zNear, zFar );
+
+    }
+
+  };
 };
 
 }, {}]}, {}, {"1":"Bubble"})

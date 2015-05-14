@@ -15,7 +15,7 @@ var three = require('three.js')
   , path = require('path')
 
 // uncomment to enable debugging
-//window.DEBUG = true;
+window.DEBUG = true;
 
 /**
  * Detect if file path is an image
@@ -52,6 +52,7 @@ function debug () {
 // add three.CanvasRenderer
 Frame.THREE = three;
 require('three-canvas-renderer')(three);
+require('three-vr-effect')(three);
 
 // default field of view
 var DEFAULT_FOV = 30;
@@ -229,8 +230,12 @@ function Frame (parent, opts) {
     new three.CanvasRenderer()
   );
 
+  // initialize vreffect
+  this.vreffect = new three.VREffect(this.renderer, debug.bind(null, 'VREffect:'));
+
   // renderer options
-  this.renderer.autoClear = opts.autoClear || false;
+  this.renderer.autoClear = null != opts.autoClear ? opts.autoClear : true;
+  this.renderer.setPixelRatio(opts.devicePixelRatio || window.devicePixelRatio);
   this.renderer.setClearColor(opts.clearColor || 0x000, 1);
 
   // attach renderer to instance node container
@@ -290,7 +295,8 @@ function Frame (parent, opts) {
     lat: 0,
     lon: 0,
     fov: opts.fov,
-    src: null
+    src: null,
+    vr: opts.vr || false
   };
 
   // viewport projections
@@ -311,6 +317,7 @@ function Frame (parent, opts) {
 
     if (ratio == ratio && 2 == ratio) {
       geo = new three.SphereGeometry(radius, 80, 50, phi);
+      //geo.applyMatrix(new three.Matrix4().makeScale(-1, 1, 1));
       self.state.geometry = 'sphere';
     } else {
       var zoom = -6;
@@ -336,6 +343,7 @@ function Frame (parent, opts) {
       self.camera = new three.PerspectiveCamera(DEFAULT_FOV,
                                                 (width / height),
                                                 0.1, 1100);
+      self.camera.target = new three.Vector3(0, 0, 0);
     }
 
     // add mesh to scene
@@ -624,7 +632,6 @@ Frame.prototype.onprogress = function (e) {
   e.percent = percent * 100;
   this.state.percentloaded = percent;
   this.emit('progress', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -640,7 +647,6 @@ Frame.prototype.ontimeupdate = function (e) {
   this.state.duration = this.video.duration;
   this.state.played = e.percent;
   this.emit('timeupdate', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -670,7 +676,6 @@ Frame.prototype.onmousedown = function (e) {
   this.state.dragstart.y = e.pageY;
   this.state.mousedown = true;
   this.emit('mousedown', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -683,7 +688,6 @@ Frame.prototype.onmousedown = function (e) {
 Frame.prototype.onmouseup = function (e) {
   this.state.mousedown = false;
   this.emit('mouseup', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -768,10 +772,16 @@ Frame.prototype.onresize = function (e) {
 
 Frame.prototype.onfullscreenchange = function(fullscreen) {
   this.state.focused = true;
+  this.state.animating = false;
   if (fullscreen) {
     this.state.fullscreen = true;
     this.emit('enterfullscreen');
   } else {
+    if (this.state.vr) {
+      // @TODO(werle) - not sure how to fix this bug but the scene
+      // needs to be re-rendered
+      raf(function () { this.render(); }.bind(this));
+    }
     this.size(this.state.lastsize.width, this.state.lastsize.height);
     this.emit('resize', {
       width: this.state.lastsize.width,
@@ -817,7 +827,6 @@ Frame.prototype.onmousemove = function (e) {
   }
 
   this.emit('mousemove', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -893,7 +902,6 @@ Frame.prototype.onmousewheel = function (e) {
   this.camera.setLens(this.state.fov);
 
   this.emit('mousewheel', e);
-  this.emit('state', this.state);
 };
 
 /**
@@ -1060,8 +1068,12 @@ Frame.prototype.pause = function () {
  */
 
 Frame.prototype.fullscreen = function () {
-  if (! fullscreen.supported) return;
-  if (! this.state.fullscreen) {
+  var opts = null;
+  if (! fullscreen.supported) {
+    return;
+  } else if (this.state.vr) {
+    opts = {vrDisplay: this.vreffect._vrHMD};
+  } else if (! this.state.fullscreen) {
     var canvasStyle = getComputedStyle(this.renderer.domElement);
     var canvasWidth = parseFloat(canvasStyle.width);
     var canvasHeight = parseFloat(canvasStyle.height);
@@ -1086,8 +1098,9 @@ Frame.prototype.fullscreen = function () {
       height: newHeight
     });
 
-    fullscreen(this.renderer.domElement);
   }
+
+  fullscreen(this.renderer.domElement, opts);
 };
 
 /**
@@ -1204,12 +1217,12 @@ Frame.prototype.refresh = function () {
     this.state.cache.lon = this.state.lon;
   }
 
+
   if ('cylinder' == this.state.geometry) {
     this.state.lat = 0;
   }
 
   this.emit('refresh');
-  this.emit('state', this.state);
   return this;
 };
 
@@ -1310,8 +1323,55 @@ Frame.prototype.draw = function () {
   var z = radius * Math.sin(phi) * Math.sin(theta);
 
   this.lookAt(x, y, z);
+
+  if (this.state.vr) {
+    var hmd = this.vreffect._vrHMD;
+    if (hmd) {
+      // use left eye for rotation reference
+      var sensor = this.vreffect._sensor;
+      // get state
+      var vrstate = sensor.getImmediateState();
+      // get orientation
+      var orientation = vrstate.orientation;
+      // get position
+      var position = vrstate.position;
+      // create quat
+      var quat = new three.Quaternion(orientation.x,
+                                      orientation.y,
+                                      orientation.z,
+                                      orientation.w);
+      /*// create euler rotation from quat where phi = +X, beta = +Y, gamma = +Z
+      // calculate phi from quat
+      var phi = Math.atan2(2 * ((q[0] * q[1]) + (q[2] * q)));
+      // calculate beta from quat
+      var beta = 1 - 2 * (Math.pow(q[1], 2) + Math.pow(q[2], 2)) *
+        Math.asin(2 * ((q[0] * q[2]) - (q[3] * q[1]))) *
+        Math.atan2(2 * ((q[0] * q[2]) - (q[3] * q[1])))
+      // calculate gamma from quat
+      var gamma = 1 - 2 * (Math.pow(q[2], 2) + Math.pow(q[3], 2));
+
+      console.log(orientation.w, orientation.z, orientation.y, orientation.x);*/
+
+     if (this.camera) {
+       this.camera.quaternion.copy(quat);
+       if (position) {
+         this.camera.position.applyQuaternion(position).multiplyScalar(1);
+       }
+
+       this.camera.updateProjectionMatrix();
+     }
+    }
+  }
+
+  if (this.renderer && this.scene && this.camera) {
+    if (this.state.vr) {
+      this.vreffect.render(this.scene, this.camera);
+    } else {
+      this.renderer.render(this.scene, this.camera);
+    }
+  }
+
   this.emit('draw');
-  this.emit('state', this.state);
 
   return this;
 };
@@ -1329,16 +1389,12 @@ Frame.prototype.lookAt = function (x, y, z) {
   var vec = new three.Vector3(x, y, z);
 
   if (this.camera) {
-    this.camera.lookAt(vec);
-    x = this.camera.position.x = -x;
-    y = this.camera.position.y = -y;
-    z = this.camera.position.z = -z;
-
-    if (this.renderer) {
-      this.renderer.clear();
-      this.renderer.render(this.scene, this.camera);
-      this.emit('lookat', {x: x, y: y, z: z});
-    }
+    x = this.camera.target.x = x;
+    y = this.camera.target.y = y;
+    z = this.camera.target.z = z;
+    this.camera.lookAt(this.camera.target);
+    this.camera.position.copy(this.camera.target).negate();
+    this.emit('lookat', {x: x, y: y, z: z});
   }
 
   return this;
@@ -1391,8 +1447,10 @@ Frame.prototype.render = function () {
   // initialize size
   this.size(width, height);
 
-  // initialize projection
-  this.projection(this.state.projection);
+  // initialize projection if camera has not been created
+  if (null == this.camera) {
+    this.projection(this.state.projection);
+  }
 
   // start refresh loop
   if (null != this.state.rafid) {
@@ -1510,4 +1568,14 @@ Frame.prototype.destroy = function () {
 };
 
 /**
- * Sets */
+ * Stops playback if applicable
+ *
+ * @api public
+ */
+
+Frame.prototype.stop = function () {
+  if (false == this.state.image) { return; }
+  this.pause();
+  this.video.currentTime = 0;
+  return this;
+};
