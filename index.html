@@ -100,11 +100,13 @@
     <button id="go-fullscreen">Go fullscreen</button>
     <script type="text/javascript" charset="utf-8">
       var frame = new Bubble(document.querySelector('.normal.video'), {
-        src: 'test.webm',
+        src: 'http://360.littlstar.com/production/a31f9a05-0cbb-4601-8f25-212450267166/web.webm',
+        //src: 'test.webm',
         resizable: true,
         autoplay: true,
         holdframe: 'holdframe.png',
-        crossorigin: true
+        crossorigin: true,
+        vr: true
       });
 
       frame.render();
@@ -113,15 +115,15 @@
         frame.fullscreen();
       };
 
-      var vsn = new Bubble(document.querySelector('.vsn.video'), {
+      /*var vsn = new Bubble(document.querySelector('.vsn.video'), {
         src: 'vsn.webm',
         resizable: true,
         autoplay: true,
         wheel: true,
         crossorigin: true
-      });
+      });*/
 
-      vsn.render();
+      //vsn.render();
 
     </script>
     <script type="text/javascript">
