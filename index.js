@@ -537,6 +537,10 @@ Frame.prototype.oncanplaythrough = function (e) {
   this.emit('canplaythrough', e);
   this.state.ready = true;
 
+  if (false == this.opts.autoplay) {
+    this.state.paused = true;
+  }
+
   setTimeout(function () {
     this.emit('ready');
   }.bind(this));
