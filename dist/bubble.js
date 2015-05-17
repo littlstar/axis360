@@ -332,10 +332,6 @@ function Frame (parent, opts) {
   this.material = null;
   this.texture = null;
 
-  if (opts.muted) {
-    this.mute(true);
-  }
-
   // viewport state
   this.state = {
     maintainaspectratio: opts.maintainaspectratio ? true : false,
@@ -386,6 +382,13 @@ function Frame (parent, opts) {
     src: null,
     vr: opts.vr || false
   };
+
+  if (opts.muted) {
+    this.mute(true);
+  }
+
+  var volume = this.opts.volume || 1;
+  this.volume(volume);
 
   // viewport projections
   this.projections = {};
@@ -1203,6 +1206,7 @@ Frame.prototype.volume = function (n) {
     if (null == n) {
       return this.video.volume;
     }
+    this.state.lastvolume = this.video.volume;
     this.video.volume = n
     this.emit('volume', n);
   }
