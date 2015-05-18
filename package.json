@@ -1,6 +1,6 @@
 {
   "name": "bubble",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "devDependencies": {
     "duo": "^0.11.x"
