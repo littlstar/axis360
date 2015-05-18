@@ -161,9 +161,11 @@ function Frame (parent, opts) {
         }
       }
 
-      if (self.state.focused) {
-        detect('up');
-        detect('down');
+      if (true == self.state.forceFocus || self.state.focused) {
+        if (PROJECTION_TINY_PLANET != self.state.projection) {
+          detect('up');
+          detect('down');
+        }
         detect('left');
         detect('right');
       }
@@ -178,10 +180,12 @@ function Frame (parent, opts) {
         }
       }
 
-      if (self.state.focused) {
+      if (true == self.state.forceFocus || self.state.focused) {
         e.preventDefault();
-        detect('up');
-        detect('down');
+        if (PROJECTION_TINY_PLANET != self.state.projection) {
+          detect('up');
+          detect('down');
+        }
         detect('left');
         detect('right');
       }
@@ -218,7 +222,7 @@ function Frame (parent, opts) {
   this.events.element.bind('touchmove');
 
   // init scene
-  this.scene = new three.Scene();
+  this.scene = null;
 
   // init camera
   this.camera = null;
@@ -231,7 +235,14 @@ function Frame (parent, opts) {
   );
 
   // initialize vreffect
-  this.vreffect = new three.VREffect(this.renderer, debug.bind(null, 'VREffect:'));
+  this.vreffect = new three.VREffect(this.renderer, function (e) {
+    debug('VREffect:', e);
+  });
+
+  // disable vr if `navigator.getVRDevices' isn't defined
+  if ('function' != typeof navigator.getVRDevices) {
+    opts.vr = false;
+  }
 
   // renderer options
   this.renderer.autoClear = null != opts.autoClear ? opts.autoClear : true;
@@ -251,6 +262,7 @@ function Frame (parent, opts) {
     percentloaded: 0,
     originalsize: {width: null, height: null},
     orientation: window.orientation || 0,
+    forceFocus: true == opts.forceFocus ? true : false,
     projection: 'normal',
     lastvolume: this.video.volume,
     fullscreen: false,
@@ -259,6 +271,7 @@ function Frame (parent, opts) {
     mousedown: false,
     dragstart: {x:0, y:0},
     animating: false,
+    clickable: false == opts.clickable ? false : true,
     holdframe: opts.holdframe,
     geometry: null,
     inverted: (opts.inverted || opts.invertMouse) ? true : false,
@@ -306,28 +319,37 @@ function Frame (parent, opts) {
   this.projections = {};
   this.projections[PROJECTION_NORMAL] = function normal () {
     if (false == self.state.ready) { return; }
-    var videoHeight = self.video.videoHeight;
-    var videoWidth = self.video.videoWidth;
+    var contentWidth = 0;
+    var contentHeight = 0;
+    var ratio = 0;
     var radius = self.state.radius;
     var phi = 100;
     var geo = null;
     var maxFov = DEFAULT_FOV;
-    var ratio = (videoWidth / videoHeight);
 
-    if (0 == videoWidth || 0 == videoHeight) {
+    if (self.state.image) {
+      contentHeight = self.texture.image.height;
+      contentWidth = self.texture.image.width;
+    } else {
+      contentHeight = self.video.videoHeight;
+      contentWidth = self.video.videoWidth;
+    }
+
+    ratio = (contentWidth / contentHeight);
+
+    if (0 == contentWidth || 0 == contentHeight) {
       return;
     }
 
     if (ratio == ratio && 2 == ratio) {
-      geo = new three.SphereGeometry(radius, 80, 50, phi);
-      //geo.applyMatrix(new three.Matrix4().makeScale(-1, 1, 1));
       self.state.geometry = 'sphere';
+      geo = new three.SphereGeometry(radius, 80, 50, phi);
     } else {
       var zoom = -6;
       self.state.fov += zoom;
       maxFov += zoom;
       self.state.geometry = 'cylinder';
-      geo = new three.CylinderGeometry(radius, radius, videoHeight,
+      geo = new three.CylinderGeometry(radius, radius, contentHeight,
                                          64, 1, true);
     }
 
@@ -338,7 +360,6 @@ function Frame (parent, opts) {
     var projection = self.state.projection;
     var fov = self.state.fov;
 
-    //self.state.fov = DEFAULT_FOV;
     mesh.scale.x = -1;
 
     // init camera
@@ -362,7 +383,7 @@ function Frame (parent, opts) {
       var factor = 6;
       if (false == self.state.animating) { return; }
       debug("animate: NORMAL");
-      if (maxFov == self.state.fov && 0 == self.state.lon && 0 == self.state.lat) {
+      if (maxFov == self.state.fov && 0 == self.state.lat) {
         self.state.animating = false;
         self.refresh().draw();
         return;
@@ -381,14 +402,6 @@ function Frame (parent, opts) {
       self.state.fov = fov;
 
       if (PROJECTION_TINY_PLANET == projection) {
-        if (self.state.lon > 0) {
-          self.state.lon -= factor;
-          self.state.lon = Math.max(0, self.state.lon);
-        } else if (self.state.lon < 0) {
-          self.state.lon += factor;
-          self.state.lon = Math.min(0, self.state.lon);
-        }
-
         if (self.state.lat > 0) {
           self.state.lat -= factor;
           self.state.lat = Math.max(0, self.state.lat);
@@ -416,21 +429,13 @@ function Frame (parent, opts) {
       var factor = 6;
       if (false == self.state.animating) { return; }
       debug("animate: TINY_PLANET");
-      if (self.state.lat > MIN_LAT_VALUE || self.state.lon != 0) {
+      if (self.state.lat > MIN_LAT_VALUE) {
         self.state.animating = true;
 
         if (self.state.lat > MIN_LAT_VALUE) {
           self.state.lat -= factor;
         } else {
           self.state.lat = MIN_LAT_VALUE;
-        }
-
-        if (self.state.lon > 0) {
-          self.state.lon -= factor;
-          self.state.lon = Math.max(0, self.state.lon);
-        } else if (self.state.lon < 0) {
-          self.state.lon += factor;
-          self.state.lon = Math.min(0, self.state.lon);
         }
 
         self.camera.setLens(MAX_TINY_PLANET_CAMERA_LENS_VALUE);
@@ -445,6 +450,7 @@ function Frame (parent, opts) {
 
   this.projections[PROJECTION_FISHEYE] = function () {
     if (false == self.state.ready) { return; }
+    else if ('cylinder' == self.state.geometry) { return; }
     var z = (self.height() / 100)|0;
     var f = 6;
     var fov = 75;
@@ -508,7 +514,7 @@ Frame.prototype.onclick = function (e) {
   var now = Date.now();
   var ts = this.state.mousedownts;
 
-  if ((now - ts) > FRAME_CLICK_THRESHOLD) {
+  if (false == this.state.clickable || (now - ts) > FRAME_CLICK_THRESHOLD) {
     return false;
   } else {
     e.preventDefault();
@@ -821,10 +827,14 @@ Frame.prototype.onmousemove = function (e) {
 
     if (this.state.inverted) {
       this.state.lon -= x;
-      this.state.lat += y;
+      if (PROJECTION_TINY_PLANET != this.state.projection) {
+        this.state.lat += y;
+      }
     } else {
       this.state.lon += x;
-      this.state.lat -= y;
+      if (PROJECTION_TINY_PLANET != this.state.projection) {
+        this.state.lat -= y;
+      }
     }
 
     if (PROJECTION_TINY_PLANET != this.state.projection) {
@@ -1027,6 +1037,7 @@ Frame.prototype.src = function (src) {
 
     if (isImage(src)) {
       this.state.image = true;
+      this.state.vr = false;
     } else {
       this.state.image = false;
       this.video.src = src;
@@ -1316,7 +1327,9 @@ Frame.prototype.draw = function () {
   var radius = this.state.radius;
   var camera = this.camera;
   var scene = this.scene;
+  var sensor = this.vreffect._sensor;
   var dtor = Math.PI / 180; // degree to radian conversion
+  var hmd = this.vreffect._vrHMD;
 
   var lat = this.state.lat;
   var lon = this.state.lon;
@@ -1333,10 +1346,7 @@ Frame.prototype.draw = function () {
   this.lookAt(x, y, z);
 
   if (this.state.vr) {
-    var hmd = this.vreffect._vrHMD;
     if (hmd) {
-      // use left eye for rotation reference
-      var sensor = this.vreffect._sensor;
       // get state
       var vrstate = sensor.getImmediateState();
       // get orientation
@@ -1348,18 +1358,6 @@ Frame.prototype.draw = function () {
                                       orientation.y,
                                       orientation.z,
                                       orientation.w);
-      /*// create euler rotation from quat where phi = +X, beta = +Y, gamma = +Z
-      // calculate phi from quat
-      var phi = Math.atan2(2 * ((q[0] * q[1]) + (q[2] * q)));
-      // calculate beta from quat
-      var beta = 1 - 2 * (Math.pow(q[1], 2) + Math.pow(q[2], 2)) *
-        Math.asin(2 * ((q[0] * q[2]) - (q[3] * q[1]))) *
-        Math.atan2(2 * ((q[0] * q[2]) - (q[3] * q[1])))
-      // calculate gamma from quat
-      var gamma = 1 - 2 * (Math.pow(q[2], 2) + Math.pow(q[3], 2));
-
-      console.log(orientation.w, orientation.z, orientation.y, orientation.x);*/
-
      if (this.camera) {
        this.camera.quaternion.copy(quat);
        if (position) {
@@ -1585,5 +1583,56 @@ Frame.prototype.stop = function () {
   if (false == this.state.image) { return; }
   this.pause();
   this.video.currentTime = 0;
+  return this;
+};
+
+/**
+ * Sets or gets latitude coordinate
+ *
+ * @api public
+ * @param {Number} lat - optional
+ */
+
+Frame.prototype.lat = function (lat) {
+  if (null == lat) {
+    return this.state.lat;
+  }
+  this.state.lat = lat
+  return this;
+};
+
+/**
+ * Sets or gets longitude coordinate
+ *
+ * @api public
+ * @param {Number} lon - optional
+ */
+
+Frame.prototype.lon = function (lon) {
+  if (null == lon) {
+    return this.state.lon;
+  }
+  this.state.lon = lon;
+  return this;
+};
+
+/**
+ * Sets or gets lat/lon coordinates
+ *
+ * @api public
+ * @param {Number} lat - optional
+ * @param {Number} lon - optional
+ */
+
+Frame.prototype.coords = function (lat, lon) {
+  if (null == lat && null == lon) {
+    return {lat: this.state.lat, lon: this.state.lon}
+  }
+  if (null != lat) {
+    this.state.lat = lat;
+  }
+  if (null != lon) {
+    this.state.lon = lon;
+  }
   return this;
 };
