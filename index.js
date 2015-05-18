@@ -255,10 +255,6 @@ function Frame (parent, opts) {
   this.material = null;
   this.texture = null;
 
-  if (opts.muted) {
-    this.mute(true);
-  }
-
   // viewport state
   this.state = {
     maintainaspectratio: opts.maintainaspectratio ? true : false,
@@ -311,6 +307,13 @@ function Frame (parent, opts) {
     src: null,
     vr: opts.vr || false
   };
+
+  if (opts.muted) {
+    this.mute(true);
+  }
+
+  var volume = this.opts.volume || 1;
+  this.volume(volume);
 
   // viewport projections
   this.projections = {};
@@ -542,6 +545,10 @@ Frame.prototype.oncanplaythrough = function (e) {
 
   this.emit('canplaythrough', e);
   this.state.ready = true;
+
+  if (false == this.opts.autoplay) {
+    this.state.paused = true;
+  }
 
   setTimeout(function () {
     this.emit('ready');

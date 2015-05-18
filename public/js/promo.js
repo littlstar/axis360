@@ -13,6 +13,7 @@ void function (global) {
     preload: true,
     autoplay: true,
     height: window.innerHeight - 40,
+    muted: true,
     loop: true,
     src: sources[(Math.random() * 100|0) % sources.length],
     vr: true
