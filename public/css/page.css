@@ -1,0 +1,23 @@
+@import url('/css/animate.min.css');
+
+body {
+  display: block;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  height : auto;
+  width: 100%;
+  min-width: 800px;
+  font-family: 'Montserrat', sans-serif;
+  background: rgb(200, 230, 230);
+}
+
+.noselect {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  pointer: cursor;
+}

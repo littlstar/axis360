@@ -8,9 +8,9 @@ video produced from the VSN Mobile V.360 video camera. Bubble has support for
 rendering multiple projections such as Stereoscopic (Oculus), Tiny Planet and
 Fisheye.
 
-![](assets/tiny-planet.png)
+![](public/assets/tiny-planet.png)
 
-![](assets/oculus.png)
+![](public/assets/oculus.png)
 
 ## Status
 

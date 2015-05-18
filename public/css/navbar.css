@@ -1,0 +1,98 @@
+#navbar {
+  display: block;
+  position: fixed;
+  width: 100%;
+  padding: 1em 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+#navbar .title {
+  display: block;
+  position: relative;
+  float: left;
+  margin-left: 20px;
+}
+
+#navbar .title a {
+  display: block;
+  position: relative;
+  padding: 4px 0;
+  color: rgb(40, 225, 225);
+  font-weight: 100;
+  font-size: 28px;
+  text-decoration: none;
+  transition: text-shadow ease 200ms;
+}
+
+#navbar .title a:hover  {
+  text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.75);
+  text-rendering: optimizeLegibility;
+}
+
+
+#navbar .menu {
+  display: block;
+  position: relative;
+  float: right;
+}
+
+#navbar .menu ul {
+  display: block;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#navbar .menu ul li {
+  display: inline-block;
+  position: relative;
+  margin-right: 5px;
+  padding: 5px 0;
+  transition: background ease-in 100ms;
+  border-radius: 4px;
+}
+
+#navbar .menu ul li:hover {
+  background: rgba(40, 225, 225, 0.5);
+}
+
+#navbar .menu ul li a {
+  display: block;
+  position: relative;
+  color: #fff;
+  padding: 5px;
+  margin-top: 0.1em;
+  font-weight: 100;
+  font-size: 0.9em;
+  text-align: center;
+  text-decoration: none;
+}
+
+#navbar .attribution {
+  display: block;
+  position: : relative;
+  float: left;
+  vertical-align: middle;
+  margin-left: 1em;
+  margin-top: 1.5em;
+  color: #fff;
+  font-size: 0.7em;
+}
+
+#navbar .attribution .logo {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  height: 1em;
+  width: 10em;
+  margin-left: .5em;
+  background-image: url('/assets/littlestar-logo.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+body {
+  padding-top: 10px;
+}
