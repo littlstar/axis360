@@ -481,14 +481,16 @@ function Bubble (parent, opts) {
     self.scene = new three.Scene();
     self.scene.add(mesh);
 
+    if (PROJECTION_TINY_PLANET == projection ||
+        PROJECTION_MIRROR_BALL == projection) {
+      self.state.lon = 0
+    self.state.lat = 0;
+    }
+
     if (PROJECTION_MIRROR_BALL != self.state.projectionrequested &&
         PROJECTION_MIRROR_BALL != self.state.projection) {
       self.state.animating = true;
       self.state.projectionRid = raf(function animate () {
-        if (PROJECTION_TINY_PLANET == projection) {
-          self.state.lon = self.state.cache.lon;
-          self.state.lat = self.state.cache.lat;
-        }
         var factor = 6;
         if (false == self.state.animating) { return; }
         debug("animate: EQUILINEAR");
@@ -543,13 +545,13 @@ function Bubble (parent, opts) {
       self.state.cache.lat = self.state.lat;
     }
 
+    self.camera.setLens(MAX_TINY_PLANET_CAMERA_LENS_VALUE);
+    self.state.fov = self.camera.fov;
     self.state.animating = true;
     self.state.projectionRid = raf(function animate () {
       var factor = 6;
       if (false == self.state.animating) { return; }
       debug("animate: TINY_PLANET");
-      self.camera.setLens(MAX_TINY_PLANET_CAMERA_LENS_VALUE);
-      self.state.fov = self.camera.fov;
       if (self.state.lat > MIN_LAT_VALUE) {
         self.state.animating = true;
 
@@ -645,6 +647,7 @@ function Bubble (parent, opts) {
     controls.minDistance = 75;
     controls.maxDistance = 200;
     controls.noPan = true;
+    controls.noZoom = true;
 
     scene.add(camera);
 
@@ -686,6 +689,9 @@ function Bubble (parent, opts) {
     self.camera.setLens(40);
     self.coords(0, 90);
   };
+
+  // initialize camera
+  initializeCamera();
 
   // initialize projection
   this.projection(this.state.projection);
