@@ -72,13 +72,13 @@
 
 #navbar .attribution {
   display: block;
-  position: : relative;
+  position: relative;
   float: left;
   vertical-align: middle;
-  margin-left: 1em;
-  margin-top: 1.5em;
+  margin-left: .5em;
+  margin-top: 3em;
   color: #fff;
-  font-size: 0.7em;
+  font-size: 0.5em;
 }
 
 #navbar .attribution .logo {

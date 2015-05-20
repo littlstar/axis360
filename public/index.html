@@ -29,7 +29,6 @@
         display: block;
         position: relative;
         width: 100%;
-        height: 10em;
       }
 
       section.promo .controls ul {
@@ -184,6 +183,26 @@
         text-shadow: 0px 1px 20px rgb(40, 225, 225);
       }
 
+      section.example {
+        width: 96%;
+        margin: .5em 2%
+      }
+
+      section.example pre {
+        display: block;
+        position: relative;
+        width: 50%;
+        margin: 0 auto;
+        background: #C8DADA;
+        border-radius: 4px;
+      }
+
+      section:not(.promo) header h2 {
+        text-align: center;
+        text-transform: uppercase;
+        font-size: 3em;
+      }
+
       .bubble.frame {
         opacity: 1;
         transition: opacity ease-in 200ms;
@@ -218,10 +237,11 @@
         <nav class="controls">
           <section class="wrap">
             <ul class="projections">
-              <li data-title="Normal" data-type="normal"><a href="#" style="background-image: url(/assets/play.svg)"></a></li>
+              <li data-title="Equilinear" data-type="equilinear"><a href="#" style="background-image: url(/assets/play.svg)"></a></li>
               <li data-title="WebVR" data-type="vr" style="display:none"><a href="#" style="background-image: url(/assets/oculus.svg)"></a></li>
               <li data-title="Tiny Planet" data-type="tinyplanet"><a href="#" style="background-image: url(/assets/planet.svg)"></a></li>
               <li data-title="Fisheye" data-type="fisheye"><a href="#" style="background-image: url(/assets/lens.svg)"></a></li>
+              <li data-title="Mirror Ball" data-type="mirrorball"><a href="#" style="background-image: url(/assets/sphere.svg)"></a></li>
             </ul>
             <div class="arrow-keys">
               <span data-title="Use your arrow keys to navigate the video" ></span>
@@ -231,6 +251,22 @@
       </nav>
       <script type="text/javascript" charset="utf-8" src="/js/promo.js"> </script>
     </section>
-   </section>
+      <section class="example">
+        <header><h2>Example</h2></header>
+        <pre><code>
+          var frame = new Bubble(document.querySelector('#my-video'), {
+            autoplay: true,
+            preload: true,
+            height: 500,
+            width: 500,
+            src: '/path/to/video.mp4',
+          });
+
+          frame.render().on('ready', function () {
+            // do stuff with player frame
+          });
+        </code></pre>
+      </section>
+    </section>
   </body>
 </html>

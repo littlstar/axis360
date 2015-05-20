@@ -100,13 +100,12 @@
     <button id="go-fullscreen">Go fullscreen</button>
     <script type="text/javascript" charset="utf-8">
       var frame = new Bubble(document.querySelector('.normal.video'), {
-        //src: 'http://360.littlstar.com/production/a31f9a05-0cbb-4601-8f25-212450267166/web.webm',
-        //src: 'test.webm',
-        src: '/public/assets/hostel-luego.jpg',
+        crossorigin: true,
+        projection: 'flat',
         resizable: true,
         autoplay: true,
-        //holdframe: 'holdframe.png',
-        crossorigin: true,
+        loop: true,
+        src: '/public/assets/flat-video.mp4',
         vr: true
       });
 

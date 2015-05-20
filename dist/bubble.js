@@ -138,12 +138,13 @@ function debug () {
 }
 
 // add three.CanvasRenderer
-Frame.THREE = three;
+Bubble.THREE = three;
 require('three-canvas-renderer')(three);
 require('three-vr-effect')(three);
+three.OrbitControls = require('three-orbit-controls')(three);
 
 // default field of view
-var DEFAULT_FOV = 30;
+var DEFAULT_FOV = 40;
 
 // frame click threshold
 var FRAME_CLICK_THRESHOLD = 250;
@@ -160,25 +161,27 @@ var MIN_LAT_VALUE = -90;
 var MAX_LAT_VALUE = 90;
 
 // projection types
-var PROJECTION_NORMAL = 'normal';
+var PROJECTION_EQUILINEAR = 'equilinear';
 var PROJECTION_TINY_PLANET = 'tinyplanet';
 var PROJECTION_FISHEYE = 'fisheye';
+var PROJECTION_MIRROR_BALL = 'mirrorball';
+var PROJECTION_FLAT = 'flat';
 
 // default projection
-var DEFAULT_PROJECTION = PROJECTION_NORMAL;
+var DEFAULT_PROJECTION = PROJECTION_EQUILINEAR;
 
 /**
- * `Frame' constructor
+ * `Bubble' constructor
  *
  * @api public
  * @param {Object} parent
  * @param {Object} opts
  */
 
-module.exports = Frame;
-function Frame (parent, opts) {
-  if (!(this instanceof Frame)) {
-    return new Frame(opts);
+module.exports = Bubble;
+function Bubble (parent, opts) {
+  if (!(this instanceof Bubble)) {
+    return new Bubble(opts);
   } else if (!(parent instanceof Element)) {
     throw new TypeError("Expecting DOM Element");
   }
@@ -250,13 +253,17 @@ function Frame (parent, opts) {
       }
 
       if (true == self.state.forceFocus || self.state.focused) {
-        if (PROJECTION_TINY_PLANET != self.state.projection) {
-          detect('up');
-          detect('down');
+        if (PROJECTION_MIRROR_BALL != self.state.projection) {
+          if (PROJECTION_TINY_PLANET != self.state.projection) {
+            detect('up');
+            detect('down');
+          }
+          detect('left');
+          detect('right');
         }
-        detect('left');
-        detect('right');
+        self.emit('keydown', e);
       }
+
     },
 
     onkeyup: function (e) {
@@ -269,13 +276,15 @@ function Frame (parent, opts) {
       }
 
       if (true == self.state.forceFocus || self.state.focused) {
-        e.preventDefault();
-        if (PROJECTION_TINY_PLANET != self.state.projection) {
-          detect('up');
-          detect('down');
+        if (PROJECTION_MIRROR_BALL != self.state.projection) {
+          if (PROJECTION_TINY_PLANET != self.state.projection) {
+            detect('up');
+            detect('down');
+          }
+          detect('left');
+          detect('right');
         }
-        detect('left');
-        detect('right');
+        self.emit('keyup', e);
       }
     }
   });
@@ -318,7 +327,7 @@ function Frame (parent, opts) {
   // init renderer
   this.renderer = opts.renderer || (
     hasWebGL ?
-    new three.WebGLRenderer() :
+    new three.WebGLRenderer({antialias: true}) :
     new three.CanvasRenderer()
   );
 
@@ -340,18 +349,19 @@ function Frame (parent, opts) {
   // attach renderer to instance node container
   this.el.querySelector('.container').appendChild(this.renderer.domElement);
 
-  this.material = null;
   this.texture = null;
+  this.controls = null;
 
   // viewport state
   this.state = {
     maintainaspectratio: opts.maintainaspectratio ? true : false,
+    projectionrequested: opts.projection || DEFAULT_PROJECTION,
     deviceorientation: {lat: 0, lon: 0},
     percentloaded: 0,
     originalsize: {width: null, height: null},
     orientation: window.orientation || 0,
     forceFocus: true == opts.forceFocus ? true : false,
-    projection: 'normal',
+    projection: opts.projection || DEFAULT_PROJECTION,
     lastvolume: this.video.volume,
     fullscreen: false,
     timestamp: Date.now(),
@@ -403,10 +413,21 @@ function Frame (parent, opts) {
   var volume = this.opts.volume || 1;
   this.volume(volume);
 
+  function initializeCamera () {
+    var width = self.width();
+    var height = self.height();
+    var fov = DEFAULT_FOV;
+    var ratio = width / height;
+    self.camera = new three.PerspectiveCamera(fov, ratio, 0.01, 1000);
+    self.camera.target = new three.Vector3(0, 0, 0);
+  }
+
   // viewport projections
   this.projections = {};
-  this.projections[PROJECTION_NORMAL] = function normal () {
+  this.projections[PROJECTION_EQUILINEAR] = function equilinear () {
+    raf.cancel(self.state.projectionRid);
     if (false == self.state.ready) { return; }
+    self.controls = null;
     var contentWidth = 0;
     var contentHeight = 0;
     var ratio = 0;
@@ -429,7 +450,11 @@ function Frame (parent, opts) {
       return;
     }
 
-    if (ratio == ratio && 2 == ratio) {
+
+    if (PROJECTION_FLAT == self.state.projectionrequested) {
+      self.state.geometry = 'flat';
+      geo = new three.PlaneBufferGeometry(self.width(), self.height(), 4);
+    } else if (ratio == ratio && 2 == ratio) {
       self.state.geometry = 'sphere';
       geo = new three.SphereGeometry(radius, 80, 50, phi);
     } else {
@@ -450,73 +475,81 @@ function Frame (parent, opts) {
 
     mesh.scale.x = -1;
 
-    // init camera
-    if (null == self.camera) {
-      self.camera = new three.PerspectiveCamera(DEFAULT_FOV,
-                                                (width / height),
-                                                0.1, 1100);
-      self.camera.target = new three.Vector3(0, 0, 0);
-    }
+    initializeCamera();
 
     // add mesh to scene
     self.scene = new three.Scene();
     self.scene.add(mesh);
 
-    self.state.animating = true;
-    raf(function animate () {
-      if (PROJECTION_TINY_PLANET == projection) {
-        self.state.lon = self.state.cache.lon;
-        self.state.lat = self.state.cache.lat;
-      }
-      var factor = 6;
-      if (false == self.state.animating) { return; }
-      debug("animate: NORMAL");
-      if (maxFov == self.state.fov && 0 == self.state.lat) {
-        self.state.animating = false;
-        self.refresh().draw();
-        return;
-      }
-
-      if (fov > maxFov) {
-        fov -= factor;
-        fov = Math.max(fov, maxFov);
-      } else if (fov < maxFov) {
-        fov += factor;
-        fov = Math.min(fov, maxFov);
-      } else {
-        fov = maxFov;
-      }
-
-      self.state.fov = fov;
-
-      if (PROJECTION_TINY_PLANET == projection) {
-        if (self.state.lat > 0) {
-          self.state.lat -= factor;
-          self.state.lat = Math.max(0, self.state.lat);
-        } else if (self.state.lat < 0) {
-          self.state.lat += factor;
-          self.state.lat = Math.min(0, self.state.lat);
+    if (PROJECTION_MIRROR_BALL != self.state.projectionrequested &&
+        PROJECTION_MIRROR_BALL != self.state.projection) {
+      self.state.animating = true;
+      self.state.projectionRid = raf(function animate () {
+        if (PROJECTION_TINY_PLANET == projection) {
+          self.state.lon = self.state.cache.lon;
+          self.state.lat = self.state.cache.lat;
         }
-      }
+        var factor = 6;
+        if (false == self.state.animating) { return; }
+        debug("animate: EQUILINEAR");
+        if (maxFov == self.state.fov && 0 == self.state.lat) {
+          self.state.animating = false;
+          self.refresh().draw();
+          return;
+        }
 
-      self.refresh().draw();
-      raf(animate);
+        if (fov > maxFov) {
+          fov -= factor;
+          fov = Math.max(fov, maxFov);
+        } else if (fov < maxFov) {
+          fov += factor;
+          fov = Math.min(fov, maxFov);
+        } else {
+          fov = maxFov;
+        }
 
-    });
+        if (fov < 0) {
+          fov = 0;
+        }
+
+        self.state.fov = fov;
+
+        if (PROJECTION_TINY_PLANET == projection) {
+          if (self.state.lat > 0) {
+            self.state.lat -= factor;
+            self.state.lat = Math.max(0, self.state.lat);
+          } else if (self.state.lat < 0) {
+            self.state.lat += factor;
+            self.state.lat = Math.min(0, self.state.lat);
+          }
+        }
+
+        self.refresh().draw();
+        self.state.projectionRid = raf(animate);
+      });
+    }
   };
 
   this.projections[PROJECTION_TINY_PLANET] = function tinyplanet () {
     if (false == self.state.ready) { return; }
     else if ('cylinder' == self.state.geometry) { return; }
+
+    if (PROJECTION_MIRROR_BALL == self.state.projection) {
+      self.projections[PROJECTION_EQUILINEAR]();
+    }
+
     if (PROJECTION_TINY_PLANET != self.state.projection) {
       self.state.cache.lon = self.state.lon;
       self.state.cache.lat = self.state.lat;
     }
+
     self.state.animating = true;
-    raf(function animate () {
+    self.state.projectionRid = raf(function animate () {
       var factor = 6;
       if (false == self.state.animating) { return; }
       debug("animate: TINY_PLANET");
+      self.camera.setLens(MAX_TINY_PLANET_CAMERA_LENS_VALUE);
+      self.state.fov = self.camera.fov;
       if (self.state.lat > MIN_LAT_VALUE) {
         self.state.animating = true;
 
@@ -526,9 +559,7 @@ function Frame (parent, opts) {
           self.state.lat = MIN_LAT_VALUE;
         }
 
-        self.camera.setLens(MAX_TINY_PLANET_CAMERA_LENS_VALUE);
-        self.state.fov = self.camera.fov;
-        raf(animate);
+        self.state.projectionRid = raf(animate);
       } else {
         self.state.animating = false;
         self.refresh().draw();
@@ -539,16 +570,28 @@ function Frame (parent, opts) {
   this.projections[PROJECTION_FISHEYE] = function () {
     if (false == self.state.ready) { return; }
     else if ('cylinder' == self.state.geometry) { return; }
+
+    if (PROJECTION_MIRROR_BALL == self.state.projection) {
+      self.projections[PROJECTION_EQUILINEAR]();
+    }
+
+    self.state.lon = self.state.cache.lon;
+
+    if (PROJECTION_MIRROR_BALL == self.state.projection ||
+        PROJECTION_TINY_PLANET == self.state.projection) {
+      self.state.lat = 0;
+    } else {
+      self.state.lat = self.state.cache.lat;
+    }
+
     var z = (self.height() / 100)|0;
     var f = 6;
     var fov = 75;
 
-    self.state.lon = self.state.cache.lon;
-    self.state.lat = self.state.cache.lat;
-
+    raf.cancel(self.state.projectionRid);
     self.state.animating = true;
 
-    raf(function animate () {
+    self.state.projectionRid = raf(function animate () {
       if (false == self.state.animating) { return; }
       debug("animate: FISHEYE");
       if (fov == self.state.fov) {
@@ -574,12 +617,78 @@ function Frame (parent, opts) {
       }
 
       self.refresh().draw();
-      raf(animate);
+      self.state.projectionRid = raf(animate);
     });
   };
 
+  this.projections[PROJECTION_MIRROR_BALL] = function mirrorball () {
+    self.state.animating = false;
+    if (null == self.camera) {
+      self.projection(PROJECTION_EQUILINEAR);
+    }
+
+    var scene = new three.Scene();
+    var geo = new three.SphereGeometry(30, 32, 32);
+    var light = new three.DirectionalLight(0xffffff, 1);
+    var mat = new three.MeshPhongMaterial({
+      color: 0xffffff,
+      ambient: 0xffffff,
+      specular: 0x050505,
+      shininess: 50,
+      map: self.texture
+    });
+
+    self.texture.needsUpdate = true;
+    var mesh = new three.Mesh(geo, mat);
+    var camera = self.camera;
+    var controls = new three.OrbitControls(camera);
+    controls.minDistance = 75;
+    controls.maxDistance = 200;
+    controls.noPan = true;
+
+    scene.add(camera);
+
+    var fov = 20;
+    self.state.fov = fov;
+    camera.fov = fov;
+    camera.near = 1;
+    camera.far = 1000;
+    camera.setLens(self.height() * .5);
+    camera.updateProjectionMatrix();
+
+    light.position.set(5,5,5);
+    light.castShadow = true;
+    light.shadowCameraNear = 0.01;
+    light.shadowCameraNeardowCameraFar = 15;
+    light.shadowCameraFov = 45;
+    light.shadowCameraLeft =15 -1;
+    light.shadowCameraRight =  1;
+    light.shadowCameraTop =  1;
+    light.shadowCameraBottom = -1;
+    light.shadowBias = 0.001;
+    light.shadowDarkness = 0.2;
+    light.shadowCameraTopadowMapWidth = 1024;
+    light.shadowMapHeight = 1024;
+
+    scene.add(light);
+
+    self.state.geometry = 'sphere';
+    scene.add(mesh);
+    scene.add(new three.AmbientLight(0xffffff));
+
+    self.scene = scene;
+    self.controls = controls;
+  };
+
+  this.projections[PROJECTION_FLAT] = function flat () {
+    self.state.animating = false;
+    self.projections[PROJECTION_EQUILINEAR]();
+    self.camera.setLens(40);
+    self.coords(0, 90);
+  };
+
   // initialize projection
-  this.projection(DEFAULT_PROJECTION);
+  this.projection(this.state.projection);
 
   // initialize frame source
   this.src(opts.src);
@@ -589,7 +698,7 @@ function Frame (parent, opts) {
 }
 
 // mixin `Emitter'
-emitter(Frame.prototype);
+emitter(Bubble.prototype);
 
 /**
  * Handle `onclick' event
@@ -598,7 +707,7 @@ emitter(Frame.prototype);
  * @param {Event} e
  */
 
-Frame.prototype.onclick = function (e) {
+Bubble.prototype.onclick = function (e) {
   var now = Date.now();
   var ts = this.state.mousedownts;
 
@@ -627,12 +736,16 @@ Frame.prototype.onclick = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.oncanplaythrough = function (e) {
+Bubble.prototype.oncanplaythrough = function (e) {
   this.state.time = this.video.currentTime;
   this.state.duration = this.video.duration;
 
   this.emit('canplaythrough', e);
   this.state.ready = true;
+
+  if (false == this.opts.autoplay) {
+    this.state.paused = true;
+  }
 
   setTimeout(function () {
     this.emit('ready');
@@ -650,7 +763,7 @@ Frame.prototype.oncanplaythrough = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.onplay = function (e) {
+Bubble.prototype.onplay = function (e) {
   raf(function() {
     this.holdframe.style.display = 'none';
     this.state.paused = false;
@@ -666,7 +779,7 @@ Frame.prototype.onplay = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.onpause = function (e) {
+Bubble.prototype.onpause = function (e) {
   this.state.paused = true;
   this.state.playing = false;
   this.emit('pause', e);
@@ -679,7 +792,7 @@ Frame.prototype.onpause = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.onplaying = function (e) {
+Bubble.prototype.onplaying = function (e) {
   this.state.playing = true;
   this.state.paused = false;
   this.emit('playing', e);
@@ -692,7 +805,7 @@ Frame.prototype.onplaying = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.onwaiting = function (e) {
+Bubble.prototype.onwaiting = function (e) {
   this.emit('wait', e);
 };
 
@@ -703,7 +816,7 @@ Frame.prototype.onwaiting = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.onloadstart = function (e) {
+Bubble.prototype.onloadstart = function (e) {
   this.emit('loadstart', e);
 };
 
@@ -714,7 +827,7 @@ Frame.prototype.onloadstart = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.onprogress = function (e) {
+Bubble.prototype.onprogress = function (e) {
   var video = this.video;
   var percent = 0;
 
@@ -738,7 +851,7 @@ Frame.prototype.onprogress = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.ontimeupdate = function (e) {
+Bubble.prototype.ontimeupdate = function (e) {
   e.percent = this.video.currentTime / this.video.duration * 100;
   this.state.time = this.video.currentTime;
   this.state.duration = this.video.duration;
@@ -753,7 +866,7 @@ Frame.prototype.ontimeupdate = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.onended = function (e) {
+Bubble.prototype.onended = function (e) {
   this.state.ended = true;
   this.emit('end');
   this.emit('ended');
@@ -766,7 +879,7 @@ Frame.prototype.onended = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.onmousedown = function (e) {
+Bubble.prototype.onmousedown = function (e) {
   this.state.mousedownts = Date.now();
   this.state.animating = false;
   this.state.dragstart.x = e.pageX;
@@ -782,7 +895,7 @@ Frame.prototype.onmousedown = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.onmouseup = function (e) {
+Bubble.prototype.onmouseup = function (e) {
   this.state.mousedown = false;
   this.emit('mouseup', e);
 };
@@ -794,7 +907,7 @@ Frame.prototype.onmouseup = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.ontouchstart = function (e) {
+Bubble.prototype.ontouchstart = function (e) {
   this.state.mousedownts = Date.now();
   this.state.dragstart.x = e.touches[0].pageX;
   this.state.dragstart.y = e.touches[0].pageY;
@@ -809,7 +922,7 @@ Frame.prototype.ontouchstart = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.ontouchend = function(e) {
+Bubble.prototype.ontouchend = function(e) {
   this.state.mousedown = false;
   this.emit('touchend', e);
 };
@@ -821,7 +934,7 @@ Frame.prototype.ontouchend = function(e) {
  * @param {Event} e
  */
 
-Frame.prototype.onresize = function (e) {
+Bubble.prototype.onresize = function (e) {
   if (this.state.resizable) {
     var containerStyle = getComputedStyle(this.el);
     var canvasStyle = getComputedStyle(this.renderer.domElement);
@@ -867,7 +980,7 @@ Frame.prototype.onresize = function (e) {
  * @param {Boolean} fullscreen
  */
 
-Frame.prototype.onfullscreenchange = function(fullscreen) {
+Bubble.prototype.onfullscreenchange = function(fullscreen) {
   this.state.focused = true;
   this.state.animating = false;
   if (fullscreen) {
@@ -898,7 +1011,7 @@ Frame.prototype.onfullscreenchange = function(fullscreen) {
  * @param {Event} e
  */
 
-Frame.prototype.onmousemove = function (e) {
+Bubble.prototype.onmousemove = function (e) {
   var x = 0;
   var y = 0;
 
@@ -937,7 +1050,7 @@ Frame.prototype.onmousemove = function (e) {
  * @param {Event} e
  */
 
-Frame.prototype.ontouchmove = function(e) {
+Bubble.prototype.ontouchmove = function(e) {
   if (e.touches.length) {
     e.preventDefault();
 
@@ -975,7 +1088,7 @@ Frame.prototype.ontouchmove = function(e) {
  * @param {Event} e
  */
 
-Frame.prototype.onmousewheel = function (e) {
+Bubble.prototype.onmousewheel = function (e) {
   var min = MIN_WHEEL_DISTANCE;
   var max = MAX_WHEEL_DISTANCE;
   var vel = this.state.scroll; // velocity
@@ -1012,7 +1125,7 @@ Frame.prototype.onmousewheel = function (e) {
  * @param {Object} e
  */
 
-Frame.prototype.ondeviceorientation = function (e) {
+Bubble.prototype.ondeviceorientation = function (e) {
   var orientation = this.state.orientation;
   var alpha = e.alpha;
   var beta = e.beta;
@@ -1069,7 +1182,7 @@ Frame.prototype.ondeviceorientation = function (e) {
  * @param {Object} e
  */
 
-Frame.prototype.onorientationchange = function (e) {
+Bubble.prototype.onorientationchange = function (e) {
   this.state.orientation = window.orientation;
   this.state.center.lat = this.state.deviceorientation.lat;
   this.state.center.lon = this.state.deviceorientation.lon;
@@ -1083,7 +1196,7 @@ Frame.prototype.onorientationchange = function (e) {
  * @param {Number} height
  */
 
-Frame.prototype.size = function (width, height) {
+Bubble.prototype.size = function (width, height) {
   this.state.width = width;
   this.state.height = height;
 
@@ -1115,16 +1228,18 @@ Frame.prototype.size = function (width, height) {
  * @param {String} src - optional
  */
 
-Frame.prototype.src = function (src) {
+Bubble.prototype.src = function (src) {
   if (src) {
     this.state.src = src;
 
+    this.state.ready = false;
     if (isImage(src)) {
       this.state.image = true;
       this.state.vr = false;
     } else {
       this.state.image = false;
       this.video.src = src;
+      this.video.load();
     }
 
     this.emit('source', src);
@@ -1140,7 +1255,7 @@ Frame.prototype.src = function (src) {
  * @api public
  */
 
-Frame.prototype.play = function () {
+Bubble.prototype.play = function () {
   if (false == this.state.image) {
     if (true == this.state.ended) {
       this.seek(0);
@@ -1156,7 +1271,7 @@ Frame.prototype.play = function () {
  * @api public
  */
 
-Frame.prototype.pause = function () {
+Bubble.prototype.pause = function () {
   if (false == this.state.image) {
     this.video.pause();
   }
@@ -1169,7 +1284,7 @@ Frame.prototype.pause = function () {
  * @api public
  */
 
-Frame.prototype.fullscreen = function () {
+Bubble.prototype.fullscreen = function () {
   var opts = null;
   if (! fullscreen.supported) {
     return;
@@ -1212,7 +1327,7 @@ Frame.prototype.fullscreen = function () {
  * @param {Number} n
  */
 
-Frame.prototype.volume = function (n) {
+Bubble.prototype.volume = function (n) {
   if (false == this.state.image) {
     if (null == n) {
       return this.video.volume;
@@ -1231,7 +1346,7 @@ Frame.prototype.volume = function (n) {
  * @param {Boolean} mute - optional
  */
 
-Frame.prototype.mute = function (mute) {
+Bubble.prototype.mute = function (mute) {
   if (false == mute) {
     this.video.muted = false;
     this.state.muted = false;
@@ -1254,7 +1369,7 @@ Frame.prototype.mute = function (mute) {
  * @param {Boolean} mute - optional
  */
 
-Frame.prototype.unmute = function (mute) {
+Bubble.prototype.unmute = function (mute) {
   if (false == this.state.image) {
     this.mute(false);
     this.emit('unmute');
@@ -1268,7 +1383,7 @@ Frame.prototype.unmute = function (mute) {
  * @api public
  */
 
-Frame.prototype.refresh = function () {
+Bubble.prototype.refresh = function () {
   var now = Date.now();
   var video = this.video;
   if (false == this.state.image) {
@@ -1282,47 +1397,58 @@ Frame.prototype.refresh = function () {
     }
   }
 
-  // @TODO(werle) - make this delta configurable
-  var delta = 4;
-  delta = this.state.inverted ? -delta : delta;
+  if (PROJECTION_FLAT != this.state.projection) {
+    // @TODO(werle) - make this delta configurable
+    var delta = 4;
+    delta = this.state.inverted ? -delta : delta;
 
-  if (this.state.keys.up) {
-    this.state.lat += delta;
-  } else if (this.state.keys.down) {
-    this.state.lat -= delta;
-  }
+    if (this.state.keys.up) {
+      this.state.lat += delta;
+    } else if (this.state.keys.down) {
+      this.state.lat -= delta;
+    }
 
-  if (this.state.keys.left) {
-    this.state.lon -= delta;
-  } else if (this.state.keys.right) {
-    this.state.lon += delta;
-  }
+    if (this.state.keys.left) {
+      this.state.lon -= delta;
+    } else if (this.state.keys.right) {
+      this.state.lon += delta;
+    }
 
-  if (false == this.state.mousedown && this.state.deviceorientation.lat) {
-    var dlat = this.state.deviceorientation.lat - this.state.center.lat;
-    var dlon = this.state.deviceorientation.lon - this.state.center.lon;
+    if (false == this.state.mousedown && this.state.deviceorientation.lat) {
+      var dlat = this.state.deviceorientation.lat - this.state.center.lat;
+      var dlon = this.state.deviceorientation.lon - this.state.center.lon;
 
-    // @TODO(werle) - Make this friction configurable
-    dlat *= .4;
-    dlon *= .2;
+      // @TODO(werle) - Make this friction configurable
+      dlat *= .4;
+      dlon *= .2;
 
-    this.state.lat = dlat + this.state.touch.lat;
-    this.state.lon = dlon + this.state.touch.lon;
-  }
+      this.state.lat = dlat + this.state.touch.lat;
+      this.state.lon = dlon + this.state.touch.lon;
+    }
 
-  if (this.camera) {
-    this.camera.fov = this.state.fov;
-    this.camera.updateProjectionMatrix();
-  }
+    if (this.camera) {
+      this.camera.fov = this.state.fov;
+      this.camera.updateProjectionMatrix();
+    }
 
-  if (PROJECTION_TINY_PLANET != this.state.projection) {
-    this.state.cache.lat = this.state.lat;
-    this.state.cache.lon = this.state.lon;
-  }
+    this.state.lat = Math.max(MIN_LAT_VALUE, Math.min(MAX_LAT_VALUE, this.state.lat));
+    if (this.state.lon > 360) {
+      this.state.lon = this.state.lon - 360;
+    } else if (this.state.lon < 0) {
+      this.state.lon = this.state.lon + 360;
+    }
 
+    if (PROJECTION_TINY_PLANET != this.state.projection) {
+      this.state.cache.lat = this.state.lat;
+      this.state.cache.lon = this.state.lon;
+    }
 
-  if ('cylinder' == this.state.geometry) {
+    if ('cylinder' == this.state.geometry) {
+      this.state.lat = 0;
+    }
+  } else {
     this.state.lat = 0;
+    this.state.lon = 90;
   }
 
   this.emit('refresh');
@@ -1335,7 +1461,7 @@ Frame.prototype.refresh = function () {
  * @api public
  */
 
-Frame.prototype.resizable = function(resizable) {
+Bubble.prototype.resizable = function(resizable) {
   if (typeof resizable == 'undefined') return this.state.resizable;
   this.state.resizable = resizable;
   return this;
@@ -1348,7 +1474,7 @@ Frame.prototype.resizable = function(resizable) {
  * @param {Number} seconds
  */
 
-Frame.prototype.seek = function (seconds) {
+Bubble.prototype.seek = function (seconds) {
   if (false == this.state.image) {
     if (seconds >= 0 && seconds <= this.video.duration) {
       this.video.currentTime = seconds;
@@ -1365,7 +1491,7 @@ Frame.prototype.seek = function (seconds) {
  * @param {Number} seconds
  */
 
-Frame.prototype.foward = function (seconds) {
+Bubble.prototype.foward = function (seconds) {
   if (false == this.state.image) {
     this.seek(this.video.currentTime + seconds);
     this.emit('forward', seconds);
@@ -1380,7 +1506,7 @@ Frame.prototype.foward = function (seconds) {
  * @param {Number} seconds
  */
 
-Frame.prototype.rewind = function (seconds) {
+Bubble.prototype.rewind = function (seconds) {
   if (false == this.state.image) {
     this.seek(this.video.currentTime - seconds);
     this.emit('rewind', seconds);
@@ -1395,7 +1521,7 @@ Frame.prototype.rewind = function (seconds) {
  * @param {Function} fn
  */
 
-Frame.prototype.use = function (fn) {
+Bubble.prototype.use = function (fn) {
   fn(this);
   return this;
 };
@@ -1406,7 +1532,7 @@ Frame.prototype.use = function (fn) {
  * @api public
  */
 
-Frame.prototype.draw = function () {
+Bubble.prototype.draw = function () {
   var renderer = this.renderer;
   var radius = this.state.radius;
   var camera = this.camera;
@@ -1417,8 +1543,6 @@ Frame.prototype.draw = function () {
 
   var lat = this.state.lat;
   var lon = this.state.lon;
-
-  lat = Math.max(MIN_LAT_VALUE, Math.min(MAX_LAT_VALUE, lat));
 
   var theta = lon * dtor;
   var phi = (90 - lat) * dtor;
@@ -1453,6 +1577,10 @@ Frame.prototype.draw = function () {
     }
   }
 
+  if (this.controls && 'function' == typeof this.controls.update) {
+    this.controls.update();
+  }
+
   if (this.renderer && this.scene && this.camera) {
     if (this.state.vr) {
       this.vreffect.render(this.scene, this.camera);
@@ -1475,10 +1603,10 @@ Frame.prototype.draw = function () {
  * @param {Number} z
  */
 
-Frame.prototype.lookAt = function (x, y, z) {
+Bubble.prototype.lookAt = function (x, y, z) {
   var vec = new three.Vector3(x, y, z);
 
-  if (this.camera) {
+  if (this.camera && null == this.controls) {
     x = this.camera.target.x = x;
     y = this.camera.target.y = y;
     z = this.camera.target.z = z;
@@ -1496,7 +1624,7 @@ Frame.prototype.lookAt = function (x, y, z) {
  * @api public
  */
 
-Frame.prototype.render = function () {
+Bubble.prototype.render = function () {
   var self = this;
   var style = getComputedStyle(this.parent);
   var fov = this.state.fov;
@@ -1524,10 +1652,10 @@ Frame.prototype.render = function () {
   // initialize texture
   if (false == this.state.image) {
     this.texture = new three.Texture(this.video);
-    this.texture.format = three.RGBFormat;
+    //this.texture.format = three.RGBFormat;
     this.texture.minFilter = three.LinearFilter;
-    this.texture.magFilter = three.LinearFilter;
-    this.texture.generateMipmaps = false;
+    //this.texture.magFilter = three.LinearFilter;
+    //this.texture.generateMipmaps = false;
   } else {
     this.texture = three.ImageUtils.loadTexture(this.src(),
                                                 null,
@@ -1566,8 +1694,8 @@ Frame.prototype.render = function () {
  * @api publc
  */
 
-Frame.prototype.offset =
-  Frame.prototype.setViewOffset = function () {
+Bubble.prototype.offset =
+  Bubble.prototype.setViewOffset = function () {
   // @see http://threejs.org/docs/#Reference/Cameras/PerspectiveCamera
   this.camera.setViewOffset.apply(this.camera, arguments);
   return this;
@@ -1580,7 +1708,7 @@ Frame.prototype.offset =
  * @param {Number} height - optional
  */
 
-Frame.prototype.height = function (height) {
+Bubble.prototype.height = function (height) {
   if (null == height) {
     return this.state.height;
   }
@@ -1597,7 +1725,7 @@ Frame.prototype.height = function (height) {
  * @param {Number} width - optional
  */
 
-Frame.prototype.width = function (width) {
+Bubble.prototype.width = function (width) {
   if (null == width) {
     return this.state.width;
   }
@@ -1615,11 +1743,13 @@ Frame.prototype.width = function (width) {
  * @param {Function} cb - optional
  */
 
-Frame.prototype.projection = function (type) {
+Bubble.prototype.projection = function (type) {
   type = type ? type.replace(/\s+/g, '') : null;
   var fn = this.projections[type];
   if (this.state.ready) {
     if (type && 'function' == typeof fn) {
+      this.controls = null;
+      this.state.projectionrequested = type;
       fn(this);
       this.state.projection = type;
       return this;
@@ -1641,7 +1771,7 @@ Frame.prototype.projection = function (type) {
  * @api public
  */
 
-Frame.prototype.destroy = function () {
+Bubble.prototype.destroy = function () {
   this.scene = null;
   this.texture = null;
   this.camera = null;
@@ -1663,7 +1793,7 @@ Frame.prototype.destroy = function () {
  * @api public
  */
 
-Frame.prototype.stop = function () {
+Bubble.prototype.stop = function () {
   if (false == this.state.image) { return; }
   this.pause();
   this.video.currentTime = 0;
@@ -1677,7 +1807,7 @@ Frame.prototype.stop = function () {
  * @param {Number} lat - optional
  */
 
-Frame.prototype.lat = function (lat) {
+Bubble.prototype.lat = function (lat) {
   if (null == lat) {
     return this.state.lat;
   }
@@ -1692,7 +1822,7 @@ Frame.prototype.lat = function (lat) {
  * @param {Number} lon - optional
  */
 
-Frame.prototype.lon = function (lon) {
+Bubble.prototype.lon = function (lon) {
   if (null == lon) {
     return this.state.lon;
   }
@@ -1708,7 +1838,7 @@ Frame.prototype.lon = function (lon) {
  * @param {Number} lon - optional
  */
 
-Frame.prototype.coords = function (lat, lon) {
+Bubble.prototype.coords = function (lat, lon) {
   if (null == lat && null == lon) {
     return {lat: this.state.lat, lon: this.state.lon}
   }
@@ -1721,7 +1851,7 @@ Frame.prototype.coords = function (lat, lon) {
   return this;
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"./template.html":9,"keycode":10,"path":11,"three-canvas-renderer":12,"three-vr-effect":13}],
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"./template.html":9,"keycode":10,"path":11,"three-canvas-renderer":12,"three-vr-effect":13,"three-orbit-controls":14}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
@@ -36723,8 +36853,8 @@ function parse(event) {
   }
 }
 
-}, {"event":14,"delegate":15}],
-14: [function(require, module, exports) {
+}, {"event":15,"delegate":16}],
+15: [function(require, module, exports) {
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
     prefix = bind !== 'addEventListener' ? 'on' : '';
@@ -36761,7 +36891,7 @@ exports.unbind = function(el, type, fn, capture){
   return fn;
 };
 }, {}],
-15: [function(require, module, exports) {
+16: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36805,8 +36935,8 @@ exports.unbind = function(el, type, fn, capture){
   event.unbind(el, type, fn, capture);
 };
 
-}, {"closest":16,"event":14}],
-16: [function(require, module, exports) {
+}, {"closest":17,"event":15}],
+17: [function(require, module, exports) {
 var matches = require('matches-selector')
 
 module.exports = function (element, selector, checkYoSelf, root) {
@@ -36827,8 +36957,8 @@ module.exports = function (element, selector, checkYoSelf, root) {
   }
 }
 
-}, {"matches-selector":17}],
-17: [function(require, module, exports) {
+}, {"matches-selector":18}],
+18: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36876,8 +37006,8 @@ function match(el, selector) {
   return false;
 }
 
-}, {"query":18}],
-18: [function(require, module, exports) {
+}, {"query":19}],
+19: [function(require, module, exports) {
 function one(selector, el) {
   return el.querySelector(selector);
 }
@@ -38504,4 +38634,687 @@ module.exports = function (THREE) {
   };
 };
 
+}, {}],
+14: [function(require, module, exports) {
+module.exports = function(THREE) {
+    var MOUSE = THREE.MOUSE
+    if (!MOUSE)
+        MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
+    
+    /**
+     * @author qiao / https://github.com/qiao
+     * @author mrdoob / http://mrdoob.com
+     * @author alteredq / http://alteredqualia.com/
+     * @author WestLangley / http://github.com/WestLangley
+     * @author erich666 / http://erichaines.com
+     */
+    /*global THREE, console */
+
+    // This set of controls performs orbiting, dollying (zooming), and panning. It maintains
+    // the "up" direction as +Y, unlike the TrackballControls. Touch on tablet and phones is
+    // supported.
+    //
+    //    Orbit - left mouse / touch: one finger move
+    //    Zoom - middle mouse, or mousewheel / touch: two finger spread or squish
+    //    Pan - right mouse, or arrow keys / touch: three finter swipe
+    //
+    // This is a drop-in replacement for (most) TrackballControls used in examples.
+    // That is, include this js file and wherever you see:
+    //      controls = new THREE.TrackballControls( camera );
+    //      controls.target.z = 150;
+    // Simple substitute "OrbitControls" and the control should work as-is.
+
+    function OrbitControls ( object, domElement ) {
+
+        this.object = object;
+        this.domElement = ( domElement !== undefined ) ? domElement : document;
+
+        // API
+
+        // Set to false to disable this control
+        this.enabled = true;
+
+        // "target" sets the location of focus, where the control orbits around
+        // and where it pans with respect to.
+        this.target = new THREE.Vector3();
+
+        // center is old, deprecated; use "target" instead
+        this.center = this.target;
+
+        // This option actually enables dollying in and out; left as "zoom" for
+        // backwards compatibility
+        this.noZoom = false;
+        this.zoomSpeed = 1.0;
+
+        // Limits to how far you can dolly in and out
+        this.minDistance = 0;
+        this.maxDistance = Infinity;
+
+        // Set to true to disable this control
+        this.noRotate = false;
+        this.rotateSpeed = 1.0;
+
+        // Set to true to disable this control
+        this.noPan = false;
+        this.keyPanSpeed = 7.0; // pixels moved per arrow key push
+
+        // Set to true to automatically rotate around the target
+        this.autoRotate = false;
+        this.autoRotateSpeed = 2.0; // 30 seconds per round when fps is 60
+
+        // How far you can orbit vertically, upper and lower limits.
+        // Range is 0 to Math.PI radians.
+        this.minPolarAngle = 0; // radians
+        this.maxPolarAngle = Math.PI; // radians
+
+        // How far you can orbit horizontally, upper and lower limits.
+        // If set, must be a sub-interval of the interval [ - Math.PI, Math.PI ].
+        this.minAzimuthAngle = - Infinity; // radians
+        this.maxAzimuthAngle = Infinity; // radians
+
+        // Set to true to disable use of the keys
+        this.noKeys = false;
+
+        // The four arrow keys
+        this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40 };
+
+        // Mouse buttons
+        this.mouseButtons = { ORBIT: MOUSE.LEFT, ZOOM: MOUSE.MIDDLE, PAN: MOUSE.RIGHT };
+
+        ////////////
+        // internals
+
+        var scope = this;
+
+        var EPS = 0.000001;
+
+        var rotateStart = new THREE.Vector2();
+        var rotateEnd = new THREE.Vector2();
+        var rotateDelta = new THREE.Vector2();
+
+        var panStart = new THREE.Vector2();
+        var panEnd = new THREE.Vector2();
+        var panDelta = new THREE.Vector2();
+        var panOffset = new THREE.Vector3();
+
+        var offset = new THREE.Vector3();
+
+        var dollyStart = new THREE.Vector2();
+        var dollyEnd = new THREE.Vector2();
+        var dollyDelta = new THREE.Vector2();
+
+        var theta;
+        var phi;
+        var phiDelta = 0;
+        var thetaDelta = 0;
+        var scale = 1;
+        var pan = new THREE.Vector3();
+
+        var lastPosition = new THREE.Vector3();
+        var lastQuaternion = new THREE.Quaternion();
+
+        var STATE = { NONE : -1, ROTATE : 0, DOLLY : 1, PAN : 2, TOUCH_ROTATE : 3, TOUCH_DOLLY : 4, TOUCH_PAN : 5 };
+
+        var state = STATE.NONE;
+
+        // for reset
+
+        this.target0 = this.target.clone();
+        this.position0 = this.object.position.clone();
+
+        // so camera.up is the orbit axis
+
+        var quat = new THREE.Quaternion().setFromUnitVectors( object.up, new THREE.Vector3( 0, 1, 0 ) );
+        var quatInverse = quat.clone().inverse();
+
+        // events
+
+        var changeEvent = { type: 'change' };
+        var startEvent = { type: 'start'};
+        var endEvent = { type: 'end'};
+
+        this.rotateLeft = function ( angle ) {
+
+            if ( angle === undefined ) {
+
+                angle = getAutoRotationAngle();
+
+            }
+
+            thetaDelta -= angle;
+
+        };
+
+        this.rotateUp = function ( angle ) {
+
+            if ( angle === undefined ) {
+
+                angle = getAutoRotationAngle();
+
+            }
+
+            phiDelta -= angle;
+
+        };
+
+        // pass in distance in world space to move left
+        this.panLeft = function ( distance ) {
+
+            var te = this.object.matrix.elements;
+
+            // get X column of matrix
+            panOffset.set( te[ 0 ], te[ 1 ], te[ 2 ] );
+            panOffset.multiplyScalar( - distance );
+
+            pan.add( panOffset );
+
+        };
+
+        // pass in distance in world space to move up
+        this.panUp = function ( distance ) {
+
+            var te = this.object.matrix.elements;
+
+            // get Y column of matrix
+            panOffset.set( te[ 4 ], te[ 5 ], te[ 6 ] );
+            panOffset.multiplyScalar( distance );
+
+            pan.add( panOffset );
+
+        };
+
+        // pass in x,y of change desired in pixel space,
+        // right and down are positive
+        this.pan = function ( deltaX, deltaY ) {
+
+            var element = scope.domElement === document ? scope.domElement.body : scope.domElement;
+
+            if ( scope.object.fov !== undefined ) {
+
+                // perspective
+                var position = scope.object.position;
+                var offset = position.clone().sub( scope.target );
+                var targetDistance = offset.length();
+
+                // half of the fov is center to top of screen
+                targetDistance *= Math.tan( ( scope.object.fov / 2 ) * Math.PI / 180.0 );
+
+                // we actually don't use screenWidth, since perspective camera is fixed to screen height
+                scope.panLeft( 2 * deltaX * targetDistance / element.clientHeight );
+                scope.panUp( 2 * deltaY * targetDistance / element.clientHeight );
+
+            } else if ( scope.object.top !== undefined ) {
+
+                // orthographic
+                scope.panLeft( deltaX * (scope.object.right - scope.object.left) / element.clientWidth );
+                scope.panUp( deltaY * (scope.object.top - scope.object.bottom) / element.clientHeight );
+
+            } else {
+
+                // camera neither orthographic or perspective
+                console.warn( 'WARNING: OrbitControls.js encountered an unknown camera type - pan disabled.' );
+
+            }
+
+        };
+
+        this.dollyIn = function ( dollyScale ) {
+
+            if ( dollyScale === undefined ) {
+
+                dollyScale = getZoomScale();
+
+            }
+
+            scale /= dollyScale;
+
+        };
+
+        this.dollyOut = function ( dollyScale ) {
+
+            if ( dollyScale === undefined ) {
+
+                dollyScale = getZoomScale();
+
+            }
+
+            scale *= dollyScale;
+
+        };
+
+        this.update = function () {
+
+            var position = this.object.position;
+
+            offset.copy( position ).sub( this.target );
+
+            // rotate offset to "y-axis-is-up" space
+            offset.applyQuaternion( quat );
+
+            // angle from z-axis around y-axis
+
+            theta = Math.atan2( offset.x, offset.z );
+
+            // angle from y-axis
+
+            phi = Math.atan2( Math.sqrt( offset.x * offset.x + offset.z * offset.z ), offset.y );
+
+            if ( this.autoRotate && state === STATE.NONE ) {
+
+                this.rotateLeft( getAutoRotationAngle() );
+
+            }
+
+            theta += thetaDelta;
+            phi += phiDelta;
+
+            // restrict theta to be between desired limits
+            theta = Math.max( this.minAzimuthAngle, Math.min( this.maxAzimuthAngle, theta ) );
+
+            // restrict phi to be between desired limits
+            phi = Math.max( this.minPolarAngle, Math.min( this.maxPolarAngle, phi ) );
+
+            // restrict phi to be betwee EPS and PI-EPS
+            phi = Math.max( EPS, Math.min( Math.PI - EPS, phi ) );
+
+            var radius = offset.length() * scale;
+
+            // restrict radius to be between desired limits
+            radius = Math.max( this.minDistance, Math.min( this.maxDistance, radius ) );
+
+            // move target to panned location
+            this.target.add( pan );
+
+            offset.x = radius * Math.sin( phi ) * Math.sin( theta );
+            offset.y = radius * Math.cos( phi );
+            offset.z = radius * Math.sin( phi ) * Math.cos( theta );
+
+            // rotate offset back to "camera-up-vector-is-up" space
+            offset.applyQuaternion( quatInverse );
+
+            position.copy( this.target ).add( offset );
+
+            this.object.lookAt( this.target );
+
+            thetaDelta = 0;
+            phiDelta = 0;
+            scale = 1;
+            pan.set( 0, 0, 0 );
+
+            // update condition is:
+            // min(camera displacement, camera rotation in radians)^2 > EPS
+            // using small-angle approximation cos(x/2) = 1 - x^2 / 8
+
+            if ( lastPosition.distanceToSquared( this.object.position ) > EPS
+                || 8 * (1 - lastQuaternion.dot(this.object.quaternion)) > EPS ) {
+
+                this.dispatchEvent( changeEvent );
+
+                lastPosition.copy( this.object.position );
+                lastQuaternion.copy (this.object.quaternion );
+
+            }
+
+        };
+
+
+        this.reset = function () {
+
+            state = STATE.NONE;
+
+            this.target.copy( this.target0 );
+            this.object.position.copy( this.position0 );
+
+            this.update();
+
+        };
+
+        this.getPolarAngle = function () {
+
+            return phi;
+
+        };
+
+        this.getAzimuthalAngle = function () {
+
+            return theta
+
+        };
+
+        function getAutoRotationAngle() {
+
+            return 2 * Math.PI / 60 / 60 * scope.autoRotateSpeed;
+
+        }
+
+        function getZoomScale() {
+
+            return Math.pow( 0.95, scope.zoomSpeed );
+
+        }
+
+        function onMouseDown( event ) {
+
+            if ( scope.enabled === false ) return;
+            event.preventDefault();
+
+            if ( event.button === scope.mouseButtons.ORBIT ) {
+                if ( scope.noRotate === true ) return;
+
+                state = STATE.ROTATE;
+
+                rotateStart.set( event.clientX, event.clientY );
+
+            } else if ( event.button === scope.mouseButtons.ZOOM ) {
+                if ( scope.noZoom === true ) return;
+
+                state = STATE.DOLLY;
+
+                dollyStart.set( event.clientX, event.clientY );
+
+            } else if ( event.button === scope.mouseButtons.PAN ) {
+                if ( scope.noPan === true ) return;
+
+                state = STATE.PAN;
+
+                panStart.set( event.clientX, event.clientY );
+
+            }
+
+            if ( state !== STATE.NONE ) {
+                document.addEventListener( 'mousemove', onMouseMove, false );
+                document.addEventListener( 'mouseup', onMouseUp, false );
+                scope.dispatchEvent( startEvent );
+            }
+
+        }
+
+        function onMouseMove( event ) {
+
+            if ( scope.enabled === false ) return;
+
+            event.preventDefault();
+
+            var element = scope.domElement === document ? scope.domElement.body : scope.domElement;
+
+            if ( state === STATE.ROTATE ) {
+
+                if ( scope.noRotate === true ) return;
+
+                rotateEnd.set( event.clientX, event.clientY );
+                rotateDelta.subVectors( rotateEnd, rotateStart );
+
+                // rotating across whole screen goes 360 degrees around
+                scope.rotateLeft( 2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed );
+
+                // rotating up and down along whole screen attempts to go 360, but limited to 180
+                scope.rotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed );
+
+                rotateStart.copy( rotateEnd );
+
+            } else if ( state === STATE.DOLLY ) {
+
+                if ( scope.noZoom === true ) return;
+
+                dollyEnd.set( event.clientX, event.clientY );
+                dollyDelta.subVectors( dollyEnd, dollyStart );
+
+                if ( dollyDelta.y > 0 ) {
+
+                    scope.dollyIn();
+
+                } else {
+
+                    scope.dollyOut();
+
+                }
+
+                dollyStart.copy( dollyEnd );
+
+            } else if ( state === STATE.PAN ) {
+
+                if ( scope.noPan === true ) return;
+
+                panEnd.set( event.clientX, event.clientY );
+                panDelta.subVectors( panEnd, panStart );
+
+                scope.pan( panDelta.x, panDelta.y );
+
+                panStart.copy( panEnd );
+
+            }
+
+            if ( state !== STATE.NONE ) scope.update();
+
+        }
+
+        function onMouseUp( /* event */ ) {
+
+            if ( scope.enabled === false ) return;
+
+            document.removeEventListener( 'mousemove', onMouseMove, false );
+            document.removeEventListener( 'mouseup', onMouseUp, false );
+            scope.dispatchEvent( endEvent );
+            state = STATE.NONE;
+
+        }
+
+        function onMouseWheel( event ) {
+
+            if ( scope.enabled === false || scope.noZoom === true || state !== STATE.NONE ) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            var delta = 0;
+
+            if ( event.wheelDelta !== undefined ) { // WebKit / Opera / Explorer 9
+
+                delta = event.wheelDelta;
+
+            } else if ( event.detail !== undefined ) { // Firefox
+
+                delta = - event.detail;
+
+            }
+
+            if ( delta > 0 ) {
+
+                scope.dollyOut();
+
+            } else {
+
+                scope.dollyIn();
+
+            }
+
+            scope.update();
+            scope.dispatchEvent( startEvent );
+            scope.dispatchEvent( endEvent );
+
+        }
+
+        function onKeyDown( event ) {
+
+            if ( scope.enabled === false || scope.noKeys === true || scope.noPan === true ) return;
+
+            switch ( event.keyCode ) {
+
+                case scope.keys.UP:
+                    scope.pan( 0, scope.keyPanSpeed );
+                    scope.update();
+                    break;
+
+                case scope.keys.BOTTOM:
+                    scope.pan( 0, - scope.keyPanSpeed );
+                    scope.update();
+                    break;
+
+                case scope.keys.LEFT:
+                    scope.pan( scope.keyPanSpeed, 0 );
+                    scope.update();
+                    break;
+
+                case scope.keys.RIGHT:
+                    scope.pan( - scope.keyPanSpeed, 0 );
+                    scope.update();
+                    break;
+
+            }
+
+        }
+
+        function touchstart( event ) {
+
+            if ( scope.enabled === false ) return;
+
+            switch ( event.touches.length ) {
+
+                case 1: // one-fingered touch: rotate
+
+                    if ( scope.noRotate === true ) return;
+
+                    state = STATE.TOUCH_ROTATE;
+
+                    rotateStart.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+                    break;
+
+                case 2: // two-fingered touch: dolly
+
+                    if ( scope.noZoom === true ) return;
+
+                    state = STATE.TOUCH_DOLLY;
+
+                    var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+                    var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+                    var distance = Math.sqrt( dx * dx + dy * dy );
+                    dollyStart.set( 0, distance );
+                    break;
+
+                case 3: // three-fingered touch: pan
+
+                    if ( scope.noPan === true ) return;
+
+                    state = STATE.TOUCH_PAN;
+
+                    panStart.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+                    break;
+
+                default:
+
+                    state = STATE.NONE;
+
+            }
+
+            if ( state !== STATE.NONE ) scope.dispatchEvent( startEvent );
+
+        }
+
+        function touchmove( event ) {
+
+            if ( scope.enabled === false ) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            var element = scope.domElement === document ? scope.domElement.body : scope.domElement;
+
+            switch ( event.touches.length ) {
+
+                case 1: // one-fingered touch: rotate
+
+                    if ( scope.noRotate === true ) return;
+                    if ( state !== STATE.TOUCH_ROTATE ) return;
+
+                    rotateEnd.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+                    rotateDelta.subVectors( rotateEnd, rotateStart );
+
+                    // rotating across whole screen goes 360 degrees around
+                    scope.rotateLeft( 2 * Math.PI * rotateDelta.x / element.clientWidth * scope.rotateSpeed );
+                    // rotating up and down along whole screen attempts to go 360, but limited to 180
+                    scope.rotateUp( 2 * Math.PI * rotateDelta.y / element.clientHeight * scope.rotateSpeed );
+
+                    rotateStart.copy( rotateEnd );
+
+                    scope.update();
+                    break;
+
+                case 2: // two-fingered touch: dolly
+
+                    if ( scope.noZoom === true ) return;
+                    if ( state !== STATE.TOUCH_DOLLY ) return;
+
+                    var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+                    var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+                    var distance = Math.sqrt( dx * dx + dy * dy );
+
+                    dollyEnd.set( 0, distance );
+                    dollyDelta.subVectors( dollyEnd, dollyStart );
+
+                    if ( dollyDelta.y > 0 ) {
+
+                        scope.dollyOut();
+
+                    } else {
+
+                        scope.dollyIn();
+
+                    }
+
+                    dollyStart.copy( dollyEnd );
+
+                    scope.update();
+                    break;
+
+                case 3: // three-fingered touch: pan
+
+                    if ( scope.noPan === true ) return;
+                    if ( state !== STATE.TOUCH_PAN ) return;
+
+                    panEnd.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+                    panDelta.subVectors( panEnd, panStart );
+
+                    scope.pan( panDelta.x, panDelta.y );
+
+                    panStart.copy( panEnd );
+
+                    scope.update();
+                    break;
+
+                default:
+
+                    state = STATE.NONE;
+
+            }
+
+        }
+
+        function touchend( /* event */ ) {
+
+            if ( scope.enabled === false ) return;
+
+            scope.dispatchEvent( endEvent );
+            state = STATE.NONE;
+
+        }
+
+        this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
+        this.domElement.addEventListener( 'mousedown', onMouseDown, false );
+        this.domElement.addEventListener( 'mousewheel', onMouseWheel, false );
+        this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false ); // firefox
+
+        this.domElement.addEventListener( 'touchstart', touchstart, false );
+        this.domElement.addEventListener( 'touchend', touchend, false );
+        this.domElement.addEventListener( 'touchmove', touchmove, false );
+
+        window.addEventListener( 'keydown', onKeyDown, false );
+
+        // force an update at start
+        this.update();
+    };
+
+    OrbitControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+    OrbitControls.prototype.constructor = OrbitControls;
+    return OrbitControls;
+}
 }, {}]}, {}, {"1":"Bubble"})

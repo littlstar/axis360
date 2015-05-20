@@ -1,9 +1,7 @@
 void function (global) {
   var sources = [
     '/assets/times-square.mp4',
-    '/assets/paramotor.mp4',
-    '/assets/lake-of-glass.jpg',
-    '/assets/vsn-scuba.mp4',
+    '/assets/paramotor.mp4'
   ];
   var promo = global.promo = new Bubble(document.querySelector('.promo'), {
     crossorigin: true,
@@ -47,9 +45,7 @@ void function (global) {
 
     switch (type) {
       case 'vr': break;
-      case 'normal': promo.projection('normal'); break;
-      case 'tinyplanet': promo.projection('tinyplanet'); break;
-      case 'fisheye': promo.projection('fisheye'); break;
+      default: promo.projection(type);
     }
 
     var active = document.querySelector('.controls .active');
@@ -58,7 +54,7 @@ void function (global) {
     transition();
   }, false);
   var _id = 0;
-  var projections = ['normal', 'tinyplanet', 'fisheye'];
+  var projections = ['equilinear', 'tinyplanet', 'fisheye', 'mirrorball'];
   function transition () {
     clearInterval(_id);
     var idx = projections.indexOf(promo.projection());
@@ -74,8 +70,20 @@ void function (global) {
   }
   transition();
   setTimeout(function () {
-    var projection = projections[(Math.random()*100|0) % projections.length];
+    var projection = ['tinyplanet', 'fisheye', 'mirrorball'][(Math.random()*100|0) % 2];
     document.querySelector('[data-type='+projection+']').classList.add('active');
     promo.projection(projection).lon(0);
   }, 500);
+
+  var panloopto = setTimeout(function loop () {
+    var panloop = setInterval(function () {
+      if (false == promo.state.mousedown && false == promo.state.keydown) {
+        promo.state.lon += .7;
+      } else {
+        clearInterval(panloop);
+        clearTimeout(panloopto);
+        setTimeout(loop, 1000);
+      }
+    }, 100);
+  }, 100);
 }((function () { return this; })());
