@@ -1,6 +1,6 @@
 {
   "name": "bubble",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "360 video rendering engine",
   "scripts": ["index.js"],
   "styles": ["frame.css"],
