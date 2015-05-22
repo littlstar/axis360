@@ -1,10 +1,10 @@
-Bubble
+Axis
 ======
 
-Bubble is a panoramic rendering engine. It supports the rendering of
+Axis is a panoramic rendering engine. It supports the rendering of
 equirectangular, cylindrical, and panoramic textures. It can playback
 spherical videos and render panoramic images. It also supports stacked
-video produced from the VSN Mobile V.360 video camera. Bubble has support for
+video produced from the VSN Mobile V.360 video camera. Axis has support for
 rendering multiple projections such as Stereoscopic (Oculus), Tiny Planet and
 Fisheye.
 
@@ -16,12 +16,23 @@ Fisheye.
 
 Development
 
+## Installation
+
+```sh
+$ component install littlstar/axis
+```
+
+or
+
+```js
+var Axis = require('littlstar/axis');
+```
+
 ## Usage
 
 ```js
-var Bubble = require('bubble');
 var el = document.querySelector('#video');
-var frame = new Frame(el, {src: '/path/to/video.mp4'});
+var frame = new Axis(el, {src: '/path/to/video.mp4'});
 ```
 
 ## License

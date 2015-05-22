@@ -1,30 +1,53 @@
 void function (global) {
+  var ua = navigator.userAgent;
+  var h264Supported = ! /firefox/.test(ua.toLowerCase());
+  var domElement = document.querySelector('.promo');
   var sources = [
-    '/assets/times-square.mp4',
-    '/assets/paramotor.mp4'
   ];
-  var promo = global.promo = new Bubble(document.querySelector('.promo'), {
+
+  if (h264Supported) {
+    sources.push({
+      owner: 'KonceptVR',
+      user:'koncept-vr',
+      name: 'times-square'
+    });
+  }
+
+  sources.push({
+    owner: 'VideoStitch',
+    user: 'videostitch',
+    name: 'paramotor'
+  });
+
+  function setRandomSource () {
+    var content = sources[(Math.random() * 100|0) % sources.length];
+    var src = '/assets/'+ content.name + (h264Supported ? '.mp4' : '.webm');
+    var a = domElement.querySelector('.attribution .name');
+    a.setAttribute('href', 'https://littlestar.com/'+ content.user);
+    a.setAttribute('target', '_blank');
+    a.innerHTML = content.owner;
+    promo.src(src);
+  }
+
+  var promo = global.promo = new Axis(domElement, {
     crossorigin: true,
     forceFocus: true,
     clickable: false,
     resizable: true,
     preload: true,
     autoplay: true,
-    height: window.innerHeight - 40,
+    height: (window.innerHeight * .7),
     muted: true,
     loop: true,
-    src: sources[(Math.random() * 100|0) % sources.length],
     vr: true
   });
 
-  if (promo.src().match('vsn')) {
-    document.querySelector('.projections').style.display = 'none';
-  }
+  setRandomSource();
 
   promo.el.style.opacity = 0;
   promo.el.classList.add('animated');
   promo.el.classList.add('fadeIn');
-  promo.render().once('ready', function () { promo.seek(3); });
+  promo.render().once('ready', function () { promo.seek(2); });
   document.querySelector('.controls').addEventListener('click', function (e) {
     var el = null
     var type = null;
@@ -54,7 +77,7 @@ void function (global) {
     transition();
   }, false);
   var _id = 0;
-  var projections = ['equilinear', 'tinyplanet', 'fisheye', 'mirrorball'];
+  var projections = ['equilinear', 'tinyplanet', 'fisheye'];
   function transition () {
     clearInterval(_id);
     var idx = projections.indexOf(promo.projection());
@@ -70,7 +93,7 @@ void function (global) {
   }
   transition();
   setTimeout(function () {
-    var projection = ['tinyplanet', 'fisheye', 'mirrorball'][(Math.random()*100|0) % 2];
+    var projection = ['tinyplanet', 'fisheye'][(Math.random()*100|0) % 2];
     document.querySelector('[data-type='+projection+']').classList.add('active');
     promo.projection(projection).lon(0);
   }, 500);
@@ -85,5 +108,5 @@ void function (global) {
         setTimeout(loop, 1000);
       }
     }, 100);
-  }, 100);
+  }, 400);
 }((function () { return this; })());

@@ -2,210 +2,183 @@
 <html>
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <title>Bubble - 360 Video Rendering Engine</title>
+    <title>Axis - 360 Video Rendering Engine</title>
     <link href='http://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" href="/css/bubble.css" type="text/css"/>
+    <link rel="stylesheet" href="/css/axis.css" type="text/css"/>
     <link rel="stylesheet" href="/css/navbar.css" type="text/css"/>
     <link rel="stylesheet" href="/css/page.css" type="text/css"/>
+    <link rel="stylesheet" href="/css/highlight/zenburn.css" type="text/css"/>
     <link rel="stylesheet" href="/css/font-awesome.css" type="text/css"/>
-    <script type="text/javascript" charset="utf-8" src="/js/bubble.js"></script>
+    <link rel="stylesheet" href="/css/promo.css" type="text/css"/>
+    <script type="text/javascript" charset="utf-8" src="/js/axis.js"></script>
+    <script type="text/javascript" charset="utf-8" src="/js/highlight.pack.js"></script>
+    <script>
+      hljs.initHighlightingOnLoad();
+      setTimeout(function () {
+        document.querySelector('.content').style.opacity = 1;
+      }, 500);
+    </script>
     <style type="text/css" media="all">
-      section.promo {
-        display: block;
-        position: relative;
-        width: 100%;
-      }
 
-      section.promo .controls {
-        display: block;
-        position: absolute;
-        z-index: 1000;
-        bottom: 10px;
-        width: 96%;
-        padding: 0 2%;
-      }
-
-      section.promo .controls .wrap {
-        display: block;
-        position: relative;
-        width: 100%;
-      }
-
-      section.promo .controls ul {
-        display: block;
-        position: absolute;
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        vertical-align: baseline;
-        bottom: 0;
-      }
-
-      section.promo .controls ul li {
-        display: inline-block;
-        position: relative;
-        margin: 0;
-        padding: 0;
-        background: rgba(255, 255, 255, 0.25);
-        border-radius: 4px;
-      }
-
-      section.promo .controls ul li.active,
-      section.promo .controls div:hover,
-      section.promo .controls ul li:hover  {
-        background: rgba(255, 255, 255, 0.75);
-      }
-
-      section.promo .controls ul li:not(.active):hover  {
-        cursor: pointer;
-      }
-
-      section.promo .controls div:hover {
-        cursor: help;
-      }
-
-      section.promo .controls ul li.active:after,
-      section.promo .controls ul li.active:hover:after,
-      section.promo .controls span:after,
-      section.promo .controls ul li:hover:after {
-        display: block;
-        position: absolute;
-        opacity: 0.75;
-        width: 150%;
-        left: -1em;
-        top: -25px;
-        font-size: .8em;
-        font-weight: 100;
-        text-align: center;
-        padding: 3px 6px;
-        background: rgb(40, 225, 225);
-        border-radius: 4px;
-        content: attr(data-title);
-        z-index: 100;
-        transition: all ease-in 100ms;
-        box-shadow: 0px 0px 1px 1px rgba(255, 255, 255, 0.05);
-      }
-
-      section.promo .controls ul li.active:after {
-        z-index: 90;
-        background: rgba(40, 225, 225, 0.50);
-      }
-
-      section.promo .controls div:hover span:after {
-        font-size: 1em;
-        width: 250%;
-        left: -275%;
-        bottom: .5em;
-      }
-
-      section.promo .controls span:after {
-        left: -225%;
-        width: 200%;
-        bottom: 1em;
-        top: inherit;
-        opacity: 0.75;
-      }
-
-      section.promo .controls ul li.active:hover:after,
-      section.promo .controls ul li:hover:after {
-        left: -1.55em;
-        top: -30px;
-        font-size: 1em;
-        width: 200%;
-      }
-
-      section.promo .controls ul li:hover:after {
-        box-shadow: 0px 0px 2px 2px rgba(255, 255, 255, 0.40);
-      }
-
-      section.promo .controls ul li a {
-        display: block;
-        position: relative;
-        width: 3em;
-        height: 2em;
-        background-repeat: no-repeat;
-        background-size: 105% 120%;
-        background-position-y: -2px;
-        text-decoration: none;
-        transition: all ease-in 100ms;
-      }
-
-      section.promo .controls ul li a:hover {
-        height: 2.5em;
-      }
-
-      section.promo .controls div {
-        display: block;
-        position: absolute;
-        right: 0px;
-        z-index: 100;
-        bottom: 0;
-        vertical-align: baseline;
-        margin-top: -1em;
-        border-radius: 4px;
-        background-color: rgba(255, 255, 255, 0.25);
-      }
-
-      section.promo .controls div span {
-        display: block;
-        position: relative;
-        width: 5em;
-        height: 4em;
-        background-image: url('/assets/keyboard-mouse.svg');
-        background-repeat: no-repeat;
-        background-size: contain;
-        background-position-x: 6px;
-        transition: height ease-in 100ms;
-      }
-
-      section.promo .title {
-        display: block;
-        position: absolute;
-        top: 40%;
-        width: 100%;
-        z-index: 10;
-        padding: 3em;
-        background-color: rgba(255, 255, 255, 0.14);
-      }
-
-      section.promo .title p {
-        display: block;
-        position: relative;
-        width: 50%;
-        margin: 0 auto;
-        color: #fff;
-        font-size: 1.5em;
-        text-align: center;
-        text-shadow: 2px 2px 2px #343434;
-      }
-
-      section.promo .title p span {
-        text-shadow: 0px 1px 20px rgb(40, 225, 225);
-      }
-
-      section.example {
+      section.how {
         width: 96%;
         margin: .5em 2%
       }
 
-      section.example pre {
+      section.how .wrap {
         display: block;
         position: relative;
-        width: 50%;
+        width: 1095px;
         margin: 0 auto;
-        background: #C8DADA;
+      }
+
+      section.how pre {
+        display: inline-block;
+        position: relative;
+        width: 550px;
+        height: 270px;
+        margin: 0;
+      }
+
+      section.how pre code {
         border-radius: 4px;
+      }
+
+      section.how .image {
+        display: inline-block;
+        position: relative;
+        width: 540px;
+        height: 270px;
+        background: #EFEFEF;
+        box-shadow: 0px 1px 4px -1px #000;
+      }
+
+      section.how .image img {
+        display: block;
+        position: relative;
+        width: 100%;
+        height: auto;
       }
 
       section:not(.promo) header h2 {
         text-align: center;
-        text-transform: uppercase;
-        font-size: 3em;
+        font-size: 2em;
       }
 
-      .bubble.frame {
+      section > p {
+        display: block;
+        position: relative;
+        width: 66%;
+        padding: 2em;
+        margin: 2em auto;
+        line-height: 1.5;
+        color: #424242;
+        background-color: rgba(255, 255, 255, 0.75);
+        border-radius: 4px;
+        border: 1px solid #ECECEC;
+      }
+
+      section.formats,
+      section.who,
+      section.projections {
+        display: block;
+        position: relative;
+        width: 70%;
+        margin: 0 auto;
+        margin-bottom: 1em;
+        background: #fff;
+        border: 1px solid #efefef;
+        border-radius: 4px;
+      }
+
+      section.formats h3,
+      section.projections h3 {
+        margin-top: 0;
+        padding: 1em;
+        background: #EFEFEF;
+        border-bottom: 1px solid rgb(40, 225, 225);
+      }
+
+      section.formats .thumb,
+      section.who .detail,
+      section.projections .thumb {
+        display: inline-block;
+        position: relative;
+        width: 32%;
+        height: auto;
+        margin: .5%;
+      }
+
+      section.who .detail {
+        vertical-align: top;
+        width: 29%;
+        padding: .5em;
+        margin: .5em;
+        line-height: 1.5;
+        color: #424242;
+        border-radius: 4px;
+        border: 1px solid #ECECEC;
+        background-color: rgba(255, 255, 255, 0.75);
+        text-align: center;
+      }
+
+      section.who .detail p {
+        font-size: 14px;
+      }
+
+      section.formats .thumb h4,
+      section.projections .thumb h4,
+      section.who .detail h4 {
+        text-align: center;
+      }
+
+      section.formats .thumb img,
+      section.projections .thumb img {
+        display: block;
+        position: relative;
+        width: 100%;
+        height: auto;
+        border-radius: 4px;
+      }
+
+      section.sites { }
+
+      section.sites ul {
+        display: block;
+        position: relative;
+        padding: 2em 15%;
+        margin: 0;
+        list-style: none;
+        background: rgba(0, 0, 0, 0.75);
+      }
+
+      section.sites ul li {
+        display: inline-block;
+        position: relative;
+        margin: 0;
+        padding: 0;
+        max-width: 15em;
+        max-height: 15em;
+      }
+
+      section.sites ul li a {
+        display: block;
+        position: relative;
+        width: 100%;
+        height: auto;
+        opacity: .5;
+        transition: all ease-in 100ms;
+      }
+
+      section.sites ul li a:hover {
         opacity: 1;
-        transition: opacity ease-in 200ms;
+      }
+
+      section.sites ul li a img {
+        display: block;
+        position: relative;
+        width: 100%;
+        height: 100%;
       }
 
       a i.fa {
@@ -215,7 +188,7 @@
   </head>
   <body>
     <nav id="navbar" class="animated fadeIn noselect">
-      <header class="title animated tada"><a href="/">Bubble</a></header>
+      <header class="title animated tada"><a href="/">Axis</a></header>
       <span class="attribution animated fadeIn"> by <span class="logo"></span> </span>
       <section class="menu">
         <ul>
@@ -225,15 +198,18 @@
           <li><a href="/faq.html"><i class="fa fa-question"></i>FAQ</a></li>
           <li><a href="/documentation.html"><i class="fa fa-book"></i>Documentation</a></li>
           <li><a href="/contribute.html"><i class="fa fa-code-fork"></i>Contribute</a></li>
-          <li><a href="https://github.com/littlstar/bubble" target="_blank"><i class="fa fa-github"></i>Source</a></li>
+          <li><a href="https://github.com/littlstar/axis" target="_blank"><i class="fa fa-github"></i>Source</a></li>
         </ul>
       </section>
     </nav>
     <section class="content">
+
       <section class="promo animated fadeIn noselect">
-        <header class="title"><p><span class="name">Bubble</span> is a
-        panoramic rendering engine in JavaScript. It supports the rendering
-        of equirectangular, cylindrical, and panoramic textures</p></header>
+        <header class="title">
+          <p>
+            Introducing <span class="name">Axis</span>, a free and open source panoramic rendering engine
+          </p>
+        </header>
         <nav class="controls">
           <section class="wrap">
             <ul class="projections">
@@ -243,27 +219,144 @@
               <li data-title="Fisheye" data-type="fisheye"><a href="#" style="background-image: url(/assets/lens.svg)"></a></li>
               <li data-title="Mirror Ball" data-type="mirrorball"><a href="#" style="background-image: url(/assets/sphere.svg)"></a></li>
             </ul>
+          </section>
+        </nav>
+        <span class="attribution">Video by <a class="name"></a></span>
+        <script type="text/javascript" charset="utf-8" src="/js/promo.js"> </script>
+      </section>
+      <hr class="divider" />
+
+      <section class="what">
+        <header><h2>What is Axis?</h2></header>
+        <p>Axis is an extenable video and photo rendering engine written in Javascript.
+        It supports <a href="http://en.wikipedia.org/wiki/Equirectangular_projection">equirectangular</a>,
+        <a href="http://en.wikipedia.org/wiki/Cylindrical_coordinate_system">cylindrical</a>, and
+        flat formats. Axis can render textures with multiple built-in projections such as Fisheye and Tiny Planet.
+        Axis has built-in support for <a href="http://webvr.info/">WebVR</a>.</p>
+
+        <section class="formats">
+          <h3>Formats</h3>
+          <p>Axis can detect formats such as Equilinear and Cylindrical by examining the
+          dimensions of a video. Below are the supported formats Axis can support.</p>
+          <div class="thumb">
+            <h4>Equirectangular Format</h4>
+            <img src="/assets/times-square-flat.png" alt="Equirectangular Format"/>
+          </div>
+
+          <div class="thumb">
+            <h4>Cylindrical Format</h4>
+            <img src="/assets/cylindrical-flat.png" alt="Cylindrical Format"/>
+          </div>
+
+          <div class="thumb">
+            <h4>Flat (Normal) Format</h4>
+            <img src="/assets/normal-video-flat.png" alt="Flat (Normal) Format"/>
           </div>
         </section>
-      </nav>
-      <script type="text/javascript" charset="utf-8" src="/js/promo.js"> </script>
-    </section>
-      <section class="example">
-        <header><h2>Example</h2></header>
-        <pre><code>
-          var frame = new Bubble(document.querySelector('#my-video'), {
-            autoplay: true,
-            preload: true,
-            height: 500,
-            width: 500,
-            src: '/path/to/video.mp4',
-          });
 
-          frame.render().on('ready', function () {
-            // do stuff with player frame
-          });
-        </code></pre>
+        <section class="projections">
+          <h3>Projections</h3>
+          <p>Out of the box Axis supports multiple projections such as Fisheye and Tiny Planet.</p>
+          <div class="thumb">
+            <h4>Equilinear/Cylindrical Projection</h4>
+            <img src="/assets/equilinear-projection.png" alt="Equilinear Projection"/>
+          </div>
+
+          <div class="thumb">
+            <h4>Fisheye Projection</h4>
+            <img src="/assets/fisheye-projection.png" alt="Fisheye Projection"/>
+          </div>
+
+          <div class="thumb">
+            <h4>Tiny Planet Projection</h4>
+            <img src="/assets/tiny-planet-projection.png" alt="Tiny Planet Projection"/>
+          </div>
+
+          <div class="thumb">
+            <h4>Mirror Ball Projection</h4>
+            <img src="/assets/mirror-ball-projection.png" alt="Mirror Ball Projection"/>
+          </div>
+        </section>
+
+      </section>
+      <hr class="divider" />
+
+      <section class="who">
+        <header><h2>Who is Axis for?</h2></header>
+        <div class="detail">
+          <h4>Video Players</h4>
+          <p>Axis enables multiple projection and texture rendering for different
+          types of content. It supports panoramic video and photo. Traditional flat
+          video is also supported. Axis is extendable and has a fluid API.</p>
+        </div>
+
+        <div class="detail">
+          <h4>Panoramic Galleries</h4>
+          <p>Axis provides a robust frame and fluid API for rendering panoramic
+          textures. Build your panoramic video and/or photo gallery on Axis.</p>
+        </div>
+
+        <div class="detail">
+          <h4>Hackers</h4>
+          <p>Axis is free and open source. <a href="contribute.html">Contribute</a>
+          today and join others working to make Axis for everyone.</p>
+        </div>
+
+        <div class="detail">
+          <h4>You?</h4>
+          <p><a href="/contribute.html">Contribute</a>,
+          read the <a href="/documentation.html">documentation</a>, or check out the
+          <a href="https://github.com/littlstar/axis" target="_blank">source</a> and
+          see how Axis can work for.</p>
+        </div>
+      </section>
+      <hr class="divider" />
+
+      <section class="how animated fadeIn">
+        <header><h2>How do I use Axis?</h2></header>
+        <p>Axis is written in Javascript and is meant for the web. It has a fluid API and plugin system
+        allowing any consumer to build and quickly extend the Axis rendering frame.
+        It relies on WebGL for rendering but fallbacks on a canvas rendering
+        engine if WebGL is not supported. Axis utilizes <a href="http://threejs.org/">Three.js</a>,
+        an open source 3D Javascript library.</p>
+        <section class="wrap">
+          <pre><code class="javascript">
+            var domElement = document.querySelector('#my-video');
+            var frame = new Axis(domElement, {preload: true});
+
+            frame
+            .src('/path/to/video.mp4')
+            .height(500)
+            .width(500)
+            .render()
+            .on('ready', function () {
+              frame
+              .projection('tiny planet')
+              .seek(3) // in seconds
+              .coords(0, 90) // [lat, lon]
+              .play();
+            });
+          </code></pre>
+          <span class="image"><img src="/assets/paramotor-bg.png" alt="" /></span>
+        </section>
+      </section>
+      <hr class="divider" />
+
+      <section class="sites">
+        <header><h2>Sites using Axis</h2></header>
+        <ul>
+          <li><a href="https://littlstar.com" alt="LittleStar" target="_blank"><img src="/assets/littlestar-logo-large.png" alt="LittleStar Logo" /></a></li>
+        </ul>
       </section>
     </section>
+    <footer>
+      <section>
+      <span class="title">Axis</span> is a free and open source project by
+      <a href="https://littlstar.com">Little Star Media, Inc.</a>
+      Be sure to check out the
+      <a href="https://github.com/littlstar/axis/blob/master/LICENSE">license</a>
+      before using Axis in your project.
+      </section>
+    </footer>
   </body>
 </html>

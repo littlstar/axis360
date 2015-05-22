@@ -1,28 +1,28 @@
-.bubble.frame {
+.axis.frame {
   position: relative;
   margin: 0;
   padding: 0;
 }
 
-.bubble.frame .container {
+.axis.frame .container {
   position: relative;
   display: block;
   margin: 0;
   padding: 0;
 }
 
-.bubble.frame video {
+.axis.frame video {
   display: none;
 }
 
-.bubble.frame canvas {
+.axis.frame canvas {
   position: relative;
   display: block;
   margin: 0 auto;
   padding: 0;
 }
 
-.bubble.holdframe {
+.axis.holdframe {
   background-repeat: no-repeat;
   background-size: 100% 100%;
   position: absolute;

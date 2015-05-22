@@ -1,0 +1,194 @@
+
+section.promo {
+  display: block;
+  position: relative;
+  width: 100%;
+  background: #000;
+  padding-top: 52px;
+}
+
+section.promo .controls {
+  display: block;
+  position: absolute;
+  z-index: 1000;
+  bottom: 10px;
+  width: 96%;
+  padding: 0 2%;
+}
+
+section.promo .controls .wrap {
+  display: block;
+  position: relative;
+  width: 100%;
+}
+
+section.promo .controls ul {
+  display: block;
+  position: absolute;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  vertical-align: baseline;
+  bottom: 0;
+}
+
+section.promo .controls ul li {
+  display: inline-block;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+}
+
+section.promo .controls ul li.active,
+section.promo .controls div:hover,
+section.promo .controls ul li:hover  {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+section.promo .controls ul li:not(.active):hover  {
+  cursor: pointer;
+}
+
+section.promo .controls div:hover {
+  cursor: help;
+}
+
+section.promo .controls ul li.active:after,
+section.promo .controls ul li.active:hover:after,
+section.promo .controls span:after,
+section.promo .controls ul li:hover:after {
+  display: block;
+  position: absolute;
+  opacity: 0.75;
+  width: 150%;
+  left: -1em;
+  top: -25px;
+  font-size: .8em;
+  font-weight: 100;
+  text-align: center;
+  padding: 3px 6px;
+  background: rgb(40, 225, 225);
+  border-radius: 4px;
+  content: attr(data-title);
+  z-index: 100;
+  transition: all ease-in 100ms;
+  box-shadow: 0px 0px 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+section.promo .controls ul li.active:after {
+  z-index: 90;
+  background: rgba(40, 225, 225, 0.50);
+}
+
+section.promo .controls div:hover span:after {
+  font-size: 1em;
+  width: 250%;
+  left: -275%;
+  bottom: .5em;
+}
+
+section.promo .controls span:after {
+  left: -225%;
+  width: 200%;
+  bottom: 1em;
+  top: inherit;
+  opacity: 0.75;
+}
+
+section.promo .controls ul li.active:hover:after,
+section.promo .controls ul li:hover:after {
+  left: -1.55em;
+  top: -30px;
+  font-size: 1em;
+  width: 200%;
+}
+
+section.promo .controls ul li:hover:after {
+  box-shadow: 0px 0px 2px 2px rgba(255, 255, 255, 0.40);
+}
+
+section.promo .controls ul li a {
+  display: block;
+  position: relative;
+  width: 3em;
+  height: 2em;
+  background-repeat: no-repeat;
+  background-size: 105% 120%;
+  background-position-y: -2px;
+  text-decoration: none;
+  transition: all ease-in 100ms;
+}
+
+section.promo .controls ul li a:hover {
+  height: 2.5em;
+}
+
+section.promo .controls div {
+  display: block;
+  position: absolute;
+  right: 0px;
+  z-index: 100;
+  bottom: 0;
+  vertical-align: baseline;
+  margin-top: -1em;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+section.promo .controls div span {
+  display: block;
+  position: relative;
+  width: 5em;
+  height: 4em;
+  background-image: url('/assets/keyboard-mouse.svg');
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position-x: 6px;
+  transition: height ease-in 100ms;
+}
+
+section.promo .title {
+  display: block;
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  z-index: 10;
+  padding: 3em 0;
+  background-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-50%);
+}
+
+section.promo .title p {
+  display: block;
+  position: relative;
+  width: 50%;
+  margin: 0 auto;
+  color: #fff;
+  font-size: 2em;
+  text-align: center;
+  text-shadow: 2px 2px 2px #343434;
+}
+
+section.promo .title p span {
+  text-shadow: 0px 1px 20px rgb(40, 225, 225);
+}
+
+section.promo .attribution {
+  display: block;
+  position: absolute;
+  z-index: 10;
+  top: 75px;
+  left: 25px;
+  padding: 6px;
+  background: rgba(206, 206, 206, 0.5);
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+.axis.frame {
+  opacity: 1;
+  transition: opacity ease-in 200ms;
+}
+

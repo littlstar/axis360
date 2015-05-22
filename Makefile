@@ -17,7 +17,10 @@ CSS := *.css
 ##
 # Module source (js, html, json)
 #
-SRC := index.js template.html component.json
+SRC := $(wildcard *.js)
+SRC += $(wildcard projection/*.js)
+SRC += $(wildcard geometry/*.js)
+SRC += component.json
 
 ##
 # Main javascript entry
@@ -27,7 +30,7 @@ MAIN = index.js
 ##
 # Global namespace target
 #
-GLOBAL_NAMESPACE = Bubble
+GLOBAL_NAMESPACE = Axis
 
 ##
 # Ensures parent directory is built
@@ -63,19 +66,19 @@ build/build.css: node_modules $(CSS)
 ##
 # Builds all dist files
 #
-dist: dist/bubble.js dist/bubble.css
+dist: dist/axis.js dist/axis.css
 
 ##
 # Builds javascript dist file
 #
-dist/bubble.js: node_modules $(SRC)
+dist/axis.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
 	$(DUO) -C --type js --global $(GLOBAL_NAMESPACE) < $(MAIN) > $@
 
 ##
 # Builds CSS dist file
 #
-dist/bubble.css: node_modules $(CSS)
+dist/axis.css: node_modules $(CSS)
 	$(BUILD_PARENT_DIRECTORY)
 	cat $(CSS) | $(DUO) -C --type css > $@
 

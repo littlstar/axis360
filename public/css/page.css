@@ -3,14 +3,35 @@
 body {
   display: block;
   position: relative;
-  overflow-x: hidden;
   margin: 0;
   padding: 0;
   height : auto;
   width: 100%;
-  min-width: 800px;
+  min-width: 1280px;
   font-family: 'Montserrat', sans-serif;
-  background: rgb(200, 230, 230);
+  background-color: #fff;
+  background-image: url('/assets/background.png');
+}
+
+a {
+  color: rgb(40, 225, 225);
+  text-decoration: none;
+  transition: all ease-in 100ms;
+}
+
+a:hover {
+  color: rgb(90, 250, 250);
+}
+
+body > .content {
+  background-color: rgba(255, 255, 255, 0.75);
+  height: 100%;
+  opacity: 0;
+  transition: all ease-in 500ms;
+}
+
+body > .content > section {
+  padding-bottom: 3.5em;
 }
 
 .noselect {
@@ -21,4 +42,32 @@ body {
   -ms-user-select: none;
   user-select: none;
   pointer: cursor;
+}
+
+hr.divider {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 2em;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: #EFEFEF;
+  border-bottom: 1px solid rgb(40, 225, 225);
+}
+
+footer {
+  display: block;
+  position: relative;
+  width: 100%;
+  text-align: center;
+  padding: 2em 0;
+  font-size: .8em;
+  border-top: 1px solid rgb(40, 225, 225);
+  color: #fff;
+  background-color: rgba(0, 0, 0, 0.9);
+  background-image: url('/assets/littlestar-logo-symbol.png');
+  background-repeat: no-repeat;
+  background-size: 30px;
+  background-position: 11px;
 }

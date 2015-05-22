@@ -2,10 +2,10 @@
 <html>
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <title>Bubble - 360 Video Rendering Engine</title>
+    <title>Axis - 360 Video Rendering Engine</title>
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css" type="text/css" />
-    <link rel="stylesheet" href="dist/bubble.css" type="text/css" />
-    <script type="text/javascript" charset="utf-8" src="dist/bubble.js"></script>
+    <link rel="stylesheet" href="dist/axis.css" type="text/css" />
+    <script type="text/javascript" charset="utf-8" src="dist/axis.js"></script>
     <style type="text/css" media="all">
       body {
         display: block;
@@ -85,27 +85,26 @@
   </head>
   <body>
     <h3 id="title">
-      <i class="fa fa-video-camera"></i>Bubble 360 Video Test
+      <i class="fa fa-video-camera"></i>Axis 360 Video Test
     </h3>
     <span id="heading">Click and drag to navigate the 360 video</span>
     <div id="meta">
       <span id="version"><i class="fa fa-tag"></i>v0.0.1</span>
       <span id="github-source">
         <i class="fa fa-github"></i>
-        <a href="https://github.com/littlstar/bubble">View Source</a>
+        <a href="https://github.com/littlstar/axis">View Source</a>
       </span>
     </div>
     <div class="normal video"></div>
     <div class="vsn video"></div>
     <button id="go-fullscreen">Go fullscreen</button>
     <script type="text/javascript" charset="utf-8">
-      var frame = new Bubble(document.querySelector('.normal.video'), {
+      var frame = new Axis(document.querySelector('.normal.video'), {
         crossorigin: true,
-        projection: 'flat',
         resizable: true,
         autoplay: true,
         loop: true,
-        src: '/public/assets/flat-video.mp4',
+        src: '/public/assets/paramotor.webm',
         vr: true
       });
 
@@ -115,7 +114,7 @@
         frame.fullscreen();
       };
 
-      /*var vsn = new Bubble(document.querySelector('.vsn.video'), {
+      /*var vsn = new Axis(document.querySelector('.vsn.video'), {
         src: 'vsn.webm',
         resizable: true,
         autoplay: true,

@@ -1,23 +1,48 @@
 {
-  "name": "bubble",
+  "name": "axis",
   "version": "1.1.3",
   "description": "360 video rendering engine",
-  "scripts": ["index.js"],
+  "scripts": [
+    "index.js",
+    "state.js",
+    "camera.js",
+    "constants.js",
+    "projection.js",
+
+    "geometry/index.js",
+    "geometry/plane.js",
+    "geometry/sphere.js",
+    "geometry/cylinder.js",
+
+    "projection/flat.js",
+    "projection/fisheye.js",
+    "projection/equilinear.js",
+    "projection/tinyplanet.js",
+    "projection/mirrorball.js"
+
+  ],
+
   "styles": ["frame.css"],
+
   "templates": ["template.html"],
   "dependencies": {
-    "mattdesl/three-orbit-controls": "*",
     "littlstar/three-canvas-renderer": "*",
+    "littlstar/three-vr-effect": "*",
+    "littlstar/fullscreen": "master",
+
+    "mattdesl/three-orbit-controls": "*",
+
+    "yields/keycode": "*",
+    "yields/merge": "*",
+
+    "timoxley/offset": "*",
+    "jb55/has-webgl": "*",
+
     "components/three.js": "*",
     "component/emitter": "*",
     "component/events": "*",
     "component/domify": "*",
     "component/raf": "*",
-    "littlstar/fullscreen": "master",
-    "jb55/has-webgl": "*",
-    "littlstar/three-vr-effect": "*",
-    "yields/keycode": "*",
-    "timoxley/offset": "*",
     "component/path": "*"
   }
 }
