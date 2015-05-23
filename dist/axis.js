@@ -614,7 +614,7 @@ Axis.prototype.ontouchend = function(e) {
  */
 
 Axis.prototype.onresize = function (e) {
-  if (this.state.resizable) {
+  if (this.state.resizable && ! this.state.fullscreen) {
     var containerStyle = getComputedStyle(this.el);
     var canvasStyle = getComputedStyle(this.renderer.domElement);
     var containerWidth = parseFloat(containerStyle.width);
@@ -672,10 +672,6 @@ Axis.prototype.onfullscreenchange = function(fullscreen) {
       raf(function () { this.render(); }.bind(this));
     }
     this.size(this.state.lastsize.width, this.state.lastsize.height);
-    this.emit('resize', {
-      width: this.state.lastsize.width,
-      height: this.state.lastsize.height
-    });
     this.state.fullscreen = false;
     this.state.lastsize.width = null;
     this.state.lastsize.height = null;
@@ -977,23 +973,13 @@ Axis.prototype.fullscreen = function () {
     var newWidth = null;
     var newHeight = null;
 
-    if (this.state.maintainaspectratio) {
-      newWidth = window.innerWidth;
-      newHeight = newWidth / aspectRatio;
-    } else {
-      newWidth = window.screen.width;
-      newHeight = window.screen.height;
-    }
+    newWidth = window.screen.width;
+    newHeight = window.screen.height;
 
     this.state.lastsize.width = canvasWidth;
     this.state.lastsize.height = canvasHeight;
 
     this.size(newWidth, newHeight);
-    this.emit('resize', {
-      width: newWidth,
-      height: newHeight
-    });
-
   }
 
   fullscreen(this.renderer.domElement, opts);
@@ -38790,18 +38776,6 @@ module.exports = function (THREE) {
     var vrSensor;
     var eyeTranslationL, eyeFOVL;
     var eyeTranslationR, eyeFOVR;
-    var defaultFov = {
-      upDegrees: 0, downDegrees: 0,
-      leftDegrees: 0, rightDegrees: 0
-    };
-    var defaultTranslation = {
-      x: 0, y: 0, z: 0, w: 0
-    };
-
-    eyeFOVR = defaultFov;
-    eyeFOVL = defaultFov;
-    eyeTranslationL = defaultTranslation;
-    eyeTranslationR = defaultTranslation;
 
     function gotVRDevices( devices ) {
 
@@ -38902,7 +38876,7 @@ module.exports = function (THREE) {
 
     this.render = function ( scene, camera ) {
 
-      //if ( vrHMD ) {
+      if ( vrHMD ) {
 
         var sceneL, sceneR;
 
@@ -38949,7 +38923,7 @@ module.exports = function (THREE) {
 
         return;
 
-      //}
+      }
 
       // Regular render mode if not HMD
 
