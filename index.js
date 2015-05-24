@@ -526,7 +526,7 @@ Axis.prototype.ontouchend = function(e) {
  */
 
 Axis.prototype.onresize = function (e) {
-  if (this.state.resizable) {
+  if (this.state.resizable && ! this.state.fullscreen) {
     var containerStyle = getComputedStyle(this.el);
     var canvasStyle = getComputedStyle(this.renderer.domElement);
     var containerWidth = parseFloat(containerStyle.width);
@@ -584,10 +584,6 @@ Axis.prototype.onfullscreenchange = function(fullscreen) {
       raf(function () { this.render(); }.bind(this));
     }
     this.size(this.state.lastsize.width, this.state.lastsize.height);
-    this.emit('resize', {
-      width: this.state.lastsize.width,
-      height: this.state.lastsize.height
-    });
     this.state.fullscreen = false;
     this.state.lastsize.width = null;
     this.state.lastsize.height = null;
@@ -889,23 +885,13 @@ Axis.prototype.fullscreen = function () {
     var newWidth = null;
     var newHeight = null;
 
-    if (this.state.maintainaspectratio) {
-      newWidth = window.innerWidth;
-      newHeight = newWidth / aspectRatio;
-    } else {
-      newWidth = window.screen.width;
-      newHeight = window.screen.height;
-    }
+    newWidth = window.screen.width;
+    newHeight = window.screen.height;
 
     this.state.lastsize.width = canvasWidth;
     this.state.lastsize.height = canvasHeight;
 
     this.size(newWidth, newHeight);
-    this.emit('resize', {
-      width: newWidth,
-      height: newHeight
-    });
-
   }
 
   fullscreen(this.renderer.domElement, opts);
