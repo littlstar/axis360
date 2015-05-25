@@ -663,7 +663,6 @@ Axis.prototype.onfullscreenchange = function(fullscreen) {
   this.state.focused = true;
   this.state.animating = false;
   if (fullscreen) {
-    this.state.fullscreen = true;
     this.emit('enterfullscreen');
   } else {
     if (this.state.vr) {
@@ -982,6 +981,7 @@ Axis.prototype.fullscreen = function () {
     this.size(newWidth, newHeight);
   }
 
+  this.state.fullscreen = true;
   fullscreen(this.renderer.domElement, opts);
 };
 
