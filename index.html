@@ -111,7 +111,7 @@
       frame.render();
       var el = document.getElementById('go-fullscreen');
       el.onclick = function() {
-        frame.fullscreen();
+        frame.fullscreen(frame.el);
       };
 
       /*var vsn = new Axis(document.querySelector('.vsn.video'), {

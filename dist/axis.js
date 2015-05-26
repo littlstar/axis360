@@ -956,9 +956,10 @@ Axis.prototype.pause = function () {
  * Takes video to fullscreen
  *
  * @api public
+ * @param {Element} el
  */
 
-Axis.prototype.fullscreen = function () {
+Axis.prototype.fullscreen = function (el) {
   var opts = null;
   if (! fullscreen.supported) {
     return;
@@ -966,23 +967,12 @@ Axis.prototype.fullscreen = function () {
     opts = {vrDisplay: this.vreffect._vrHMD};
   } else if (! this.state.fullscreen) {
     var canvasStyle = getComputedStyle(this.renderer.domElement);
-    var canvasWidth = parseFloat(canvasStyle.width);
-    var canvasHeight = parseFloat(canvasStyle.height);
-    var aspectRatio = canvasWidth / canvasHeight;
-    var newWidth = null;
-    var newHeight = null;
-
-    newWidth = window.screen.width;
-    newHeight = window.screen.height;
-
-    this.state.lastsize.width = canvasWidth;
-    this.state.lastsize.height = canvasHeight;
-
-    this.size(newWidth, newHeight);
+    this.state.lastsize.width = parseFloat(canvasStyle.width);
+    this.state.lastsize.height = parseFloat(canvasStyle.height);
+    this.size(window.screen.width, window.screen.height);
   }
-
   this.state.fullscreen = true;
-  fullscreen(this.renderer.domElement, opts);
+  fullscreen(el || this.el, opts);
 };
 
 /**
