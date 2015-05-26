@@ -972,7 +972,7 @@ Axis.prototype.fullscreen = function (el) {
     this.size(window.screen.width, window.screen.height);
   }
   this.state.fullscreen = true;
-  fullscreen(el, opts);
+  fullscreen(el || this.el, opts);
 };
 
 /**
