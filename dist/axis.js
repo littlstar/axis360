@@ -963,6 +963,9 @@ Axis.prototype.fullscreen = function (el) {
   var opts = null;
   if (! fullscreen.supported) {
     return;
+  } else if (typeof el == 'boolean' && el == false) {
+    fullscreen.exit();
+    return;
   } else if (this.state.vr) {
     opts = {vrDisplay: this.vreffect._vrHMD};
   } else if (! this.state.fullscreen) {
