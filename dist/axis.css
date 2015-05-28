@@ -21,15 +21,3 @@
   margin: 0 auto;
   padding: 0;
 }
-
-.axis.holdframe {
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  position: absolute;
-  display: block;
-  height: 100%;
-  width: 100%;
-  z-index: 1;
-  left: 0;
-  top: 0;
-}

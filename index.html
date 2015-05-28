@@ -87,14 +87,6 @@
     <h3 id="title">
       <i class="fa fa-video-camera"></i>Axis 360 Video Test
     </h3>
-    <span id="heading">Click and drag to navigate the 360 video</span>
-    <div id="meta">
-      <span id="version"><i class="fa fa-tag"></i>v0.0.1</span>
-      <span id="github-source">
-        <i class="fa fa-github"></i>
-        <a href="https://github.com/littlstar/axis">View Source</a>
-      </span>
-    </div>
     <div class="normal video"></div>
     <div class="vsn video"></div>
     <button id="go-fullscreen">Go fullscreen</button>
@@ -103,9 +95,11 @@
         crossorigin: true,
         resizable: true,
         autoplay: true,
+        //friction: 0.99,
+        width: window.innerWidth,
+        height: 500,
         loop: true,
-        src: '/public/assets/paramotor.webm',
-        vr: true
+        src: '/public/assets/paramotor.webm'
       });
 
       frame.render();

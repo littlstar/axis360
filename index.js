@@ -1,6 +1,40 @@
 
+'use strict';
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The Axis module
+ *
+ * @module axis
+ * @type {Function}
+ */
+
 /**
  * Module dependencies
+ * @private
  */
 
 var three = require('three.js')
@@ -11,79 +45,70 @@ var three = require('three.js')
   , hasWebGL = require('has-webgl')
   , fullscreen = require('fullscreen')
   , keycode = require('keycode')
-  , path = require('path')
   , merge = require('merge')
+
+/**
+ * Local dependencies
+ * @private
+ */
 
 var tpl = require('./template.html')
   , Projection = require('./projection')
   , createCamera = require('./camera')
   , geometries = require('./geometry')
   , State = require('./state')
+  , isImage = require('./util').isImage
+  , constants = require('./constants')
 
 // uncomment to enable debugging
-window.DEBUG = true;
+//window.DEBUG = true;
 
-/**
- * Detect if file path is an image
- * based on the file path extension
- *
- * @api private
- * @param {String} file
- */
-
-function isImage (file) {
-  var ext = path.extname(file).toLowerCase();
-  switch (ext) {
-    case '.png':
-    case '.jpg':
-    case '.jpeg':
-      return true;
-    default: return false;
-  }
-}
-
-// add three.CanvasRenderer
+// install THREE.js addons
 Axis.THREE = three;
 require('three-canvas-renderer')(three);
 require('three-vr-effect')(three);
 three.OrbitControls = require('three-orbit-controls')(three);
 
-// default field of view
-var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
-
 // frame click threshold
-var FRAME_CLICK_THRESHOLD = require('./constants').FRAME_CLICK_THRESHOLD;
+var FRAME_CLICK_THRESHOLD = constants.FRAME_CLICK_THRESHOLD;
 
 // min/max wheel distances
-var MIN_WHEEL_DISTANCE = require('./constants').MIN_WHEEL_DISTANCE;
-var MAX_WHEEL_DISTANCE = require('./constants').MAX_WHEEL_DISTANCE;
+var MIN_WHEEL_DISTANCE = constants.MIN_WHEEL_DISTANCE;
+var MAX_WHEEL_DISTANCE = constants.MAX_WHEEL_DISTANCE;
 
-// min/max lat/lon values
-var MIN_LAT_VALUE = -85;
-var MAX_LAT_VALUE = 85;
-var MIN_LON_VALUE = 0;
-var MAX_LON_VALUE = 360;
-
-// projection types
-var PROJECTION_EQUILINEAR = 'equilinear';
-var PROJECTION_TINY_PLANET = 'tinyplanet';
-var PROJECTION_FISHEYE = 'fisheye';
-var PROJECTION_MIRROR_BALL = 'mirrorball';
-var PROJECTION_FLAT = 'flat';
+// min/max x/y coordinates
+var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE;
+var MAX_Y_COORDINATE = constants.MAX_Y_COORDINATE;
+var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
+var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
 // default projection
-var DEFAULT_PROJECTION = require('./constants').DEFAULT_PROJECTION;
+var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 
 /**
- * `Axis' constructor
+ * Axis constructor
  *
- * @api public
- * @param {Object} parent
- * @param {Object} opts
+ * @public
+ * @class Axis
+ * @extends EventEmitter
+ * @param {Object} parent - Parent DOM Element
+ * @param {Object} [opts] - Constructor options passed to the axis
+ * state instance.
+ * @see {@link module:axis/state~State}
  */
 
 module.exports = Axis;
 function Axis (parent, opts) {
+
+  // normalize options
+  opts = (opts = opts || {});
+
+  // disable vr if `navigator.getVRDevices' isn't defined
+  if ('function' != typeof navigator.getVRDevices) {
+    opts.vr = false;
+  }
+
+  // ensure instance
   if (!(this instanceof Axis)) {
     return new Axis(opts);
   } else if (!(parent instanceof Element)) {
@@ -92,158 +117,97 @@ function Axis (parent, opts) {
 
   var self = this;
 
-  this.opts = (opts = opts || {});
-
-  // DOM event bindings
-  this.events = {};
-
-  // parent DOM node
+  /** Parent DOM node element. */
   this.parent = parent;
 
-  // set defualt FOV
-  if ('undefined' == typeof opts.fov) {
-    opts.fov = opts.fieldOfView || DEFAULT_FOV;
-  }
+  /** Instance constainer DOM element. */
+  this.domElement = dom(tpl);
 
-  // init view
-  this.el = dom(tpl);
-  this.holdframe = this.el.querySelector('.axis.holdframe');
-  this.video = this.el.querySelector('video');
-  this.video.style.display = 'none';
+  /** Instance video DOM element. */
+  this.video = this.domElement.querySelector('video');
 
-  function set (p) {
-    if (opts[p]) {
-      self.video.setAttribute(p, opts[p]);
-    }
-  }
-
-  // set video options
-  set('preload');
-  set('autoplay');
-  set('crossorigin');
-  set('loop');
-  set('muted');
-
-  // event delagation
-  this.events = {};
-
-  // listen for fullscreen changes
-  fullscreen.on('change', this.onfullscreenchange.bind(this));
-
-  // init window events
-  this.events.window = events(window, this);
-  this.events.window.bind('resize');
-  this.events.window.bind('deviceorientation');
-  this.events.window.bind('orientationchange');
-
-  // init document events
-  this.events.document = events(document, {
-    onmousedown: function (e) {
-      if (e.target == self.renderer.domElement) {
-        self.state.focused = true;
-      } else {
-        self.state.focused = false;
-      }
-    },
-
-    onkeydown: function (e) {
-      var code = e.which;
-      function detect (n) {
-        if (code == keycode(n)) {
-          e.preventDefault();
-          self.state.keys[n] = true;
-          self.state.animating = false;
-        }
-      }
-
-      if (true == self.state.forceFocus || self.state.focused) {
-        if (PROJECTION_MIRROR_BALL != self.state.projection) {
-          if (PROJECTION_TINY_PLANET != self.state.projection) {
-            detect('up');
-            detect('down');
-          }
-          detect('left');
-          detect('right');
-        }
-        self.emit('keydown', e);
-      }
-
-    },
-
-    onkeyup: function (e) {
-      var code = e.which;
-      function detect (n) {
-        if (code == keycode(n)) {
-          e.preventDefault();
-          self.state.keys[n] = false;
-        }
-      }
-
-      if (true == self.state.forceFocus || self.state.focused) {
-        if (PROJECTION_MIRROR_BALL != self.state.projection) {
-          if (PROJECTION_TINY_PLANET != self.state.projection) {
-            detect('up');
-            detect('down');
-          }
-          detect('left');
-          detect('right');
-        }
-        self.emit('keyup', e);
-      }
-    }
-  });
-
-  this.events.document.bind('mousedown');
-  this.events.document.bind('touch', 'onmousedown');
-  this.events.document.bind('keydown');
-  this.events.document.bind('keyup');
-
-  // init video events
-  this.events.video = events(this.video, this);
-  this.events.video.bind('canplaythrough');
-  this.events.video.bind('play');
-  this.events.video.bind('pause');
-  this.events.video.bind('playing');
-  this.events.video.bind('progress');
-  this.events.video.bind('timeupdate');
-  this.events.video.bind('loadstart');
-  this.events.video.bind('waiting');
-  this.events.video.bind('ended');
-
-  // init dom element events
-  this.events.element = events(this.el, this);
-  this.events.element.bind('click');
-  this.events.element.bind('touch', 'onclick');
-  this.events.element.bind('mousemove');
-  this.events.element.bind('mousewheel');
-  this.events.element.bind('mousedown');
-  this.events.element.bind('mouseup');
-  this.events.element.bind('touchstart');
-  this.events.element.bind('touchend');
-  this.events.element.bind('touchmove');
-
-  // init scene
+  /** Axis' scene instance. */
   this.scene = null;
 
-  // init camera
+  /** Axis' camera instance. */
   this.camera = null;
 
-  // init renderer
+  /** Axis' renderer instance.*/
   this.renderer = opts.renderer || (
     hasWebGL ?
     new three.WebGLRenderer({antialias: true}) :
     new three.CanvasRenderer()
   );
 
-  // initialize vreffect
+  /** Axis' VR effect instance. */
   this.vreffect = new three.VREffect(this.renderer, function (e) {
     self.debug('VREffect:', e);
   });
 
-  // disable vr if `navigator.getVRDevices' isn't defined
-  if ('function' != typeof navigator.getVRDevices) {
-    opts.vr = false;
+  /** Axis' texture instance. */
+  this.texture = null;
+
+  /** Axis' controls. */
+  this.controls = null;
+
+  /** Axis' state instance. */
+  this.state = new State(this, opts);
+
+  /** Axis' projections instance. */
+  this.projections = new Projection(this);
+
+  /**
+   * Sets an attribute on the instance's
+   * video DOM element from options passed in
+   * to the constructor.
+   *
+   * @private
+   * @param {String} property
+   */
+
+  function setVideoAttribute (property) {
+    if (opts[property]) {
+      self.video.setAttribute(property, opts[property]);
+    }
   }
+
+  // set video options
+  setVideoAttribute('preload');
+  setVideoAttribute('autoplay');
+  setVideoAttribute('crossorigin');
+  setVideoAttribute('loop');
+  setVideoAttribute('muted');
+
+  // event delegation manager
+  var eventDelegation = {};
+
+  // init window events
+  eventDelegation.window = events(window, this);
+  eventDelegation.window.bind('resize');
+
+  // init video events
+  eventDelegation.video = events(this.video, this);
+  eventDelegation.video.bind('canplaythrough');
+  eventDelegation.video.bind('play');
+  eventDelegation.video.bind('pause');
+  eventDelegation.video.bind('playing');
+  eventDelegation.video.bind('progress');
+  eventDelegation.video.bind('timeupdate');
+  eventDelegation.video.bind('loadstart');
+  eventDelegation.video.bind('waiting');
+  eventDelegation.video.bind('ended');
+
+  // init dom element events
+  eventDelegation.element = events(this.domElement, this);
+  eventDelegation.element.bind('click');
+  eventDelegation.element.bind('touch', 'onclick');
+  eventDelegation.element.bind('mousemove');
+  eventDelegation.element.bind('mousewheel');
+  eventDelegation.element.bind('mousedown');
+  eventDelegation.element.bind('mouseup');
+  eventDelegation.element.bind('touchstart');
+  eventDelegation.element.bind('touchend');
+  eventDelegation.element.bind('touchmove');
 
   // renderer options
   this.renderer.autoClear = null != opts.autoClear ? opts.autoClear : true;
@@ -251,23 +215,17 @@ function Axis (parent, opts) {
   this.renderer.setClearColor(opts.clearColor || 0x000, 1);
 
   // attach renderer to instance node container
-  this.el.querySelector('.container').appendChild(this.renderer.domElement);
+  this.domElement.querySelector('.container').appendChild(this.renderer.domElement);
 
-  this.texture = null;
-  this.controls = null;
-
-  // initialize viewport state
-  this.state = new State(opts);
-
+  // mute if explicitly set
   if (opts.muted) {
     this.mute(true);
   }
 
-  var volume = this.opts.volume || 1;
-  this.volume(volume);
+  // initial volume
+  this.volume(opts.volume || 1);
 
-  // viewport projections
-  this.projections = new Projection(this);
+  // install viewport projections
   this.projection('flat', require('./projection/flat'));
   this.projection('fisheye', require('./projection/fisheye'));
   this.projection('equilinear', require('./projection/equilinear'));
@@ -278,13 +236,35 @@ function Axis (parent, opts) {
   createCamera(this);
 
   // initialize projection
-  this.projection(this.state.projection);
+  this.projection(this.projections.current);
 
   // initialize frame source
   this.src(opts.src);
-  this.on('ready', function () {
-    this.state.ready = true;
+
+  // init when ready
+  this.once('ready', function () {
     this.projection('equilinear');
+  });
+
+  this.on('fullscreenchange', function () {
+    this.state.update('isFocused', true);
+    this.state.update('isAnimating', false);
+
+    if (this.state.isFullscreen) {
+      this.emit('enterfullscreen');
+    } else {
+      if (this.state.isVREnabled) {
+        // @TODO(werle) - not sure how to fix this bug but the scene
+        // needs to be re-rendered
+        raf(function () { this.render(); }.bind(this));
+      }
+
+      this.size(this.state.lastSize.width, this.state.lastSize.height);
+
+      this.state.update('lastSize', {width: null, height: null});
+      this.emit('exitfullscreen');
+    }
+
   });
 }
 
@@ -294,28 +274,40 @@ emitter(Axis.prototype);
 /**
  * Handle `onclick' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.onclick = function (e) {
   var now = Date.now();
-  var ts = this.state.mousedownts;
+  var timestamp = this.state.mousedownTimestamp;
+  var isClickable = this.state.isClickable;
+  var isImage = this.state.isImage;
+  var isPlaying = this.state.isPlaying;
+  var delta = (now - timestamp);
 
-  if (false == this.state.clickable || (now - ts) > FRAME_CLICK_THRESHOLD) {
+  if (false == isClickable || delta > FRAME_CLICK_THRESHOLD) {
     return false;
-  } else {
-    e.preventDefault();
-    e.stopPropagation();
   }
 
-  if (false == this.state.image) {
-    if (this.state.playing) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (false == isImage) {
+    if (isPlaying) {
       this.pause();
     } else {
       this.play();
     }
   }
+
+  /**
+   * Click event.
+   *
+   * @public
+   * @event module:axis~Axis#click
+   * @type {Object}
+   */
 
   this.emit('click', e);
 };
@@ -323,26 +315,20 @@ Axis.prototype.onclick = function (e) {
 /**
  * Handle `oncanplaythrough' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.oncanplaythrough = function (e) {
-  this.state.time = this.video.currentTime;
   this.state.duration = this.video.duration;
 
   this.emit('canplaythrough', e);
-  this.state.ready = true;
+  this.state.ready();
 
-  if (false == this.opts.autoplay) {
-    this.state.paused = true;
-  }
-
-  setTimeout(function () {
-    this.emit('ready');
-  }.bind(this));
-
-  if (true == this.opts.autoplay) {
+  if (false == this.state.shouldAutoplay) {
+    this.state.update('isPaused', true);
+    this.video.pause();
+  } else {
     this.video.play();
   }
 };
@@ -350,15 +336,14 @@ Axis.prototype.oncanplaythrough = function (e) {
 /**
  * Handle `onplay' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.onplay = function (e) {
   raf(function() {
-    this.holdframe.style.display = 'none';
-    this.state.paused = false;
-    this.state.ended = false;
+    this.state.update('isPaused', false);
+    this.state.update('isEnded', false);
     this.emit('play', e);
   }.bind(this));
 };
@@ -366,33 +351,33 @@ Axis.prototype.onplay = function (e) {
 /**
  * Handle `onpause' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.onpause = function (e) {
-  this.state.paused = true;
-  this.state.playing = false;
+  this.state.update('isPaused', true);
+  this.state.update('isPlaying', false);
   this.emit('pause', e);
 };
 
 /**
  * Handle `onplaying' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.onplaying = function (e) {
-  this.state.playing = true;
-  this.state.paused = false;
+  this.state.update('isPaused', false);
+  this.state.update('isPlaying', true);
   this.emit('playing', e);
 };
 
 /**
  * Handle `onwaiting' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
@@ -403,7 +388,7 @@ Axis.prototype.onwaiting = function (e) {
 /**
  * Handle `onloadstart' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
@@ -414,7 +399,7 @@ Axis.prototype.onloadstart = function (e) {
 /**
  * Handle `onprogress' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
@@ -431,34 +416,33 @@ Axis.prototype.onprogress = function (e) {
   }
 
   e.percent = percent * 100;
-  this.state.percentloaded = percent;
+  this.state.update('percentloaded', percent);
   this.emit('progress', e);
 };
 
 /**
  * Handle `ontimeupdate' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.ontimeupdate = function (e) {
   e.percent = this.video.currentTime / this.video.duration * 100;
-  this.state.time = this.video.currentTime;
-  this.state.duration = this.video.duration;
-  this.state.played = e.percent;
+  this.state.update('duration', this.video.duration);
+  this.state.update('currentTime', this.video.currentTime);
   this.emit('timeupdate', e);
 };
 
 /**
  * Handle `onended' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.onended = function (e) {
-  this.state.ended = true;
+  this.state.update('isEnded', true);
   this.emit('end');
   this.emit('ended');
 };
@@ -466,68 +450,71 @@ Axis.prototype.onended = function (e) {
 /**
  * Handle `onmousedown' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.onmousedown = function (e) {
-  this.state.mousedownts = Date.now();
-  this.state.animating = false;
-  this.state.dragstart.x = e.pageX;
-  this.state.dragstart.y = e.pageY;
-  this.state.mousedown = true;
+  this.state.update('mousedownTimestamp', Date.now());
+  this.state.update('isAnimating', false);
+  this.state.update('dragstart', {x: e.pageX, y: e.pageY});
+  this.state.update('isMousedown', true);
   this.emit('mousedown', e);
 };
 
 /**
  * Handle `onmouseup' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.onmouseup = function (e) {
-  this.state.mousedown = false;
+  this.state.update('isMousedown', false);
   this.emit('mouseup', e);
 };
 
 /**
  * Handle `ontouchstart' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.ontouchstart = function (e) {
-  this.state.mousedownts = Date.now();
-  this.state.dragstart.x = e.touches[0].pageX;
-  this.state.dragstart.y = e.touches[0].pageY;
-  this.state.mousedown = true;
+  var touch = e.touches[0];
+  this.state.update('mousedownTimestamp', Date.now());
+  this.state.update('isAnimating', false);
+  this.state.update('dragstart', {x: touch.pageX, y: touch.pageY});
+  this.state.update('isMousedown', true);
   this.emit('touchstart', e);
 };
 
 /**
  * Handle `ontouchend' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.ontouchend = function(e) {
-  this.state.mousedown = false;
+  this.state.update('mousedown', false);
   this.emit('touchend', e);
 };
 
 /**
  * Handle `onresize' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.onresize = function (e) {
-  if (this.state.resizable && ! this.state.fullscreen) {
-    var containerStyle = getComputedStyle(this.el);
+  var isResizable = this.state.isResizable;
+  var isFullscreen = this.state.isFullscreen;
+
+  if (isResizable && ! isFullscreen) {
+    var containerStyle = getComputedStyle(this.domElement);
     var canvasStyle = getComputedStyle(this.renderer.domElement);
     var containerWidth = parseFloat(containerStyle.width);
     var containerHeight = parseFloat(containerStyle.width);
@@ -546,8 +533,8 @@ Axis.prototype.onresize = function (e) {
       newHeight = containerWidth / aspectRatio;
       resized = true;
     } else if (canvasHeight > containerHeight ||
-        (canvasHeight > containerHeight &&
-        canvasHeight < this.state.originalsize.height)) {
+               (canvasHeight > containerHeight &&
+                canvasHeight < this.state.originalsize.height)) {
       newHeight = containerHeight;
       newWidth = containerHeight * aspectRatio;
       resized = true;
@@ -563,130 +550,125 @@ Axis.prototype.onresize = function (e) {
   }
 };
 
-
-/**
- * Handle `onfullscreenchange' event
- *
- * @api private
- * @param {Boolean} fullscreen
- */
-
-Axis.prototype.onfullscreenchange = function(fullscreen) {
-  this.state.focused = true;
-  this.state.animating = false;
-  if (fullscreen) {
-    this.emit('enterfullscreen');
-  } else {
-    if (this.state.vr) {
-      // @TODO(werle) - not sure how to fix this bug but the scene
-      // needs to be re-rendered
-      raf(function () { this.render(); }.bind(this));
-    }
-    this.size(this.state.lastsize.width, this.state.lastsize.height);
-    this.state.fullscreen = false;
-    this.state.lastsize.width = null;
-    this.state.lastsize.height = null;
-    this.emit('exitfullscreen');
-  }
-};
-
 /**
  * Handle `onmousemove' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.onmousemove = function (e) {
-  var x = 0;
-  var y = 0;
+  var constraints = this.projections.constraints;
+  var xOffset = 0;
+  var yOffset = 0;
+  var calibration = this.state.friction * 1.9996;
+  var x = this.state.x;
+  var y = this.state.y;
 
-  if (true == this.state.mousedown) {
-    x = e.pageX - this.state.dragstart.x;
-    y = e.pageY - this.state.dragstart.y;
+  if (true == this.state.isMousedown) {
+    xOffset = e.pageX - this.state.dragstart.x;
+    yOffset = e.pageY - this.state.dragstart.y;
 
-    this.state.dragstart.x = e.pageX;
-    this.state.dragstart.y = e.pageY;
+    this.state.update('dragstart', {
+      x: e.pageX,
+      y: e.pageY
+    });
 
-    if (this.state.inverted) {
-      this.state.lon -= x;
-      if (PROJECTION_TINY_PLANET != this.state.projection) {
-        this.state.lat += y;
-      }
+    if (this.state.isInverted) {
+      x -= xOffset
+      y += yOffset;
     } else {
-      this.state.lon += x;
-      if (PROJECTION_TINY_PLANET != this.state.projection) {
-        this.state.lat -= y;
-      }
+      x += xOffset
+      y -= yOffset;
     }
 
-    if (PROJECTION_TINY_PLANET != this.state.projection) {
-      this.state.cache.lat = this.state.lat;
-      this.state.cache.lon = this.state.lon;
+    this.state.update('x', x * calibration);
+    this.state.update('y', y * calibration);
+
+    if (null == constraints || true != constraints.cache) {
+      this.cache({x: x, y: y});
     }
+
+    this.emit('mousemove', e);
   }
-
-  this.emit('mousemove', e);
 };
 
 /**
  * Handle `ontouchmove' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.ontouchmove = function(e) {
-  if (e.touches.length) {
+  var constraints = this.projections.constraints;
+  var xOffset = 0;
+  var yOffset = 0;
+  var touch = e.touches[0];
+  var x = this.state.x;
+  var y = this.state.y;
+
+  if (false == this.state.isMousedown) {
+    return;
+  }
+
+  if (1 == e.touches.length) {
     e.preventDefault();
 
-    var x = e.touches[0].pageX - this.state.dragstart.x;
-    var y = e.touches[0].pageY - this.state.dragstart.y;
+    xOffset = touch.pageX - this.state.dragstart.x;
+    yOffset = touch.pageY - this.state.dragstart.y;
 
-    this.state.dragstart.x = e.touches[0].pageX;
-    this.state.dragstart.y = e.touches[0].pageY;
+    this.state.update('dragstart', {x: e.pageX, y: e.pageY});
 
-    // @TODO(werle) - Make friction configurable
+    if (this.state.isInverted) {
+      x -= xOffset
+      y += yOffset;
+    } else {
+      x += xOffset
+      y -= yOffset;
+    }
+
+    // @TODO(werle) - Make this friction configurable
     y *=.2;
     x *=.255;
 
-    if (this.state.inverted) {
-      this.state.lat -= y;
-      this.state.lon += x;
-    } else {
-      this.state.lat += y;
-      this.state.lon -= x;
+    if (null == constraints || false != constraints.x) {
+      this.state.update('x', x);
     }
 
-    this.state.touch.lat = this.state.lat;
-    this.state.touch.lon = this.state.lon;
+    if (null == constraints || false != constraints.y) {
+      this.state.update('y', y);
+    }
+
+    if (null == constraints || false != constraints.cache) {
+      this.cache({touch: {x: x, y: y}});
+    }
 
     this.refresh();
+    this.emit('touchmove', e);
   }
-
-  this.emit('touchmove', e);
 };
 
 /**
  * Handle `onmousewheel' event
  *
- * @api private
+ * @private
  * @param {Event} e
  */
 
 Axis.prototype.onmousewheel = function (e) {
+  var velocity = this.state.scrollVelocity;
   var min = MIN_WHEEL_DISTANCE;
   var max = MAX_WHEEL_DISTANCE;
-  var vel = this.state.scroll; // velocity
 
-  if ('number' != typeof this.state.scroll ||false == this.state.wheel) {
+  if ('number' != typeof velocity || false == this.state.allowWheel) {
     return false;
   }
 
   e.preventDefault();
 
   if (null != e.wheelDeltaY) { // chrome
-    this.state.fov -= e.wheelDeltaY * vel;
+    this.state.fov -= e.wheelDeltaY * velocity;
   } else if (null != e.wheelDelta ) { // ie
     this.state.fov -= event.wheelDelta * vel;
   } else if (null != e.detail) { // firefox
@@ -705,79 +687,9 @@ Axis.prototype.onmousewheel = function (e) {
 };
 
 /**
- * Handle `ondeviceorientation' event
- *
- * @api private
- * @param {Object} e
- */
-
-Axis.prototype.ondeviceorientation = function (e) {
-  var orientation = this.state.orientation;
-  var alpha = e.alpha;
-  var beta = e.beta;
-  var gamma = e.gamma;
-  var lat = 0;
-  var lon = 0;
-
-  if (PROJECTION_TINY_PLANET == this.state.projection) {
-    return false;
-  }
-
-  this.debug('orientation=%s',
-             0 == orientation ? 'portrait(0)' :
-             90 == orientation ? 'landscape(90)' :
-             -90 == orientation ? 'landscape(-90)' :
-             'unknown('+ orientation +')');
-
-  if (0 == orientation) {
-    lat = beta;
-    lon = gamma;
-  } else if (90 == orientation) {
-    lat = gamma;
-    lon = beta;
-  } else {
-    lat = gamma * -1;
-    lon = beta * -1;
-  }
-
-  if (this.state.inverted) {
-    lat = lat * -1;
-    lon = Math.abs(lon);
-  }
-
-  if (lat >= MAX_LAT_VALUE || lat <= MIN_LAT_VALUE) {
-    return false;
-  }
-
-  if (null == this.state.center.lat) {
-    this.state.center.lat = lat;
-  }
-
-  if (null == this.state.center.lon) {
-    this.state.center.lon = lon;
-  }
-
-  this.state.deviceorientation.lat = lat;
-  this.state.deviceorientation.lon = lon;
-};
-
-/**
- * Handle `onorientationchange' event
- *
- * @api private
- * @param {Object} e
- */
-
-Axis.prototype.onorientationchange = function (e) {
-  this.state.orientation = window.orientation;
-  this.state.center.lat = this.state.deviceorientation.lat;
-  this.state.center.lon = this.state.deviceorientation.lon;
-};
-
-/**
  * Sets frame size
  *
- * @api public
+ * @public
  * @param {Number} width
  * @param {Number} height
  */
@@ -810,20 +722,15 @@ Axis.prototype.size = function (width, height) {
 /**
  * Sets or gets video src
  *
- * @api public
+ * @public
  * @param {String} src - optional
  */
 
 Axis.prototype.src = function (src) {
   if (src) {
-    this.state.src = src;
+    this.state.update('src', src);
 
-    this.state.ready = false;
-    if (isImage(src)) {
-      this.state.image = true;
-      this.state.vr = false;
-    } else {
-      this.state.image = false;
+    if (!isImage(src)) {
       this.video.src = src;
       this.video.load();
     }
@@ -838,12 +745,12 @@ Axis.prototype.src = function (src) {
 /**
  * Plays video frame
  *
- * @api public
+ * @public
  */
 
 Axis.prototype.play = function () {
-  if (false == this.state.image) {
-    if (true == this.state.ended) {
+  if (false == this.state.isImage) {
+    if (true == this.state.isEnded) {
       this.seek(0);
     }
     this.video.play();
@@ -854,11 +761,11 @@ Axis.prototype.play = function () {
 /**
  * Pauses video frame
  *
- * @api public
+ * @public
  */
 
 Axis.prototype.pause = function () {
-  if (false == this.state.image) {
+  if (false == this.state.isImage) {
     this.video.pause();
   }
   return this;
@@ -867,7 +774,7 @@ Axis.prototype.pause = function () {
 /**
  * Takes video to fullscreen
  *
- * @api public
+ * @public
  * @param {Element} el
  */
 
@@ -875,33 +782,37 @@ Axis.prototype.fullscreen = function (el) {
   var opts = null;
   if (! fullscreen.supported) {
     return;
-  } else if (this.state.vr) {
+  } else if (this.state.isVREnabled) {
     opts = {vrDisplay: this.vreffect._vrHMD};
-  } else if (! this.state.fullscreen) {
+  } else if (! this.state.isFullscreen) {
     var canvasStyle = getComputedStyle(this.renderer.domElement);
-    this.state.lastsize.width = parseFloat(canvasStyle.width);
-    this.state.lastsize.height = parseFloat(canvasStyle.height);
+    this.state.update('lastSize', {
+      width: parseFloat(canvasStyle.width),
+      height: parseFloat(canvasStyle.height)
+    });
+
     this.size(window.screen.width, window.screen.height);
   }
-  this.state.fullscreen = true;
-  fullscreen(el || this.el, opts);
+
+  this.state.update('isFullscreen', true);
+  fullscreen(el || this.domElement, opts);
 };
 
 /**
  * Set or get volume on frame
  *
- * @api public
- * @param {Number} n
+ * @public
+ * @param {Number} volume
  */
 
-Axis.prototype.volume = function (n) {
-  if (false == this.state.image) {
-    if (null == n) {
+Axis.prototype.volume = function (volume) {
+  if (false == this.state.isImage) {
+    if (null == volume) {
       return this.video.volume;
     }
-    this.state.lastvolume = this.video.volume;
-    this.video.volume = n
-    this.emit('volume', n);
+    this.state.update('lastVolume', this.video.volume);
+    this.video.volume = volume
+    this.emit('volume', volume);
   }
   return this;
 };
@@ -909,19 +820,19 @@ Axis.prototype.volume = function (n) {
 /**
  * Mutes volume
  *
- * @api public
+ * @public
  * @param {Boolean} mute - optional
  */
 
 Axis.prototype.mute = function (mute) {
   if (false == mute) {
     this.video.muted = false;
-    this.state.muted = false;
+    this.state.update('isMuted', false);
     if (0 == this.volume()) {
       this.volume(this.state.lastvolume);
     }
   } else {
-    this.state.muted = true;
+    this.state.update('isMuted', true);
     this.video.muted = true;
     this.volume(0);
     this.emit('mute');
@@ -932,12 +843,12 @@ Axis.prototype.mute = function (mute) {
 /**
  * Unmute volume
  *
- * @api public
+ * @public
  * @param {Boolean} mute - optional
  */
 
 Axis.prototype.unmute = function (mute) {
-  if (false == this.state.image) {
+  if (false == this.state.isImage) {
     this.mute(false);
     this.emit('unmute');
   }
@@ -945,18 +856,23 @@ Axis.prototype.unmute = function (mute) {
 };
 
 /**
- * Refresh frame
+ * Refreshes frame
  *
- * @api public
+ * @public
  */
 
 Axis.prototype.refresh = function () {
-  var now = Date.now();
+  var constraints = this.projections.constraints;
   var video = this.video;
-  if (false == this.state.image) {
+  var delta = 8;
+  var now = Date.now();
+  var x = this.state.x;
+  var y = this.state.y;
+
+  if (false == this.state.isImage) {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.timestamp >= 32) {
-        this.state.timestamp = now;
+      if (now - this.state.lastRefresh >= 32) {
+        this.state.lastRefresh = now;
         if ('undefined' != typeof this.texture) {
           this.texture.needsUpdate = true;
         }
@@ -964,34 +880,20 @@ Axis.prototype.refresh = function () {
     }
   }
 
-  if (PROJECTION_FLAT != this.state.projection) {
+  if (null == constraints || false != constraints.panoramic) {
     // @TODO(werle) - make this delta configurable
-    var delta = 4;
-    delta = this.state.inverted ? -delta : delta;
+    delta = this.state.isInverted ? -delta : delta;
 
     if (this.state.keys.up) {
-      this.state.lat += delta;
+      y += delta;
     } else if (this.state.keys.down) {
-      this.state.lat -= delta;
+      y -= delta;
     }
 
     if (this.state.keys.left) {
-      this.state.lon -= delta;
+      x -= delta;
     } else if (this.state.keys.right) {
-      this.state.lon += delta;
-    }
-
-    // @TODO(werle) - Fix device orientation
-    if (false && false == this.state.mousedown && this.state.deviceorientation.lat) {
-      var dlat = this.state.deviceorientation.lat - this.state.center.lat;
-      var dlon = this.state.deviceorientation.lon - this.state.center.lon;
-
-      // @TODO(werle) - Make this friction configurable
-      dlat *= .4;
-      dlon *= .2;
-
-      this.state.lat = dlat + this.state.touch.lat;
-      this.state.lon = dlon + this.state.touch.lon;
+      x += delta;
     }
 
     if (this.camera) {
@@ -999,24 +901,22 @@ Axis.prototype.refresh = function () {
       this.camera.updateProjectionMatrix();
     }
 
-    this.state.lat = Math.max(MIN_LAT_VALUE, Math.min(MAX_LAT_VALUE, this.state.lat));
-    if (this.state.lon > MAX_LON_VALUE) {
-      this.state.lon = this.state.lon - MAX_LON_VALUE;
-    } else if (this.state.lon < MIN_LON_VALUE) {
-      this.state.lon = this.state.lon + MAX_LON_VALUE;
+    // normalize y coordinate
+    y = Math.max(MIN_Y_COORDINATE, Math.min(MAX_Y_COORDINATE, y));
+
+    // normalize x coordinate
+    if (x > MAX_X_COORDINATE) {
+      x = x - MAX_X_COORDINATE;
+    } else if (x < MIN_X_COORDINATE) {
+      x = x + MAX_X_COORDINATE;
     }
 
-    if (PROJECTION_TINY_PLANET != this.state.projection) {
-      this.state.cache.lat = this.state.lat;
-      this.state.cache.lon = this.state.lon;
-    }
-
-    if ('cylinder' == this.state.geometry) {
-      this.state.lat = 0;
-    }
+    this.state.update('x', x);
+    this.state.update('y', y);
+    this.cache(this.coords());
   } else {
-    this.state.lat = 0;
-    this.state.lon = 90;
+    this.state.update('x', 90);
+    this.state.update('y', 0);
   }
 
   this.emit('refresh');
@@ -1026,24 +926,24 @@ Axis.prototype.refresh = function () {
 /**
  * Refresh frame
  *
- * @api public
+ * @public
  */
 
-Axis.prototype.resizable = function(resizable) {
-  if (typeof resizable == 'undefined') return this.state.resizable;
-  this.state.resizable = resizable;
+Axis.prototype.resizable = function (resizable) {
+  if (typeof resizable == 'undefined') return this.state.isResizable;
+  this.state.update('isResizable', resizable);
   return this;
 };
 
 /**
  * Seek to time in seconds
  *
- * @api public
+ * @public
  * @param {Number} seconds
  */
 
 Axis.prototype.seek = function (seconds) {
-  if (false == this.state.image) {
+  if (false == this.state.isImage) {
     if (seconds >= 0 && seconds <= this.video.duration) {
       this.video.currentTime = seconds;
       this.emit('seek', seconds);
@@ -1055,12 +955,12 @@ Axis.prototype.seek = function (seconds) {
 /**
  * Fast forward `n' amount of seconds
  *
- * @api public
+ * @public
  * @param {Number} seconds
  */
 
 Axis.prototype.foward = function (seconds) {
-  if (false == this.state.image) {
+  if (false == this.state.isImage) {
     this.seek(this.video.currentTime + seconds);
     this.emit('forward', seconds);
   }
@@ -1070,12 +970,12 @@ Axis.prototype.foward = function (seconds) {
 /**
  * Rewind `n' amount of seconds
  e
- * @api public
+ * @public
  * @param {Number} seconds
  */
 
 Axis.prototype.rewind = function (seconds) {
-  if (false == this.state.image) {
+  if (false == this.state.isImage) {
     this.seek(this.video.currentTime - seconds);
     this.emit('rewind', seconds);
   }
@@ -1085,7 +985,7 @@ Axis.prototype.rewind = function (seconds) {
 /**
  * Use plugin with frame
  *
- * @api public
+ * @public
  * @param {Function} fn
  */
 
@@ -1097,7 +997,7 @@ Axis.prototype.use = function (fn) {
 /**
  * Draws frame
  *
- * @api public
+ * @public
  */
 
 Axis.prototype.draw = function () {
@@ -1105,23 +1005,26 @@ Axis.prototype.draw = function () {
   var radius = this.state.radius;
   var camera = this.camera;
   var scene = this.scene;
-  var sensor = this.vreffect._sensor;
+  var sensor = this.state.vrPositionSensor;;
   var dtor = Math.PI / 180; // degree to radian conversion
-  var hmd = this.vreffect._vrHMD;
+  var hmd = this.state.vrHMD;
 
-  var lat = this.state.lat;
-  var lon = this.state.lon;
+  // lat/lon coordinates
+  var lat = this.state.y;
+  var lon = this.state.x;
 
+  // euler angles
   var theta = lon * dtor;
   var phi = (90 - lat) * dtor;
 
+  // derive cartesian vector from euler angles
   var x = radius * Math.sin(phi) * Math.cos(theta);
   var y = radius * Math.cos(phi);
   var z = radius * Math.sin(phi) * Math.sin(theta);
 
   this.lookAt(x, y, z);
 
-  if (this.state.vr) {
+  if (this.state.isVREnabled) {
     if (hmd) {
       // get state
       var vrstate = sensor.getImmediateState();
@@ -1150,7 +1053,7 @@ Axis.prototype.draw = function () {
   }
 
   if (this.renderer && this.scene && this.camera) {
-    if (this.state.vr) {
+    if (this.state.isVREnabled) {
       this.vreffect.render(this.scene, this.camera);
     } else {
       this.renderer.render(this.scene, this.camera);
@@ -1165,7 +1068,7 @@ Axis.prototype.draw = function () {
 /**
  * Look at a position in a [x, y, z] vector
  *
- * @api public
+ * @public
  * @param {Number} x
  * @param {Number} y
  * @param {Number} z
@@ -1173,8 +1076,9 @@ Axis.prototype.draw = function () {
 
 Axis.prototype.lookAt = function (x, y, z) {
   var vec = new three.Vector3(x, y, z);
+  var allowControls = this.state.allowControls;
 
-  if (this.camera && null == this.controls && true == this.state.allowcontrols) {
+  if (this.camera && null == this.controls && true == allowControls) {
     x = this.camera.target.x = x;
     y = this.camera.target.y = y;
     z = this.camera.target.z = z;
@@ -1189,10 +1093,11 @@ Axis.prototype.lookAt = function (x, y, z) {
 /**
  * Renders the frame
  *
- * @api public
+ * @public
  */
 
 Axis.prototype.render = function () {
+  var domElement = this.domElement;
   var self = this;
   var style = getComputedStyle(this.parent);
   var fov = this.state.fov;
@@ -1200,15 +1105,9 @@ Axis.prototype.render = function () {
   var height = this.state.height || parseFloat(style.height);
   var aspectRatio = 0;
 
-  if (typeof this.state.holdframe == 'string') {
-    this.holdframe.style.backgroundImage = 'url(' + this.state.holdframe + ')';
-  } else {
-    this.holdframe.style.display = 'none';
-  }
-
   // attach dom node to parent
-  if (false == this.parent.contains(this.el)) {
-    this.parent.appendChild(this.el);
+  if (false == this.parent.contains(this.domElement)) {
+    this.parent.appendChild(this.domElement);
   }
 
   if (0 == height) {
@@ -1218,12 +1117,12 @@ Axis.prototype.render = function () {
   }
 
   // initialize texture
-  if (false == this.state.image) {
+  if (false == this.state.isImage) {
     this.texture = new three.Texture(this.video);
-    //this.texture.format = three.RGBFormat;
+    this.texture.format = three.RGBFormat;
     this.texture.minFilter = three.LinearFilter;
-    //this.texture.magFilter = three.LinearFilter;
-    //this.texture.generateMipmaps = false;
+    this.texture.magFilter = three.LinearFilter;
+    this.texture.generateMipmaps = false;
   } else {
     this.texture = three.ImageUtils.loadTexture(this.src(),
                                                 null,
@@ -1235,19 +1134,20 @@ Axis.prototype.render = function () {
 
   // initialize projection if camera has not been created
   if (null == this.camera) {
-    this.projection(this.state.projection);
+    this.projection(this.projections.current);
   }
 
   // start refresh loop
-  if (null != this.state.rafid) {
-    raf.cancel(this.state.rafid);
+  if (null != this.state.animationFrameID) {
+    raf.cancel(this.state.animationFrameID);
   }
 
-  this.state.rafid = raf(function loop () {
-    if (self.el.parentElement && self.el.parentElement.contains(self.el)) {
+  // start animation loop
+  this.state.animationFrameID  = raf(function loop () {
+    var parentElement = domElement.parentElement;
+    if (parentElement && parentElement.contains(domElement)) {
       raf(loop);
-      self.refresh();
-      self.draw();
+      self.update();
     }
   });
 
@@ -1259,12 +1159,11 @@ Axis.prototype.render = function () {
 /**
  * Sets view offset
  *
- * @api publc
+ * @public
+ * @see {@link http://threejs.org/docs/#Reference/Cameras/PerspectiveCamera}
  */
 
-Axis.prototype.offset =
-Axis.prototype.setViewOffset = function () {
-  // @see http://threejs.org/docs/#Reference/Cameras/PerspectiveCamera
+Axis.prototype.offset = function () {
   this.camera.setViewOffset.apply(this.camera, arguments);
   return this;
 };
@@ -1272,7 +1171,7 @@ Axis.prototype.setViewOffset = function () {
 /**
  * Set or get height
  *
- * @api public
+ * @public
  * @param {Number} height - optional
  */
 
@@ -1289,7 +1188,7 @@ Axis.prototype.height = function (height) {
 /**
  * Set or get width
  *
- * @api public
+ * @public
  * @param {Number} width - optional
  */
 
@@ -1306,7 +1205,7 @@ Axis.prototype.width = function (width) {
 /**
  * Set or get projection
  *
- * @api public
+ * @public
  * @param {String} type - optional
  * @param {Function} fn - optional
  */
@@ -1327,12 +1226,11 @@ Axis.prototype.projection = function (type, fn) {
 
   // apply
   if (type) {
-    if (this.state.ready) {
-      if (this.projections.contains(type)) {
+    if (this.state.isReady) {
+      if (type != this.projections.current &&
+          this.projections.contains(type)) {
         this.controls = null;
-        this.state.projectionrequested = type;
         this.projections.apply(type);
-        this.state.projection = type;
       }
     } else {
       this.once('ready', function () {
@@ -1344,13 +1242,13 @@ Axis.prototype.projection = function (type, fn) {
   }
 
   // get
-  return this.state.projection;
+  return this.projections.current;
 };
 
 /**
  * Destroys frame
  *
- * @api public
+ * @public
  */
 
 Axis.prototype.destroy = function () {
@@ -1358,11 +1256,12 @@ Axis.prototype.destroy = function () {
   this.texture = null;
   this.camera = null;
   this.stop();
-  this.state.animating = false;
+  this.state.update('isAnimating', false);
+  this.state.update('isReady', false);
   this.renderer.resetGLState();
-  raf.cancel(this.state.rafid);
-  empty(el);
-  this.el.parentElement.removeChild(this.el);
+  raf.cancel(this.state.animationFrameID);
+  empty(this.domElement);
+  this.domElement.parentElement.removeChild(this.domElement);
   function empty (el) {
     while (el.lastChild) el.removeChild(el);
   }
@@ -1372,71 +1271,74 @@ Axis.prototype.destroy = function () {
 /**
  * Stops playback if applicable
  *
- * @api public
+ * @public
  */
 
 Axis.prototype.stop = function () {
-  if (true == this.state.image) { return; }
+  if (true == this.state.isImage) { return; }
   this.pause();
   this.video.currentTime = 0;
   return this;
 };
 
 /**
- * Sets or gets latitude coordinate
+ * Sets or gets y coordinate
  *
- * @api public
- * @param {Number} lat - optional
+ * @public
+ * @param {Number} y - optional
  */
 
-Axis.prototype.lat = function (lat) {
-  if (null == lat) {
-    return this.state.lat;
+Axis.prototype.y = function (y) {
+  if (null == y) {
+    return this.state.y;
   }
-  this.state.lat = lat
+  this.state.update('y', y);
   return this;
 };
 
 /**
- * Sets or gets longitude coordinate
+ * Sets or gets x coordinate
  *
- * @api public
- * @param {Number} lon - optional
+ * @public
+ * @param {Number} x - optional
  */
 
-Axis.prototype.lon = function (lon) {
-  if (null == lon) {
-    return this.state.lon;
+Axis.prototype.x = function (x) {
+  if (null == x) {
+    return this.state.x;
   }
-  this.state.lon = lon;
+  this.state.update('x', x);
   return this;
 };
 
 /**
- * Sets or gets lat/lon coordinates
+ * Sets or gets x/y coordinates
  *
- * @api public
- * @param {Number} lat - optional
- * @param {Number} lon - optional
+ * @public
+ * @param {Number} [x] - X coordinate
+ * @param {Number} [y] - Y coordinate
  */
 
-Axis.prototype.coords = function (lat, lon) {
-  if (null == lat && null == lon) {
-    return {lat: this.state.lat, lon: this.state.lon}
+Axis.prototype.coords = function (x, y) {
+  if (null == y && null == x) {
+    return {y: this.state.y, x: this.state.x}
   }
-  if (null != lat) {
-    this.state.lat = lat;
+
+  if (null != y) {
+    this.state.update('y', y);
   }
-  if (null != lon) {
-    this.state.lon = lon;
+
+  if (null != x) {
+    this.state.update('x', x);
   }
+
   return this;
 };
 
 /**
  * Refreshes and redraws current frame
  *
- * @api public
+ * @public
  */
 
 Axis.prototype.update = function () {
@@ -1446,24 +1348,28 @@ Axis.prototype.update = function () {
 /**
  * Sets or updates state cache
  *
- * @api public
+ * @public
  * @param {Object} obj - optinal
  */
 
 Axis.prototype.cache = function (o) {
+  if (this.state.isConstrainedWith('cache')) {
+    return this;
+  }
+
   if ('object' == typeof o) {
     merge(this.state.cache, o);
+    return this;
   } else {
     return this.state.cache;
   }
-  return this;
 };
 
 /**
  * Outputs debug info if `window.DEBUG' is
  * defined
  *
- * @api public
+ * @public
  * @param {Mixed} ... - optional
  */
 
@@ -1479,7 +1385,7 @@ Axis.prototype.debug = function debug () {
  * type string and returns an instance of a
  * geometry if applicable.
  *
- * @api public
+ * @public
  * @param {String} type - optional
  */
 
@@ -1488,7 +1394,7 @@ Axis.prototype.geometry = function (type) {
     return this.state.geometry;
   } else try {
     var geo = geometries[type](this);
-    this.state.geometry = type;
+    this.state.update('geometry', type);
     return geo;
   } catch (e) {
     return null;
@@ -1499,7 +1405,7 @@ Axis.prototype.geometry = function (type) {
  * Returns the dimensions of the current
  * texture.
  *
- * @api public
+ * @public
  */
 
 Axis.prototype.dimensions = function () {
@@ -1507,7 +1413,7 @@ Axis.prototype.dimensions = function () {
   var height = 0;
   var ratio = 0;
 
-  if (this.state.image) {
+  if (this.state.isImage) {
     height = this.texture.image.height;
     width = this.texture.image.width;
   } else {
@@ -1521,7 +1427,7 @@ Axis.prototype.dimensions = function () {
 /**
  * Sets or gets the current field of view
  *
- * @api public
+ * @public
  * @param {Number} fov - optional
  */
 
@@ -1529,7 +1435,7 @@ Axis.prototype.fov = function (fov) {
   if (null == fov) {
     return this.state.fov;
   } else {
-    this.state.fov = fov;
+    this.state.update('fov', fov);
   }
   return this;
 };

@@ -1,32 +1,84 @@
 
+'use strict';
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The equilinear projection mode.
+ *
+ * @public
+ * @module axis/projection/equilinear
+ * @type {Function}
+ */
+
 /**
  * Module dependencies
+ * @private
  */
 
 var raf = require('raf')
   , three = require('three.js')
+
+/**
+ * Local dependencies
+ * @private
+ */
+
+var constants = require('../constants')
   , createCamera = require('../camera')
   , createPlane = require('../geometry/plane')
   , createSphere = require('../geometry/sphere')
   , createCylinder = require('../geometry/cylinder')
 
 // default field of view
-var DEFAULT_FOV = require('../constants').DEFAULT_FOV;
+var DEFAULT_FOV = constants.DEFAULT_FOV;
 
 // animation factor
-var ANIMATION_FACTOR = require('../constants').ANIMATION_FACTOR;
+var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 
 // cylinder zoom offet
-var CYLINDRICAL_ZOOM = require('../constants').CYLINDRICAL_ZOOM;
+var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
+
+/**
+ * Equilinear projection constraints.
+ *
+ * @public
+ * @type {Object}
+ */
+
+var constraints = equilinear.constraints = {};
 
 /**
  * Applies an equilinear projection to Axis frame
  *
- * @api public
+ * @public
  * @param {Axis} axis
  */
 
-module.exports = function equilinear (axis) {
+module.exports = equilinear;
+function equilinear (axis) {
 
   // this projection requires an already initialized
   // camera on the `Axis' instance
@@ -66,7 +118,7 @@ module.exports = function equilinear (axis) {
   }
 
   if ('tinyplanet' == axis.projection() || this.isMirrorBall()) {
-    axis.coords(0, 0);
+    axis.x(0);
   }
 
   // bail if projection is mirror ball
@@ -77,12 +129,14 @@ module.exports = function equilinear (axis) {
   // animate
   axis.debug("animate: EQUILINEAR begin");
   this.animate(function () {
-    axis.debug("animate: EQUILINEAR maxFov=%d fov=%d lat=%d",
-               maxFov, axis.fov(), axis.lat());
+    var y = axis.state.y;
+
+    axis.debug("animate: EQUILINEAR maxFov=%d fov=%d y=%d",
+               maxFov, axis.fov(), axis.y());
 
     // cancel animation if max fov reached and
     // latitude has reached equator
-    if (maxFov == axis.fov() && 0 == axis.lat()) {
+    if (maxFov == axis.fov() && 0 == axis.y()) {
       axis.debug("animate: EQUILINEAR end");
       return this.cancel();
     }
@@ -102,12 +156,11 @@ module.exports = function equilinear (axis) {
     // update field of view
     axis.fov(fov);
 
-    // normalize latitude
-    if (axis.state.lat > 0) {
-      axis.lat(Math.max(0, axis.state.lat - ANIMATION_FACTOR));
-    } else if (axis.state.lat < 0) {
-      axis.lat(Math.min(0, axis.state.lat + ANIMATION_FACTOR));
+    // normalize y coordinate
+    if (y > 0) {
+      axis.y(Math.max(0, y - ANIMATION_FACTOR));
+    } else if (y < 0) {
+      axis.y(Math.min(0, y + ANIMATION_FACTOR));
     }
   });
 };
-

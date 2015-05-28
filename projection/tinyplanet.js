@@ -1,20 +1,73 @@
 
+'use strict';
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The tiny planet projection mode.
+ *
+ * @public
+ * @module axis/projection/tinyplanet
+ * @type {Function}
+ */
+
 /**
  * Module dependencies
+ * @private
  */
 
 var three = require('three.js')
 
+/**
+ * Local dependencies
+ * @private
+ */
+
+var constants = require('../constants')
+
 // max camera lens value
-var MAX_TINY_PLANET_CAMERA_LENS_VALUE = (
-  require('../constants').MAX_TINY_PLANET_CAMERA_LENS_VALUE
-);
+var TINY_PLANET_CAMERA_LENS_VALUE = constants.TINY_PLANET_CAMERA_LENS_VALUE;
 
 // animation factor
-var ANIMATION_FACTOR = require('../constants').ANIMATION_FACTOR;
+var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 
-// min/max lat/lon values
-var MIN_LAT_VALUE = require('../constants').MIN_LAT_VALUE;
+// min/max x/y coordinates
+var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE;
+
+/**
+ * Tiny planet projection constraints.
+ *
+ * @public
+ * @type {Object}
+ */
+
+var constraints = tinyplanet.constraints = {
+  y: true,
+  cache: true,
+  keys: {up: true, down: true}
+};
 
 /**
  * Applies a tinyplanet projection to Axis frame
@@ -23,7 +76,8 @@ var MIN_LAT_VALUE = require('../constants').MIN_LAT_VALUE;
  * @param {Axis} axis
  */
 
-module.exports = function tinyplanet (axis) {
+module.exports = tinyplanet;
+function tinyplanet (axis) {
 
   // this projection requires an already initialized
   // camera on the `Axis' instance
@@ -55,24 +109,26 @@ module.exports = function tinyplanet (axis) {
   }
 
   // set camera lens
-  camera.setLens(MAX_TINY_PLANET_CAMERA_LENS_VALUE);
+  camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
 
   // update axis field of view
   axis.fov(camera.fov);
 
   // begin animation
   axis.debug("animate: TINY_PLANET begin");
+  constraints.y = false;;
   this.animate(function () {
-    var lat = axis.lat();
-    axis.debug("animate: TINY_PLANET lat=%d", lat);
-    if (lat > MIN_LAT_VALUE) {
+    var y = axis.y();
+    axis.debug("animate: TINY_PLANET y=%d", y);
+    if (y > MIN_Y_COORDINATE) {
 
-      if (lat > MIN_LAT_VALUE) {
-        axis.lat(lat -ANIMATION_FACTOR);
+      if (y > MIN_Y_COORDINATE) {
+        axis.y(y -ANIMATION_FACTOR);
       } else {
-        axis.lat(MIN_LAT_VALUE);
+        axis.y(MIN_Y_COORDINATE);
       }
     } else {
+      constraints.y = true;
       axis.debug("animate: TINY_PLANET end");
       this.cancel();
     }

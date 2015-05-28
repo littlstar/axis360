@@ -1,5 +1,10 @@
 
 ##
+# Current working build directory
+#
+CWD := $(shell pwd)
+
+##
 # Node modules bin directory
 #
 BIN := node_modules/.bin
@@ -54,14 +59,14 @@ build: build/build.js build/build.css
 #
 build/build.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
-	$(DUO) -C --type js --development < $(MAIN) > $@
+	$(DUO) --type js --development < $(MAIN) > $@
 
 ##
 # Builds CSS source files
 #
 build/build.css: node_modules $(CSS)
 	$(BUILD_PARENT_DIRECTORY)
-	cat $(CSS) | $(DUO) -C --type css > $@
+	cat $(CSS) | $(DUO) --type css > $@
 
 ##
 # Builds all dist files
@@ -73,7 +78,7 @@ dist: dist/axis.js dist/axis.css
 #
 dist/axis.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
-	$(DUO) -C --type js --global $(GLOBAL_NAMESPACE) < $(MAIN) > $@
+	$(DUO) --type js --global $(GLOBAL_NAMESPACE) < $(MAIN) > $@
 
 ##
 # Builds CSS dist file
@@ -87,6 +92,12 @@ dist/axis.css: node_modules $(CSS)
 #
 node_modules: package.json
 	npm install
+
+##
+# Builds documentation
+#
+doc: node_modules $(SRC)
+	./scripts/generate_documentation.sh $(CWD)
 
 ##
 # Cleans all built files

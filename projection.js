@@ -1,20 +1,60 @@
 
+'use strict';
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The axis projection manager module.
+ * @module axis/projection
+ * @type {Function}
+ */
+
 /**
  * Module dependencies
+ * @private
  */
 
 var raf = require('raf')
   , three = require('three.js')
 
+/**
+ * Local dependencies
+ * @private
+ */
+
+var constants = require('./constants')
+
 // default field of view
-var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
-var CYLINDRICAL_ZOOM = require('./constants').CYLINDRICAL_ZOOM;
+var DEFAULT_FOV = constants.DEFAULT_FOV;
+var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
 
 /**
  * Predicate to determine whether `n' is
  * in fact `NaN'
  *
- * @api private
+ * @private
  * @param {Mixed} n
  */
 
@@ -26,7 +66,7 @@ function isNaN (n) {
  * Creates the correct geometry for
  * the current content in axis
  *
- * @api private
+ * @private
  * @param {Axis} axis
  */
 
@@ -47,12 +87,12 @@ function getCorrectGeometry (axis) {
   return geo;
 }
 
-
 /**
- * `Projections' constructor
+ * Projections constructor
  *
- * @api public
- * @param {Object} scope - optional
+ * @public
+ * @class Projections
+ * @param {Object} [scope] - Scope object to apply state to.
  */
 
 module.exports = Projections;
@@ -70,23 +110,32 @@ function Projections (scope) {
     this.scope.state = {};
   }
 
-  // ID generated from `requestAnimationFrame()'
+  /** Animation frame ID generated from `requestAnimationFrame()`. */
   this.animationFrameID = NaN;
 
-  // installed projections
+  /** Installed projections. */
   this.projections = {};
+
+  /** Current requested projection. */
+  this.requested = null;
+
+  /** Current applied projection. */
+  this.current = null;
+
+  /** Current projection constraints. */
+  this.constraints = null;
 }
 
 /**
  * Cancels current animation for a projection
  *
- * @api public
+ * @public
  */
 
 Projections.prototype.cancel = function () {
   if (false == isNaN(this.animationFrameID)) {
     raf.cancel(this.animationFrameID);
-    this.scope.state.animating = false;
+    this.scope.state.update('isAnimating', false);
     this.scope.update();
   }
   return this;
@@ -97,21 +146,21 @@ Projections.prototype.cancel = function () {
  * function `fn'. Animation frames are mutually
  * exclusive.
  *
- * @api public
+ * @public
  * @param {Function} fn
  */
 
 Projections.prototype.animate = function (fn) {
   var self = this;
   if ('function' == typeof fn) {
-    this.scope.state.animating = true;
+    this.scope.state.update('isAnimating', true);
     this.animationFrameID = raf(function animate () {
-      if (false == self.scope.state.animating) {
+      if (false == self.scope.state.isAnimating) {
         self.cancel();
       } else {
         fn.call(self);
         self.scope.update();
-        if (self.scope.state.animating) {
+        if (self.scope.state.isAnimating) {
           self.animate(fn);
         }
       }
@@ -123,7 +172,7 @@ Projections.prototype.animate = function (fn) {
 /**
  * Installs a projection by name
  *
- * @api public
+ * @public
  * @param {String} name
  * @param {Function} projection
  */
@@ -138,7 +187,7 @@ Projections.prototype.set = function (name, projection) {
 /**
  * Removes a projection by name
  *
- * @api public
+ * @public
  * @param {String} name
  */
 
@@ -152,7 +201,7 @@ Projections.prototype.remove = function (name) {
 /**
  * Gets a projection by name
  *
- * @api public
+ * @public
  * @param {String} name
  */
 
@@ -166,21 +215,37 @@ Projections.prototype.get = function (name) {
 /**
  * Applies a projection by name
  *
- * @api public
+ * @public
  * @param {String} name
  */
 
 Projections.prototype.apply = function (name) {
-  if ('string' == typeof name && 'function' == typeof this.projections[name]) {
-    this.projections[name].call(this, this.scope);
+  var projection = this.projections[name];
+  if ('string' == typeof name && 'function' == typeof projection) {
+    // set currently requested
+    this.requested = name;
+
+    // apply constraints
+    if ('object' == typeof projection.constraints) {
+      this.constraints = projection.constraints;
+    } else {
+      this.constraints = null;
+    }
+
+    // apply projection
+    projection.call(this, this.scope);
+
+    // set current projection
+    this.current = name;
   }
+
   return this;
 };
 
 /**
  * Predicate to determine if a projection is defiend
  *
- * @api public
+ * @public
  * @param {String} name
  */
 
@@ -192,7 +257,7 @@ Projections.prototype.contains = function (name) {
  * Predicate to determine if axis content has
  * correct sizing
  *
- * @api public
+ * @public
  * @param {Axis} axis
  */
 
@@ -206,17 +271,17 @@ Projections.prototype.contentHasCorrectSizing = function () {
 /**
  * Predicate to determine if axis is ready
  *
- * @api public
+ * @public
  */
 
 Projections.prototype.isReady = function () {
-  return Boolean(this.scope.state.ready);
+  return Boolean(this.scope.state.isReady);
 };
 
 /**
  * Initializes scene for a projection
  *
- * @api public
+ * @public
  */
 
 Projections.prototype.initializeScene = function () {
@@ -269,7 +334,7 @@ Projections.prototype.initializeScene = function () {
  * Predicate to determine if projection is mirrorball and
  * the request projection is a mirrorball.
  *
- * @api public
+ * @public
  */
 
 Projections.prototype.isMirrorBall = function () {

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: projection/fisheye.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: projection/fisheye.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>
+'use strict';
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The fisheye projection mode.
+ *
+ * @public
+ * @module axis/projection/fisheye
+ * @type {Function}
+ */
+
+/**
+ * Module dependencies
+ * @private
+ */
+
+var three = require('three.js')
+
+/**
+ * Local dependencies
+ * @private
+ */
+
+var constants = require('../constants')
+
+// animation factor
+var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
+
+/**
+ * Fisheye projection constraints.
+ *
+ * @public
+ * @type {Object}
+ */
+
+var constraints = fisheye.constraints = {};
+
+/**
+ * Applies a fisheye projection to Axis frame
+ *
+ * @api public
+ * @param {Axis} axis
+ */
+
+module.exports = fisheye;
+function fisheye (axis) {
+
+  // this projection requires an already initialized
+  // camera on the `Axis' instance
+  var camera = axis.camera;
+
+  // bail if camera not initialized
+  if (null == camera) { return; }
+
+  // bail if not ready
+  if (false == this.isReady()) { return; }
+
+  // bail if geometry is a cylinder because fisheye
+  // projection is only supported in a spherical geometry
+  if ('cylinder' == axis.geometry()) { return; }
+
+  if ('mirrorball' == axis.projection()) {
+    this.apply('equilinear');
+  }
+
+  // max Z and FOV
+  var maxZ = (axis.height() / 100) | 0;
+  var maxFov = 75;
+
+  if ('mirrorball' == axis.projection() || 'tinyplanet' == axis.projection()) {
+    // position latitude at equator
+    axis.x(0);
+  }
+
+  // begin animation
+  axis.debug("animate: FISHEYE begin");
+  this.animate(function () {
+    var fov = axis.fov();
+    var y = axis.state.y;
+    var x = axis.state.x;
+
+    axis.debug("animate: FISHEYE maxFov=%d maxZ=%d fov=%d z=%d, y=%d",
+               maxFov, maxZ, fov, camera.position.z, y);
+
+    // cancel when we've reached max field of view
+    if (maxFov == axis.fov() &amp;&amp; 0 == x &amp;&amp; 0 == y) {
+      axis.debug("animate: FISHEYE end");
+      return this.cancel();
+    }
+
+    // normalize field of view
+    if (fov &lt; maxFov) {
+      axis.fov(Math.min(maxFov, axis.fov() + ANIMATION_FACTOR));
+    } else if (fov > maxFov) {
+      axis.fov(Math.min(maxFov, axis.fov() - ANIMATION_FACTOR));
+    }
+
+    // normalize z coordinate
+    if (camera.position.z &lt; maxZ) {
+      camera.position.z++;
+      camera.position.z = Math.min(maxZ, camera.position.z);
+    } else if (camera.position.z > maxZ) {
+      camera.position.z--;
+      camera.position.z = Math.max(maxZ, camera.position.z);
+    }
+
+    // normalize y coordinate
+    if (y > 0) {
+      axis.y(Math.max(0, y - ANIMATION_FACTOR));
+    } else if (y &lt; 0) {
+      axis.y(Math.min(0, y + ANIMATION_FACTOR));
+    }
+
+    // normalize x coordinate
+    if (x > 0) {
+      axis.x(Math.max(0, x - ANIMATION_FACTOR));
+    } else if (x &lt; 0) {
+      axis.x(Math.min(0, x + ANIMATION_FACTOR));
+    }
+  });
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_mirrorball.html">axis/projection/mirrorball</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:deviceorientation">deviceorientation</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:keyup">keyup</a></li><li><a href="module-axis-Axis.html#event:orientationchange">orientationchange</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#three">three</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Thu May 28 2015 19:02:14 GMT-0400 (EDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

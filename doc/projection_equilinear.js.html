@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: projection/equilinear.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: projection/equilinear.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>
+'use strict';
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The equilinear projection mode.
+ *
+ * @public
+ * @module axis/projection/equilinear
+ * @type {Function}
+ */
+
+/**
+ * Module dependencies
+ * @private
+ */
+
+var raf = require('raf')
+  , three = require('three.js')
+
+/**
+ * Local dependencies
+ * @private
+ */
+
+var constants = require('../constants')
+  , createCamera = require('../camera')
+  , createPlane = require('../geometry/plane')
+  , createSphere = require('../geometry/sphere')
+  , createCylinder = require('../geometry/cylinder')
+
+// default field of view
+var DEFAULT_FOV = constants.DEFAULT_FOV;
+
+// animation factor
+var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
+
+// cylinder zoom offet
+var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
+
+/**
+ * Equilinear projection constraints.
+ *
+ * @public
+ * @type {Object}
+ */
+
+var constraints = equilinear.constraints = {};
+
+/**
+ * Applies an equilinear projection to Axis frame
+ *
+ * @public
+ * @param {Axis} axis
+ */
+
+module.exports = equilinear;
+function equilinear (axis) {
+
+  // this projection requires an already initialized
+  // camera on the `Axis' instance
+  var camera = axis.camera;
+
+  // bail if camera not present
+  if (null == camera) { return; }
+
+  // bail if not ready
+  if (false == this.isReady()) { return; }
+
+  // bail if content sizing is incorrect
+  if (false == this.contentHasCorrectSizing()) { return; }
+
+  // initializes scene
+  this.initializeScene();
+
+  // initialize camera
+  createCamera(axis);
+
+  // cancel current projection animations
+  this.cancel();
+
+  // max FOV for animating
+  var maxFov = DEFAULT_FOV;
+
+  // current fov
+  var fov = axis.fov();
+
+  // zoom offset where applicable
+  var zoom = CYLINDRICAL_ZOOM;
+
+  // apply zoom to cylinder geometry type
+  if ('cylinder' == axis.geometry()) {
+    maxFov += zoom;
+    axis.fov(fov += zoom);
+  }
+
+  if ('tinyplanet' == axis.projection() || this.isMirrorBall()) {
+    axis.x(0);
+  }
+
+  // bail if projection is mirror ball
+  if (this.isMirrorBall()) {
+    return;
+  }
+
+  // animate
+  axis.debug("animate: EQUILINEAR begin");
+  this.animate(function () {
+    var y = axis.state.y;
+
+    axis.debug("animate: EQUILINEAR maxFov=%d fov=%d y=%d",
+               maxFov, axis.fov(), axis.y());
+
+    // cancel animation if max fov reached and
+    // latitude has reached equator
+    if (maxFov == axis.fov() &amp;&amp; 0 == axis.y()) {
+      axis.debug("animate: EQUILINEAR end");
+      return this.cancel();
+    }
+
+    // normalize field of view value
+    if (fov > maxFov) {
+      fov = Math.max(fov - ANIMATION_FACTOR, maxFov);
+    } else if (fov &lt; maxFov) {
+      fov = Math.min(fov + ANIMATION_FACTOR, maxFov);
+    } else {
+      fov = maxFov;
+    }
+
+    // prevent negative field of view
+    if (fov &lt; 0) { fov = 0; }
+
+    // update field of view
+    axis.fov(fov);
+
+    // normalize y coordinate
+    if (y > 0) {
+      axis.y(Math.max(0, y - ANIMATION_FACTOR));
+    } else if (y &lt; 0) {
+      axis.y(Math.min(0, y + ANIMATION_FACTOR));
+    }
+  });
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_mirrorball.html">axis/projection/mirrorball</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:deviceorientation">deviceorientation</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:keyup">keyup</a></li><li><a href="module-axis-Axis.html#event:orientationchange">orientationchange</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#three">three</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Thu May 28 2015 19:02:14 GMT-0400 (EDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
