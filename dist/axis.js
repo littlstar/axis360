@@ -670,8 +670,6 @@ Axis.prototype.onmousemove = function (e) {
       y -= yOffset;
     }
 
-    console.log(x, x * calibration);
-    console.log(y, y * calibration);
     this.state.update('x', x * calibration);
     this.state.update('y', y * calibration);
 
@@ -37456,7 +37454,7 @@ exports.VR_POLL_TIMEOUT = 3000;
  * @type {Number}
  */
 
-exports.DEFAULT_FRICTION = 0.255;
+exports.DEFAULT_FRICTION = 0.5;
 
 /**
  * Maximum friction value.
