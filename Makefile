@@ -59,7 +59,7 @@ build: build/build.js build/build.css
 #
 build/build.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
-	$(DUO) --type js --development < $(MAIN) > $@
+	$(DUO) -s $(GLOBAL_NAMESPACE) --type js --development < $(MAIN) > $@
 
 ##
 # Builds CSS source files

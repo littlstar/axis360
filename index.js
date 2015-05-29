@@ -417,7 +417,7 @@ Axis.prototype.onprogress = function (e) {
   }
 
   e.percent = percent * 100;
-  this.state.update('percentloaded', percent);
+  this.state.update('percentplayed', percent);
   this.emit('progress', e);
 };
 
@@ -487,7 +487,7 @@ Axis.prototype.ontouchstart = function (e) {
   this.state.update('mousedownTimestamp', Date.now());
   this.state.update('isAnimating', false);
   this.state.update('dragstart', {x: touch.pageX, y: touch.pageY});
-  this.state.update('isMousedown', true);
+  this.state.update('isTouching', true);
   this.emit('touchstart', e);
 };
 
@@ -499,7 +499,7 @@ Axis.prototype.ontouchstart = function (e) {
  */
 
 Axis.prototype.ontouchend = function(e) {
-  this.state.update('mousedown', false);
+  this.state.update('isTouching', false);
   this.emit('touchend', e);
 };
 
@@ -604,7 +604,7 @@ Axis.prototype.ontouchmove = function(e) {
   var x = this.state.x;
   var y = this.state.y;
 
-  if (false == this.state.isMousedown) {
+  if (false == this.state.isTouching) {
     return;
   }
 
@@ -614,7 +614,7 @@ Axis.prototype.ontouchmove = function(e) {
     xOffset = touch.pageX - this.state.dragstart.x;
     yOffset = touch.pageY - this.state.dragstart.y;
 
-    this.state.update('dragstart', {x: e.pageX, y: e.pageY});
+    this.state.update('dragstart', {x: touch.pageX, y: touch.pageY});
 
     if (this.state.isInverted) {
       x -= xOffset
@@ -628,6 +628,7 @@ Axis.prototype.ontouchmove = function(e) {
     this.state.update('y', y);
     this.cache({x: x, y: y});
     this.emit('touchmove', e);
+    this.refresh();
   }
 };
 
@@ -763,6 +764,9 @@ Axis.prototype.pause = function () {
 Axis.prototype.fullscreen = function (el) {
   var opts = null;
   if (! fullscreen.supported) {
+    return;
+  } else if (typeof el == 'boolean' && el == false) {
+    fullscreen.exit();
     return;
   } else if (this.state.isVREnabled) {
     opts = {vrDisplay: this.vreffect._vrHMD};

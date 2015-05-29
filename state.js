@@ -145,7 +145,7 @@ function State (scope, opts) {
   this.deviceorientation = {alpha: 0, beta: 0, gamma: 0};
 
   /** Percent of content loaded. */
-  this.percentloaded = 0;
+  this.percentplayed = 0;
 
   /** Original content size. */
   this.originalsize = {width: null, height: null};
@@ -295,6 +295,9 @@ function State (scope, opts) {
   /** Predicate indicating the mouse is down. */
   this.isMousedown = false;
 
+  /** Predicate indicating if touching. */
+  this.isTouching = false;
+
   /** Predicate indicating if a video should autoplay. */
   this.shouldAutoplay = false;
 
@@ -316,7 +319,9 @@ function State (scope, opts) {
       case 'x':
       case 'y':
       case 'z':
-        if (false == this.isMousedown && false == this.isKeydown) { break; }
+        if (false == this.isMousedown &&
+            false == this.isKeydown &&
+            false == this.isTouching){ break; }
 
         // (cof) coefficient of friction (0 >= mu >= 0.99)
         var mu = this.friction = Math.max(MIN_FRICTION_VALUE,
@@ -391,7 +396,7 @@ State.prototype.reset = function (overrides) {
    */
 
   this.deviceorientation = {alpha: 0, beta: 0, gamma: 0};
-  this.percentloaded = 0;
+  this.percentplayed = 0;
   this.originalsize = {width: null, height: null};
   this.orientation = window.orientation || 0;
   this.lastVolume = 0;
@@ -426,6 +431,7 @@ State.prototype.reset = function (overrides) {
   this.isAnimating = false;
   this.isFullscreen = false;
   this.isMousedown = false;
+  this.isTouching = false;
   this.isVREnabled = isVREnabled();
   this.isHMDAvailable = false;
   this.isHMDPositionSensorAvailable = false;
@@ -455,7 +461,7 @@ State.prototype.update = function (key, value) {
     previous = this[key];
 
     if (null != previous && 'object' == typeof previous) {
-      this[key] = merge(merge({}, previous), value);
+      this[key] = merge(this[key], value);
     } else if (this[key] != value) {
       this[key] = value;
     } else {
