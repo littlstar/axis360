@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": [
 
-    "util.js",
     "index.js",
+    "util.js",
     "state.js",
     "camera.js",
     "constants.js",
