@@ -44,9 +44,9 @@ void function (global) {
 
   setRandomSource();
 
-  promo.el.style.opacity = 0;
-  promo.el.classList.add('animated');
-  promo.el.classList.add('fadeIn');
+  promo.domElement.style.opacity = 0;
+  promo.domElement.classList.add('animated');
+  promo.domElement.classList.add('fadeIn');
   promo.render().once('ready', function () { promo.seek(2); });
   document.querySelector('.controls').addEventListener('click', function (e) {
     var el = null
@@ -82,7 +82,7 @@ void function (global) {
     clearInterval(_id);
     var idx = projections.indexOf(promo.projection());
     _id = setInterval(function () {
-      if (false == promo.state.mousedown) {
+      if (false == promo.state.isMousedown) {
         var projection = projections[++idx % projections.length];
         var active = document.querySelector('.controls .active');
         if (active) { active.classList.remove('active'); }
@@ -95,18 +95,17 @@ void function (global) {
   setTimeout(function () {
     var projection = ['tinyplanet', 'fisheye'][(Math.random()*100|0) % 2];
     document.querySelector('[data-type='+projection+']').classList.add('active');
-    promo.projection(projection).lon(0);
+    promo.projection(projection).x(0);
   }, 500);
 
-  var panloopto = setTimeout(function loop () {
+  setTimeout(function loop () {
     var panloop = setInterval(function () {
-      if (false == promo.state.mousedown && false == promo.state.keydown) {
-        promo.state.lon += .7;
+      if (false == promo.state.isMousedown && false == promo.state.isKeydown) {
+        promo.state.x += .7;
       } else {
         clearInterval(panloop);
-        clearTimeout(panloopto);
         setTimeout(loop, 1000);
       }
     }, 100);
-  }, 400);
+  }, 600);
 }((function () { return this; })());

@@ -78,7 +78,7 @@ dist: dist/axis.js dist/axis.css
 #
 dist/axis.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
-	$(DUO) --type js --global $(GLOBAL_NAMESPACE) < $(MAIN) > $@
+	$(DUO) -C --type js --global $(GLOBAL_NAMESPACE) < $(MAIN) > $@
 
 ##
 # Builds CSS dist file
@@ -97,7 +97,7 @@ node_modules: package.json
 # Builds documentation
 #
 doc: node_modules $(SRC)
-	./scripts/generate_documentation.sh $(CWD)
+	./scripts/generate_documentation.sh $(CWD) public/doc
 
 ##
 # Cleans all built files

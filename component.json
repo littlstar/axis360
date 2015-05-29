@@ -28,23 +28,23 @@
 
   "templates": ["template.html"],
   "dependencies": {
-    "littlstar/three-canvas-renderer": "*",
-    "littlstar/three-vr-effect": "*",
+    "littlstar/three-canvas-renderer": "master",
+    "littlstar/three-vr-effect": "master",
     "littlstar/fullscreen": "master",
 
-    "mattdesl/three-orbit-controls": "*",
+    "mattdesl/three-orbit-controls": "master",
 
-    "yields/keycode": "*",
-    "yields/merge": "*",
+    "yields/keycode": "master",
+    "yields/merge": "master",
 
-    "timoxley/offset": "*",
-    "jb55/has-webgl": "*",
+    "timoxley/offset": "master",
+    "jb55/has-webgl": "master",
 
-    "components/three.js": "*",
-    "component/emitter": "*",
-    "component/events": "*",
-    "component/domify": "*",
-    "component/raf": "*",
-    "component/path": "*"
+    "components/three.js": "master",
+    "component/emitter": "master",
+    "component/events": "master",
+    "component/domify": "master",
+    "component/raf": "master",
+    "component/path": "master"
   }
 }

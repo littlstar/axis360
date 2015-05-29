@@ -172,6 +172,7 @@ var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
 // default projection
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
+var CARTESIAN_CALIBRATION_VALUE = constants.CARTESIAN_CALIBRATION_VALUE;
 
 /**
  * Axis constructor
@@ -649,7 +650,6 @@ Axis.prototype.onmousemove = function (e) {
   var constraints = this.projections.constraints;
   var xOffset = 0;
   var yOffset = 0;
-  var calibration = this.state.friction * 1.9996;
   var x = this.state.x;
   var y = this.state.y;
 
@@ -670,13 +670,9 @@ Axis.prototype.onmousemove = function (e) {
       y -= yOffset;
     }
 
-    this.state.update('x', x * calibration);
-    this.state.update('y', y * calibration);
-
-    if (null == constraints || true != constraints.cache) {
-      this.cache({x: x, y: y});
-    }
-
+    this.state.update('x', x);
+    this.state.update('y', y);
+    this.cache({x: x, y: y});
     this.emit('mousemove', e);
   }
 };
@@ -716,23 +712,9 @@ Axis.prototype.ontouchmove = function(e) {
       y -= yOffset;
     }
 
-    // @TODO(werle) - Make this friction configurable
-    y *=.2;
-    x *=.255;
-
-    if (null == constraints || false != constraints.x) {
-      this.state.update('x', x);
-    }
-
-    if (null == constraints || false != constraints.y) {
-      this.state.update('y', y);
-    }
-
-    if (null == constraints || false != constraints.cache) {
-      this.cache({touch: {x: x, y: y}});
-    }
-
-    this.refresh();
+    this.state.update('x', x);
+    this.state.update('y', y);
+    this.cache({x: x, y: y});
     this.emit('touchmove', e);
   }
 };
@@ -952,7 +934,7 @@ Axis.prototype.unmute = function (mute) {
 Axis.prototype.refresh = function () {
   var constraints = this.projections.constraints;
   var video = this.video;
-  var delta = 8;
+  var delta = 4;
   var now = Date.now();
   var x = this.state.x;
   var y = this.state.y;
@@ -36845,7 +36827,171 @@ if (document.addEventListener) {
   document.addEventListener('webkitfullscreenchange', change('webkitIsFullScreen'));
 }
 
-}, {"emitter":4}],
+}, {"emitter":31}],
+31: [function(require, module, exports) {
+
+/**
+ * Expose `Emitter`.
+ */
+
+module.exports = Emitter;
+
+/**
+ * Initialize a new `Emitter`.
+ *
+ * @api public
+ */
+
+function Emitter(obj) {
+  if (obj) return mixin(obj);
+};
+
+/**
+ * Mixin the emitter properties.
+ *
+ * @param {Object} obj
+ * @return {Object}
+ * @api private
+ */
+
+function mixin(obj) {
+  for (var key in Emitter.prototype) {
+    obj[key] = Emitter.prototype[key];
+  }
+  return obj;
+}
+
+/**
+ * Listen on the given `event` with `fn`.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.on =
+Emitter.prototype.addEventListener = function(event, fn){
+  this._callbacks = this._callbacks || {};
+  (this._callbacks['$' + event] = this._callbacks['$' + event] || [])
+    .push(fn);
+  return this;
+};
+
+/**
+ * Adds an `event` listener that will be invoked a single
+ * time then automatically removed.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.once = function(event, fn){
+  function on() {
+    this.off(event, on);
+    fn.apply(this, arguments);
+  }
+
+  on.fn = fn;
+  this.on(event, on);
+  return this;
+};
+
+/**
+ * Remove the given callback for `event` or all
+ * registered callbacks.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.off =
+Emitter.prototype.removeListener =
+Emitter.prototype.removeAllListeners =
+Emitter.prototype.removeEventListener = function(event, fn){
+  this._callbacks = this._callbacks || {};
+
+  // all
+  if (0 == arguments.length) {
+    this._callbacks = {};
+    return this;
+  }
+
+  // specific event
+  var callbacks = this._callbacks['$' + event];
+  if (!callbacks) return this;
+
+  // remove all handlers
+  if (1 == arguments.length) {
+    delete this._callbacks['$' + event];
+    return this;
+  }
+
+  // remove specific handler
+  var cb;
+  for (var i = 0; i < callbacks.length; i++) {
+    cb = callbacks[i];
+    if (cb === fn || cb.fn === fn) {
+      callbacks.splice(i, 1);
+      break;
+    }
+  }
+  return this;
+};
+
+/**
+ * Emit `event` with the given args.
+ *
+ * @param {String} event
+ * @param {Mixed} ...
+ * @return {Emitter}
+ */
+
+Emitter.prototype.emit = function(event){
+  this._callbacks = this._callbacks || {};
+  var args = [].slice.call(arguments, 1)
+    , callbacks = this._callbacks['$' + event];
+
+  if (callbacks) {
+    callbacks = callbacks.slice(0);
+    for (var i = 0, len = callbacks.length; i < len; ++i) {
+      callbacks[i].apply(this, args);
+    }
+  }
+
+  return this;
+};
+
+/**
+ * Return array of callbacks for `event`.
+ *
+ * @param {String} event
+ * @return {Array}
+ * @api public
+ */
+
+Emitter.prototype.listeners = function(event){
+  this._callbacks = this._callbacks || {};
+  return this._callbacks['$' + event] || [];
+};
+
+/**
+ * Check if this emitter has `event` handlers.
+ *
+ * @param {String} event
+ * @return {Boolean}
+ * @api public
+ */
+
+Emitter.prototype.hasListeners = function(event){
+  return !! this.listeners(event).length;
+};
+
+}, {}],
 9: [function(require, module, exports) {
 
 /**
@@ -36865,6 +37011,10 @@ var map = {
   , escape: 27
   , esc: 27
   , space: 32
+  , pageup: 33
+  , pagedown: 34
+  , end: 35
+  , home: 36
   , left: 37
   , up: 38
   , right: 39
@@ -37486,6 +37636,16 @@ exports.MIN_FRICTION_VALUE = 0;
 
 exports.MAX_FRICTION_TOLERANCE = 20;
 
+/**
+ * Cartesian calibration value.
+ *
+ * @public
+ * @const
+ * @type {Number}
+ */
+
+exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;
+
 }, {}],
 13: [function(require, module, exports) {
 
@@ -37526,8 +37686,8 @@ exports.cylinder = require('./cylinder');
 exports.sphere = require('./sphere');
 exports.plane = require('./plane');
 
-}, {"./cylinder":31,"./sphere":32,"./plane":33}],
-31: [function(require, module, exports) {
+}, {"./cylinder":32,"./sphere":33,"./plane":34}],
+32: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -37558,7 +37718,7 @@ module.exports = function sphere (axis) {
 };
 
 }, {"three.js":2}],
-32: [function(require, module, exports) {
+33: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -37586,7 +37746,7 @@ module.exports = function sphere (axis) {
 };
 
 }, {"three.js":2}],
-33: [function(require, module, exports) {
+34: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -37931,6 +38091,8 @@ function State (scope, opts) {
       case 'x':
       case 'y':
       case 'z':
+        if (false == this.isMousedown && false == this.isKeydown) { break; }
+
         // (cof) coefficient of friction (0 >= mu >= 0.99)
         var mu = this.friction = Math.max(MIN_FRICTION_VALUE,
                                           Math.min(MAX_FRICTION_VALUE,
@@ -37946,8 +38108,6 @@ function State (scope, opts) {
 
         if (t < MAX_FRICTION_TOLERANCE) {
           v += w;
-        } else {
-          v += 1;
         }
 
         // apply friction to x, y, z coordinates
@@ -38308,6 +38468,7 @@ State.prototype.onkeydown = function (e) {
         e.preventDefault();
         tmp[name] = true;
         self.update('keys', tmp);
+        self.update('isKeydown', true);
         self.update('isAnimating', false);
       }
     }
@@ -38362,6 +38523,7 @@ State.prototype.onkeyup = function (e) {
           true != constraints.keys[n]) {
         e.preventDefault();
         tmp[n] = false;
+        self.update('isKeydown', false);
         self.update('keys', tmp);
       }
     }
@@ -38457,8 +38619,8 @@ State.prototype.onfullscreenchange = function (e) {
   this.scope.emit('fullscreenchange', e);
 };
 
-}, {"emitter":4,"fullscreen":8,"keycode":9,"events":5,"merge":10,"path":34,"./util":16,"./constants":17}],
-34: [function(require, module, exports) {
+}, {"emitter":4,"fullscreen":8,"keycode":9,"events":5,"merge":10,"path":35,"./util":16,"./constants":17}],
+35: [function(require, module, exports) {
 
 exports.basename = function(path){
   return path.split('/').pop();
@@ -38567,7 +38729,7 @@ function getVRDevices (fn) {
   }
 }
 
-}, {"path":34}],
+}, {"path":35}],
 18: [function(require, module, exports) {
 
 /**
@@ -41041,7 +41203,7 @@ function equilinear (axis) {
   });
 };
 
-}, {"raf":6,"three.js":2,"../constants":17,"../camera":13,"../geometry/plane":33,"../geometry/sphere":32,"../geometry/cylinder":31}],
+}, {"raf":6,"three.js":2,"../constants":17,"../camera":13,"../geometry/plane":34,"../geometry/sphere":33,"../geometry/cylinder":32}],
 24: [function(require, module, exports) {
 
 'use strict';

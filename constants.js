@@ -202,3 +202,13 @@ exports.MIN_FRICTION_VALUE = 0;
  */
 
 exports.MAX_FRICTION_TOLERANCE = 20;
+
+/**
+ * Cartesian calibration value.
+ *
+ * @public
+ * @const
+ * @type {Number}
+ */
+
+exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: projection/mirrorball.js</title>
+    <title>JSDoc: Source: projection/equilinear.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: projection/mirrorball.js</h1>
+    <h1 class="page-title">Source: projection/equilinear.js</h1>
 
     
 
@@ -54,10 +54,10 @@
  */
 
 /**
- * The mirror ball projection mode.
+ * The equilinear projection mode.
  *
  * @public
- * @module axis/projection/mirrorball
+ * @module axis/projection/equilinear
  * @type {Function}
  */
 
@@ -66,29 +66,47 @@
  * @private
  */
 
-var three = require('three.js')
+var raf = require('raf')
+  , three = require('three.js')
 
 /**
- * Mirror ball projection constraints.
+ * Local dependencies
+ * @private
+ */
+
+var constants = require('../constants')
+  , createCamera = require('../camera')
+  , createPlane = require('../geometry/plane')
+  , createSphere = require('../geometry/sphere')
+  , createCylinder = require('../geometry/cylinder')
+
+// default field of view
+var DEFAULT_FOV = constants.DEFAULT_FOV;
+
+// animation factor
+var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
+
+// cylinder zoom offet
+var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
+
+/**
+ * Equilinear projection constraints.
  *
  * @public
  * @type {Object}
  */
 
-var constraints = mirrorball.constraints = {
-  keys: {up: true, down: true}
-};
+var constraints = equilinear.constraints = {};
 
 /**
- * Applies a special mirror ball projection
- * to Axis frame
+ * Applies an equilinear projection to Axis frame
  *
- * @api public
+ * @public
  * @param {Axis} axis
  */
 
-module.exports = mirrorball;
-function mirrorball (axis) {
+module.exports = equilinear;
+function equilinear (axis) {
 
   // this projection requires an already initialized
   // camera on the `Axis' instance
@@ -103,91 +121,77 @@ function mirrorball (axis) {
   // bail if content sizing is incorrect
   if (false == this.contentHasCorrectSizing()) { return; }
 
-  // bail if geometry is a cylinder because mirrow ball
-  // projection is only supported in a spherical geometry
-  if ('cylinder' == axis.geometry()) { return; }
+  // initializes scene
+  this.initializeScene();
 
-  // initialize new scene
-  var scene = new three.Scene();
+  // initialize camera
+  createCamera(axis);
 
-  // create geometry
-  var geometry = new three.SphereGeometry(30, 32, 32);
+  // cancel current projection animations
+  this.cancel();
 
-  // create light
-  var light = new three.DirectionalLight(0xffffff, 1);
+  // max FOV for animating
+  var maxFov = DEFAULT_FOV;
 
-  // initialize material with texture
-  var material = new three.MeshPhongMaterial({
-    shininess: 50,
-    specular: 0x050505,
-    ambient: 0xffffff,
-    color: 0xffffff,
-    map: axis.texture
-  });
+  // current fov
+  var fov = axis.fov();
 
-  // notify texture of needed update
-  axis.texture.needsUpdate = true;
+  // zoom offset where applicable
+  var zoom = CYLINDRICAL_ZOOM;
 
-  // set currenty geometry type
-  axis.state.update('geometry', 'sphere');
-
-  // initialize mesh
-  var mesh = new three.Mesh(geometry, material);
-
-  // new field of view
-  var fov = 20;
-  var controls = null;
-
-  // initialize controls if allowed
-  if (axis.state.allowControls) {
-    controls = new three.OrbitControls(camera, axis.el);
-    controls.minDistance = 75;
-    controls.maxDistance = 200;
-    controls.noPan = true;
-    controls.noZoom = true;
-    axis.controls = controls;
+  // apply zoom to cylinder geometry type
+  if ('cylinder' == axis.geometry()) {
+    maxFov += zoom;
+    axis.fov(fov += zoom);
   }
 
-  // add camera to new scene
-  scene.add(camera);
+  if ('tinyplanet' == axis.projection() || this.isMirrorBall()) {
+    axis.x(0);
+  }
 
-  // update field of view
-  axis.fov(fov);
+  // bail if projection is mirror ball
+  if (this.isMirrorBall()) {
+    return;
+  }
 
-  // configure camera
-  camera.near = 1;
-  camera.far = 1000;
-  camera.setLens(axis.height() * .5);
-  camera.updateProjectionMatrix();
+  // animate
+  axis.debug("animate: EQUILINEAR begin");
+  this.animate(function () {
+    var y = axis.state.y;
 
-  // confiure lighting
-  light.position.set(5,5,5);
-  light.castShadow = true;
-  light.shadowCameraNear = 0.01;
-  light.shadowCameraNeardowCameraFar = 15;
-  light.shadowCameraFov = 45;
-  light.shadowCameraLeft =15 -1;
-  light.shadowCameraRight =  1;
-  light.shadowCameraTop =  1;
-  light.shadowCameraBottom = -1;
-  light.shadowBias = 0.001;
-  light.shadowDarkness = 0.2;
-  light.shadowCameraTopadowMapWidth = 1024;
-  light.shadowMapHeight = 1024;
+    axis.debug("animate: EQUILINEAR maxFov=%d fov=%d y=%d",
+               maxFov, axis.fov(), axis.y());
 
-  // add light to scene
-  scene.add(light);
+    // cancel animation if max fov reached and
+    // latitude has reached equator
+    if (maxFov == axis.fov() &amp;&amp; 0 == axis.y()) {
+      axis.debug("animate: EQUILINEAR end");
+      return this.cancel();
+    }
 
-  // add mesh to scene
-  scene.add(mesh);
+    // normalize field of view value
+    if (fov > maxFov) {
+      fov = Math.max(fov - ANIMATION_FACTOR, maxFov);
+    } else if (fov &lt; maxFov) {
+      fov = Math.min(fov + ANIMATION_FACTOR, maxFov);
+    } else {
+      fov = maxFov;
+    }
 
-  // add ambient light
-  scene.add(new three.AmbientLight(0xffffff));
+    // prevent negative field of view
+    if (fov &lt; 0) { fov = 0; }
 
-  // set new scene
-  axis.scene = scene;
+    // update field of view
+    axis.fov(fov);
+
+    // normalize y coordinate
+    if (y > 0) {
+      axis.y(Math.max(0, y - ANIMATION_FACTOR));
+    } else if (y &lt; 0) {
+      axis.y(Math.min(0, y + ANIMATION_FACTOR));
+    }
+  });
 };
-
 </code></pre>
         </article>
     </section>
@@ -204,7 +208,7 @@ function mirrorball (axis) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Thu May 28 2015 19:02:14 GMT-0400 (EDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Thu May 28 2015 19:48:07 GMT-0400 (EDT)
 </footer>
 
 <script> prettyPrint(); </script>

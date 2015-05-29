@@ -316,6 +316,8 @@ function State (scope, opts) {
       case 'x':
       case 'y':
       case 'z':
+        if (false == this.isMousedown && false == this.isKeydown) { break; }
+
         // (cof) coefficient of friction (0 >= mu >= 0.99)
         var mu = this.friction = Math.max(MIN_FRICTION_VALUE,
                                           Math.min(MAX_FRICTION_VALUE,
@@ -331,8 +333,6 @@ function State (scope, opts) {
 
         if (t < MAX_FRICTION_TOLERANCE) {
           v += w;
-        } else {
-          v += 1;
         }
 
         // apply friction to x, y, z coordinates
@@ -693,6 +693,7 @@ State.prototype.onkeydown = function (e) {
         e.preventDefault();
         tmp[name] = true;
         self.update('keys', tmp);
+        self.update('isKeydown', true);
         self.update('isAnimating', false);
       }
     }
@@ -747,6 +748,7 @@ State.prototype.onkeyup = function (e) {
           true != constraints.keys[n]) {
         e.preventDefault();
         tmp[n] = false;
+        self.update('isKeydown', false);
         self.update('keys', tmp);
       }
     }

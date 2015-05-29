@@ -84,6 +84,7 @@ var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
 // default projection
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
+var CARTESIAN_CALIBRATION_VALUE = constants.CARTESIAN_CALIBRATION_VALUE;
 
 /**
  * Axis constructor
@@ -561,7 +562,6 @@ Axis.prototype.onmousemove = function (e) {
   var constraints = this.projections.constraints;
   var xOffset = 0;
   var yOffset = 0;
-  var calibration = this.state.friction * 1.9996;
   var x = this.state.x;
   var y = this.state.y;
 
@@ -582,13 +582,9 @@ Axis.prototype.onmousemove = function (e) {
       y -= yOffset;
     }
 
-    this.state.update('x', x * calibration);
-    this.state.update('y', y * calibration);
-
-    if (null == constraints || true != constraints.cache) {
-      this.cache({x: x, y: y});
-    }
-
+    this.state.update('x', x);
+    this.state.update('y', y);
+    this.cache({x: x, y: y});
     this.emit('mousemove', e);
   }
 };
@@ -628,23 +624,9 @@ Axis.prototype.ontouchmove = function(e) {
       y -= yOffset;
     }
 
-    // @TODO(werle) - Make this friction configurable
-    y *=.2;
-    x *=.255;
-
-    if (null == constraints || false != constraints.x) {
-      this.state.update('x', x);
-    }
-
-    if (null == constraints || false != constraints.y) {
-      this.state.update('y', y);
-    }
-
-    if (null == constraints || false != constraints.cache) {
-      this.cache({touch: {x: x, y: y}});
-    }
-
-    this.refresh();
+    this.state.update('x', x);
+    this.state.update('y', y);
+    this.cache({x: x, y: y});
     this.emit('touchmove', e);
   }
 };
@@ -864,7 +846,7 @@ Axis.prototype.unmute = function (mute) {
 Axis.prototype.refresh = function () {
   var constraints = this.projections.constraints;
   var video = this.video;
-  var delta = 8;
+  var delta = 4;
   var now = Date.now();
   var x = this.state.x;
   var y = this.state.y;
