@@ -173,6 +173,9 @@ var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var CARTESIAN_CALIBRATION_VALUE = constants.CARTESIAN_CALIBRATION_VALUE;
 
+// expose util
+Axis.util = require('./util');
+
 /**
  * Axis constructor
  *
@@ -37336,6 +37339,7 @@ Projections.prototype.get = function (name) {
 
 Projections.prototype.apply = function (name) {
   var projection = this.projections[name];
+  var dimensions = this.scope.dimensions();
   if ('string' == typeof name && 'function' == typeof projection) {
     // set currently requested
     this.requested = name;
@@ -37346,7 +37350,13 @@ Projections.prototype.apply = function (name) {
     if ('object' == typeof projection.constraints) {
       this.constraints = projection.constraints;
     } else {
-      this.constraints = null;
+      this.constraints = {};
+    }
+
+    if (2 != dimensions.ratio) {
+      this.scope.orientation.x = 0;
+      this.constraints.y = true;
+      this.constraints.x = false;
     }
 
     // apply projection
@@ -37941,7 +37951,7 @@ var EventEmitter = require('emitter')
  */
 
 var getVRDevices = require('./util').getVRDevices
-  , isVREnabled = require('./util').isVREnabled
+  , isVRPossible = require('./util').isVRPossible
   , constants = require('./constants')
   , isImage = require('./util').isImage
 
@@ -38200,6 +38210,9 @@ function State (scope, opts) {
   /** Predicate indicating if slerp should be used. */
   this.useSlerp = true;
 
+  /** Predicate indicating if VR display is possible. */
+  this.isVRPossible = isVRPossible();
+
   // listen for fullscreen changes
   fullscreen.on('change', this.onfullscreenchange.bind(this));
 
@@ -38298,7 +38311,8 @@ State.prototype.reset = function (overrides) {
   this.isFullscreen = false;
   this.isMousedown = false;
   this.isTouching = false;
-  this.isVREnabled = isVREnabled();
+  this.isVREnabled = false;
+  this.isVRPossible = isVRPossible();
   this.isHMDAvailable = false;
   this.isHMDPositionSensorAvailable = false;
 
@@ -38433,8 +38447,8 @@ State.prototype.pollForVRDevice = function () {
   var self = this;
 
   // poll if VR is enabled.
-  if (isVREnabled()) {
-    this.isVREnabled = true;
+  if (isVRPossible()) {
+    this.isVREnabled = false;
 
     // kill current poll
     clearInterval(this.vrPollID);
@@ -38469,6 +38483,7 @@ State.prototype.pollForVRDevice = function () {
         self.isHMDPositionSensorAvailable = false;
         self.vrHMD = null;
         self.vrPositionSensor = null;
+        self.scope.emit('vrhmdunavailable');
         return;
       }
     }
@@ -38490,14 +38505,15 @@ State.prototype.pollForVRDevice = function () {
         if (device instanceof PositionSensorVRDevice &&
             device.hardwareUnitId == hmd.hardwareUnitId) {
           sensor = device;
-        self.isHMDPositionSensorAvailable = true;
-        break;
+          self.isHMDPositionSensorAvailable = true;
+          break;
         }
       }
     }
 
     if (hmd && sensor) {
-      if (self.vrHMD && self.vrHMD != hmd.hardwareUnitId) {
+      if (null == self.vrHMD ||
+          (self.vrHMD && self.vrHMD.hardwareUnitId != hmd.hardwareUnitId)) {
         self.vrHMD = hmd;
         self.vrPositionSensor = sensor;
 
@@ -38640,15 +38656,15 @@ function isImage (file) {
 }
 
 /**
- * Predicate to determine if WebVR is enabled
+ * Predicate to determine if WebVR is possible
  * in the current browser.
  *
  * @public
  * @return {Boolean}
  */
 
-exports.isVREnabled = isVREnabled;
-function isVREnabled () {
+exports.isVRPossible = isVRPossible;
+function isVRPossible () {
   var fn = navigator.getVRDevices || navigator.mozGetVRDevices;
   return 'function' == typeof fn;
 }
@@ -38663,8 +38679,10 @@ function isVREnabled () {
 
 exports.getVRDevices = getVRDevices;
 function getVRDevices (fn) {
-  if (isVREnabled()) {
-    return (navigator.getVRDevices || navigator.mozGetVRDevices)(fn);
+  if (isVRPossible()) {
+    return (
+      navigator.getVRDevices || navigator.mozGetVRDevices
+    ).call(navigator, fn);
   }
 }
 
@@ -41452,6 +41470,7 @@ AxisController.prototype.update = function () {
   var friction = this.scope.state.friction;
   var interpolationFactor = this.scope.state.interpolationFactor;
   var pi2 = PI2*.2;
+  var ratio = this.scope.dimensions().ratio;
 
   // update only if enabled.
   if (false == this.state.forceUpdate &&

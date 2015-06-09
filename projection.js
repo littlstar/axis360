@@ -221,6 +221,7 @@ Projections.prototype.get = function (name) {
 
 Projections.prototype.apply = function (name) {
   var projection = this.projections[name];
+  var dimensions = this.scope.dimensions();
   if ('string' == typeof name && 'function' == typeof projection) {
     // set currently requested
     this.requested = name;
@@ -231,7 +232,13 @@ Projections.prototype.apply = function (name) {
     if ('object' == typeof projection.constraints) {
       this.constraints = projection.constraints;
     } else {
-      this.constraints = null;
+      this.constraints = {};
+    }
+
+    if (2 != dimensions.ratio) {
+      this.scope.orientation.x = 0;
+      this.constraints.y = true;
+      this.constraints.x = false;
     }
 
     // apply projection

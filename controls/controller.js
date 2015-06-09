@@ -620,6 +620,7 @@ AxisController.prototype.update = function () {
   var friction = this.scope.state.friction;
   var interpolationFactor = this.scope.state.interpolationFactor;
   var pi2 = PI2*.2;
+  var ratio = this.scope.dimensions().ratio;
 
   // update only if enabled.
   if (false == this.state.forceUpdate &&

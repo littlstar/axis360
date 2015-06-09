@@ -557,7 +557,6 @@ State.prototype.pollForVRDevice = function () {
 
     // begin new poll for HMD and sensor
     this.vrPollID = setInterval(function () {
-      console.log('Polling for VR devices...');
       getVRDevices().then(onVRDevices);
     }, VR_POLL_TIMEOUT);
 
