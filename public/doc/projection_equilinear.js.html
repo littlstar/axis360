@@ -121,75 +121,28 @@ function equilinear (axis) {
   // bail if content sizing is incorrect
   if (false == this.contentHasCorrectSizing()) { return; }
 
-  // initializes scene
-  this.initializeScene();
-
-  // initialize camera
-  createCamera(axis);
-
-  // cancel current projection animations
-  this.cancel();
-
-  // max FOV for animating
-  var maxFov = DEFAULT_FOV;
-
-  // current fov
-  var fov = axis.fov();
-
-  // zoom offset where applicable
+  var fov = DEFAULT_FOV;
   var zoom = CYLINDRICAL_ZOOM;
+  var rotation = new three.Vector3(0, 0, 0);
+
+  if ('tinyplanet' != axis.projections.current) {
+    rotation.x = camera.position.x;
+    rotation.y = camera.position.y;
+    rotation.z = camera.position.z;
+  }
 
   // apply zoom to cylinder geometry type
   if ('cylinder' == axis.geometry()) {
-    maxFov += zoom;
-    axis.fov(fov += zoom);
-  }
-
-  if ('tinyplanet' == axis.projection() || this.isMirrorBall()) {
-    axis.x(0);
-  }
-
-  // bail if projection is mirror ball
-  if (this.isMirrorBall()) {
-    return;
+    fov += zoom;
   }
 
   // animate
   axis.debug("animate: EQUILINEAR begin");
   this.animate(function () {
-    var y = axis.state.y;
-
-    axis.debug("animate: EQUILINEAR maxFov=%d fov=%d y=%d",
-               maxFov, axis.fov(), axis.y());
-
-    // cancel animation if max fov reached and
-    // latitude has reached equator
-    if (maxFov == axis.fov() &amp;&amp; 0 == axis.y()) {
-      axis.debug("animate: EQUILINEAR end");
-      return this.cancel();
-    }
-
-    // normalize field of view value
-    if (fov > maxFov) {
-      fov = Math.max(fov - ANIMATION_FACTOR, maxFov);
-    } else if (fov &lt; maxFov) {
-      fov = Math.min(fov + ANIMATION_FACTOR, maxFov);
-    } else {
-      fov = maxFov;
-    }
-
-    // prevent negative field of view
-    if (fov &lt; 0) { fov = 0; }
-
-    // update field of view
     axis.fov(fov);
-
-    // normalize y coordinate
-    if (y > 0) {
-      axis.y(Math.max(0, y - ANIMATION_FACTOR));
-    } else if (y &lt; 0) {
-      axis.y(Math.min(0, y + ANIMATION_FACTOR));
-    }
+    axis.lookAt(rotation.x, rotation.y, rotation.z);
+    axis.orientation.x = Math.PI/180;
+    this.cancel();
   });
 };
 </code></pre>
@@ -202,13 +155,13 @@ function equilinear (axis) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_mirrorball.html">axis/projection/mirrorball</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:deviceorientation">deviceorientation</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:keyup">keyup</a></li><li><a href="module-axis-Axis.html#event:orientationchange">orientationchange</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#three">three</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.html">axis/controls/keyboard</a></li><li><a href="module-axis_controls_orientation.html">axis/controls/orientation</a></li><li><a href="module-axis_controls_touch.html">axis/controls/touch</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.KeyboardController.html">KeyboardController</a></li><li><a href="module-axis_controls_orientation.OrientationController.html">OrientationController</a></li><li><a href="module-axis_controls_touch.TouchController.html">TouchController</a></li><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#three">three</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Thu May 28 2015 19:48:07 GMT-0400 (EDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Tue Jun 09 2015 14:09:16 GMT-0400 (EDT)
 </footer>
 
 <script> prettyPrint(); </script>

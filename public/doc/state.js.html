@@ -71,6 +71,7 @@ var EventEmitter = require('emitter')
   , fullscreen = require('fullscreen')
   , keycode = require('keycode')
   , events = require('events')
+  , three = require('three.js')
   , merge = require('merge')
   , path = require('path')
 
@@ -95,6 +96,7 @@ var DEFAULT_FRICTION = constants.DEFAULT_FRICTION;
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY;
 var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS;
+var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
 
 /**
  * State constructor
@@ -128,6 +130,9 @@ var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS;
  * a video.
  * @param {Number} [opts.friction = DEFAULT_FRICTION] - Friction to
  * apply to x and y coordinates.
+ * @param {Number} [opts.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR] -
+ * Interpolation factor to apply to quaternion rotations.
+ * @param {Boolean} [opts.useSlerp = true] - Use spherical linear interpolations.
  */
 
 module.exports = State;
@@ -143,15 +148,9 @@ function State (scope, opts) {
   var windowEvents = events(window, this);
   var documentEvents = events(document, this);
 
-  // initialize window events
-  windowEvents.bind('deviceorientation');
-  windowEvents.bind('orientationchange');
-
   // initialize document events
   documentEvents.bind('touch', 'onmousedown');
   documentEvents.bind('mousedown');
-  documentEvents.bind('keydown');
-  documentEvents.bind('keyup');
 
   // ensure options can't be overloaded
   opts = Object.freeze(opts);
@@ -169,11 +168,8 @@ function State (scope, opts) {
    * State variables.
    */
 
-  /** Current device orientation in geographic coordinates. */
-  this.deviceorientation = {alpha: 0, beta: 0, gamma: 0};
-
   /** Percent of content loaded. */
-  this.percentloaded = 0;
+  this.percentplayed = 0;
 
   /** Original content size. */
   this.originalsize = {width: null, height: null};
@@ -241,14 +237,23 @@ function State (scope, opts) {
   /** Friction to apply to x and y coordinates. */
   this.friction = DEFAULT_FRICTION;
 
+  /** Zee quaternion. */
+  this.zee = null;
+
+  /** Current euler rotation angles. */
+  this.euler = null;
+
+  /** Original quaternion. */
+  this.orientationQuaternion = null;
+
+  /** X axis center. */
+  this.xAxisCenter = null;
+
   /** Y coordinate. */
-  this.y = 0;
+  this.pointerY = 0;
 
   /** X coordinate. */
-  this.x = 0;
-
-  /** Z coordinate. */
-  this.z = 0;
+  this.pointerX = 0;
 
   /** Current field of view. */
   this.fov = DEFAULT_FOV;
@@ -261,6 +266,9 @@ function State (scope, opts) {
 
   /** Currently connected position sensor vr device. */
   this.vrPositionSensor = null;
+
+  /** Interpolation factor to apply to quaternion rotations. */
+  this.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR;
 
   /**
    * State predicates.
@@ -323,51 +331,20 @@ function State (scope, opts) {
   /** Predicate indicating the mouse is down. */
   this.isMousedown = false;
 
+  /** Predicate indicating if touching. */
+  this.isTouching = false;
+
   /** Predicate indicating if a video should autoplay. */
   this.shouldAutoplay = false;
+
+  /** Predicate indicating if slerp should be used. */
+  this.useSlerp = true;
 
   // listen for fullscreen changes
   fullscreen.on('change', this.onfullscreenchange.bind(this));
 
   // handle updates
-  this.on('update', function (e) {
-    switch (e.key) {
-      case 'src':
-        this.isReady = false;
-        if (isImage(e.value)) {
-          this.isImage = true;
-        } else {
-          this.isImage = false;
-        }
-        break;
-
-      case 'x':
-      case 'y':
-      case 'z':
-        // (cof) coefficient of friction (0 >= mu >= 0.99)
-        var mu = this.friction = Math.max(MIN_FRICTION_VALUE,
-                                          Math.min(MAX_FRICTION_VALUE,
-                                                   this.friction));
-        // delta
-        var d = e.previous - e.value;
-        // value
-        var v = e.value;
-        // weight
-        var w = d * mu;
-        // tolerance
-        var t = Math.abs(d);
-
-        if (t &lt; MAX_FRICTION_TOLERANCE) {
-          v += w;
-        } else {
-          v += 1;
-        }
-
-        // apply friction to x, y, z coordinates
-        this[e.key] = v;
-        break;
-    }
-  });
+  this.on('update', function (e) { });
 
   // init
   this.reset();
@@ -413,13 +390,16 @@ State.prototype.reset = function (overrides) {
   this.shouldAutoplay = null != opts.autoplay ? opts.autoplay : false;
   this.allowWheel = null == opts.allowWheel ? false : opts.allowWheel;
   this.friction = opts.friction || DEFAULT_FRICTION;
+  this.useSlerp = opts.useSlerp || true;
+  this.interpolationFactor = (
+    opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR
+  );
 
   /**
    * State variables.
    */
 
-  this.deviceorientation = {alpha: 0, beta: 0, gamma: 0};
-  this.percentloaded = 0;
+  this.percentplayed = 0;
   this.originalsize = {width: null, height: null};
   this.orientation = window.orientation || 0;
   this.lastVolume = 0;
@@ -435,9 +415,12 @@ State.prototype.reset = function (overrides) {
   this.animationFrameID = null;
   this.currentTime = 0;
   this.keys = {up: false, down: false, left: false, right: false};
-  this.y = 0;
-  this.x = 0;
-  this.z = 0;
+  this.pointerX = 0;
+  this.pointerY = 0;
+  this.orientationQuaternion = new three.Quaternion();;
+  this.xAxisCenter = new three.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+  this.zee = new three.Vector3(0, 0, 1);
+  this.euler = new three.Euler();
 
   /**
    * State predicates.
@@ -454,6 +437,7 @@ State.prototype.reset = function (overrides) {
   this.isAnimating = false;
   this.isFullscreen = false;
   this.isMousedown = false;
+  this.isTouching = false;
   this.isVREnabled = isVREnabled();
   this.isHMDAvailable = false;
   this.isHMDPositionSensorAvailable = false;
@@ -483,7 +467,7 @@ State.prototype.update = function (key, value) {
     previous = this[key];
 
     if (null != previous &amp;&amp; 'object' == typeof previous) {
-      this[key] = merge(merge({}, previous), value);
+      this[key] = merge(this[key], value);
     } else if (this[key] != value) {
       this[key] = value;
     } else {
@@ -690,163 +674,6 @@ State.prototype.onmousedown = function (e) {
 };
 
 /**
- * Handles `onkeydown' events on the windows document.
- *
- * @private
- * @param {Event} e
- * @fires module:axis~Axis#keydown
- */
-
-State.prototype.onkeydown = function (e) {
-  var constraints = this.scope.projections.constraints;
-  var focused = this.forceFocus || this.isFocused;
-  var scope = this.scope;
-  var code = e.which;
-  var self = this;
-
-  /**
-   * Detects keydown event with respect to
-   * the current projection constraints.
-   *
-   * @private
-   * @param {String} name
-   */
-
-  function detect (name) {
-    var tmp = {};
-    if (code == keycode(name)) {
-      if (null == constraints ||
-          null == constraints.keys ||
-          true != constraints.keys[name]) {
-        e.preventDefault();
-        tmp[name] = true;
-        self.update('keys', tmp);
-        self.update('isAnimating', false);
-      }
-    }
-  }
-
-  if (focused) {
-    detect('up');
-    detect('down');
-    detect('left');
-    detect('right');
-
-    /**
-     * Key down event.
-     *
-     * @public
-     * @event module:axis~Axis#keydown
-     * @type {Event}
-     */
-
-    this.scope.emit('keydown', e);
-  }
-};
-
-/**
- * Handles `onkeyup' events on the windows document.
- *
- * @private
- * @param {Event} e
- * @fires module:axis~Axis#keyup
- */
-
-State.prototype.onkeyup = function (e) {
-  var constraints = this.scope.projections.constraints;
-  var focused = this.forceFocus || this.isFocused;
-  var scope = this.scope;
-  var code = e.which;
-  var self = this;
-
-  /**
-   * Detects keyup event with respect to
-   * the current projection constraints.
-   *
-   * @private
-   * @param {String} name
-   */
-
-  function detect (n) {
-    var tmp = {};
-    if (code == keycode(n)) {
-      if (null == constraints ||
-          null == constraints.keys ||
-          true != constraints.keys[n]) {
-        e.preventDefault();
-        tmp[n] = false;
-        self.update('keys', tmp);
-      }
-    }
-  }
-
-  if (focused) {
-    detect('up');
-    detect('down');
-    detect('left');
-    detect('right');
-
-    /**
-     * Key up event.
-     *
-     * @public
-     * @event module:axis~Axis#keyup
-     * @type {Event}
-     */
-
-    this.scope.emit('keyup', e);
-  }
-};
-
-/**
- * Handles `ondeviceorientation' events on the window.
- *
- * @private
- * @param {Event} e
- * @fires module:axis~Axis#deviceorientation
- */
-
-State.prototype.ondeviceorientation = function (e) {
-  this.update('deviceorientation', {
-    alpha: e.alpha,
-    beta: e.beta,
-    gamma: e.gamma
-  });
-
-  /**
-   * Device orientation event.
-   *
-   * @public
-   * @event module:axis~Axis#deviceorientation
-   * @type {Event}
-   */
-
-  this.scope.emit('deviceorientation', e);
-};
-
-/**
- * Handles `orientationchange' events on the window.
- *
- * @private
- * @param {Event} e
- * @fires module:axis~Axis#orientationchange
- */
-
-State.prototype.onorientationchange = function (e) {
-  this.update('orientation', window.orientation);
-
-  /**
-   * Orientation change event.
-   *
-   * @public
-   * @event module:axis~Axis#orientationchange
-   * @type {Event}
-   */
-
-  self.emit('orientationchange', e);
-};
-
-/**
  * Handles `onfullscreenchange' events on window.
  *
  * @private
@@ -879,13 +706,13 @@ State.prototype.onfullscreenchange = function (e) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_mirrorball.html">axis/projection/mirrorball</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:deviceorientation">deviceorientation</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:keyup">keyup</a></li><li><a href="module-axis-Axis.html#event:orientationchange">orientationchange</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#three">three</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.html">axis/controls/keyboard</a></li><li><a href="module-axis_controls_orientation.html">axis/controls/orientation</a></li><li><a href="module-axis_controls_touch.html">axis/controls/touch</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.KeyboardController.html">KeyboardController</a></li><li><a href="module-axis_controls_orientation.OrientationController.html">OrientationController</a></li><li><a href="module-axis_controls_touch.TouchController.html">TouchController</a></li><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#three">three</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Thu May 28 2015 19:48:07 GMT-0400 (EDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Tue Jun 09 2015 14:09:16 GMT-0400 (EDT)
 </footer>
 
 <script> prettyPrint(); </script>

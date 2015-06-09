@@ -38279,7 +38279,6 @@ State.prototype.reset = function (overrides) {
   this.pointerY = 0;
   this.orientationQuaternion = new three.Quaternion();;
   this.xAxisCenter = new three.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
-  this.lastKnownVector3 = new three.Vector3(0, 0, 0);
   this.zee = new three.Vector3(0, 0, 1);
   this.euler = new three.Euler();
 

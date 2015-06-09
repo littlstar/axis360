@@ -53,7 +53,7 @@ var EventEmitter = require('emitter')
  */
 
 var getVRDevices = require('./util').getVRDevices
-  , isVREnabled = require('./util').isVREnabled
+  , isVRPossible = require('./util').isVRPossible
   , constants = require('./constants')
   , isImage = require('./util').isImage
 
@@ -312,6 +312,9 @@ function State (scope, opts) {
   /** Predicate indicating if slerp should be used. */
   this.useSlerp = true;
 
+  /** Predicate indicating if VR display is possible. */
+  this.isVRPossible = isVRPossible();
+
   // listen for fullscreen changes
   fullscreen.on('change', this.onfullscreenchange.bind(this));
 
@@ -410,7 +413,8 @@ State.prototype.reset = function (overrides) {
   this.isFullscreen = false;
   this.isMousedown = false;
   this.isTouching = false;
-  this.isVREnabled = isVREnabled();
+  this.isVREnabled = false;
+  this.isVRPossible = isVRPossible();
   this.isHMDAvailable = false;
   this.isHMDPositionSensorAvailable = false;
 
@@ -545,14 +549,15 @@ State.prototype.pollForVRDevice = function () {
   var self = this;
 
   // poll if VR is enabled.
-  if (isVREnabled()) {
-    this.isVREnabled = true;
+  if (isVRPossible()) {
+    this.isVREnabled = false;
 
     // kill current poll
     clearInterval(this.vrPollID);
 
     // begin new poll for HMD and sensor
     this.vrPollID = setInterval(function () {
+      console.log('Polling for VR devices...');
       getVRDevices().then(onVRDevices);
     }, VR_POLL_TIMEOUT);
 
@@ -581,6 +586,7 @@ State.prototype.pollForVRDevice = function () {
         self.isHMDPositionSensorAvailable = false;
         self.vrHMD = null;
         self.vrPositionSensor = null;
+        self.scope.emit('vrhmdunavailable');
         return;
       }
     }
@@ -602,14 +608,15 @@ State.prototype.pollForVRDevice = function () {
         if (device instanceof PositionSensorVRDevice &&
             device.hardwareUnitId == hmd.hardwareUnitId) {
           sensor = device;
-        self.isHMDPositionSensorAvailable = true;
-        break;
+          self.isHMDPositionSensorAvailable = true;
+          break;
         }
       }
     }
 
     if (hmd && sensor) {
-      if (self.vrHMD && self.vrHMD != hmd.hardwareUnitId) {
+      if (null == self.vrHMD ||
+          (self.vrHMD && self.vrHMD.hardwareUnitId != hmd.hardwareUnitId)) {
         self.vrHMD = hmd;
         self.vrPositionSensor = sensor;
 

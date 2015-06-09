@@ -62,15 +62,15 @@ function isImage (file) {
 }
 
 /**
- * Predicate to determine if WebVR is enabled
+ * Predicate to determine if WebVR is possible
  * in the current browser.
  *
  * @public
  * @return {Boolean}
  */
 
-exports.isVREnabled = isVREnabled;
-function isVREnabled () {
+exports.isVRPossible = isVRPossible;
+function isVRPossible () {
   var fn = navigator.getVRDevices || navigator.mozGetVRDevices;
   return 'function' == typeof fn;
 }
@@ -85,7 +85,9 @@ function isVREnabled () {
 
 exports.getVRDevices = getVRDevices;
 function getVRDevices (fn) {
-  if (isVREnabled()) {
-    return (navigator.getVRDevices || navigator.mozGetVRDevices)(fn);
+  if (isVRPossible()) {
+    return (
+      navigator.getVRDevices || navigator.mozGetVRDevices
+    ).call(navigator, fn);
   }
 }
