@@ -85,6 +85,9 @@ var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var CARTESIAN_CALIBRATION_VALUE = constants.CARTESIAN_CALIBRATION_VALUE;
 
+// expose util
+Axis.util = require('./util');
+
 /**
  * Axis constructor
  *
