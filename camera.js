@@ -7,7 +7,6 @@ var three = require('three.js')
 
 // default field of view
 var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
-var DeviceOrientationController = require('./DeviceOrientationController');
 
 /**
  * Creates a `PerspectiveCamera' instance

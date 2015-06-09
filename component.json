@@ -21,7 +21,12 @@
     "projection/fisheye.js",
     "projection/equilinear.js",
     "projection/tinyplanet.js",
-    "projection/mirrorball.js"
+    "projection/mirrorball.js",
+
+    "controls/touch.js",
+    "controls/keyboard.js",
+    "controls/controller.js",
+    "controls/orientation.js"
 
   ],
 

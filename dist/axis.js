@@ -156,8 +156,6 @@ Axis.THREE = three;
 require('three-canvas-renderer')(three);
 require('three-vr-effect')(three);
 
-var DeviceOrientationController = require('./DeviceOrientationController');
-
 // frame click threshold
 var FRAME_CLICK_THRESHOLD = constants.FRAME_CLICK_THRESHOLD;
 
@@ -216,7 +214,7 @@ function Axis (parent, opts) {
   /** Instance video DOM element. */
   this.video = this.domElement.querySelector('video');
 
-  this.video.onerror = console.log.bind(console)
+  this.video.onerror = console.error.bind(console);
 
   /** Axis' scene instance. */
   this.scene = null;
@@ -247,7 +245,6 @@ function Axis (parent, opts) {
   this.projection('fisheye', require('./projection/fisheye'));
   this.projection('equilinear', require('./projection/equilinear'));
   this.projection('tinyplanet', require('./projection/tinyplanet'));
-  this.projection('mirrorball', require('./projection/mirrorball'));
 
   // initialize projection
   this.projection(this.projections.current);
@@ -255,11 +252,20 @@ function Axis (parent, opts) {
   /** Axis' camera instance. */
   this.camera = createCamera(this);
 
+  /** Current axis orientation. */
+  this.orientation = {x: 0, y: 0, z: 0};
+
   /** Axis' controls. */
   this.controls = {
     mouse: require('./controls/mouse')(this),
-    keyboard: require('./controls/keyboard')(this)
+    touch: require('./controls/touch')(this),
+    keyboard: require('./controls/keyboard')(this),
+    orientation: require('./controls/orientation')(this)
   };
+
+  this.controls.default = (
+    require('./controls/controller')(this).enable().target(this.camera)
+  );
 
   /**
    * Sets an attribute on the instance's
@@ -417,6 +423,14 @@ Axis.prototype.oncanplaythrough = function (e) {
   this.debug('oncanplaythrough');
   this.state.duration = this.video.duration;
 
+  if (null == this.texture) {
+    this.texture = new three.Texture(this.video);
+    this.texture.format = three.RGBFormat;
+    this.texture.minFilter = three.LinearFilter;
+    this.texture.magFilter = three.LinearFilter;
+    this.texture.generateMipmaps = false;
+  }
+
   this.emit('canplaythrough', e);
   this.state.ready();
 
@@ -480,7 +494,7 @@ Axis.prototype.onplaying = function (e) {
  */
 
 Axis.prototype.onwaiting = function (e) {
-  this.debug('onwaiting');
+  this.debug('onwaiting', e);
   this.emit('wait', e);
 };
 
@@ -673,8 +687,8 @@ Axis.prototype.onmousemove = function (e) {
   var constraints = this.projections.constraints;
   var xOffset = 0;
   var yOffset = 0;
-  var x = this.state.x;
-  var y = this.state.y;
+  var x = this.state.pointerX;
+  var y = this.state.pointerY;
 
   if (true == this.state.isMousedown) {
     xOffset = e.pageX - this.state.dragstart.x;
@@ -693,9 +707,9 @@ Axis.prototype.onmousemove = function (e) {
       y -= yOffset;
     }
 
-    this.state.update('x', x);
-    this.state.update('y', y);
-    this.cache({x: x, y: y});
+    this.state.update('pointerX', x);
+    this.state.update('pointerY', y);
+    this.cache({pointerX: x, pointerY: y});
     this.emit('mousemove', e);
   }
 };
@@ -713,8 +727,8 @@ Axis.prototype.ontouchmove = function(e) {
   var xOffset = 0;
   var yOffset = 0;
   var touch = e.touches[0];
-  var x = this.state.x;
-  var y = this.state.y;
+  var x = this.state.pointerX;
+  var y = this.state.pointerY;
 
   if (false == this.state.isTouching) {
     return;
@@ -736,9 +750,9 @@ Axis.prototype.ontouchmove = function(e) {
       y -= yOffset;
     }
 
-    this.state.update('x', x);
-    this.state.update('y', y);
-    this.cache({x: x, y: y});
+    this.state.update('pointerX', x);
+    this.state.update('pointerY', y);
+    this.cache({pointerX: x, pointerY: y});
     this.emit('touchmove', e);
     this.refresh();
   }
@@ -831,6 +845,8 @@ Axis.prototype.src = function (src) {
     if (!isImage(src)) {
       this.video.src = src;
       this.video.load();
+    } else {
+      this.state.isImage = true;
     }
 
     this.emit('source', src);
@@ -972,8 +988,8 @@ Axis.prototype.refresh = function () {
   var video = this.video;
   var delta = 4;
   var now = Date.now();
-  var x = this.state.x;
-  var y = this.state.y;
+  var x = this.state.pointerX;
+  var y = this.state.pointerY;
 
   this.debug('refresh');
 
@@ -981,7 +997,7 @@ Axis.prototype.refresh = function () {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
       if (now - this.state.lastRefresh >= 32) {
         this.state.lastRefresh = now;
-        if ('undefined' != typeof this.texture) {
+        if (null != this.texture) {
           this.texture.needsUpdate = true;
         }
       }
@@ -1019,12 +1035,12 @@ Axis.prototype.refresh = function () {
       x = x + MAX_X_COORDINATE;
     }
 
-    this.state.update('x', x);
-    this.state.update('y', y);
+    this.state.update('pointerX', x);
+    this.state.update('pointerY', y);
     this.cache(this.coords());
   } else {
-    this.state.update('x', 90);
-    this.state.update('y', 0);
+    this.state.update('pointerX', 90);
+    this.state.update('pointerY', 0);
   }
 
   this.emit('refresh');
@@ -1114,29 +1130,7 @@ Axis.prototype.draw = function () {
   var camera = this.camera;
   var scene = this.scene;
   var sensor = this.state.vrPositionSensor;;
-  var dtor = Math.PI / 180; // degree to radian conversion
   var hmd = this.state.vrHMD;
-
-  // lat/lon coordinates
-  var lat = this.state.y;
-  var lon = this.state.x;
-
-  // euler angles
-  var theta = lon * dtor;
-  var phi = (90 - lat) * dtor;
-
-  // derive cartesian vector from euler angles
-  var x = radius * Math.sin(phi) * Math.cos(theta);
-  var y = radius * Math.cos(phi);
-  var z = radius * Math.sin(phi) * Math.sin(theta);
-
-  if (this.state.isMousedown ||
-      this.state.isKeydown ||
-        this.state.isTouching) {
-    //this.lookAt(x, y, z);
-    //this.state.x = this.camera.target.x
-    //this.state.y = this.camera.target.y
-  }
 
   if (this.state.isVREnabled) {
     if (hmd) {
@@ -1191,8 +1185,6 @@ Axis.prototype.draw = function () {
  */
 
 Axis.prototype.lookAt = function (x, y, z) {
-  var vec = new three.Vector3(x, y, z);
-
   if (this.camera) {
     x = this.camera.target.x = x;
     y = this.camera.target.y = y;
@@ -1232,16 +1224,10 @@ Axis.prototype.render = function () {
   }
 
   // initialize texture
-  if (false == this.state.isImage) {
-    this.texture = new three.Texture(this.video);
-    this.texture.format = three.RGBFormat;
-    this.texture.minFilter = three.LinearFilter;
-    this.texture.magFilter = three.LinearFilter;
-    this.texture.generateMipmaps = false;
-  } else {
-    this.texture = three.ImageUtils.loadTexture(this.src(),
-                                                null,
-                                                this.emit.bind(this, 'ready'));
+  if (this.state.isImage) {
+    this.texture = three.ImageUtils.loadTexture(this.src(), null, function () {
+      self.state.ready();
+    });
   }
 
   // initialize size
@@ -1400,9 +1386,9 @@ Axis.prototype.stop = function () {
 
 Axis.prototype.y = function (y) {
   if (null == y) {
-    return this.state.y;
+    return this.state.pointerY;
   }
-  this.state.update('y', y);
+  this.state.update('pointerY', y);
   return this;
 };
 
@@ -1415,9 +1401,9 @@ Axis.prototype.y = function (y) {
 
 Axis.prototype.x = function (x) {
   if (null == x) {
-    return this.state.x;
+    return this.state.pointerX;
   }
-  this.state.update('x', x);
+  this.state.update('pointerX', x);
   return this;
 };
 
@@ -1431,15 +1417,18 @@ Axis.prototype.x = function (x) {
 
 Axis.prototype.coords = function (x, y) {
   if (null == y && null == x) {
-    return {y: this.state.y, x: this.state.x}
+    return {
+      pointerY: this.state.pointerY,
+      pointerX: this.state.pointerX
+    };
   }
 
   if (null != y) {
-    this.state.update('y', y);
+    this.state.update('pointerY', y);
   }
 
   if (null != x) {
-    this.state.update('x', x);
+    this.state.update('pointerX', x);
   }
 
   return this;
@@ -1550,7 +1539,7 @@ Axis.prototype.fov = function (fov) {
   return this;
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./template.html":11,"./projection":12,"./camera":13,"./geometry":14,"./state":15,"./util":16,"./constants":17,"three-canvas-renderer":18,"three-vr-effect":19,"./DeviceOrientationController":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./projection/mirrorball":25,"./controls/mouse":26,"./controls/keyboard":27}],
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./template.html":11,"./projection":12,"./camera":13,"./geometry":14,"./state":15,"./util":16,"./constants":17,"three-canvas-renderer":18,"three-vr-effect":19,"./projection/flat":20,"./projection/fisheye":21,"./projection/equilinear":22,"./projection/tinyplanet":23,"./controls/mouse":24,"./controls/touch":25,"./controls/keyboard":26,"./controls/orientation":27,"./controls/controller":28}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
@@ -36552,8 +36541,8 @@ function parse(event) {
   }
 }
 
-}, {"event":28,"delegate":29}],
-28: [function(require, module, exports) {
+}, {"event":29,"delegate":30}],
+29: [function(require, module, exports) {
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
     prefix = bind !== 'addEventListener' ? 'on' : '';
@@ -36590,7 +36579,7 @@ exports.unbind = function(el, type, fn, capture){
   return fn;
 };
 }, {}],
-29: [function(require, module, exports) {
+30: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36634,8 +36623,8 @@ exports.unbind = function(el, type, fn, capture){
   event.unbind(el, type, fn, capture);
 };
 
-}, {"closest":30,"event":28}],
-30: [function(require, module, exports) {
+}, {"closest":31,"event":29}],
+31: [function(require, module, exports) {
 var matches = require('matches-selector')
 
 module.exports = function (element, selector, checkYoSelf, root) {
@@ -36656,8 +36645,8 @@ module.exports = function (element, selector, checkYoSelf, root) {
   }
 }
 
-}, {"matches-selector":31}],
-31: [function(require, module, exports) {
+}, {"matches-selector":32}],
+32: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36705,8 +36694,8 @@ function match(el, selector) {
   return false;
 }
 
-}, {"query":32}],
-32: [function(require, module, exports) {
+}, {"query":33}],
+33: [function(require, module, exports) {
 function one(selector, el) {
   return el.querySelector(selector);
 }
@@ -36867,8 +36856,8 @@ if (document.addEventListener) {
   document.addEventListener('webkitfullscreenchange', change('webkitIsFullScreen'));
 }
 
-}, {"emitter":33}],
-33: [function(require, module, exports) {
+}, {"emitter":34}],
+34: [function(require, module, exports) {
 
 /**
  * Expose `Emitter`.
@@ -37350,6 +37339,8 @@ Projections.prototype.apply = function (name) {
   if ('string' == typeof name && 'function' == typeof projection) {
     // set currently requested
     this.requested = name;
+    this.cancel();
+    this.initializeScene();
 
     // apply constraints
     if ('object' == typeof projection.constraints) {
@@ -37583,7 +37574,7 @@ exports.DEFAULT_FRICTION = 0.0025;
  * @type {Number}
  */
 
-exports.DEFAULT_KEY_PAN_SPEED = 8;
+exports.DEFAULT_KEY_PAN_SPEED = 16;
 
 /**
  * Animation factor unit applied to changes in
@@ -37655,7 +37646,7 @@ exports.MAX_WHEEL_DISTANCE = 500;
  * @type {Number}
  */
 
-exports.MIN_Y_COORDINATE = -85;
+exports.MIN_Y_COORDINATE = -360;
 
 /**
  * Maximum possible y coordinate
@@ -37778,7 +37769,6 @@ var three = require('three.js')
 
 // default field of view
 var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
-var DeviceOrientationController = require('./DeviceOrientationController');
 
 /**
  * Creates a `PerspectiveCamera' instance
@@ -37803,488 +37793,14 @@ module.exports = function (axis) {
   return axis.camera;
 };
 
-}, {"three.js":2,"./constants":17,"./DeviceOrientationController":20}],
-20: [function(require, module, exports) {
-
-var three = require('three.js');
-
-/**
- * -------
- * threeVR (https://github.com/richtr/threeVR)
- * -------
- *
- * W3C Device Orientation control (http://www.w3.org/TR/orientation-event/)
- * with manual user drag (rotate) and pinch (zoom) override handling
- *
- * Author: Rich Tibbett (http://github.com/richtr)
- * License: The MIT License
- *
-**/
-
-var DeviceOrientationController = module.exports = function ( object, domElement ) {
-
-	this.object = object;
-	this.element = domElement || document;
-
-	this.freeze = true;
-
-	this.enableManualDrag = true; // enable manual user drag override control by default
-	this.enableManualZoom = true; // enable manual user zoom override control by default
-
-	this.useQuaternions = true; // use quaternions for orientation calculation by default
-
-	this.deviceOrientation = {};
-	this.screenOrientation = window.orientation || 0;
-
-	// Manual rotate override components
-	var startX = 0, startY = 0,
-	    currentX = 0, currentY = 0,
-	    scrollSpeedX, scrollSpeedY,
-	    tmpQuat = new three.Quaternion();
-
-	// Manual zoom override components
-	var zoomStart = 1, zoomCurrent = 1,
-	    zoomP1 = new three.Vector2(),
-	    zoomP2 = new three.Vector2(),
-	    tmpFOV;
-
-	var CONTROLLER_STATE = {
-		AUTO: 0,
-		MANUAL_ROTATE: 1,
-		MANUAL_ZOOM: 2
-	};
-
-	var appState = CONTROLLER_STATE.AUTO;
-
-	var CONTROLLER_EVENT = {
-		CALIBRATE_COMPASS:  'compassneedscalibration',
-		SCREEN_ORIENTATION: 'orientationchange',
-		MANUAL_CONTROL:     'userinteraction', // userinteractionstart, userinteractionend
-		ZOOM_CONTROL:       'zoom',            // zoomstart, zoomend
-		ROTATE_CONTROL:     'rotate',          // rotatestart, rotateend
-	};
-
-	// Consistent Object Field-Of-View fix components
-	var startClientHeight = window.innerHeight,
-	    startFOVFrustrumHeight = 2000 * Math.tan( three.Math.degToRad( ( this.object.fov || 75 ) / 2 ) ),
-	    relativeFOVFrustrumHeight, relativeVerticalFOV;
-
-	var deviceQuat = new three.Quaternion();
-
-	var fireEvent = function () {
-		var eventData;
-
-		return function ( name ) {
-			eventData = arguments || {};
-
-			eventData.type = name;
-			eventData.target = this;
-
-			this.dispatchEvent( eventData );
-		}.bind( this );
-	}.bind( this )();
-
-	this.constrainObjectFOV = function () {
-		relativeFOVFrustrumHeight = startFOVFrustrumHeight * ( window.innerHeight / startClientHeight );
-
-		relativeVerticalFOV = three.Math.radToDeg( 2 * Math.atan( relativeFOVFrustrumHeight / 2000 ) );
-
-		this.object.fov = relativeVerticalFOV;
-	}.bind( this );
-
-	this.onDeviceOrientationChange = function ( event ) {
-		this.deviceOrientation = event;
-	}.bind( this );
-
-	this.onScreenOrientationChange = function () {
-		this.screenOrientation = window.orientation || 0;
-
-		fireEvent( CONTROLLER_EVENT.SCREEN_ORIENTATION );
-	}.bind( this );
-
-	this.onCompassNeedsCalibration = function ( event ) {
-		event.preventDefault();
-
-		fireEvent( CONTROLLER_EVENT.CALIBRATE_COMPASS );
-	}.bind( this );
-
-	this.onDocumentMouseDown = function ( event ) {
-		if ( this.enableManualDrag !== true ) return;
-
-		event.preventDefault();
-
-		appState = CONTROLLER_STATE.MANUAL_ROTATE;
-
-		this.freeze = true;
-
-		tmpQuat.copy( this.object.quaternion );
-
-		startX = currentX = event.pageX;
-		startY = currentY = event.pageY;
-
-		// Set consistent scroll speed based on current viewport width/height
-		scrollSpeedX = ( 1200 / window.innerWidth ) * 0.2;
-		scrollSpeedY = ( 800 / window.innerHeight ) * 0.2;
-
-		this.element.addEventListener( 'mousemove', this.onDocumentMouseMove, false );
-		this.element.addEventListener( 'mouseup', this.onDocumentMouseUp, false );
-
-		fireEvent( CONTROLLER_EVENT.MANUAL_CONTROL + 'start' );
-		fireEvent( CONTROLLER_EVENT.ROTATE_CONTROL + 'start' );
-	}.bind( this );
-
-	this.onDocumentMouseMove = function ( event ) {
-		currentX = event.pageX;
-		currentY = event.pageY;
-	}.bind( this );
-
-	this.onDocumentMouseUp = function ( event ) {
-		this.element.removeEventListener( 'mousemove', this.onDocumentMouseMove, false );
-		this.element.removeEventListener( 'mouseup', this.onDocumentMouseUp, false );
-
-		appState = CONTROLLER_STATE.AUTO;
-
-		this.freeze = false;
-
-		fireEvent( CONTROLLER_EVENT.MANUAL_CONTROL + 'end' );
-		fireEvent( CONTROLLER_EVENT.ROTATE_CONTROL + 'end' );
-	}.bind( this );
-
-	this.onDocumentTouchStart = function ( event ) {
-		event.preventDefault();
-		event.stopPropagation();
-
-		switch ( event.touches.length ) {
-			case 1: // ROTATE
-				if ( this.enableManualDrag !== true ) return;
-
-				appState = CONTROLLER_STATE.MANUAL_ROTATE;
-
-				this.freeze = true;
-
-				tmpQuat.copy( this.object.quaternion );
-
-				startX = currentX = event.touches[ 0 ].pageX;
-				startY = currentY = event.touches[ 0 ].pageY;
-
-				// Set consistent scroll speed based on current viewport width/height
-				scrollSpeedX = ( 1200 / window.innerWidth ) * 0.1;
-				scrollSpeedY = ( 800 / window.innerHeight ) * 0.1;
-
-				this.element.addEventListener( 'touchmove', this.onDocumentTouchMove, false );
-				this.element.addEventListener( 'touchend', this.onDocumentTouchEnd, false );
-
-				fireEvent( CONTROLLER_EVENT.MANUAL_CONTROL + 'start' );
-				fireEvent( CONTROLLER_EVENT.ROTATE_CONTROL + 'start' );
-
-				break;
-
-			case 2: // ZOOM
-				if ( this.enableManualZoom !== true ) return;
-
-				appState = CONTROLLER_STATE.MANUAL_ZOOM;
-
-				this.freeze = true;
-
-				tmpFOV = this.object.fov;
-
-				zoomP1.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
-				zoomP2.set( event.touches[ 1 ].pageX, event.touches[ 1 ].pageY );
-
-				zoomStart = zoomCurrent = zoomP1.distanceTo( zoomP2 );
-
-				this.element.addEventListener( 'touchmove', this.onDocumentTouchMove, false );
-				this.element.addEventListener( 'touchend', this.onDocumentTouchEnd, false );
-
-				fireEvent( CONTROLLER_EVENT.MANUAL_CONTROL + 'start' );
-				fireEvent( CONTROLLER_EVENT.ZOOM_CONTROL + 'start' );
-
-				break;
-		}
-	}.bind( this );
-
-	this.onDocumentTouchMove = function ( event ) {
-		switch( event.touches.length ) {
-			case 1:
-				currentX = event.touches[ 0 ].pageX;
-				currentY = event.touches[ 0 ].pageY;
-				break;
-
-			case 2:
-				zoomP1.set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
-				zoomP2.set( event.touches[ 1 ].pageX, event.touches[ 1 ].pageY );
-				break;
-		}
-	}.bind( this );
-
-	this.onDocumentTouchEnd = function ( event ) {
-		this.element.removeEventListener( 'touchmove', this.onDocumentTouchMove, false );
-		this.element.removeEventListener( 'touchend', this.onDocumentTouchEnd, false );
-
-		if ( appState === CONTROLLER_STATE.MANUAL_ROTATE ) {
-
-			appState = CONTROLLER_STATE.AUTO; // reset control state
-
-			this.freeze = false;
-
-			fireEvent( CONTROLLER_EVENT.MANUAL_CONTROL + 'end' );
-			fireEvent( CONTROLLER_EVENT.ROTATE_CONTROL + 'end' );
-
-		} else if ( appState === CONTROLLER_STATE.MANUAL_ZOOM ) {
-
-			this.constrainObjectFOV(); // re-instate original object FOV
-
-			appState = CONTROLLER_STATE.AUTO; // reset control state
-
-			this.freeze = false;
-
-			fireEvent( CONTROLLER_EVENT.MANUAL_CONTROL + 'end' );
-			fireEvent( CONTROLLER_EVENT.ZOOM_CONTROL + 'end' );
-
-		}
-	}.bind( this );
-
-	var createQuaternion = function () {
-
-		var finalQuaternion = new three.Quaternion();
-
-		var deviceEuler = new three.Euler();
-
-		var screenTransform = new three.Quaternion();
-
-		var worldTransform = new three.Quaternion( - Math.sqrt(0.5), 0, 0, Math.sqrt(0.5) ); // - PI/2 around the x-axis
-
-		var minusHalfAngle = 0;
-
-		return function ( alpha, beta, gamma, screenOrientation ) {
-
-			deviceEuler.set( beta, alpha, - gamma, 'YXZ' );
-
-			finalQuaternion.setFromEuler( deviceEuler );
-
-			minusHalfAngle = - screenOrientation / 2;
-
-			screenTransform.set( 0, Math.sin( minusHalfAngle ), 0, Math.cos( minusHalfAngle ) );
-
-			finalQuaternion.multiply( screenTransform );
-
-			finalQuaternion.multiply( worldTransform );
-
-			return finalQuaternion;
-
-		}
-
-	}();
-
-	var createRotationMatrix = function () {
-
-		var finalMatrix = new three.Matrix4();
-
-		var deviceEuler = new three.Euler();
-		var screenEuler = new three.Euler();
-		var worldEuler = new three.Euler( - Math.PI / 2, 0, 0, 'YXZ' ); // - PI/2 around the x-axis
-
-		var screenTransform = new three.Matrix4();
-
-		var worldTransform = new three.Matrix4();
-		worldTransform.makeRotationFromEuler(worldEuler);
-
-		return function (alpha, beta, gamma, screenOrientation) {
-
-			deviceEuler.set( beta, alpha, - gamma, 'YXZ' );
-
-			finalMatrix.identity();
-
-			finalMatrix.makeRotationFromEuler( deviceEuler );
-
-			screenEuler.set( 0, - screenOrientation, 0, 'YXZ' );
-
-			screenTransform.identity();
-
-			screenTransform.makeRotationFromEuler( screenEuler );
-
-			finalMatrix.multiply( screenTransform );
-
-			finalMatrix.multiply( worldTransform );
-
-			return finalMatrix;
-
-		}
-
-	}();
-
-	this.updateManualMove = function () {
-
-		var lat, lon;
-		var phi, theta;
-
-		var rotation = new three.Euler( 0, 0, 0, 'YXZ' );
-
-		var rotQuat = new three.Quaternion();
-		var objQuat = new three.Quaternion();
-
-		var tmpZ, objZ, realZ;
-
-		var zoomFactor, minZoomFactor = 1; // maxZoomFactor = Infinity
-
-		return function () {
-
-			objQuat.copy( tmpQuat );
-
-			if ( appState === CONTROLLER_STATE.MANUAL_ROTATE ) {
-
-				lat = ( startY - currentY ) * scrollSpeedY;
-				lon = ( startX - currentX ) * scrollSpeedX;
-
-				phi	 = three.Math.degToRad( lat );
-				theta = three.Math.degToRad( lon );
-
-				rotQuat.set( 0, Math.sin( theta / 2 ), 0, Math.cos( theta / 2 ) );
-
-				objQuat.multiply( rotQuat );
-
-				rotQuat.set( Math.sin( phi / 2 ), 0, 0, Math.cos( phi / 2 ) );
-
-				objQuat.multiply( rotQuat );
-
-				// Remove introduced z-axis rotation and add device's current z-axis rotation
-
-				tmpZ  = rotation.setFromQuaternion( tmpQuat, 'YXZ' ).z;
-				objZ  = rotation.setFromQuaternion( objQuat, 'YXZ' ).z;
-				realZ = rotation.setFromQuaternion( deviceQuat || tmpQuat, 'YXZ' ).z;
-
-				rotQuat.set( 0, 0, Math.sin( ( realZ - tmpZ  ) / 2 ), Math.cos( ( realZ - tmpZ ) / 2 ) );
-
-				tmpQuat.multiply( rotQuat );
-
-				rotQuat.set( 0, 0, Math.sin( ( realZ - objZ  ) / 2 ), Math.cos( ( realZ - objZ ) / 2 ) );
-
-				objQuat.multiply( rotQuat );
-
-				this.object.quaternion.copy( objQuat );
-
-			} else if ( appState === CONTROLLER_STATE.MANUAL_ZOOM ) {
-
-				zoomCurrent = zoomP1.distanceTo( zoomP2 );
-
-				zoomFactor = zoomStart / zoomCurrent;
-
-				if ( zoomFactor <= minZoomFactor ) {
-
-					this.object.fov = tmpFOV * zoomFactor;
-
-					this.object.updateProjectionMatrix();
-
-				}
-
-				// Add device's current z-axis rotation
-
-				if ( deviceQuat ) {
-
-					tmpZ  = rotation.setFromQuaternion( tmpQuat, 'YXZ' ).z;
-					realZ = rotation.setFromQuaternion( deviceQuat, 'YXZ' ).z;
-
-					rotQuat.set( 0, 0, Math.sin( ( realZ - tmpZ ) / 2 ), Math.cos( ( realZ - tmpZ ) / 2 ) );
-
-					tmpQuat.multiply( rotQuat );
-
-					this.object.quaternion.copy( tmpQuat );
-
-				}
-
-			}
-
-		};
-
-	}();
-
-	this.updateDeviceMove = function () {
-
-		var alpha, beta, gamma, orient;
-
-		var deviceMatrix;
-
-		return function () {
-
-			alpha  = three.Math.degToRad( this.deviceOrientation.alpha || 0 ); // Z
-			beta   = three.Math.degToRad( this.deviceOrientation.beta  || 0 ); // X'
-			gamma  = three.Math.degToRad( this.deviceOrientation.gamma || 0 ); // Y''
-			orient = three.Math.degToRad( this.screenOrientation       || 0 ); // O
-
-			// only process non-zero 3-axis data
-			if ( alpha !== 0 && beta !== 0 && gamma !== 0) {
-
-				if ( this.useQuaternions ) {
-
-					deviceQuat = createQuaternion( alpha, beta, gamma, orient );
-
-				} else {
-
-					deviceMatrix = createRotationMatrix( alpha, beta, gamma, orient );
-
-					deviceQuat.setFromRotationMatrix( deviceMatrix );
-
-				}
-
-				if ( this.freeze ) return;
-
-				this.object.quaternion.slerp( deviceQuat, 0.07 ); // smoothing
-				//this.object.quaternion.copy( deviceQuat );
-
-			}
-
-		};
-
-	}();
-
-	this.update = function () {
-		this.updateDeviceMove();
-
-		//if ( appState !== CONTROLLER_STATE.AUTO ) {
-			this.updateManualMove();
-		//}
-	};
-
-	this.connect = function () {
-		window.addEventListener( 'resize', this.constrainObjectFOV, false );
-
-		window.addEventListener( 'orientationchange', this.onScreenOrientationChange, false );
-		window.addEventListener( 'deviceorientation', this.onDeviceOrientationChange, false );
-
-		window.addEventListener( 'compassneedscalibration', this.onCompassNeedsCalibration, false );
-
-		this.element.addEventListener( 'mousedown', this.onDocumentMouseDown, false );
-		this.element.addEventListener( 'touchstart', this.onDocumentTouchStart, false );
-
-		this.freeze = false;
-	};
-
-	this.disconnect = function () {
-		this.freeze = true;
-
-		window.removeEventListener( 'resize', this.constrainObjectFOV, false );
-
-		window.removeEventListener( 'orientationchange', this.onScreenOrientationChange, false );
-		window.removeEventListener( 'deviceorientation', this.onDeviceOrientationChange, false );
-
-		window.removeEventListener( 'compassneedscalibration', this.onCompassNeedsCalibration, false );
-
-		this.element.removeEventListener( 'mousedown', this.onDocumentMouseDown, false );
-		this.element.removeEventListener( 'touchstart', this.onDocumentTouchStart, false );
-	};
-
-};
-
-DeviceOrientationController.prototype = Object.create( three.EventDispatcher.prototype );
-
-}, {"three.js":2}],
+}, {"three.js":2,"./constants":17}],
 14: [function(require, module, exports) {
 exports.cylinder = require('./cylinder');
 exports.sphere = require('./sphere');
 exports.plane = require('./plane');
 
-}, {"./cylinder":34,"./sphere":35,"./plane":36}],
-34: [function(require, module, exports) {
+}, {"./cylinder":35,"./sphere":36,"./plane":37}],
+35: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -38315,7 +37831,7 @@ module.exports = function sphere (axis) {
 };
 
 }, {"three.js":2}],
-35: [function(require, module, exports) {
+36: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -38343,7 +37859,7 @@ module.exports = function sphere (axis) {
 };
 
 }, {"three.js":2}],
-36: [function(require, module, exports) {
+37: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -38492,10 +38008,6 @@ function State (scope, opts) {
   var windowEvents = events(window, this);
   var documentEvents = events(document, this);
 
-  // initialize window events
-  windowEvents.bind('deviceorientation');
-  windowEvents.bind('orientationchange');
-
   // initialize document events
   documentEvents.bind('touch', 'onmousedown');
   documentEvents.bind('mousedown');
@@ -38515,9 +38027,6 @@ function State (scope, opts) {
   /**
    * State variables.
    */
-
-  /** Current device orientation in geographic coordinates. */
-  this.deviceorientation = {alpha: 0, beta: 0, gamma: 0};
 
   /** Percent of content loaded. */
   this.percentplayed = 0;
@@ -38601,13 +38110,10 @@ function State (scope, opts) {
   this.xAxisCenter = null;
 
   /** Y coordinate. */
-  this.y = 0;
+  this.pointerY = 0;
 
   /** X coordinate. */
-  this.x = 0;
-
-  /** Z coordinate. */
-  this.z = 0;
+  this.pointerX = 0;
 
   /** Current field of view. */
   this.fov = DEFAULT_FOV;
@@ -38698,46 +38204,7 @@ function State (scope, opts) {
   fullscreen.on('change', this.onfullscreenchange.bind(this));
 
   // handle updates
-  this.on('update', function (e) {
-    switch (e.key) {
-      case 'src':
-        this.isReady = false;
-        if (isImage(e.value)) {
-          this.isImage = true;
-        } else {
-          this.isImage = false;
-        }
-        break;
-
-      case 'x':
-      case 'y':
-      case 'z':
-        if (false == this.isMousedown &&
-            false == this.isKeydown &&
-            false == this.isTouching){ break; }
-
-        // (cof) coefficient of friction (0 >= mu >= 0.99)
-        var mu = this.friction = Math.max(MIN_FRICTION_VALUE,
-                                          Math.min(MAX_FRICTION_VALUE,
-                                                   this.friction));
-        // delta
-        var d = e.previous - e.value;
-        // value
-        var v = e.value;
-        // weight
-        var w = d * mu;
-        // tolerance
-        var t = Math.abs(d);
-
-        if (t < MAX_FRICTION_TOLERANCE) {
-          v += w;
-        }
-
-        // apply friction to x, y, z coordinates
-        this[e.key] = v;
-        break;
-    }
-  });
+  this.on('update', function (e) { });
 
   // init
   this.reset();
@@ -38792,7 +38259,6 @@ State.prototype.reset = function (overrides) {
    * State variables.
    */
 
-  this.deviceorientation = {alpha: 0, beta: 0, gamma: 0};
   this.percentplayed = 0;
   this.originalsize = {width: null, height: null};
   this.orientation = window.orientation || 0;
@@ -38809,11 +38275,11 @@ State.prototype.reset = function (overrides) {
   this.animationFrameID = null;
   this.currentTime = 0;
   this.keys = {up: false, down: false, left: false, right: false};
-  this.y = 0;
-  this.x = 0;
-  this.z = 0;
+  this.pointerX = 0;
+  this.pointerY = 0;
   this.orientationQuaternion = new three.Quaternion();;
   this.xAxisCenter = new three.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+  this.lastKnownVector3 = new three.Vector3(0, 0, 0);
   this.zee = new three.Vector3(0, 0, 1);
   this.euler = new three.Euler();
 
@@ -39053,33 +38519,6 @@ State.prototype.pollForVRDevice = function () {
 };
 
 /**
- * Sets a quaternion from euler angles with
- * respect to screen orientation.
- *
- * @public
- * @param {Quaternion} quaternion - Quaternion to apply a rotation.
- * @param {Number} orientation - Screen orientation.
- * @param {Object} rotation.alpha - Alpha rotation.
- * @param {Object} rotation.beta - Beta rotation.
- * @param {Object} rotation.gamma - Beta rotation.
- */
-
-State.prototype.setRotationForQuaternion = function (quaternion,
-                                                     orientation,
-                                                     rotation) {
-  var alpha = rotation.alpha;
-  var beta = rotation.beta;
-  var gamma = rotation.gamma;
-
-  this.euler.set(beta, alpha, -gamma, 'YXZ');
-  this.orientationQuaternion.setFromAxisAngle(this.zee, -orientation);
-  quaternion.setFromEuler(this.euler);
-  quaternion.multiply(this.xAxisCenter);
-  quaternion.multiply(this.orientationQuaternion);
-}
-
-
-/**
  * Handles `onmousedown' events on the windows document.
  *
  * @private
@@ -39093,54 +38532,6 @@ State.prototype.onmousedown = function (e) {
   } else {
     this.update('isFocused', false);
   }
-};
-
-/**
- * Handles `ondeviceorientation' events on the window.
- *
- * @private
- * @param {Event} e
- * @fires module:axis~Axis#deviceorientation
- */
-
-State.prototype.ondeviceorientation = function (e) {
-  this.update('deviceorientation', {
-    alpha: e.alpha,
-    beta: e.beta,
-    gamma: e.gamma
-  });
-
-  /**
-   * Device orientation event.
-   *
-   * @public
-   * @event module:axis~Axis#deviceorientation
-   * @type {Event}
-   */
-
-  this.scope.emit('deviceorientation', e);
-};
-
-/**
- * Handles `orientationchange' events on the window.
- *
- * @private
- * @param {Event} e
- * @fires module:axis~Axis#orientationchange
- */
-
-State.prototype.onorientationchange = function (e) {
-  this.update('orientation', window.orientation);
-
-  /**
-   * Orientation change event.
-   *
-   * @public
-   * @event module:axis~Axis#orientationchange
-   * @type {Event}
-   */
-
-  self.emit('orientationchange', e);
 };
 
 /**
@@ -39167,8 +38558,8 @@ State.prototype.onfullscreenchange = function (e) {
   this.scope.emit('fullscreenchange', e);
 };
 
-}, {"emitter":4,"fullscreen":8,"keycode":9,"events":5,"three.js":2,"merge":10,"path":37,"./util":16,"./constants":17}],
-37: [function(require, module, exports) {
+}, {"emitter":4,"fullscreen":8,"keycode":9,"events":5,"three.js":2,"merge":10,"path":38,"./util":16,"./constants":17}],
+38: [function(require, module, exports) {
 
 exports.basename = function(path){
   return path.split('/').pop();
@@ -39278,7 +38669,7 @@ function getVRDevices (fn) {
   }
 }
 
-}, {"three.js":2,"path":37}],
+}, {"three.js":2,"path":38}],
 18: [function(require, module, exports) {
 
 /**
@@ -40663,7 +40054,7 @@ module.exports = function (THREE) {
 };
 
 }, {}],
-21: [function(require, module, exports) {
+20: [function(require, module, exports) {
 
 'use strict';
 
@@ -40753,7 +40144,7 @@ function flat (axis) {
 };
 
 }, {}],
-22: [function(require, module, exports) {
+21: [function(require, module, exports) {
 
 'use strict';
 
@@ -40805,6 +40196,7 @@ var constants = require('../constants')
 
 // animation factor
 var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
+var DEFAULT_FOV = constants.DEFAULT_FOV;
 
 /**
  * Fisheye projection constraints.
@@ -40839,69 +40231,30 @@ function fisheye (axis) {
   // projection is only supported in a spherical geometry
   if ('cylinder' == axis.geometry()) { return; }
 
-  if ('mirrorball' == axis.projection()) {
-    this.apply('equilinear');
-  }
-
   // max Z and FOV
   var maxZ = (axis.height() / 100) | 0;
-  var maxFov = 75;
+  var fov = DEFAULT_FOV + 20;
+  var rotation = new three.Vector3(0, 0, 0);
 
-  if ('mirrorball' == axis.projection() || 'tinyplanet' == axis.projection()) {
-    // position latitude at equator
-    axis.x(0);
+  if ('tinyplanet' != axis.projections.current) {
+    rotation.x = camera.position.x;
+    rotation.y = camera.position.y;
+    rotation.z = camera.position.z;
   }
 
   // begin animation
   axis.debug("animate: FISHEYE begin");
   this.animate(function () {
-    var fov = axis.fov();
-    var y = axis.state.y;
-    var x = axis.state.x;
-
-    axis.debug("animate: FISHEYE maxFov=%d maxZ=%d fov=%d z=%d, y=%d",
-               maxFov, maxZ, fov, camera.position.z, y);
-
-    // cancel when we've reached max field of view
-    if (maxFov == axis.fov() && 0 == x && 0 == y) {
-      axis.debug("animate: FISHEYE end");
-      return this.cancel();
-    }
-
-    // normalize field of view
-    if (fov < maxFov) {
-      axis.fov(Math.min(maxFov, axis.fov() + ANIMATION_FACTOR));
-    } else if (fov > maxFov) {
-      axis.fov(Math.min(maxFov, axis.fov() - ANIMATION_FACTOR));
-    }
-
-    // normalize z coordinate
-    if (camera.position.z < maxZ) {
-      camera.position.z++;
-      camera.position.z = Math.min(maxZ, camera.position.z);
-    } else if (camera.position.z > maxZ) {
-      camera.position.z--;
-      camera.position.z = Math.max(maxZ, camera.position.z);
-    }
-
-    // normalize y coordinate
-    if (y > 0) {
-      axis.y(Math.max(0, y - ANIMATION_FACTOR));
-    } else if (y < 0) {
-      axis.y(Math.min(0, y + ANIMATION_FACTOR));
-    }
-
-    // normalize x coordinate
-    if (x > 0) {
-      axis.x(Math.max(0, x - ANIMATION_FACTOR));
-    } else if (x < 0) {
-      axis.x(Math.min(0, x + ANIMATION_FACTOR));
-    }
+    axis.fov(fov);
+    axis.camera.position.z = maxZ;
+    axis.lookAt(rotation.x, rotation.y, rotation.z);
+    axis.orientation.x = (Math.PI/180);
+    this.cancel();
   });
 };
 
 }, {"three.js":2,"../constants":17}],
-23: [function(require, module, exports) {
+22: [function(require, module, exports) {
 
 'use strict';
 
@@ -40997,80 +40350,33 @@ function equilinear (axis) {
   // bail if content sizing is incorrect
   if (false == this.contentHasCorrectSizing()) { return; }
 
-  // initializes scene
-  this.initializeScene();
-
-  // initialize camera
-  createCamera(axis);
-
-  // cancel current projection animations
-  this.cancel();
-
-  // max FOV for animating
-  var maxFov = DEFAULT_FOV;
-
-  // current fov
-  var fov = axis.fov();
-
-  // zoom offset where applicable
+  var fov = DEFAULT_FOV;
   var zoom = CYLINDRICAL_ZOOM;
+  var rotation = new three.Vector3(0, 0, 0);
+
+  if ('tinyplanet' != axis.projections.current) {
+    rotation.x = camera.position.x;
+    rotation.y = camera.position.y;
+    rotation.z = camera.position.z;
+  }
 
   // apply zoom to cylinder geometry type
   if ('cylinder' == axis.geometry()) {
-    maxFov += zoom;
-    axis.fov(fov += zoom);
-  }
-
-  if ('tinyplanet' == axis.projection() || this.isMirrorBall()) {
-    axis.x(0);
-  }
-
-  // bail if projection is mirror ball
-  if (this.isMirrorBall()) {
-    return;
+    fov += zoom;
   }
 
   // animate
   axis.debug("animate: EQUILINEAR begin");
   this.animate(function () {
-    var y = axis.state.y;
-
-    axis.debug("animate: EQUILINEAR maxFov=%d fov=%d y=%d",
-               maxFov, axis.fov(), axis.y());
-
-    // cancel animation if max fov reached and
-    // latitude has reached equator
-    if (maxFov == axis.fov() && 0 == axis.y()) {
-      axis.debug("animate: EQUILINEAR end");
-      return this.cancel();
-    }
-
-    // normalize field of view value
-    if (fov > maxFov) {
-      fov = Math.max(fov - ANIMATION_FACTOR, maxFov);
-    } else if (fov < maxFov) {
-      fov = Math.min(fov + ANIMATION_FACTOR, maxFov);
-    } else {
-      fov = maxFov;
-    }
-
-    // prevent negative field of view
-    if (fov < 0) { fov = 0; }
-
-    // update field of view
     axis.fov(fov);
-
-    // normalize y coordinate
-    if (y > 0) {
-      axis.y(Math.max(0, y - ANIMATION_FACTOR));
-    } else if (y < 0) {
-      axis.y(Math.min(0, y + ANIMATION_FACTOR));
-    }
+    axis.lookAt(rotation.x, rotation.y, rotation.z);
+    axis.orientation.x = Math.PI/180;
+    this.cancel();
   });
 };
 
-}, {"raf":6,"three.js":2,"../constants":17,"../camera":13,"../geometry/plane":36,"../geometry/sphere":35,"../geometry/cylinder":34}],
-24: [function(require, module, exports) {
+}, {"raf":6,"three.js":2,"../constants":17,"../camera":13,"../geometry/plane":37,"../geometry/sphere":36,"../geometry/cylinder":35}],
+23: [function(require, module, exports) {
 
 'use strict';
 
@@ -41155,6 +40461,7 @@ function tinyplanet (axis) {
   // this projection requires an already initialized
   // camera on the `Axis' instance
   var camera = axis.camera;
+  var rotation = new three.Vector3(0, 0, 0);
 
   // bail if camera not initialized
   if (null == camera) { return; }
@@ -41189,192 +40496,35 @@ function tinyplanet (axis) {
 
   // begin animation
   axis.debug("animate: TINY_PLANET begin");
-  constraints.y = false;;
+  constraints.x = true;
+  constraints.y = false;
+  rotation.x = camera.target.x || 0;
+  rotation.y = camera.target.y || 0;
+  rotation.z = camera.target.z || -1;
   this.animate(function () {
-    var y = axis.y();
+    var y = rotation.y;
     axis.debug("animate: TINY_PLANET y=%d", y);
     if (y > MIN_Y_COORDINATE) {
 
       if (y > MIN_Y_COORDINATE) {
-        axis.y(y -ANIMATION_FACTOR);
+        rotation.y = y -ANIMATION_FACTOR;
       } else {
-        axis.y(MIN_Y_COORDINATE);
+        rotation.y = MIN_Y_COORDINATE;
       }
     } else {
+      axis.orientation.x = -Infinity;
+      constraints.x = false;
       constraints.y = true;
       axis.debug("animate: TINY_PLANET end");
       this.cancel();
     }
+
+    axis.lookAt(rotation.x, rotation.y, rotation.z);
   });
 };
 
 }, {"three.js":2,"../constants":17}],
-25: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The mirror ball projection mode.
- *
- * @public
- * @module axis/projection/mirrorball
- * @type {Function}
- */
-
-/**
- * Module dependencies
- * @private
- */
-
-var three = require('three.js')
-
-/**
- * Mirror ball projection constraints.
- *
- * @public
- * @type {Object}
- */
-
-var constraints = mirrorball.constraints = {
-  keys: {up: true, down: true}
-};
-
-/**
- * Applies a special mirror ball projection
- * to Axis frame
- *
- * @api public
- * @param {Axis} axis
- */
-
-module.exports = mirrorball;
-function mirrorball (axis) {
-
-  // this projection requires an already initialized
-  // camera on the `Axis' instance
-  var camera = axis.camera;
-
-  // bail if camera not present
-  if (null == camera) { return; }
-
-  // bail if not ready
-  if (false == this.isReady()) { return; }
-
-  // bail if content sizing is incorrect
-  if (false == this.contentHasCorrectSizing()) { return; }
-
-  // bail if geometry is a cylinder because mirrow ball
-  // projection is only supported in a spherical geometry
-  if ('cylinder' == axis.geometry()) { return; }
-
-  // initialize new scene
-  var scene = new three.Scene();
-
-  // create geometry
-  var geometry = new three.SphereGeometry(30, 32, 32);
-
-  // create light
-  var light = new three.DirectionalLight(0xffffff, 1);
-
-  // initialize material with texture
-  var material = new three.MeshPhongMaterial({
-    shininess: 50,
-    specular: 0x050505,
-    ambient: 0xffffff,
-    color: 0xffffff,
-    map: axis.texture
-  });
-
-  // notify texture of needed update
-  axis.texture.needsUpdate = true;
-
-  // set currenty geometry type
-  axis.state.update('geometry', 'sphere');
-
-  // initialize mesh
-  var mesh = new three.Mesh(geometry, material);
-
-  // new field of view
-  var fov = 20;
-  var controls = null;
-
-  // initialize controls if allowed
-  if (axis.state.allowControls) {
-    controls = new three.OrbitControls(camera, axis.el);
-    controls.minDistance = 75;
-    controls.maxDistance = 200;
-    controls.noPan = true;
-    controls.noZoom = true;
-    axis.controls = controls;
-  }
-
-  // add camera to new scene
-  scene.add(camera);
-
-  // update field of view
-  axis.fov(fov);
-
-  // configure camera
-  camera.near = 1;
-  camera.far = 1000;
-  camera.setLens(axis.height() * .5);
-  camera.updateProjectionMatrix();
-
-  // confiure lighting
-  light.position.set(5,5,5);
-  light.castShadow = true;
-  light.shadowCameraNear = 0.01;
-  light.shadowCameraNeardowCameraFar = 15;
-  light.shadowCameraFov = 45;
-  light.shadowCameraLeft =15 -1;
-  light.shadowCameraRight =  1;
-  light.shadowCameraTop =  1;
-  light.shadowCameraBottom = -1;
-  light.shadowBias = 0.001;
-  light.shadowDarkness = 0.2;
-  light.shadowCameraTopadowMapWidth = 1024;
-  light.shadowMapHeight = 1024;
-
-  // add light to scene
-  scene.add(light);
-
-  // add mesh to scene
-  scene.add(mesh);
-
-  // add ambient light
-  scene.add(new three.AmbientLight(0xffffff));
-
-  // set new scene
-  axis.scene = scene;
-};
-
-
-}, {"three.js":2}],
-26: [function(require, module, exports) {
+24: [function(require, module, exports) {
 
 'use strict';
 
@@ -41416,9 +40566,7 @@ void module.exports;
  * @private
  */
 
-var raf = require('raf')
-  , three = require('three.js')
-  , inherits = require('inherits')
+var inherits = require('inherits')
 
 /**
  * Local dependencies.
@@ -41426,14 +40574,6 @@ var raf = require('raf')
  */
 
 var AxisController = require('./controller')
-
-/**
- * (PI / 2) constant value reference with a 5 degree
- * offset to prevent locking.
- * @private
- */
-
-var PI2 = ((Math.PI/2) * (180/Math.PI) - 5) * (Math.PI/180);
 
 /**
  * Normalizes properties in an Event object and
@@ -41558,16 +40698,6 @@ function MouseController (scope) {
   this.state.isMousedown = false;
 
   /**
-   * Force update predicate.
-   *
-   * @public
-   * @name state.forceUpdate
-   * @type {Boolean}
-   */
-
-  this.state.forceUpdate = false;
-
-  /**
    * Mouseup timeout ID
    *
    * @public
@@ -41634,9 +40764,7 @@ MouseController.prototype.onmousemove = function (e) {
   // normalized movements from event
   normalizeMovements(e, movements);
 
-  // update controller orientation
-  orientation.y -= movements.x * friction;
-  orientation.x -= movements.y * friction;
+  this.pan(movements);
 };
 
 /**
@@ -41650,21 +40778,13 @@ MouseController.prototype.onmousemove = function (e) {
 
 MouseController.prototype.reset = function () {
   clearTimeout(this.state.mouseupTimeout);
-
-  this.state.quaternions.x.set(0, 0, 0, 0);
-  this.state.quaternions.y.set(0, 0, 0, 0);
-  this.state.vectors.x.set(1, 0, 0);
-  this.state.vectors.y.set(0, 1, 0);
+  AxisController.prototype.reset.call(this);
+  this.state.isMousedown = false;
+  this.state.mouseupTimeout = 0;
   this.state.movementsStart.x = 0;
   this.state.movementsStart.y = 0;
-  this.state.orientation.x = 0;
-  this.state.orientation.y = 0;
   this.state.movements.x = 0;
   this.state.movements.y = 0;
-  this.state.isMousedown = false;
-  this.state.forceUpdate = false;
-  this.state.mouseupTimeout = 0;
-
   return this;
 };
 
@@ -41678,46 +40798,13 @@ MouseController.prototype.reset = function () {
  */
 
 MouseController.prototype.update = function () {
-  var quaternions = this.state.quaternions;
-  var orientation = this.state.orientation;
-  var vectors = this.state.vectors;
-  var target = this.state.target;
-  var friction = this.scope.state.friction;
-  var interpolationFactor = this.scope.state.interpolationFactor;
-  var pi2 = PI2*.08;
-
-  // update only if enabled.
-  if ((false == this.state.forceUpdate) &&
-      (false == this.state.isEnabled ||
-       false == this.state.isMousedown)) {
-    return this;
-  }
-
-  // normalize x orientation
-  orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
-
-  // update controller quaternions
-  quaternions.x.setFromAxisAngle(vectors.x, orientation.x);
-  quaternions.y.setFromAxisAngle(vectors.y, orientation.y);
-
-  // update target quaternion
-  if (this.scope.state.useSlerp) {
-    // perform a SLERP with y quaternion with a an
-    // interpolation factor
-    target.quaternion.slerp(quaternions.y, interpolationFactor);
-  } else {
-    // copy y quaternion values directly to target
-    target.quaternion.copy(quaternions.y);
-  }
-
-  // multiplty target quaternion with our x quaternion
-  target.quaternion.multiply(quaternions.x);
-
+  if (false == this.state.isMousedown) { return this; }
+  AxisController.prototype.update.call(this);
   return this;
 };
 
-}, {"raf":6,"three.js":2,"inherits":38,"./controller":39}],
-38: [function(require, module, exports) {
+}, {"inherits":39,"./controller":28}],
+39: [function(require, module, exports) {
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -41743,7 +40830,7 @@ if (typeof Object.create === 'function') {
 }
 
 }, {}],
-39: [function(require, module, exports) {
+28: [function(require, module, exports) {
 
 'use strict';
 
@@ -41787,6 +40874,14 @@ void module.exports;
 
 var three = require('three.js')
   , events = require('events')
+
+/**
+ * (PI / 2) constant value reference with a 5 degree
+ * offset to prevent locking.
+ * @private
+ */
+
+var PI2 = ((Math.PI/2) * (180/Math.PI) - 5) * (Math.PI/180);
 
 /**
  * AxisController constructor
@@ -41895,7 +40990,10 @@ function AxisController (scope, domElement) {
      * @type {Number}
      */
 
-    theta: 0,
+    get theta () {
+      var x = self.state.orientation.x;
+      return x * (Math.PI / 180);
+    },
 
     /**
      * Phi value
@@ -41904,7 +41002,10 @@ function AxisController (scope, domElement) {
      * @type {Number}
      */
 
-    phi: 0,
+    get phi () {
+      var y = self.state.orientation.y;
+      return (90 - y) * (Math.PI / 180);
+    },
 
     /**
      * Theta delta value
@@ -42192,21 +41293,63 @@ function AxisController (scope, domElement) {
        * @type {THREE.Quaternion}
        */
 
-      get directionInverse () {
-        return self.state.quaternions.direction.clone().inverse();
-      }
+      directionInverse: new three.Quaternion(),
+
+      /**
+       * Screen rotation quaternion.
+       *
+       * @public
+       * @name state.quaternions.screen
+       * @type {THREE.Quaternion}
+       */
+
+      screen: new three.Quaternion(),
+
+      /**
+       * World rotation quaternion
+       *
+       * @public
+       * @name state.quaternions.world
+       * @type {THREE.Quaternion}
+       */
+
+      world: new three.Quaternion(-Math.sqrt(0.5),
+                                  0,
+                                  0,
+                                  Math.sqrt(0.5))
+    },
+
+    /**
+     * Named Euler angles.
+     *
+     * @public
+     * @name state.eulers
+     * @type {Object}
+     */
+
+    eulers: {
+
+      /**
+       * Current device Euler angle.
+       *
+       * @public
+       * @name state.eulers.device
+       * @type {THREE.Euler}
+       */
+
+      device: new three.Euler(),
     }
   };
 
   /**
-   * Mouse controller orientation.
+   * Controller orientation.
    *
    * @public
    * @name state.orientation
    * @type {Object}
    */
 
-  this.state.orientation = {
+  this.state.orientation = this.scope.orientation || {
 
     /**
      * X orientation coordinate.
@@ -42259,7 +41402,6 @@ function AxisController (scope, domElement) {
 
   this.events = events(this.domElement, this);
 
-
   // Update controller before rendering occurs on scope.
   scope.on('before:render', function () {
     self.update();
@@ -42295,17 +41437,45 @@ AxisController.prototype.disable = function () {
 };
 
 /**
- * Updates controller state. This is an abstract method
- * that must be implemented by the extender.
+ * Updates controller state.
  *
  * @public
- * @abstract
  * @method
  * @name update
  * @return {AxisController}
  */
 
 AxisController.prototype.update = function () {
+  var quaternions = this.state.quaternions;
+  var orientation = this.state.orientation;
+  var vectors = this.state.vectors;
+  var target = this.state.target;
+  var friction = this.scope.state.friction;
+  var interpolationFactor = this.scope.state.interpolationFactor;
+  var pi2 = PI2*.2;
+
+  // update only if enabled.
+  if (false == this.state.forceUpdate &&
+      false == this.state.isEnabled) {
+    return this;
+  }
+
+  // normalize x orientation
+  orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
+
+  // update controller quaternions
+  quaternions.x.setFromAxisAngle(vectors.x, orientation.x);
+  quaternions.y.setFromAxisAngle(vectors.y, orientation.y);
+
+  // update target quaternion
+  if (this.scope.state.useSlerp) {
+    target.quaternion.slerp(quaternions.y, interpolationFactor);
+  } else {
+    target.quaternion.copy(quaternions.y);
+  }
+
+  // multiplty target quaternion with our x quaternion
+  target.quaternion.multiply(quaternions.x);
   return this;
 };
 
@@ -42321,6 +41491,11 @@ AxisController.prototype.update = function () {
  */
 
 AxisController.prototype.reset = function () {
+  this.state.quaternions.x.set(0, 0, 0, 0);
+  this.state.quaternions.y.set(0, 0, 0, 0);
+  this.state.vectors.x.set(1, 0, 0);
+  this.state.vectors.y.set(0, 1, 0);
+  this.state.forceUpdate = false;
   return this;
 };
 
@@ -42356,6 +41531,9 @@ AxisController.prototype.target = function (target) {
   this.state.target = target;
   // initialize direction quaternion from targets up vector
   this.state.quaternions.direction.setFromUnitVectors(up, y);
+  this.state.quaternions.directionInverse = (
+    this.state.quaternions.direction.clone().inverse()
+  );
   return this;
 };
 
@@ -42374,52 +41552,250 @@ AxisController.prototype.target = function (target) {
 
 AxisController.prototype.pan = function (delta) {
   if (false == this.state.isEnabled) { return this; }
-  if ('object' != typeof delta) { throw new TypeError("Expecting object."); }
-  // target matrix
-  var matrix = this.state.target.matrix;
-  // the scopes DOM element
-  var element = this.scope.domElement;
-  // client height of DOM Element
-  var height = this.scope.domElement.clientHeight;
-  // target position which should be a camera
-  var position = this.state.target.position;
-  // get offset from position substracted from target vector
-  var offset = position.clone().sub(this.state.vectors.target);
-  // half of field of view is center to viewport
-  var fov2 = (this.state.target.fov / 2);
-  // get offset distance and normalize fov2 to radians
-  var distance = offset.length() * Math.tan(fov2 * (Math.PI /180));
-  // formulate X distance offset (2xd/h)
-  var X = 2 * delta.x * distance / height;
-  // formulate Y distance offset (2yd/h)
-  var Y = 2 * delta.y * distance / height;
+  if ('object' != typeof delta) {
+    throw new TypeError("Expecting object.");
+  }
+  var orientation = this.state.orientation;
+  var friction = this.scope.state.friction;
 
-  // apply X target matrix elements to pan offset
-  this.state.vectors.panOffset.set(matrix.elements[0],
-                                   matrix.elements[1],
-                                   matrix.elements[2]);
+  // update controller orientation
+  if (true != this.scope.state.isConstrainedWith('x')) {
+    orientation.y -= delta.x * friction;
+  }
 
-  // apply scalar multiplication of negative distance
-  this.state.vectors.panOffset.multiplyScalar(-distance);
+  if (true != this.scope.state.isConstrainedWith('y')) {
+    orientation.x -= delta.y * friction;
+  }
 
-  // add pan offset to pan vector
-  this.state.vectors.pan.add(this.state.vectors.panOffset);
-
-  // apply Y target matrix elements to pan offset
-  this.state.vectors.panOffset.set(matrix.elements[0],
-                                   matrix.elements[1],
-                                   matrix.elements[2]);
-
-  // apply scalar multiplication of positive distance
-  this.state.vectors.panOffset.multiplyScalar(distance);
-
-  // add pan offset to pan vector
-  this.state.vectors.pan.add(this.state.vectors.panOffset);
-  return this.update();
+  return this;
 };
 
 }, {"three.js":2,"events":5}],
-27: [function(require, module, exports) {
+25: [function(require, module, exports) {
+
+'use strict';
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The touch controls module.
+ *
+ * @module axis/controls/touch
+ * @type {Function}
+ */
+
+void module.exports;
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var inherits = require('inherits')
+  , three = require('three.js')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var AxisController = require('./controller')
+  , constants = require('../constants')
+
+/**
+ * Initializes touch controls on Axis.
+ *
+ * @public
+ * @param {Axis} scope - The axis instance
+ * @return {TouchController}
+ */
+
+module.exports = function touch (axis) {
+  return TouchController(axis)
+  .target(axis.camera)
+  .enable()
+  .update();
+};
+
+/**
+ * TouchController constructor
+ *
+ * @public
+ * @constructor
+ * @class TouchController
+ * @extends AxisController
+ * @see {@link module:axis/controls/controller~AxisController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.TouchController = TouchController;
+inherits(TouchController, AxisController);
+function TouchController (scope) {
+
+  // ensure instance
+  if (!(this instanceof TouchController)) {
+    return new TouchController(scope);
+  }
+
+  // inherit from `AxisController'
+  AxisController.call(this, scope, document);
+
+  /**
+   * Reference to this instance.
+   *
+   * @private
+   * @type {TouchController}
+   */
+
+  var self = this;
+
+  /**
+   * Predicate indicating if touching.
+   *
+   * @public
+   * @name state.isTouching
+   * @type {Boolean}
+   */
+
+  this.state.isTouching = false;
+
+  /**
+   * Drag state
+   *
+   * @public
+   * @name state.drag
+   * @type {Object}
+   */
+
+  this.state.drag = {
+
+    /**
+     * X coordinate drag state
+     *
+     * @public
+     * @name state.drag.x
+     * @type {Number}
+     */
+
+    x: 0,
+
+    /**
+     * Y coordinate drag state
+     *
+     * @public
+     * @name state.drag.y
+     * @type {Number}
+     */
+
+    y: 0
+  };
+
+  /**
+   * Current touchs
+   *
+   * @public
+   * @name state.touches
+   * @type {Array}
+   */
+
+  this.state.touches = [];
+
+  /**
+   * Current touch quaternion
+   *
+   * @public
+   * @name state.quaternions.touch
+   * @type {THREE.Quaternion}
+   */
+
+  this.state.quaternions.touch = new three.Quaternion();
+
+  // initialize event delegation
+  this.events.bind('touchstart');
+  this.events.bind('touchmove');
+  this.events.bind('touchend');
+  this.events.bind('touch');
+}
+
+/**
+ * Handle 'ontouchstart' event.
+ *
+ * @private
+ * @param {Event} e
+ */
+
+TouchController.prototype.ontouchstart = function (e) {
+  var touch = e.touches[0];
+  this.state.isTouching = true;
+  this.state.touches = e.touches;
+  this.state.drag.x = touch.pageX;
+  this.state.drag.y = touch.pageY;
+};
+
+/**
+ * Handle 'ontouchmove' event.
+ *
+ * @private
+ * @param {Event} e
+ */
+
+TouchController.prototype.ontouchmove = function (e) {
+  var touch = e.touches[0];
+  var x = touch.pageX - this.state.drag.x;
+  var y = touch.pageY - this.state.drag.y;
+  this.state.drag.x = touch.pageX;
+  this.state.drag.y = touch.pageY;
+  this.pan({x: x, y: y});
+};
+
+/**
+ * Handle 'ontouchend' event.
+ *
+ * @private
+ * @param {Event} e
+ */
+
+TouchController.prototype.ontouchend = function (e) {
+  this.state.isTouching = false;
+};
+
+/**
+ * Update touch controller state.
+ *
+ * @public
+ */
+
+TouchController.prototype.update = function () {
+  if (false == this.state.isTouching) { return this; }
+  AxisController.prototype.update.call(this);
+  this.state.quaternions.touch.copy(this.state.target.quaternion)
+  return this;
+};
+
+}, {"inherits":39,"three.js":2,"./controller":28,"../constants":17}],
+26: [function(require, module, exports) {
 
 'use strict';
 
@@ -42461,10 +41837,7 @@ void module.exports;
  * @private
  */
 
-var raf = require('raf')
-  , three = require('three.js')
-  , values = require('object').values
-  , keycode = require('keycode')
+var keycode = require('keycode')
   , inherits = require('inherits')
 
 /**
@@ -42492,7 +41865,8 @@ var EPSILON_VALUE = constants.EPSILON_VALUE;
 module.exports = function keyboard (axis) {
   return KeyboardController(axis)
   .target(axis.camera)
-  .enable();
+  .enable()
+  .update();
 };
 
 /**
@@ -42503,48 +41877,12 @@ module.exports = function keyboard (axis) {
  */
 
 var keycodes = module.exports.keycodes = {
-  'backspace': 8,
-  'tab': 9,
-  'enter': 13,
-  'shift': 16,
-  'ctrl': 17,
-  'alt': 18,
-  'pause/break': 19,
-  'caps lock': 20,
   'esc': 27,
   'space': 32,
-  'page up': 33,
-  'page down': 34,
-  'end': 35,
-  'home': 36,
   'left': 37,
   'up': 38,
   'right': 39,
-  'down': 40,
-  'insert': 45,
-  'delete': 46,
-  'command': 91,
-  'right click': 93,
-  'numpad *': 106,
-  'numpad +': 107,
-  'numpad -': 109,
-  'numpad .': 110,
-  'numpad /': 111,
-  'num lock': 144,
-  'scroll lock': 145,
-  'my computer': 182,
-  'my calculator': 183,
-  ';': 186,
-  '=': 187,
-  ',': 188,
-  '-': 189,
-  '.': 190,
-  '/': 191,
-  '`': 192,
-  '[': 219,
-  '\\': 220,
-  ']': 221,
-  "'": 222,
+  'down': 40
 };
 
 /**
@@ -42657,7 +41995,11 @@ function KeyboardController (scope) {
    * @default false
    */
 
-  this.state.isKeydown = false;
+  this.state.define('isKeydown', function () {
+    return Object.keys(self.state.keystate).some(function (code) {
+      return true == self.state.keystate[code];
+    });
+  });
 
   /**
    * Key panning speed in pixels
@@ -42678,28 +42020,19 @@ function KeyboardController (scope) {
   this.reset();
 
   this.use('up', function (data) {
-    if (data.isPressed) {
-      this.pan({x: 0, y: this.state.panSpeed});
-      this.update();
-    }
+    this.pan({x: 0, y: -this.state.panSpeed});
   });
 
   this.use('down', function (data) {
-    if (data.isPressed) {
-      this.pan({x: 0, y: -this.state.panSpeed});
-    }
+    this.pan({x: 0, y: this.state.panSpeed});
   });
 
   this.use('left', function (data) {
-    if (data.isPressed) {
-      this.pan({x: this.state.panSpeed, y: 0});
-    }
+    this.pan({x: -this.state.panSpeed * 2, y: 0});
   });
 
   this.use('right', function (data) {
-    if (data.isPressed) {
-      this.pan({x: -this.state.panSpeed, y: 0});
-    }
+    this.pan({x: this.state.panSpeed * 2, y: 0});
   });
 }
 
@@ -42713,7 +42046,11 @@ function KeyboardController (scope) {
  */
 
 KeyboardController.prototype.reset = function () {
-  this.state.isKeydown = false;
+  clearTimeout(this.state.keyupTimeout);
+  AxisController.prototype.reset.call(this);
+  Object.keys(this.state.keystate).forEach(function (code) {
+    this.state.keystate[code] = false;
+  }, this);
   return this;
 };
 
@@ -42734,118 +42071,18 @@ KeyboardController.prototype.update = function () {
   var position = this.state.target.position;
   var offset = this.state.vectors.offset;
 
-  // update only if enabled.
-  if ((false == this.state.forceUpdate) &&
-      (false == this.state.isEnabled ||
-       false == this.state.isKeydown)) {
-    return this;
-  }
-
+  if (false == this.state.isKeydown) { return this; }
   // call registered keycode handlers
   this.state.keycodes.forEach(function (code) {
-    var name = keyname(code);
-    var isPressed = Boolean(keystate[code]);
-    if (Array.isArray(handlers[code])) {
-      handlers[code].forEach(function (handle) {
-        if (isPressed) {
-          handle.call(this, {name: name, code: code});
-        }
-      }, this);
-    }
+    handlers[code].forEach(function (handle) {
+      var name = keyname(code);
+      if (this.state.keystate[code]) {
+        handle.call(this, {name: name, code: code});
+      }
+    }, this);
   }, this);
 
-  // copy current position to offset and subtract target vector
-  offset.copy(position).sub(this.state.vectors.target);
-
-  // apply rotation offset to direction quaternion
-  offset.applyQuaternion(this.state.quaternions.direction);
-
-  // set theta (angle from Z around Y)
-  this.state.theta = Math.atan2(offset.x, offset.z);
-
-  // set phi (angle from Y)
-  var n = offset.x * offset.x + offset.z * offset.z;
-  this.state.phi = Math.atan2(Math.sqrt(n), offset.y);
-
-  // update theta from delta
-  this.state.theta += this.state.thetaDelta;
-  this.state.phi += this.state.phiDelta;
-
-  // restrict the theta value to be between min and max Azimuth angles
-  this.state.theta = Math.max(this.state.minAzimuthAngle,
-                              Math.min(this.state.maxAzimuthAngle,
-                                       this.state.theta));
-
-  // restrict the phi value to be between min and max Azimuth angles
-  this.state.phi = Math.max(this.state.minPolarAngle,
-                            Math.min(this.state.maxPolarAngle,
-                                     this.state.phi));
-
-  // restrict the phi value to our epsilon and (PI - EPSILON_VALUE)
-  this.state.phi = Math.max(EPSILON_VALUE,
-                            Math.min(Math.PI - EPSILON_VALUE,
-                                     this.state.phi));
-
-  // calculate radius from offset distance with scale
-  var radius = offset.length() * this.state.scale;
-
-  // normalize radius between minimum and maximum distance
-  radius = Math.max(this.state.minDistance,
-                    Math.min(this.state.maxDistance, radius));
-
-  // add pan vector to target vector to move to panned location
-  this.state.vectors.target.add(this.state.vectors.pan);
-
-  // derive offset vector from euler angles
-  offset.x = radius * Math.sin(this.state.phi) * Math.sin(this.state.theta);
-  offset.y = radius * Math.cos(this.state.theta);
-  offset.z = radius * Math.sin(this.state.phi) * Math.cos(this.state.phi);
-
-  // apply inverse direction to offset for camera up
-  // and vector up space
-  offset.applyQuaternion(this.state.quaternions.directionInverse);
-
-  // copy target vector to current position adding
-  // offset vector in space
-  position.copy(this.state.vectors.target).add(offset);
-
-  // position 3D object vector at target vector
-  this.state.target.lookAt(this.state.vectors.target);
-
-  // reset deltas
-  this.state.thetaDelta = 0;
-  this.state.phiDelta = 0;
-
-  // reset scale
-  this.state.scale = 1;
-
-  // reset pan vector
-  this.state.vectors.pan.set(0, 0, 0);
-
-  var positionalDistanceSquared = (
-    lastPosition.distanceToSquared(this.state.target.position)
-  );
-
-  var lastQuaternionDotProduct = (
-    lastQuaternion.dot(this.state.target.quaternion)
-  );
-
-  // small angle approximation cos(x/2) = 1 - x^2 / 8
-  var smallAngleApproximation = (
-    8 * (1 - lastQuaternionDotProduct)
-  );
-
-  // borrowed from the lovely work of mrdoob
-  // @see https://github.com/mrdoob/three.js/blob/master/examples/js/controls/OrbitControls.js#L332-L339
-  if (positionalDistanceSquared > EPSILON_VALUE ||
-      smallAngleApproximation > EPSILON_VALUE) {
-    // copy current target position to last known position
-    lastPosition.copy(this.state.target.position);
-    // copy current target quaternion to last known quaternion
-    lastQuaternion.copy(this.state.target.quaternion);
-  }
-
-  return this;
+  return AxisController.prototype.update.call(this);
 };
 
 /**
@@ -42919,6 +42156,7 @@ KeyboardController.prototype.isKeySupported = function (key) {
 KeyboardController.prototype.onkeydown = function (e) {
   var constraints = this.scope.projections.constraints;
   var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused;
+  var handlers = this.state.handlers;
   var scope = this.scope;
   var code = e.which;
   var self = this;
@@ -42931,7 +42169,6 @@ KeyboardController.prototype.onkeydown = function (e) {
       return;
     }
 
-    this.state.isKeydown = true;
     this.state.keystate[code] = true;
 
     // prevent default actions
@@ -42960,101 +42197,219 @@ KeyboardController.prototype.onkeydown = function (e) {
 KeyboardController.prototype.onkeyup = function (e) {
   var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused;
   var code = e.which;
-  if (false == this.state.isEnabled) { return; }
-  this.state.isKeydown = false;
   this.state.keystate[code] = false;
   if (isFocused) {
     this.state.forceUpdate = true;
-    setTimeout(function () {
+    this.state.keyupTimeout = setTimeout(function () {
       this.state.forceUpdate = false;
     }.bind(this), 1000);
   }
 };
 
-}, {"raf":6,"three.js":2,"object":40,"keycode":9,"inherits":38,"./controller":39,"../constants":17}],
-40: [function(require, module, exports) {
+}, {"keycode":9,"inherits":39,"./controller":28,"../constants":17}],
+27: [function(require, module, exports) {
+
+'use strict';
 
 /**
- * HOP ref.
- */
-
-var has = Object.prototype.hasOwnProperty;
-
-/**
- * Return own keys in `obj`.
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
  *
- * @param {Object} obj
- * @return {Array}
- * @api public
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-exports.keys = Object.keys || function(obj){
-  var keys = [];
-  for (var key in obj) {
-    if (has.call(obj, key)) {
-      keys.push(key);
-    }
+/**
+ * The orientation controls module.
+ *
+ * @module axis/controls/orientation
+ * @type {Function}
+ */
+
+void module.exports;
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var keycode = require('keycode')
+  , inherits = require('inherits')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var AxisController = require('./controller')
+  , constants = require('../constants')
+
+/**
+ * Converts degrees to radians
+ *
+ * @private
+ * @param {Number} degrees
+ */
+
+function dtor (degrees) {
+  return 'number' == typeof degrees && degrees == degrees ?
+    (Math.PI / 180) * degrees : 0;
+}
+
+/**
+ * Initialize keyboard controls on Axis.
+ *
+ * @public
+ * @param {Axis} scope - The axis instance
+ * @return {OrientationController}
+ */
+
+module.exports = function orientation (axis) {
+  return OrientationController(axis)
+  .target(axis.camera)
+  .enable()
+  .update();
+};
+
+/**
+ * OrientationController constructor
+ *
+ * @public
+ * @constructor
+ * @class OrientationController
+ * @extends AxisController
+ * @see {@link module:axis/controls/controller~AxisController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.OrientationController = OrientationController;
+inherits(OrientationController, AxisController);
+function OrientationController (scope) {
+
+  // ensure instance
+  if (!(this instanceof OrientationController)) {
+    return new OrientationController(scope);
   }
-  return keys;
+
+  // inherit from `AxisController'
+  AxisController.call(this, scope, window);
+
+  /**
+   * Reference to this instance.
+   *
+   * @private
+   * @type {OrientationController}
+   */
+
+  var self = this;
+
+  /**
+   * The current device orientation angle in
+   * degrees.
+   *
+   * @public
+   * @name state.deviceOrientation
+   * @type {Number}
+   */
+
+  this.state.define('deviceOrientation', function () {
+    return window.orientation;
+  });
+
+  /**
+   * The current alpha angle rotation
+   *
+   * @public
+   * @name state.alpha
+   * @type {Number}
+   */
+
+  this.state.alpha = 0;
+
+  /**
+   * The current beta angle rotation
+   *
+   * @public
+   * @name state.beta
+   * @type {Number}
+   */
+
+  this.state.beta = 0;
+
+  /**
+   * The current gamma angle rotation
+   *
+   * @public
+   * @name state.gamma
+   * @type {Number}
+   */
+
+  this.state.gamma = 0;
+
+  // Initialize event delegation
+  this.events.bind('deviceorientation');
+}
+
+/**
+ * Handle 'ondeviceorientation' event.
+ *
+ * @private
+ * @param {Event} e
+ */
+
+OrientationController.prototype.ondeviceorientation = function (e) {
+  this.state.alpha = e.alpha;
+  this.state.beta = e.beta;
+  this.state.gamma = e.gamma;
 };
 
 /**
- * Return own values in `obj`.
+ * Update orientation controller state.
  *
- * @param {Object} obj
- * @return {Array}
- * @api public
+ * @public
  */
 
-exports.values = function(obj){
-  var vals = [];
-  for (var key in obj) {
-    if (has.call(obj, key)) {
-      vals.push(obj[key]);
+OrientationController.prototype.update = function () {
+  var alpha = dtor(this.state.alpha);
+  var beta = dtor(this.state.beta);
+  var gamma = dtor(this.state.gamma);
+  var orientation = dtor(this.state.deviceOrientation);
+  var angle = 0;
+
+  if (0 != alpha && 0 != beta && 0 != gamma) {
+    angle = - (this.state.deviceOrientation / 2);
+    this.state.eulers.device.set(beta, alpha, -gamma, 'YXZ');
+    this.state.quaternions.direction.setFromEuler(
+      this.state.eulers.device
+    );
+
+    if (this.scope.controls.touch) {
+      this.state.quaternions.direction.multiply(
+        this.scope.controls.touch.state.quaternions.touch
+      );
     }
+    //this.state.quaternions.direction.multiply(this.state.quaternions.device);
+    //this.state.quaternions.direction.multiply(this.state.quaternions.world);
+    //AxisController.prototype.update.call(this);
+    this.state.target.quaternion.slerp(this.state.quaternions.direction, 0.5);
   }
-  return vals;
+  return this;
 };
 
-/**
- * Merge `b` into `a`.
- *
- * @param {Object} a
- * @param {Object} b
- * @return {Object} a
- * @api public
- */
-
-exports.merge = function(a, b){
-  for (var key in b) {
-    if (has.call(b, key)) {
-      a[key] = b[key];
-    }
-  }
-  return a;
-};
-
-/**
- * Return length of `obj`.
- *
- * @param {Object} obj
- * @return {Number}
- * @api public
- */
-
-exports.length = function(obj){
-  return exports.keys(obj).length;
-};
-
-/**
- * Check if `obj` is empty.
- *
- * @param {Object} obj
- * @return {Boolean}
- * @api public
- */
-
-exports.isEmpty = function(obj){
-  return 0 == exports.length(obj);
-};
-}, {}]}, {}, {"1":"Axis"})
+}, {"keycode":9,"inherits":39,"./controller":28,"../constants":17}]}, {}, {"1":"Axis"})
