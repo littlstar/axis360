@@ -38,7 +38,8 @@
  * @private
  */
 
-var path = require('path')
+var three = require('three.js')
+  , path = require('path')
 
 /**
  * Detect if file path is an image

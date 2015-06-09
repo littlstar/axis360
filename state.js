@@ -43,6 +43,7 @@ var EventEmitter = require('emitter')
   , fullscreen = require('fullscreen')
   , keycode = require('keycode')
   , events = require('events')
+  , three = require('three.js')
   , merge = require('merge')
   , path = require('path')
 
@@ -67,6 +68,7 @@ var DEFAULT_FRICTION = constants.DEFAULT_FRICTION;
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY;
 var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS;
+var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
 
 /**
  * State constructor
@@ -100,6 +102,9 @@ var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS;
  * a video.
  * @param {Number} [opts.friction = DEFAULT_FRICTION] - Friction to
  * apply to x and y coordinates.
+ * @param {Number} [opts.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR] -
+ * Interpolation factor to apply to quaternion rotations.
+ * @param {Boolean} [opts.useSlerp = true] - Use spherical linear interpolations.
  */
 
 module.exports = State;
@@ -115,15 +120,9 @@ function State (scope, opts) {
   var windowEvents = events(window, this);
   var documentEvents = events(document, this);
 
-  // initialize window events
-  windowEvents.bind('deviceorientation');
-  windowEvents.bind('orientationchange');
-
   // initialize document events
   documentEvents.bind('touch', 'onmousedown');
   documentEvents.bind('mousedown');
-  documentEvents.bind('keydown');
-  documentEvents.bind('keyup');
 
   // ensure options can't be overloaded
   opts = Object.freeze(opts);
@@ -140,9 +139,6 @@ function State (scope, opts) {
   /**
    * State variables.
    */
-
-  /** Current device orientation in geographic coordinates. */
-  this.deviceorientation = {alpha: 0, beta: 0, gamma: 0};
 
   /** Percent of content loaded. */
   this.percentplayed = 0;
@@ -213,14 +209,23 @@ function State (scope, opts) {
   /** Friction to apply to x and y coordinates. */
   this.friction = DEFAULT_FRICTION;
 
+  /** Zee quaternion. */
+  this.zee = null;
+
+  /** Current euler rotation angles. */
+  this.euler = null;
+
+  /** Original quaternion. */
+  this.orientationQuaternion = null;
+
+  /** X axis center. */
+  this.xAxisCenter = null;
+
   /** Y coordinate. */
-  this.y = 0;
+  this.pointerY = 0;
 
   /** X coordinate. */
-  this.x = 0;
-
-  /** Z coordinate. */
-  this.z = 0;
+  this.pointerX = 0;
 
   /** Current field of view. */
   this.fov = DEFAULT_FOV;
@@ -233,6 +238,9 @@ function State (scope, opts) {
 
   /** Currently connected position sensor vr device. */
   this.vrPositionSensor = null;
+
+  /** Interpolation factor to apply to quaternion rotations. */
+  this.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR;
 
   /**
    * State predicates.
@@ -301,50 +309,14 @@ function State (scope, opts) {
   /** Predicate indicating if a video should autoplay. */
   this.shouldAutoplay = false;
 
+  /** Predicate indicating if slerp should be used. */
+  this.useSlerp = true;
+
   // listen for fullscreen changes
   fullscreen.on('change', this.onfullscreenchange.bind(this));
 
   // handle updates
-  this.on('update', function (e) {
-    switch (e.key) {
-      case 'src':
-        this.isReady = false;
-        if (isImage(e.value)) {
-          this.isImage = true;
-        } else {
-          this.isImage = false;
-        }
-        break;
-
-      case 'x':
-      case 'y':
-      case 'z':
-        if (false == this.isMousedown &&
-            false == this.isKeydown &&
-            false == this.isTouching){ break; }
-
-        // (cof) coefficient of friction (0 >= mu >= 0.99)
-        var mu = this.friction = Math.max(MIN_FRICTION_VALUE,
-                                          Math.min(MAX_FRICTION_VALUE,
-                                                   this.friction));
-        // delta
-        var d = e.previous - e.value;
-        // value
-        var v = e.value;
-        // weight
-        var w = d * mu;
-        // tolerance
-        var t = Math.abs(d);
-
-        if (t < MAX_FRICTION_TOLERANCE) {
-          v += w;
-        }
-
-        // apply friction to x, y, z coordinates
-        this[e.key] = v;
-        break;
-    }
-  });
+  this.on('update', function (e) { });
 
   // init
   this.reset();
@@ -390,12 +362,15 @@ State.prototype.reset = function (overrides) {
   this.shouldAutoplay = null != opts.autoplay ? opts.autoplay : false;
   this.allowWheel = null == opts.allowWheel ? false : opts.allowWheel;
   this.friction = opts.friction || DEFAULT_FRICTION;
+  this.useSlerp = opts.useSlerp || true;
+  this.interpolationFactor = (
+    opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR
+  );
 
   /**
    * State variables.
    */
 
-  this.deviceorientation = {alpha: 0, beta: 0, gamma: 0};
   this.percentplayed = 0;
   this.originalsize = {width: null, height: null};
   this.orientation = window.orientation || 0;
@@ -412,9 +387,13 @@ State.prototype.reset = function (overrides) {
   this.animationFrameID = null;
   this.currentTime = 0;
   this.keys = {up: false, down: false, left: false, right: false};
-  this.y = 0;
-  this.x = 0;
-  this.z = 0;
+  this.pointerX = 0;
+  this.pointerY = 0;
+  this.orientationQuaternion = new three.Quaternion();;
+  this.xAxisCenter = new three.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+  this.lastKnownVector3 = new three.Vector3(0, 0, 0);
+  this.zee = new three.Vector3(0, 0, 1);
+  this.euler = new three.Euler();
 
   /**
    * State predicates.
@@ -665,165 +644,6 @@ State.prototype.onmousedown = function (e) {
   } else {
     this.update('isFocused', false);
   }
-};
-
-/**
- * Handles `onkeydown' events on the windows document.
- *
- * @private
- * @param {Event} e
- * @fires module:axis~Axis#keydown
- */
-
-State.prototype.onkeydown = function (e) {
-  var constraints = this.scope.projections.constraints;
-  var focused = this.forceFocus || this.isFocused;
-  var scope = this.scope;
-  var code = e.which;
-  var self = this;
-
-  /**
-   * Detects keydown event with respect to
-   * the current projection constraints.
-   *
-   * @private
-   * @param {String} name
-   */
-
-  function detect (name) {
-    var tmp = {};
-    if (code == keycode(name)) {
-      if (null == constraints ||
-          null == constraints.keys ||
-          true != constraints.keys[name]) {
-        e.preventDefault();
-        tmp[name] = true;
-        self.update('keys', tmp);
-        self.update('isKeydown', true);
-        self.update('isAnimating', false);
-      }
-    }
-  }
-
-  if (focused) {
-    detect('up');
-    detect('down');
-    detect('left');
-    detect('right');
-
-    /**
-     * Key down event.
-     *
-     * @public
-     * @event module:axis~Axis#keydown
-     * @type {Event}
-     */
-
-    this.scope.emit('keydown', e);
-  }
-};
-
-/**
- * Handles `onkeyup' events on the windows document.
- *
- * @private
- * @param {Event} e
- * @fires module:axis~Axis#keyup
- */
-
-State.prototype.onkeyup = function (e) {
-  var constraints = this.scope.projections.constraints;
-  var focused = this.forceFocus || this.isFocused;
-  var scope = this.scope;
-  var code = e.which;
-  var self = this;
-
-  /**
-   * Detects keyup event with respect to
-   * the current projection constraints.
-   *
-   * @private
-   * @param {String} name
-   */
-
-  function detect (n) {
-    var tmp = {};
-    if (code == keycode(n)) {
-      if (null == constraints ||
-          null == constraints.keys ||
-          true != constraints.keys[n]) {
-        e.preventDefault();
-        tmp[n] = false;
-        self.update('isKeydown', false);
-        self.update('keys', tmp);
-      }
-    }
-  }
-
-  if (focused) {
-    detect('up');
-    detect('down');
-    detect('left');
-    detect('right');
-
-    /**
-     * Key up event.
-     *
-     * @public
-     * @event module:axis~Axis#keyup
-     * @type {Event}
-     */
-
-    this.scope.emit('keyup', e);
-  }
-};
-
-/**
- * Handles `ondeviceorientation' events on the window.
- *
- * @private
- * @param {Event} e
- * @fires module:axis~Axis#deviceorientation
- */
-
-State.prototype.ondeviceorientation = function (e) {
-  this.update('deviceorientation', {
-    alpha: e.alpha,
-    beta: e.beta,
-    gamma: e.gamma
-  });
-
-  /**
-   * Device orientation event.
-   *
-   * @public
-   * @event module:axis~Axis#deviceorientation
-   * @type {Event}
-   */
-
-  this.scope.emit('deviceorientation', e);
-};
-
-/**
- * Handles `orientationchange' events on the window.
- *
- * @private
- * @param {Event} e
- * @fires module:axis~Axis#orientationchange
- */
-
-State.prototype.onorientationchange = function (e) {
-  this.update('orientation', window.orientation);
-
-  /**
-   * Orientation change event.
-   *
-   * @public
-   * @event module:axis~Axis#orientationchange
-   * @type {Event}
-   */
-
-  self.emit('orientationchange', e);
 };
 
 /**

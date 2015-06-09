@@ -93,74 +93,27 @@ function equilinear (axis) {
   // bail if content sizing is incorrect
   if (false == this.contentHasCorrectSizing()) { return; }
 
-  // initializes scene
-  this.initializeScene();
-
-  // initialize camera
-  createCamera(axis);
-
-  // cancel current projection animations
-  this.cancel();
-
-  // max FOV for animating
-  var maxFov = DEFAULT_FOV;
-
-  // current fov
-  var fov = axis.fov();
-
-  // zoom offset where applicable
+  var fov = DEFAULT_FOV;
   var zoom = CYLINDRICAL_ZOOM;
+  var rotation = new three.Vector3(0, 0, 0);
+
+  if ('tinyplanet' != axis.projections.current) {
+    rotation.x = camera.position.x;
+    rotation.y = camera.position.y;
+    rotation.z = camera.position.z;
+  }
 
   // apply zoom to cylinder geometry type
   if ('cylinder' == axis.geometry()) {
-    maxFov += zoom;
-    axis.fov(fov += zoom);
-  }
-
-  if ('tinyplanet' == axis.projection() || this.isMirrorBall()) {
-    axis.x(0);
-  }
-
-  // bail if projection is mirror ball
-  if (this.isMirrorBall()) {
-    return;
+    fov += zoom;
   }
 
   // animate
   axis.debug("animate: EQUILINEAR begin");
   this.animate(function () {
-    var y = axis.state.y;
-
-    axis.debug("animate: EQUILINEAR maxFov=%d fov=%d y=%d",
-               maxFov, axis.fov(), axis.y());
-
-    // cancel animation if max fov reached and
-    // latitude has reached equator
-    if (maxFov == axis.fov() && 0 == axis.y()) {
-      axis.debug("animate: EQUILINEAR end");
-      return this.cancel();
-    }
-
-    // normalize field of view value
-    if (fov > maxFov) {
-      fov = Math.max(fov - ANIMATION_FACTOR, maxFov);
-    } else if (fov < maxFov) {
-      fov = Math.min(fov + ANIMATION_FACTOR, maxFov);
-    } else {
-      fov = maxFov;
-    }
-
-    // prevent negative field of view
-    if (fov < 0) { fov = 0; }
-
-    // update field of view
     axis.fov(fov);
-
-    // normalize y coordinate
-    if (y > 0) {
-      axis.y(Math.max(0, y - ANIMATION_FACTOR));
-    } else if (y < 0) {
-      axis.y(Math.min(0, y + ANIMATION_FACTOR));
-    }
+    axis.lookAt(rotation.x, rotation.y, rotation.z);
+    axis.orientation.x = Math.PI/180;
+    this.cancel();
   });
 };

@@ -67,7 +67,6 @@ var tpl = require('./template.html')
 Axis.THREE = three;
 require('three-canvas-renderer')(three);
 require('three-vr-effect')(three);
-three.OrbitControls = require('three-orbit-controls')(three);
 
 // frame click threshold
 var FRAME_CLICK_THRESHOLD = constants.FRAME_CLICK_THRESHOLD;
@@ -127,11 +126,10 @@ function Axis (parent, opts) {
   /** Instance video DOM element. */
   this.video = this.domElement.querySelector('video');
 
+  this.video.onerror = console.error.bind(console);
+
   /** Axis' scene instance. */
   this.scene = null;
-
-  /** Axis' camera instance. */
-  this.camera = null;
 
   /** Axis' renderer instance.*/
   this.renderer = opts.renderer || (
@@ -148,14 +146,38 @@ function Axis (parent, opts) {
   /** Axis' texture instance. */
   this.texture = null;
 
-  /** Axis' controls. */
-  this.controls = null;
-
   /** Axis' state instance. */
   this.state = new State(this, opts);
 
   /** Axis' projections instance. */
   this.projections = new Projection(this);
+
+  // install viewport projections
+  this.projection('flat', require('./projection/flat'));
+  this.projection('fisheye', require('./projection/fisheye'));
+  this.projection('equilinear', require('./projection/equilinear'));
+  this.projection('tinyplanet', require('./projection/tinyplanet'));
+
+  // initialize projection
+  this.projection(this.projections.current);
+
+  /** Axis' camera instance. */
+  this.camera = createCamera(this);
+
+  /** Current axis orientation. */
+  this.orientation = {x: 0, y: 0, z: 0};
+
+  /** Axis' controls. */
+  this.controls = {
+    mouse: require('./controls/mouse')(this),
+    touch: require('./controls/touch')(this),
+    keyboard: require('./controls/keyboard')(this),
+    orientation: require('./controls/orientation')(this)
+  };
+
+  this.controls.default = (
+    require('./controls/controller')(this).enable().target(this.camera)
+  );
 
   /**
    * Sets an attribute on the instance's
@@ -226,28 +248,17 @@ function Axis (parent, opts) {
   // initial volume
   this.volume(opts.volume || 1);
 
-  // install viewport projections
-  this.projection('flat', require('./projection/flat'));
-  this.projection('fisheye', require('./projection/fisheye'));
-  this.projection('equilinear', require('./projection/equilinear'));
-  this.projection('tinyplanet', require('./projection/tinyplanet'));
-  this.projection('mirrorball', require('./projection/mirrorball'));
-
-  // initializeCamera
-  createCamera(this);
-
-  // initialize projection
-  this.projection(this.projections.current);
-
   // initialize frame source
   this.src(opts.src);
 
   // init when ready
   this.once('ready', function () {
+    this.debug('ready');
     this.projection('equilinear');
   });
 
   this.on('fullscreenchange', function () {
+    this.debug('fullscreenchange');
     this.state.update('isFocused', true);
     this.state.update('isAnimating', false);
 
@@ -280,6 +291,7 @@ emitter(Axis.prototype);
  */
 
 Axis.prototype.onclick = function (e) {
+  this.debug('onclick');
   var now = Date.now();
   var timestamp = this.state.mousedownTimestamp;
   var isClickable = this.state.isClickable;
@@ -292,7 +304,6 @@ Axis.prototype.onclick = function (e) {
   }
 
   e.preventDefault();
-  e.stopPropagation();
 
   if (false == isImage) {
     if (isPlaying) {
@@ -321,7 +332,16 @@ Axis.prototype.onclick = function (e) {
  */
 
 Axis.prototype.oncanplaythrough = function (e) {
+  this.debug('oncanplaythrough');
   this.state.duration = this.video.duration;
+
+  if (null == this.texture) {
+    this.texture = new three.Texture(this.video);
+    this.texture.format = three.RGBFormat;
+    this.texture.minFilter = three.LinearFilter;
+    this.texture.magFilter = three.LinearFilter;
+    this.texture.generateMipmaps = false;
+  }
 
   this.emit('canplaythrough', e);
   this.state.ready();
@@ -343,6 +363,7 @@ Axis.prototype.oncanplaythrough = function (e) {
 
 Axis.prototype.onplay = function (e) {
   raf(function() {
+    this.debug('onplay');
     this.state.update('isPaused', false);
     this.state.update('isEnded', false);
     this.emit('play', e);
@@ -357,6 +378,7 @@ Axis.prototype.onplay = function (e) {
  */
 
 Axis.prototype.onpause = function (e) {
+  this.debug('onpause');
   this.state.update('isPaused', true);
   this.state.update('isPlaying', false);
   this.emit('pause', e);
@@ -370,6 +392,7 @@ Axis.prototype.onpause = function (e) {
  */
 
 Axis.prototype.onplaying = function (e) {
+  this.debug('onplaying');
   this.state.update('isPaused', false);
   this.state.update('isPlaying', true);
   this.emit('playing', e);
@@ -383,6 +406,7 @@ Axis.prototype.onplaying = function (e) {
  */
 
 Axis.prototype.onwaiting = function (e) {
+  this.debug('onwaiting', e);
   this.emit('wait', e);
 };
 
@@ -394,6 +418,7 @@ Axis.prototype.onwaiting = function (e) {
  */
 
 Axis.prototype.onloadstart = function (e) {
+  this.debug('onloadstart');
   this.emit('loadstart', e);
 };
 
@@ -407,13 +432,17 @@ Axis.prototype.onloadstart = function (e) {
 Axis.prototype.onprogress = function (e) {
   var video = this.video;
   var percent = 0;
+  this.debug('onprogress');
 
   try {
     percent = video.buffered.end(0) / video.duration;
   } catch (e) {
+    this.debug('error', e);
     try {
       percent = video.bufferedBytes / video.bytesTotal;
-    } catch (e) { }
+    } catch (e) {
+      this.debug('error', e);
+    }
   }
 
   e.percent = percent * 100;
@@ -429,6 +458,7 @@ Axis.prototype.onprogress = function (e) {
  */
 
 Axis.prototype.ontimeupdate = function (e) {
+  this.debug('ontimeupdate');
   e.percent = this.video.currentTime / this.video.duration * 100;
   this.state.update('duration', this.video.duration);
   this.state.update('currentTime', this.video.currentTime);
@@ -443,6 +473,7 @@ Axis.prototype.ontimeupdate = function (e) {
  */
 
 Axis.prototype.onended = function (e) {
+  this.debug('onended');
   this.state.update('isEnded', true);
   this.emit('end');
   this.emit('ended');
@@ -456,6 +487,7 @@ Axis.prototype.onended = function (e) {
  */
 
 Axis.prototype.onmousedown = function (e) {
+  this.debug('onmousedown');
   this.state.update('mousedownTimestamp', Date.now());
   this.state.update('isAnimating', false);
   this.state.update('dragstart', {x: e.pageX, y: e.pageY});
@@ -471,6 +503,7 @@ Axis.prototype.onmousedown = function (e) {
  */
 
 Axis.prototype.onmouseup = function (e) {
+  this.debug('onmouseup');
   this.state.update('isMousedown', false);
   this.emit('mouseup', e);
 };
@@ -484,6 +517,7 @@ Axis.prototype.onmouseup = function (e) {
 
 Axis.prototype.ontouchstart = function (e) {
   var touch = e.touches[0];
+  this.debug('ontouchstart');
   this.state.update('mousedownTimestamp', Date.now());
   this.state.update('isAnimating', false);
   this.state.update('dragstart', {x: touch.pageX, y: touch.pageY});
@@ -499,6 +533,7 @@ Axis.prototype.ontouchstart = function (e) {
  */
 
 Axis.prototype.ontouchend = function(e) {
+  this.debug('ontouchend');
   this.state.update('isTouching', false);
   this.emit('touchend', e);
 };
@@ -511,6 +546,7 @@ Axis.prototype.ontouchend = function(e) {
  */
 
 Axis.prototype.onresize = function (e) {
+  this.debug('onresize');
   var isResizable = this.state.isResizable;
   var isFullscreen = this.state.isFullscreen;
 
@@ -559,11 +595,12 @@ Axis.prototype.onresize = function (e) {
  */
 
 Axis.prototype.onmousemove = function (e) {
+  this.debug('onmousemove');
   var constraints = this.projections.constraints;
   var xOffset = 0;
   var yOffset = 0;
-  var x = this.state.x;
-  var y = this.state.y;
+  var x = this.state.pointerX;
+  var y = this.state.pointerY;
 
   if (true == this.state.isMousedown) {
     xOffset = e.pageX - this.state.dragstart.x;
@@ -582,9 +619,9 @@ Axis.prototype.onmousemove = function (e) {
       y -= yOffset;
     }
 
-    this.state.update('x', x);
-    this.state.update('y', y);
-    this.cache({x: x, y: y});
+    this.state.update('pointerX', x);
+    this.state.update('pointerY', y);
+    this.cache({pointerX: x, pointerY: y});
     this.emit('mousemove', e);
   }
 };
@@ -597,12 +634,13 @@ Axis.prototype.onmousemove = function (e) {
  */
 
 Axis.prototype.ontouchmove = function(e) {
+  this.debug('ontouchmove');
   var constraints = this.projections.constraints;
   var xOffset = 0;
   var yOffset = 0;
   var touch = e.touches[0];
-  var x = this.state.x;
-  var y = this.state.y;
+  var x = this.state.pointerX;
+  var y = this.state.pointerY;
 
   if (false == this.state.isTouching) {
     return;
@@ -624,9 +662,9 @@ Axis.prototype.ontouchmove = function(e) {
       y -= yOffset;
     }
 
-    this.state.update('x', x);
-    this.state.update('y', y);
-    this.cache({x: x, y: y});
+    this.state.update('pointerX', x);
+    this.state.update('pointerY', y);
+    this.cache({pointerX: x, pointerY: y});
     this.emit('touchmove', e);
     this.refresh();
   }
@@ -640,6 +678,7 @@ Axis.prototype.ontouchmove = function(e) {
  */
 
 Axis.prototype.onmousewheel = function (e) {
+  this.debug('onmousewheel');
   var velocity = this.state.scrollVelocity;
   var min = MIN_WHEEL_DISTANCE;
   var max = MAX_WHEEL_DISTANCE;
@@ -653,9 +692,9 @@ Axis.prototype.onmousewheel = function (e) {
   if (null != e.wheelDeltaY) { // chrome
     this.state.fov -= e.wheelDeltaY * velocity;
   } else if (null != e.wheelDelta ) { // ie
-    this.state.fov -= event.wheelDelta * vel;
+    this.state.fov -= event.wheelDelta * velocity;
   } else if (null != e.detail) { // firefox
-    this.state.fov += e.detail * 1.0;
+    this.state.fov += e.detail * velocity;
   }
 
   if (this.state.fov < min) {
@@ -678,6 +717,7 @@ Axis.prototype.onmousewheel = function (e) {
  */
 
 Axis.prototype.size = function (width, height) {
+  this.debug('size', width, height);
   this.state.width = width;
   this.state.height = height;
 
@@ -711,11 +751,14 @@ Axis.prototype.size = function (width, height) {
 
 Axis.prototype.src = function (src) {
   if (src) {
+    this.debug('src', src);
     this.state.update('src', src);
 
     if (!isImage(src)) {
       this.video.src = src;
       this.video.load();
+    } else {
+      this.state.isImage = true;
     }
 
     this.emit('source', src);
@@ -736,6 +779,7 @@ Axis.prototype.play = function () {
     if (true == this.state.isEnded) {
       this.seek(0);
     }
+    this.debug('play');
     this.video.play();
   }
   return this;
@@ -749,6 +793,7 @@ Axis.prototype.play = function () {
 
 Axis.prototype.pause = function () {
   if (false == this.state.isImage) {
+    this.debug('pause');
     this.video.pause();
   }
   return this;
@@ -780,6 +825,7 @@ Axis.prototype.fullscreen = function (el) {
     this.size(window.screen.width, window.screen.height);
   }
 
+  this.debug('fullscreen');
   this.state.update('isFullscreen', true);
   fullscreen(el || this.domElement, opts);
 };
@@ -796,6 +842,7 @@ Axis.prototype.volume = function (volume) {
     if (null == volume) {
       return this.video.volume;
     }
+    this.debug('volume', volume);
     this.state.update('lastVolume', this.video.volume);
     this.video.volume = volume
     this.emit('volume', volume);
@@ -811,6 +858,7 @@ Axis.prototype.volume = function (volume) {
  */
 
 Axis.prototype.mute = function (mute) {
+  this.debug('mute', mute);
   if (false == mute) {
     this.video.muted = false;
     this.state.update('isMuted', false);
@@ -852,14 +900,16 @@ Axis.prototype.refresh = function () {
   var video = this.video;
   var delta = 4;
   var now = Date.now();
-  var x = this.state.x;
-  var y = this.state.y;
+  var x = this.state.pointerX;
+  var y = this.state.pointerY;
+
+  this.debug('refresh');
 
   if (false == this.state.isImage) {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
       if (now - this.state.lastRefresh >= 32) {
         this.state.lastRefresh = now;
-        if ('undefined' != typeof this.texture) {
+        if (null != this.texture) {
           this.texture.needsUpdate = true;
         }
       }
@@ -897,12 +947,12 @@ Axis.prototype.refresh = function () {
       x = x + MAX_X_COORDINATE;
     }
 
-    this.state.update('x', x);
-    this.state.update('y', y);
+    this.state.update('pointerX', x);
+    this.state.update('pointerY', y);
     this.cache(this.coords());
   } else {
-    this.state.update('x', 90);
-    this.state.update('y', 0);
+    this.state.update('pointerX', 90);
+    this.state.update('pointerY', 0);
   }
 
   this.emit('refresh');
@@ -992,23 +1042,7 @@ Axis.prototype.draw = function () {
   var camera = this.camera;
   var scene = this.scene;
   var sensor = this.state.vrPositionSensor;;
-  var dtor = Math.PI / 180; // degree to radian conversion
   var hmd = this.state.vrHMD;
-
-  // lat/lon coordinates
-  var lat = this.state.y;
-  var lon = this.state.x;
-
-  // euler angles
-  var theta = lon * dtor;
-  var phi = (90 - lat) * dtor;
-
-  // derive cartesian vector from euler angles
-  var x = radius * Math.sin(phi) * Math.cos(theta);
-  var y = radius * Math.cos(phi);
-  var z = radius * Math.sin(phi) * Math.sin(theta);
-
-  this.lookAt(x, y, z);
 
   if (this.state.isVREnabled) {
     if (hmd) {
@@ -1034,9 +1068,11 @@ Axis.prototype.draw = function () {
     }
   }
 
-  if (this.controls && 'function' == typeof this.controls.update) {
-    this.controls.update();
+  if (this.orientation && 'function' == typeof this.orientation.update) {
+    this.orientation.update();
   }
+
+  this.emit('before:render');
 
   if (this.renderer && this.scene && this.camera) {
     if (this.state.isVREnabled) {
@@ -1061,10 +1097,7 @@ Axis.prototype.draw = function () {
  */
 
 Axis.prototype.lookAt = function (x, y, z) {
-  var vec = new three.Vector3(x, y, z);
-  var allowControls = this.state.allowControls;
-
-  if (this.camera && null == this.controls && true == allowControls) {
+  if (this.camera) {
     x = this.camera.target.x = x;
     y = this.camera.target.y = y;
     z = this.camera.target.z = z;
@@ -1103,16 +1136,10 @@ Axis.prototype.render = function () {
   }
 
   // initialize texture
-  if (false == this.state.isImage) {
-    this.texture = new three.Texture(this.video);
-    this.texture.format = three.RGBFormat;
-    this.texture.minFilter = three.LinearFilter;
-    this.texture.magFilter = three.LinearFilter;
-    this.texture.generateMipmaps = false;
-  } else {
-    this.texture = three.ImageUtils.loadTexture(this.src(),
-                                                null,
-                                                this.emit.bind(this, 'ready'));
+  if (this.state.isImage) {
+    this.texture = three.ImageUtils.loadTexture(this.src(), null, function () {
+      self.state.ready();
+    });
   }
 
   // initialize size
@@ -1123,12 +1150,8 @@ Axis.prototype.render = function () {
     this.projection(this.projections.current);
   }
 
-  // start refresh loop
-  if (null != this.state.animationFrameID) {
-    raf.cancel(this.state.animationFrameID);
-  }
-
   // start animation loop
+  raf.cancel(this.state.animationFrameID);
   this.state.animationFrameID  = raf(function loop () {
     var parentElement = domElement.parentElement;
     if (parentElement && parentElement.contains(domElement)) {
@@ -1215,7 +1238,6 @@ Axis.prototype.projection = function (type, fn) {
     if (this.state.isReady) {
       if (type != this.projections.current &&
           this.projections.contains(type)) {
-        this.controls = null;
         this.projections.apply(type);
       }
     } else {
@@ -1276,9 +1298,9 @@ Axis.prototype.stop = function () {
 
 Axis.prototype.y = function (y) {
   if (null == y) {
-    return this.state.y;
+    return this.state.pointerY;
   }
-  this.state.update('y', y);
+  this.state.update('pointerY', y);
   return this;
 };
 
@@ -1291,9 +1313,9 @@ Axis.prototype.y = function (y) {
 
 Axis.prototype.x = function (x) {
   if (null == x) {
-    return this.state.x;
+    return this.state.pointerX;
   }
-  this.state.update('x', x);
+  this.state.update('pointerX', x);
   return this;
 };
 
@@ -1307,15 +1329,18 @@ Axis.prototype.x = function (x) {
 
 Axis.prototype.coords = function (x, y) {
   if (null == y && null == x) {
-    return {y: this.state.y, x: this.state.x}
+    return {
+      pointerY: this.state.pointerY,
+      pointerX: this.state.pointerX
+    };
   }
 
   if (null != y) {
-    this.state.update('y', y);
+    this.state.update('pointerY', y);
   }
 
   if (null != x) {
-    this.state.update('x', x);
+    this.state.update('pointerX', x);
   }
 
   return this;
@@ -1356,7 +1381,7 @@ Axis.prototype.cache = function (o) {
  * defined
  *
  * @public
- * @param {Mixed} ... - optional
+ * @param {Mixed} ...arguments - optional
  */
 
 Axis.prototype.debug = function debug () {

@@ -7,6 +7,7 @@ var three = require('three.js')
 
 // default field of view
 var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
+var DeviceOrientationController = require('./DeviceOrientationController');
 
 /**
  * Creates a `PerspectiveCamera' instance
@@ -26,6 +27,7 @@ module.exports = function (axis) {
   if (null == axis.camera || 'mirrorball' == axis.projection()) {
     axis.camera = new three.PerspectiveCamera(DEFAULT_FOV, ratio, 0.01, 1000);
     axis.camera.target = new three.Vector3(0, 0, 0);
+    axis.camera.rotation.reorder('YXZ');
   }
   return axis.camera;
 };

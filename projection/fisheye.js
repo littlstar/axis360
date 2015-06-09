@@ -49,6 +49,7 @@ var constants = require('../constants')
 
 // animation factor
 var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
+var DEFAULT_FOV = constants.DEFAULT_FOV;
 
 /**
  * Fisheye projection constraints.
@@ -83,63 +84,24 @@ function fisheye (axis) {
   // projection is only supported in a spherical geometry
   if ('cylinder' == axis.geometry()) { return; }
 
-  if ('mirrorball' == axis.projection()) {
-    this.apply('equilinear');
-  }
-
   // max Z and FOV
   var maxZ = (axis.height() / 100) | 0;
-  var maxFov = 75;
+  var fov = DEFAULT_FOV + 20;
+  var rotation = new three.Vector3(0, 0, 0);
 
-  if ('mirrorball' == axis.projection() || 'tinyplanet' == axis.projection()) {
-    // position latitude at equator
-    axis.x(0);
+  if ('tinyplanet' != axis.projections.current) {
+    rotation.x = camera.position.x;
+    rotation.y = camera.position.y;
+    rotation.z = camera.position.z;
   }
 
   // begin animation
   axis.debug("animate: FISHEYE begin");
   this.animate(function () {
-    var fov = axis.fov();
-    var y = axis.state.y;
-    var x = axis.state.x;
-
-    axis.debug("animate: FISHEYE maxFov=%d maxZ=%d fov=%d z=%d, y=%d",
-               maxFov, maxZ, fov, camera.position.z, y);
-
-    // cancel when we've reached max field of view
-    if (maxFov == axis.fov() && 0 == x && 0 == y) {
-      axis.debug("animate: FISHEYE end");
-      return this.cancel();
-    }
-
-    // normalize field of view
-    if (fov < maxFov) {
-      axis.fov(Math.min(maxFov, axis.fov() + ANIMATION_FACTOR));
-    } else if (fov > maxFov) {
-      axis.fov(Math.min(maxFov, axis.fov() - ANIMATION_FACTOR));
-    }
-
-    // normalize z coordinate
-    if (camera.position.z < maxZ) {
-      camera.position.z++;
-      camera.position.z = Math.min(maxZ, camera.position.z);
-    } else if (camera.position.z > maxZ) {
-      camera.position.z--;
-      camera.position.z = Math.max(maxZ, camera.position.z);
-    }
-
-    // normalize y coordinate
-    if (y > 0) {
-      axis.y(Math.max(0, y - ANIMATION_FACTOR));
-    } else if (y < 0) {
-      axis.y(Math.min(0, y + ANIMATION_FACTOR));
-    }
-
-    // normalize x coordinate
-    if (x > 0) {
-      axis.x(Math.max(0, x - ANIMATION_FACTOR));
-    } else if (x < 0) {
-      axis.x(Math.min(0, x + ANIMATION_FACTOR));
-    }
+    axis.fov(fov);
+    axis.camera.position.z = maxZ;
+    axis.lookAt(rotation.x, rotation.y, rotation.z);
+    axis.orientation.x = (Math.PI/180);
+    this.cancel();
   });
 };

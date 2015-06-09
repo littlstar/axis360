@@ -42,10 +42,12 @@
     "jb55/has-webgl": "master",
 
     "components/three.js": "master",
+    "component/inherits": "master",
     "component/emitter": "master",
+    "component/object": "master",
     "component/events": "master",
     "component/domify": "master",
-    "component/raf": "master",
-    "component/path": "master"
+    "component/path": "master",
+    "component/raf": "master"
   }
 }

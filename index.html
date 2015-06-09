@@ -3,7 +3,6 @@
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <title>Axis - 360 Video Rendering Engine</title>
-    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.2.0/css/font-awesome.min.css" type="text/css" />
     <link rel="stylesheet" href="build/build.css" type="text/css" />
     <script type="text/javascript" charset="utf-8" src="build/build.js"></script>
     <style type="text/css" media="all">
@@ -95,12 +94,16 @@
       var frame = new Axis(document.querySelector('.normal.video'), {
         crossorigin: true,
         resizable: true,
+        preload: true,
         autoplay: true,
         //friction: 0.99,
         width: window.innerWidth,
         height: 500,
         loop: true,
-        src: '/public/assets/paramotor.webm'
+        //src: 'https://d3uo9a4kiyu5sk.cloudfront.net/production/90598eca-0ec1-4677-bd13-495cd3c09dd8/web.mp4'
+        //src: 'test.webm'
+        src: '/public/assets/paramotor.mp4'
+        //src: '/public/assets/hostel-luego.jpg'
       });
 
       frame.render();

@@ -25,6 +25,7 @@ CSS := *.css
 SRC := $(wildcard *.js)
 SRC += $(wildcard projection/*.js)
 SRC += $(wildcard geometry/*.js)
+SRC += $(wildcard controls/*.js)
 SRC += component.json
 
 ##

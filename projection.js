@@ -224,6 +224,8 @@ Projections.prototype.apply = function (name) {
   if ('string' == typeof name && 'function' == typeof projection) {
     // set currently requested
     this.requested = name;
+    this.cancel();
+    this.initializeScene();
 
     // apply constraints
     if ('object' == typeof projection.constraints) {

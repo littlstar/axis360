@@ -82,6 +82,7 @@ function tinyplanet (axis) {
   // this projection requires an already initialized
   // camera on the `Axis' instance
   var camera = axis.camera;
+  var rotation = new three.Vector3(0, 0, 0);
 
   // bail if camera not initialized
   if (null == camera) { return; }
@@ -116,21 +117,29 @@ function tinyplanet (axis) {
 
   // begin animation
   axis.debug("animate: TINY_PLANET begin");
-  constraints.y = false;;
+  constraints.x = true;
+  constraints.y = false;
+  rotation.x = camera.target.x || 0;
+  rotation.y = camera.target.y || 0;
+  rotation.z = camera.target.z || -1;
   this.animate(function () {
-    var y = axis.y();
+    var y = rotation.y;
     axis.debug("animate: TINY_PLANET y=%d", y);
     if (y > MIN_Y_COORDINATE) {
 
       if (y > MIN_Y_COORDINATE) {
-        axis.y(y -ANIMATION_FACTOR);
+        rotation.y = y -ANIMATION_FACTOR;
       } else {
-        axis.y(MIN_Y_COORDINATE);
+        rotation.y = MIN_Y_COORDINATE;
       }
     } else {
+      axis.orientation.x = -Infinity;
+      constraints.x = false;
       constraints.y = true;
       axis.debug("animate: TINY_PLANET end");
       this.cancel();
     }
+
+    axis.lookAt(rotation.x, rotation.y, rotation.z);
   });
 };

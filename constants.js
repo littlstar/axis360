@@ -1,4 +1,30 @@
 
+'use strict';
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 /**
  * Axis constants
  * @public
@@ -6,15 +32,85 @@
  * @type {Object}
  */
 
+void module.exports;
+
 /**
  * The default Axis field of view.
  *
  * @public
  * @const
+ * @name DEFAULT_FOV
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 40;
+exports.DEFAULT_FOV = 60;
+
+/**
+ * Default interpolation factor.
+ *
+ * @public
+ * @const
+ * @name DEFAULT_INTERPOLATION_FACTOR
+ * @type {Number}
+ */
+
+exports.DEFAULT_INTERPOLATION_FACTOR = 0.2;
+
+/**
+ * Default frame projection
+ *
+ * @public
+ * @const
+ * @name DEFAULT_PROJECTION
+ * @type {String}
+ */
+
+exports.DEFAULT_PROJECTION = 'equilinear';
+
+/**
+ * Default scroll velocity
+ *
+ * @public
+ * @const
+ * @name DEFAULT_SCROLL_VELOCITY
+ * @type {Number}
+ */
+
+exports.DEFAULT_SCROLL_VELOCITY = 0.09;
+
+/**
+ * Default geometry radius
+ *
+ * @public
+ * @const
+ * @name DEFAULT_GEOMETRY_RADIUS
+ * @type {Number}
+ */
+
+exports.DEFAULT_GEOMETRY_RADIUS = 400;
+
+/**
+ * Default friction to apply to x and y
+ * coordinates.
+ *
+ * @public
+ * @const
+ * @name DEFAULT_FRICTION
+ * @type {Number}
+ */
+
+exports.DEFAULT_FRICTION = 0.0025;
+
+/**
+ * Default key pan speed in pixels
+ *
+ * @public
+ * @const
+ * @name DEFAULT_KEY_PAN_SPEED
+ * @type {Number}
+ */
+
+exports.DEFAULT_KEY_PAN_SPEED = 16;
 
 /**
  * Animation factor unit applied to changes in
@@ -23,6 +119,7 @@ exports.DEFAULT_FOV = 40;
  *
  * @public
  * @const
+ * @name ANIMATION_FACTOR
  * @type {Number}
  */
 
@@ -33,6 +130,7 @@ exports.ANIMATION_FACTOR = 12;
  *
  * @public
  * @const
+ * @name TINY_PLANET_CAMERA_LENS_VALUE
  * @type {Number}
  */
 
@@ -45,6 +143,7 @@ exports.TINY_PLANET_CAMERA_LENS_VALUE = 7.5;
  *
  * @public
  * @const
+ * @name FRAME_CLICK_THRESHOLD
  * @type {Number}
  */
 
@@ -56,6 +155,7 @@ exports.FRAME_CLICK_THRESHOLD = 250;
  *
  * @public
  * @const
+ * @name MIN_WHEEL_DISTANCE
  * @type {Number}
  */
 
@@ -67,6 +167,7 @@ exports.MIN_WHEEL_DISTANCE = 5;
  *
  * @public
  * @const
+ * @name MAX_WHEEL_DISTANCE
  * @type {Number}
  */
 
@@ -77,16 +178,18 @@ exports.MAX_WHEEL_DISTANCE = 500;
  *
  * @public
  * @const
+ * @name MIN_Y_COORDINATE
  * @type {Number}
  */
 
-exports.MIN_Y_COORDINATE = -85;
+exports.MIN_Y_COORDINATE = -360;
 
 /**
  * Maximum possible y coordinate
  *
  * @public
  * @const
+ * @name MAX_Y_COORDINATE
  * @type {Number}
  */
 
@@ -97,6 +200,7 @@ exports.MAX_Y_COORDINATE = 85;
  *
  * @public
  * @const
+ * @name MIN_X_COORDINATE
  * @type {Number}
  */
 
@@ -107,77 +211,40 @@ exports.MIN_X_COORDINATE = 0;
  *
  * @public
  * @const
+ * @name MAX_X_COORDINATE
  * @type {Number}
  */
 
 exports.MAX_X_COORDINATE = 360;
 
 /**
- * Default frame projection
- *
- * @public
- * @const
- * @type {String}
- */
-
-exports.DEFAULT_PROJECTION = 'equilinear';
-
-/**
  * Cylindrical zoom offset for field of view
  *
  * @public
  * @const
+ * @name CYLINDRICAL_ZOOM
  * @type {Number}
  */
 
 exports.CYLINDRICAL_ZOOM = -16;
 
 /**
- * Default scroll velocity
- *
- * @public
- * @const
- * @type {Number}
- */
-
-exports.DEFAULT_SCROLL_VELOCITY = 0.09;
-
-/**
- * Default geometry radius
- *
- * @public
- * @const
- * @type {Number}
- */
-
-exports.DEFAULT_GEOMETRY_RADIUS = 400;
-
-/**
  * VR device poll timeout
  *
  * @public
  * @const
+ * @name VR_POLL_TIMEOUT
  * @type {Number}
  */
 
 exports.VR_POLL_TIMEOUT = 3000;
 
 /**
- * Default friction to apply to x and y
- * coordinates.
- *
- * @public
- * @const
- * @type {Number}
- */
-
-exports.DEFAULT_FRICTION = 0.5;
-
-/**
  * Maximum friction value.
  *
  * @public
  * @const
+ * @name MAX_FRICTION_VALUE
  * @type {Number}
  */
 
@@ -188,6 +255,7 @@ exports.MAX_FRICTION_VALUE = 0.99;
  *
  * @public
  * @const
+ * @name MIN_FRICTION_VALUE
  * @type {Number}
  */
 
@@ -198,6 +266,7 @@ exports.MIN_FRICTION_VALUE = 0;
  *
  * @public
  * @const
+ * @name MAX_FRICTION_TOLERANCE
  * @type {Number}
  */
 
@@ -208,7 +277,19 @@ exports.MAX_FRICTION_TOLERANCE = 20;
  *
  * @public
  * @const
+ * @name CARTESIAN_CALIBRATION_VALUE
  * @type {Number}
  */
 
 exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;
+
+/**
+ * Axis epsilon value
+ *
+ * @public
+ * @const
+ * @name EPSILON_VALUE
+ * @type {Number}
+ */
+
+exports.EPSILON_VALUE = 0.000001;
