@@ -1,6 +1,6 @@
 {
   "name": "axis",
-  "version": "1.3.0",
+  "version": "1.3.2",
   "private": true,
   "devDependencies": {
     "duo": "^0.11.x"
