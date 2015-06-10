@@ -1483,8 +1483,10 @@ Axis.prototype.dimensions = function () {
   var ratio = 0;
 
   if (this.state.isImage) {
-    height = this.texture.image.height;
-    width = this.texture.image.width;
+    if (this.texture.image) {
+      height = this.texture.image.height;
+      width = this.texture.image.width;
+    }
   } else {
     height = this.video.videoHeight;
     width = this.video.videoWidth;
