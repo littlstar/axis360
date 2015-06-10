@@ -229,11 +229,6 @@ function Axis (parent, opts) {
     new three.CanvasRenderer()
   );
 
-  /** Axis' VR effect instance. */
-  this.vreffect = new three.VREffect(this.renderer, function (e) {
-    self.debug('VREffect:', e);
-  });
-
   /** Axis' texture instance. */
   this.texture = null;
 
@@ -260,6 +255,7 @@ function Axis (parent, opts) {
 
   /** Axis' controls. */
   this.controls = {
+    vr: require('./controls/vr')(this),
     mouse: require('./controls/mouse')(this),
     touch: require('./controls/touch')(this),
     keyboard: require('./controls/keyboard')(this),
@@ -440,7 +436,7 @@ Axis.prototype.oncanplaythrough = function (e) {
   if (false == this.state.shouldAutoplay) {
     this.state.update('isPaused', true);
     this.video.pause();
-  } else {
+  } else if (false == this.state.isStopped) {
     this.video.play();
   }
 };
@@ -453,12 +449,11 @@ Axis.prototype.oncanplaythrough = function (e) {
  */
 
 Axis.prototype.onplay = function (e) {
-  raf(function() {
-    this.debug('onplay');
-    this.state.update('isPaused', false);
-    this.state.update('isEnded', false);
-    this.emit('play', e);
-  }.bind(this));
+  this.debug('onplay');
+  this.state.update('isPaused', false);
+  this.state.update('isEnded', false);
+  this.state.update('isStopped', false);
+  this.emit('play', e);
 };
 
 /**
@@ -886,6 +881,8 @@ Axis.prototype.pause = function () {
   if (false == this.state.isImage) {
     this.debug('pause');
     this.video.pause();
+    this.state.update('isPlaying', false);
+    this.state.update('isPaused', true);
   }
   return this;
 };
@@ -905,7 +902,7 @@ Axis.prototype.fullscreen = function (el) {
     fullscreen.exit();
     return;
   } else if (this.state.isVREnabled) {
-    opts = {vrDisplay: this.vreffect._vrHMD};
+    opts = {vrDisplay: this.state.vrHMD};
   } else if (! this.state.isFullscreen) {
     var canvasStyle = getComputedStyle(this.renderer.domElement);
     this.state.update('lastSize', {
@@ -953,9 +950,7 @@ Axis.prototype.mute = function (mute) {
   if (false == mute) {
     this.video.muted = false;
     this.state.update('isMuted', false);
-    if (0 == this.volume()) {
-      this.volume(this.state.lastvolume);
-    }
+    this.volume(this.state.lastVolume);
   } else {
     this.state.update('isMuted', true);
     this.video.muted = true;
@@ -1071,10 +1066,10 @@ Axis.prototype.resizable = function (resizable) {
 
 Axis.prototype.seek = function (seconds) {
   if (false == this.state.isImage) {
-    if (seconds >= 0 && seconds <= this.video.duration) {
+    //if (seconds >= 0 && seconds <= this.video.duration) {
       this.video.currentTime = seconds;
       this.emit('seek', seconds);
-    }
+    //}
   }
   return this;
 };
@@ -1135,40 +1130,10 @@ Axis.prototype.draw = function () {
   var sensor = this.state.vrPositionSensor;;
   var hmd = this.state.vrHMD;
 
-  if (this.state.isVREnabled) {
-    if (hmd) {
-      // get state
-      var vrstate = sensor.getImmediateState();
-      // get orientation
-      var orientation = vrstate.orientation;
-      // get position
-      var position = vrstate.position;
-      // create quat
-      var quat = new three.Quaternion(orientation.x,
-                                      orientation.y,
-                                      orientation.z,
-                                      orientation.w);
-     if (this.camera) {
-       this.camera.quaternion.copy(quat);
-       if (position) {
-         this.camera.position.applyQuaternion(position).multiplyScalar(1);
-       }
-
-       this.camera.updateProjectionMatrix();
-     }
-    }
-  }
-
-  if (this.orientation && 'function' == typeof this.orientation.update) {
-    this.orientation.update();
-  }
-
   this.emit('before:render');
 
   if (this.renderer && this.scene && this.camera) {
-    if (this.state.isVREnabled) {
-      this.vreffect.render(this.scene, this.camera);
-    } else {
+    if (false == this.state.isVREnabled) {
       this.renderer.render(this.scene, this.camera);
     }
   }
@@ -1362,7 +1327,8 @@ Axis.prototype.destroy = function () {
   empty(this.domElement);
   this.domElement.parentElement.removeChild(this.domElement);
   function empty (el) {
-    while (el.lastChild) el.removeChild(el);
+    try { while (el.lastChild) el.removeChild(el); }
+    catch (e) {}
   }
   return this;
 };
@@ -1375,8 +1341,9 @@ Axis.prototype.destroy = function () {
 
 Axis.prototype.stop = function () {
   if (true == this.state.isImage) { return; }
-  this.pause();
   this.video.currentTime = 0;
+  this.state.update('isStopped', true);
+  this.pause();
   return this;
 };
 
@@ -1542,7 +1509,7 @@ Axis.prototype.fov = function (fov) {
   return this;
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./template.html":11,"./projection":12,"./camera":13,"./geometry":14,"./state":15,"./util":16,"./constants":17,"three-canvas-renderer":18,"three-vr-effect":19,"./projection/flat":20,"./projection/fisheye":21,"./projection/equilinear":22,"./projection/tinyplanet":23,"./controls/mouse":24,"./controls/touch":25,"./controls/keyboard":26,"./controls/orientation":27,"./controls/controller":28}],
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./template.html":11,"./projection":12,"./camera":13,"./geometry":14,"./state":15,"./util":16,"./constants":17,"three-canvas-renderer":18,"three-vr-effect":19,"./projection/flat":20,"./projection/fisheye":21,"./projection/equilinear":22,"./projection/tinyplanet":23,"./controls/vr":24,"./controls/mouse":25,"./controls/touch":26,"./controls/keyboard":27,"./controls/orientation":28,"./controls/controller":29}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
@@ -36544,8 +36511,8 @@ function parse(event) {
   }
 }
 
-}, {"event":29,"delegate":30}],
-29: [function(require, module, exports) {
+}, {"event":30,"delegate":31}],
+30: [function(require, module, exports) {
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
     prefix = bind !== 'addEventListener' ? 'on' : '';
@@ -36582,7 +36549,7 @@ exports.unbind = function(el, type, fn, capture){
   return fn;
 };
 }, {}],
-30: [function(require, module, exports) {
+31: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36626,8 +36593,8 @@ exports.unbind = function(el, type, fn, capture){
   event.unbind(el, type, fn, capture);
 };
 
-}, {"closest":31,"event":29}],
-31: [function(require, module, exports) {
+}, {"closest":32,"event":30}],
+32: [function(require, module, exports) {
 var matches = require('matches-selector')
 
 module.exports = function (element, selector, checkYoSelf, root) {
@@ -36648,8 +36615,8 @@ module.exports = function (element, selector, checkYoSelf, root) {
   }
 }
 
-}, {"matches-selector":32}],
-32: [function(require, module, exports) {
+}, {"matches-selector":33}],
+33: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36697,8 +36664,8 @@ function match(el, selector) {
   return false;
 }
 
-}, {"query":33}],
-33: [function(require, module, exports) {
+}, {"query":34}],
+34: [function(require, module, exports) {
 function one(selector, el) {
   return el.querySelector(selector);
 }
@@ -36859,8 +36826,8 @@ if (document.addEventListener) {
   document.addEventListener('webkitfullscreenchange', change('webkitIsFullScreen'));
 }
 
-}, {"emitter":34}],
-34: [function(require, module, exports) {
+}, {"emitter":35}],
+35: [function(require, module, exports) {
 
 /**
  * Expose `Emitter`.
@@ -37589,7 +37556,18 @@ exports.DEFAULT_FRICTION = 0.0025;
  * @type {Number}
  */
 
-exports.DEFAULT_KEY_PAN_SPEED = 16;
+exports.DEFAULT_KEY_PAN_SPEED = 8;
+
+/**
+ * Default controller update timeout.
+ *
+ * @public
+ * @const
+ * @name DEFAULT_CONTROLLER_UPDATE_TIMEOUT
+ * @type {Number}
+ */
+
+exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
 
 /**
  * Animation factor unit applied to changes in
@@ -37814,8 +37792,8 @@ exports.cylinder = require('./cylinder');
 exports.sphere = require('./sphere');
 exports.plane = require('./plane');
 
-}, {"./cylinder":35,"./sphere":36,"./plane":37}],
-35: [function(require, module, exports) {
+}, {"./cylinder":36,"./sphere":37,"./plane":38}],
+36: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -37846,7 +37824,7 @@ module.exports = function sphere (axis) {
 };
 
 }, {"three.js":2}],
-36: [function(require, module, exports) {
+37: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -37874,7 +37852,7 @@ module.exports = function sphere (axis) {
 };
 
 }, {"three.js":2}],
-37: [function(require, module, exports) {
+38: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -37972,6 +37950,7 @@ var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY;
 var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS;
 var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
+var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
 
 /**
  * State constructor
@@ -37987,7 +37966,7 @@ var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
  * user.
  * @param {Boolean} [opts.forceFocus = false] - Force focus to axis frame. This
  * will hijack mouse and key events.
- * @param {Boolean} [opts.isResizable = false] - Allow the axis frame to be
+ * @param {Boolean} [opts.resizable = false] - Allow the axis frame to be
  * resizable.
  * @param {Boolean} [opts.isClickable = true] - Allow the axis frame to be
  * clickable.
@@ -38008,6 +37987,8 @@ var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
  * @param {Number} [opts.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR] -
  * Interpolation factor to apply to quaternion rotations.
  * @param {Boolean} [opts.useSlerp = true] - Use spherical linear interpolations.
+ * @param {Number} [opts.updateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT] -
+ * View controller update timeout.
  */
 
 module.exports = State;
@@ -38145,6 +38126,9 @@ function State (scope, opts) {
   /** Interpolation factor to apply to quaternion rotations. */
   this.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR;
 
+  /** Controller update timeout value. */
+  this.controllerUpdateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
+
   /**
    * State predicates.
    */
@@ -38172,6 +38156,9 @@ function State (scope, opts) {
 
   /** Predicate indicating is video is paused. */
   this.isPaused = false;
+
+  /** Predicate indicating if video was stopped. */
+  this.isStopped = false;
 
   /** Predicate to indicating if Axis is clickable.*/
   this.isClickable = true;
@@ -38273,6 +38260,10 @@ State.prototype.reset = function (overrides) {
     opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR
   );
 
+  this.controllerUpdateTimeout = (
+    opts.updateTimeout || DEFAULT_CONTROLLER_UPDATE_TIMEOUT
+  );
+
   /**
    * State variables.
    */
@@ -38312,6 +38303,7 @@ State.prototype.reset = function (overrides) {
   this.isKeydown = false;
   this.isPlaying = false;
   this.isPaused = false;
+  this.isStopped = false;
   this.isAnimating = false;
   this.isFullscreen = false;
   this.isMousedown = false;
@@ -38578,8 +38570,8 @@ State.prototype.onfullscreenchange = function (e) {
   this.scope.emit('fullscreenchange', e);
 };
 
-}, {"emitter":4,"fullscreen":8,"keycode":9,"events":5,"three.js":2,"merge":10,"path":38,"./util":16,"./constants":17}],
-38: [function(require, module, exports) {
+}, {"emitter":4,"fullscreen":8,"keycode":9,"events":5,"three.js":2,"merge":10,"path":39,"./util":16,"./constants":17}],
+39: [function(require, module, exports) {
 
 exports.basename = function(path){
   return path.split('/').pop();
@@ -38691,7 +38683,7 @@ function getVRDevices (fn) {
   }
 }
 
-}, {"three.js":2,"path":38}],
+}, {"three.js":2,"path":39}],
 18: [function(require, module, exports) {
 
 /**
@@ -39830,18 +39822,6 @@ module.exports = function (THREE) {
     var vrSensor;
     var eyeTranslationL, eyeFOVL;
     var eyeTranslationR, eyeFOVR;
-    var defaultFov = {
-      upDegrees: 0, downDegrees: 0,
-      leftDegrees: 0, rightDegrees: 0
-    };
-    var defaultTranslation = {
-      x: 0, y: 0, z: 0, w: 0
-    };
-
-    eyeFOVR = defaultFov;
-    eyeFOVL = defaultFov;
-    eyeTranslationL = defaultTranslation;
-    eyeTranslationR = defaultTranslation;
 
     function gotVRDevices( devices ) {
 
@@ -39942,7 +39922,7 @@ module.exports = function (THREE) {
 
     this.render = function ( scene, camera ) {
 
-      //if ( vrHMD ) {
+      if ( vrHMD ) {
 
         var sceneL, sceneR;
 
@@ -39989,7 +39969,7 @@ module.exports = function (THREE) {
 
         return;
 
-      //}
+      }
 
       // Regular render mode if not HMD
 
@@ -40111,14 +40091,6 @@ module.exports = function (THREE) {
  * @module axis/projection/flat
  * @type {Function}
  */
-
-/**
- * Flat projection constraints.
- *
- * @public
- * @type {Object}
- */
-
 
 /**
  * Applies a flat projection to Axis frame
@@ -40394,7 +40366,7 @@ function equilinear (axis) {
   });
 };
 
-}, {"raf":6,"three.js":2,"../constants":17,"../camera":13,"../geometry/plane":37,"../geometry/sphere":36,"../geometry/cylinder":35}],
+}, {"raf":6,"three.js":2,"../constants":17,"../camera":13,"../geometry/plane":38,"../geometry/sphere":37,"../geometry/cylinder":36}],
 23: [function(require, module, exports) {
 
 'use strict';
@@ -40552,9 +40524,9 @@ function tinyplanet (axis) {
  */
 
 /**
- * The mouse controls module.
+ * The vr controls module.
  *
- * @module axis/controls/mouse
+ * @module axis/controls/vr
  * @type {Function}
  */
 
@@ -40565,7 +40537,9 @@ void module.exports;
  * @private
  */
 
-var inherits = require('inherits')
+var three = require('three.js')
+  , inherits = require('inherits')
+  , createCamera = require('../camera')
 
 /**
  * Local dependencies.
@@ -40575,242 +40549,455 @@ var inherits = require('inherits')
 var AxisController = require('./controller')
 
 /**
- * Normalizes properties in an Event object and
- * sets them on the output object
+ * Converts a field of view tangent object with
+ * up, down, left, and right values in degrees
+ * to X and Y scales and offsets.
  *
  * @private
- * @param {Event} e - Event object containing movement properties.
- * @param {Object} o - Output object
+ * @param {Object} tangent - Field of view tangent object.
+ * @param {Number} tangent.up - Field of view up tangent.
+ * @param {Number} tangent.right - Field of view right tangent.
+ * @param {Number} tangent.down - Field of view down tangent.
+ * @param {Number} tangent.left - Field of view left tangent.
  * @return {Object}
  */
 
-function normalizeMovements (e, o) {
-  o.x = e.movementX || e.mozMovementX || e.webkitMovementX || o.x || 0;
-  o.y = e.movementY || e.mozMovementY || e.webkitMovementY || o.y || 0;
+function fieldOfViewTangentToScaleAndOffset (tangent) {
+  var scale = {x: 0, y: 0};
+  var offset = {x: 0, y: 0};
+
+  // build scale
+  scale.x = 2 / (tangent.left + tangent.right);
+  scale.y = 2 / (tangent.up + tangent.down);
+
+  // build offset
+  offset.x = (tangent.left - tangent.right) * scale.x * 0.5;
+  offset.y = (tangent.up - tangent.down) * scale.y * 0.5;
+
+  return {scale: scale, offset: offset};
 }
 
 /**
- * Initializes mouse controls on Axis.
+ * Creates a projection matrix from an eye translation
+ * object containing directional values in degrees.
  *
- * @public
- * @param {Axis} axis - The Axis instance.
- * @return {MouseController}
+ * @private
+ * @param {EyeTranslation} eye - Eye translation
+ * @param {Number} near - Current camera near frustum plane value.
+ * @param {Number} far - Current camera far frustum plane value.
+ * @return {THREE.Matrix4}
  */
 
-module.exports = function mouse (axis) {
-  return MouseController(axis)
-  .target(axis.camera)
-  .enable();
+function eyeTranslationToProjection (eye, near, far) {
+  var dtor = Math.PI / 180.0;
+  var scale = -1;
+  var matrix = new three.Matrix4();
+  var m = matrix.elements;
+  var tangent = {};
+  var scaleAndOffset = null;
+
+  tangent.up = Math.tan(eye.upDegrees * dtor);
+  tangent.down = Math.tan(eye.downDegrees * dtor);
+  tangent.left = Math.tan(eye.leftDegrees * dtor);
+  tangent.right = Math.tan(eye.rightDegrees * dtor);
+
+  scaleAndOffset = fieldOfViewTangentToScaleAndOffset(tangent);
+
+  near = null == near ? 0.01 : near;
+  far = null == far ? 10000 : far;
+
+  // X result, map clip edges to [-w,+w]
+  m[0 * 4 + 0] = scaleAndOffset.scale.x
+  m[0 * 4 + 1] = 0;
+  m[0 * 4 + 2] = scaleAndOffset.offset.x * scale;
+  m[0 * 4 + 3] = 0;
+
+  // Y result, map clip edges to [-w,+w]
+  // Y offset is negated because this proj matrix transforms from world coords with Y=up,
+  // but the NDC scaling has Y=down (thanks D3D?)
+  m[1 * 4 + 0] = 0;
+  m[1 * 4 + 1] = scaleAndOffset.scale.y;
+  m[1 * 4 + 2] = -scaleAndOffset.offset.y * scale;
+  m[1 * 4 + 3] = 0;
+
+  // Z result (up to the app)
+  m[2 * 4 + 0] = 0;
+  m[2 * 4 + 1] = 0;
+  m[2 * 4 + 2] = far / (near - far) * -scale;
+  m[2 * 4 + 3] = (far * near) / (near - far);
+
+  // W result (= Z in)
+  m[3 * 4 + 0] = 0;
+  m[3 * 4 + 1] = 0;
+  m[3 * 4 + 2] = scale;
+  m[3 * 4 + 3] = 0;
+
+  matrix.transpose();
+
+  return matrix;
+}
+
+/**
+ * EyeFieldOfView constructor
+ *
+ * @private
+ * @class EyeFieldOfView
+ * @constructor
+ * @param {Number} up - Up degrees offset.
+ * @param {Number} right - Right degrees offset.
+ * @param {Number} down - Down degrees offset.
+ * @param {Number} left - Left degrees offset.
+ */
+
+function EyeFieldOfView (up, right, down, left) {
+  if (!(this instanceof EyeFieldOfView)) {
+    return new EyeFieldOfView(up, right, down, left);
+  }
+  this.set(up, right, down, left);
+}
+
+/**
+ * Set degrees for eye field of view.
+ *
+ * @public
+ * @param {Number} up - Up degrees offset.
+ * @param {Number} right - Right degrees offset.
+ * @param {Number} down - Down degrees offset.
+ * @param {Number} left - Left degrees offset.
+ */
+
+EyeFieldOfView.prototype.set = function (up, right, down, left) {
+  this.upDegrees = up || 0;
+  this.rightDegrees = right || 0;
+  this.downDegrees = down || 0;
+  this.leftDegrees = left || 0;
+  return this;
 };
 
 /**
- * MouseController constructor
+ * EyeTranslation constructor
+ *
+ * @private
+ * @class EyeTranslation
+ * @constructor
+ * @extends THREE.Quaternion
+ * @param {Number} x - X coordinate.
+ * @param {Number} y - Y coordinate.
+ * @param {Number} z - Z coordinate.
+ * @param {Number} w - W coordinate.
+ */
+
+inherits(EyeTranslation, three.Quaternion);
+function EyeTranslation (x, y, z, w) {
+  if (!(this instanceof EyeTranslation)) {
+    return new EyeTranslation(x, y, z, w);
+  }
+  three.Quaternion.call(this, x, y, z, w);
+}
+
+/**
+ * Initialize vr controls on Axis.
+ *
+ * @public
+ * @param {Axis} scope - The axis instance
+ * @return {VRController}
+ */
+
+module.exports = function vr (axis) {
+  return VRController(axis)
+  .target(axis.camera)
+  .enable()
+  .update();
+};
+
+/**
+ * VRController constructor
  *
  * @public
  * @constructor
- * @class MouseController
+ * @class VRController
  * @extends AxisController
  * @see {@link module:axis/controls/controller~AxisController}
  * @param {Axis} scope - The axis instance
  */
 
-module.exports.MouseController = MouseController;
-inherits(MouseController, AxisController);
-function MouseController (scope) {
-  if (!(this instanceof MouseController)) {
-    return new MouseController(scope);
+module.exports.VRController = VRController;
+inherits(VRController, AxisController);
+function VRController (scope) {
+
+  // ensure instance
+  if (!(this instanceof VRController)) {
+    return new VRController(scope);
   }
 
   // inherit from `AxisController'
   AxisController.call(this, scope);
 
   /**
-   * Mouse controller movements.
+   * Reference to this instance.
    *
-   * @public
-   * @name state.movements
-   * @type {Object}
+   * @private
+   * @type {VRController}
    */
 
-  this.state.movements = {
-
-    /**
-     * X movement coordinate value.
-     *
-     * @public
-     * @name state.movement.x
-     * @type {Number}
-     */
-
-    x: 0,
-
-    /**
-     * Y movement coordinate value.
-     *
-     * @public
-     * @name state.movement.y
-     * @type {Number}
-     */
-
-    y: 0
-  };
+  var self = this;
 
   /**
-   * Initial mouse controller movement.
+   * Current connected HMD.
    *
    * @public
-   * @name state.movementsStart
-   * @type {Object}
+   * @type {HMDVRDevice}
+   * @name state.hmd
    */
 
-  this.state.movementsStart = {
-
-    /**
-     * X movement start value.
-     *
-     * @public
-     * @name state.movementsStart.x
-     * @type {Object}
-     */
-
-    x: 0,
-
-    /**
-     * Y movement start value.
-     *
-     * @public
-     * @name state.movementsStart.y
-     * @type {Object}
-     */
-
-    y: 0
-  };
+  this.state.hmd = null;
 
   /**
-   * Is mousedown predicate.
+   * Current connected HMD position sensor.
    *
    * @public
-   * @name state.isMousedown
-   * @type {Boolean}
+   * @type {PositionSensorVRDevice}
+   * @name state.sensor
    */
 
-  this.state.isMousedown = false;
+  this.state.sensor = null;
 
   /**
-   * Mouseup timeout ID
+   * Translation scale factor
    *
    * @public
-   * @name state.mouseupTimeout
    * @type {Number}
+   * @name state.scale
    */
 
-  this.state.mouseupTimeout = 0;
+  this.state.scale = 1;
 
-  // initialize event delegation.
-  this.events.bind('mousedown');
-  this.events.bind('mousemove');
-  this.events.bind('mouseup');
+  /**
+   * VR cameras.
+   *
+   * @public
+   * @type {Object}
+   * @name state.cameras
+   */
+  this.state.cameras = {
+    left: new three.PerspectiveCamera(),
+    right: new three.PerspectiveCamera()
+  };
+
+  /**
+   * VR Scenes.
+   *
+   * @public
+   * @type {Object}
+   * @name state.scenes
+   */
+
+  this.state.scenes = {
+
+    /**
+     * Left VR scene.
+     *
+     * @public
+     * @type {THREE.Scene}
+     * @name state.scenes.left
+     */
+
+    left_: null,
+    get left () { return this.left_ || self.scope.scene; },
+    set left (scene) { this.left_ = scene; },
+
+    /**
+     * Right VR scene.
+     *
+     * @public
+     * @type {THREE.Scene}
+     * @name state.scenes.right
+     */
+
+    right_: null,
+    get right () { return this.right_ || self.scope.scene; },
+    set right (scene) { this.right_ = scene; }
+  };
+
+  /**
+   * Eye states.
+   *
+   * @public
+   * @type {Object}
+   * @name state.eyes
+   */
+
+  this.state.eyes = {
+
+    /**
+     * Eye field of view states.
+     *
+     * @public
+     * @type {Object}
+     * @name state.eyes.fov
+     */
+
+    fov: {
+
+      /**
+       * Right field of view state.
+       *
+       * @public
+       * @type {EyeFieldOfView}
+       * @name state.eyes.fov.right
+       */
+
+      right: new EyeFieldOfView(),
+
+      /**
+       * Leftfield of view state.
+       *
+       * @public
+       * @type {EyeFieldOfView}
+       * @name state.eyes.fov.left
+       */
+
+      left: new EyeFieldOfView(),
+    },
+
+    /**
+     * Current eye translation states.
+     *
+     * @public
+     * @type {Object}
+     * @name state.eyes.translations
+     */
+
+    translation: {
+
+      /**
+       * Left eye translation state.
+       *
+       * @public
+       * @type {EyeTranslation}
+       * @name state.eyes.translation.left
+       */
+
+      left: new EyeTranslation(),
+
+      /**
+       * Right eye translation state.
+       *
+       * @public
+       * @type {EyeTranslation}
+       * @name state.eyes.translation.right
+       */
+
+      right: new EyeTranslation()
+    }
+  };
 }
 
 /**
- * Handles 'onmousedown' events.
+ * Update vr controller state.
  *
- * @private
- * @name onmousedown
- * @param {Event} e - Event object.
+ * @public
  */
 
-MouseController.prototype.onmousedown = function (e) {
-  clearTimeout(this.state.mouseupTimeout);
-  this.state.forceUpdate = false;
-  this.state.isMousedown = true;
-  this.state.movementsStart.x = e.screenX;
-  this.state.movementsStart.y = e.screenY;
-};
+VRController.prototype.update = function () {
+  var renderer = this.scope.renderer;
+  var camera = this.scope.camera;
+  var sensor = this.scope.state.vrPositionSensor;
+  var height = renderer.domElement.height;
+  var width = renderer.domElement.width / 2;
+  var scene = this.scope.scene;
+  var right = this.state.scenes.right;
+  var left = this.state.scenes.left;
+  var eyes = this.state.eyes;
+  var near = camera.near;
+  var far = camera.far;
+  var hmd = this.scope.state.vrHMD;
 
-/**
- * Handles 'onmouseup' events.
- *
- * @private
- * @name onmouseup
- * @param {Event} e - Event object.
- */
-
-MouseController.prototype.onmouseup = function (e) {
-  this.state.forceUpdate = true;
-  this.state.isMousedown = false;
-  this.state.mouseupTimeout = setTimeout(function () {
-    this.state.forceUpdate = false;
-  }.bind(this), 1000);
-};
-
-/**
- * Handles 'onmousemove' events.
- *
- * @private
- * @name onmousemove
- * @param {Event} e - Event object.
- */
-
-MouseController.prototype.onmousemove = function (e) {
-  var friction = this.scope.state.friction;
-  var movements = this.state.movements;
-  var orientation = this.state.orientation;
-
-  // handle mouse movements only if the mouse controller is enabled
-  if (false == this.state.isEnabled || false == this.state.isMousedown) {
-    return;
+  if (false == this.scope.state.isVREnabled) {
+    this.target(createCamera(this.scope));
+    return this;
   }
 
-  movements.x = e.screenX - this.state.movementsStart.x;
-  movements.y = e.screenY - this.state.movementsStart.y;
+  renderer.enableScissorTest(true);
+  renderer.clear();
 
-  // normalized movements from event
-  normalizeMovements(e, movements);
-  this.pan(movements);
+  if (null == camera.parent) {
+    camera.updateMatrixWorld();
+  }
 
-  this.state.movementsStart.x = e.screenX;
-  this.state.movementsStart.y = e.screenY;
-};
+  function setHMDEyeParamaters (which) {
+    var eyeParams = null;
+    var eyeTranslation = null;
+    var eyeFov = null;
 
-/**
- * Resets mouse controller state.
- *
- * @public
- * @method
- * @name reset
- * @return {MouseController}
- */
+    if ('function' == typeof hmd.getEyeParameters) {
+      eyeParams = hmd.getEyeParameters(which);
+      eyeTranslation = eyeParams.eyeTranslation;
+      eyeFov = eyeParams.recommendedFieldOfView;
+    } else {
+      eyeTranslation = hmd.getEyeTranslation(which);
+      eyeFov = hmd.getRecommendedEyeFieldOfView(which);
+    }
 
-MouseController.prototype.reset = function () {
-  clearTimeout(this.state.mouseupTimeout);
-  AxisController.prototype.reset.call(this);
-  this.state.isMousedown = false;
-  this.state.mouseupTimeout = 0;
-  this.state.movementsStart.x = 0;
-  this.state.movementsStart.y = 0;
-  this.state.movements.x = 0;
-  this.state.movements.y = 0;
+    eyes.translation[which].set(eyeTranslation.x,
+                                eyeTranslation.y,
+                                eyeTranslation.z,
+                                eyeTranslation.w);
+
+    eyes.fov[which].set(eyeFov.upDegrees,
+                        eyeFov.rightDegrees,
+                        eyeFov.downDegrees,
+                        eyeFov.leftDegrees);
+  }
+
+  if (null != hmd && null != sensor) {
+    // set eye translations and field of views
+    setHMDEyeParamaters('left');
+    setHMDEyeParamaters('right');
+
+    this.state.cameras.left.projectionMatrix = (
+      eyeTranslationToProjection(eyes.fov.left, near, far)
+    );
+
+    this.state.cameras.right.projectionMatrix = (
+      eyeTranslationToProjection(eyes.fov.right, near, far)
+    );
+
+    this.state.cameras.left.translateX(
+      eyes.translation.left.x * this.state.scale);
+
+    this.state.cameras.right.translateX(
+      eyes.translation.right.x * this.state.scale);
+  }
+
+  // decompose left camera into current camera matrix
+  camera.matrixWorld.decompose(this.state.cameras.left.position,
+                               this.state.cameras.left.quaternion,
+                               this.state.cameras.left.scale);
+
+  // decompose right camera into current camera matrix
+  camera.matrixWorld.decompose(this.state.cameras.right.position,
+                               this.state.cameras.right.quaternion,
+                               this.state.cameras.right.scale);
+
+
+  // left eye
+  renderer.setViewport(0, 0, width, height);
+  renderer.setScissor(0, 0, width, height);
+  renderer.render(left, this.state.cameras.left);
+
+  // right eye
+  renderer.setViewport(width, 0, width, height);
+  renderer.setScissor(width, 0, width, height);
+  renderer.render(right, this.state.cameras.right);
+
+  renderer.enableScissorTest(false);
+
   return this;
 };
 
-/**
- * Implements AxisController#update() method.
- *
- * @public
- * @method
- * @name update
- * @return {MouseController}
- */
-
-MouseController.prototype.update = function () {
-  if (false == this.state.isMousedown) { return this; }
-  AxisController.prototype.update.call(this);
-  return this;
-};
-
-}, {"inherits":39,"./controller":28}],
-39: [function(require, module, exports) {
+}, {"three.js":2,"inherits":40,"../camera":13,"./controller":29}],
+40: [function(require, module, exports) {
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -40836,7 +41023,7 @@ if (typeof Object.create === 'function') {
 }
 
 }, {}],
-28: [function(require, module, exports) {
+29: [function(require, module, exports) {
 
 'use strict';
 
@@ -41562,6 +41749,7 @@ AxisController.prototype.pan = function (delta) {
   if ('object' != typeof delta) {
     throw new TypeError("Expecting object.");
   }
+
   var orientation = this.state.orientation;
   var friction = this.scope.state.friction;
 
@@ -41579,6 +41767,293 @@ AxisController.prototype.pan = function (delta) {
 
 }, {"three.js":2,"events":5}],
 25: [function(require, module, exports) {
+
+'use strict';
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The mouse controls module.
+ *
+ * @module axis/controls/mouse
+ * @type {Function}
+ */
+
+void module.exports;
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var inherits = require('inherits')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var AxisController = require('./controller')
+
+/**
+ * Normalizes properties in an Event object and
+ * sets them on the output object
+ *
+ * @private
+ * @param {Event} e - Event object containing movement properties.
+ * @param {Object} o - Output object
+ * @return {Object}
+ */
+
+function normalizeMovements (e, o) {
+  o.x = e.movementX || e.mozMovementX || e.webkitMovementX || o.x || 0;
+  o.y = e.movementY || e.mozMovementY || e.webkitMovementY || o.y || 0;
+}
+
+/**
+ * Initializes mouse controls on Axis.
+ *
+ * @public
+ * @param {Axis} axis - The Axis instance.
+ * @return {MouseController}
+ */
+
+module.exports = function mouse (axis) {
+  return MouseController(axis)
+  .target(axis.camera)
+  .enable();
+};
+
+/**
+ * MouseController constructor
+ *
+ * @public
+ * @constructor
+ * @class MouseController
+ * @extends AxisController
+ * @see {@link module:axis/controls/controller~AxisController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.MouseController = MouseController;
+inherits(MouseController, AxisController);
+function MouseController (scope) {
+  if (!(this instanceof MouseController)) {
+    return new MouseController(scope);
+  }
+
+  // inherit from `AxisController'
+  AxisController.call(this, scope);
+
+  /**
+   * Mouse controller movements.
+   *
+   * @public
+   * @name state.movements
+   * @type {Object}
+   */
+
+  this.state.movements = {
+
+    /**
+     * X movement coordinate value.
+     *
+     * @public
+     * @name state.movement.x
+     * @type {Number}
+     */
+
+    x: 0,
+
+    /**
+     * Y movement coordinate value.
+     *
+     * @public
+     * @name state.movement.y
+     * @type {Number}
+     */
+
+    y: 0
+  };
+
+  /**
+   * Initial mouse controller movement.
+   *
+   * @public
+   * @name state.movementsStart
+   * @type {Object}
+   */
+
+  this.state.movementsStart = {
+
+    /**
+     * X movement start value.
+     *
+     * @public
+     * @name state.movementsStart.x
+     * @type {Object}
+     */
+
+    x: 0,
+
+    /**
+     * Y movement start value.
+     *
+     * @public
+     * @name state.movementsStart.y
+     * @type {Object}
+     */
+
+    y: 0
+  };
+
+  /**
+   * Is mousedown predicate.
+   *
+   * @public
+   * @name state.isMousedown
+   * @type {Boolean}
+   */
+
+  this.state.isMousedown = false;
+
+  /**
+   * Mouseup timeout ID
+   *
+   * @public
+   * @name state.mouseupTimeout
+   * @type {Number}
+   */
+
+  this.state.mouseupTimeout = 0;
+
+  // initialize event delegation.
+  this.events.bind('mousedown');
+  this.events.bind('mousemove');
+  this.events.bind('mouseup');
+}
+
+/**
+ * Handles 'onmousedown' events.
+ *
+ * @private
+ * @name onmousedown
+ * @param {Event} e - Event object.
+ */
+
+MouseController.prototype.onmousedown = function (e) {
+  clearTimeout(this.state.mouseupTimeout);
+  this.state.forceUpdate = false;
+  this.state.isMousedown = true;
+  this.state.movementsStart.x = e.screenX;
+  this.state.movementsStart.y = e.screenY;
+};
+
+/**
+ * Handles 'onmouseup' events.
+ *
+ * @private
+ * @name onmouseup
+ * @param {Event} e - Event object.
+ */
+
+MouseController.prototype.onmouseup = function (e) {
+  this.state.forceUpdate = true;
+  this.state.isMousedown = false;
+  this.state.mouseupTimeout = setTimeout(function () {
+    this.state.forceUpdate = false;
+  }.bind(this), this.scope.state.controllerUpdateTimeout);
+};
+
+/**
+ * Handles 'onmousemove' events.
+ *
+ * @private
+ * @name onmousemove
+ * @param {Event} e - Event object.
+ */
+
+MouseController.prototype.onmousemove = function (e) {
+  var friction = this.scope.state.friction;
+  var movements = this.state.movements;
+  var orientation = this.state.orientation;
+
+  // handle mouse movements only if the mouse controller is enabled
+  if (false == this.state.isEnabled || false == this.state.isMousedown) {
+    return;
+  }
+
+  movements.x = e.screenX - this.state.movementsStart.x;
+  movements.y = e.screenY - this.state.movementsStart.y;
+
+  // normalized movements from event
+  normalizeMovements(e, movements);
+  this.pan(movements);
+
+  this.state.movementsStart.x = e.screenX;
+  this.state.movementsStart.y = e.screenY;
+};
+
+/**
+ * Resets mouse controller state.
+ *
+ * @public
+ * @method
+ * @name reset
+ * @return {MouseController}
+ */
+
+MouseController.prototype.reset = function () {
+  clearTimeout(this.state.mouseupTimeout);
+  AxisController.prototype.reset.call(this);
+  this.state.isMousedown = false;
+  this.state.mouseupTimeout = 0;
+  this.state.movementsStart.x = 0;
+  this.state.movementsStart.y = 0;
+  this.state.movements.x = 0;
+  this.state.movements.y = 0;
+  return this;
+};
+
+/**
+ * Implements AxisController#update() method.
+ *
+ * @public
+ * @method
+ * @name update
+ * @return {MouseController}
+ */
+
+MouseController.prototype.update = function () {
+  if (false == this.state.isMousedown) { return this; }
+  AxisController.prototype.update.call(this);
+  return this;
+};
+
+}, {"inherits":40,"./controller":29}],
+26: [function(require, module, exports) {
 
 'use strict';
 
@@ -41801,8 +42276,8 @@ TouchController.prototype.update = function () {
   return this;
 };
 
-}, {"inherits":39,"three.js":2,"./controller":28,"../constants":17}],
-26: [function(require, module, exports) {
+}, {"inherits":40,"three.js":2,"./controller":29,"../constants":17}],
+27: [function(require, module, exports) {
 
 'use strict';
 
@@ -42209,12 +42684,12 @@ KeyboardController.prototype.onkeyup = function (e) {
     this.state.forceUpdate = true;
     this.state.keyupTimeout = setTimeout(function () {
       this.state.forceUpdate = false;
-    }.bind(this), 1000);
+    }.bind(this), this.scope.state.controllerUpdateTimeout);
   }
 };
 
-}, {"keycode":9,"inherits":39,"./controller":28,"../constants":17}],
-27: [function(require, module, exports) {
+}, {"keycode":9,"inherits":40,"./controller":29,"../constants":17}],
+28: [function(require, module, exports) {
 
 'use strict';
 
@@ -42280,7 +42755,7 @@ function dtor (degrees) {
 }
 
 /**
- * Initialize keyboard controls on Axis.
+ * Initialize orientation controls on Axis.
  *
  * @public
  * @param {Axis} scope - The axis instance
@@ -42336,7 +42811,20 @@ function OrientationController (scope) {
    */
 
   this.state.define('deviceOrientation', function () {
-    return window.orientation;
+    var orientation = screen.orientation || screen.mozOrientation || screen.msOrientation;
+    var type = null;
+
+    if (orientation && orientation.type) {
+      type = orientation.type;
+    }
+
+    switch (type) {
+      case 'landscape-primary': return 90;
+      case 'landscape-secondary': return -90;
+      case 'portrait-secondary': return 180;
+      case 'portrait-primary': return 0;
+      default: return window.orientation || 0;
+    }
   });
 
   /**
@@ -42393,10 +42881,11 @@ OrientationController.prototype.ondeviceorientation = function (e) {
  */
 
 OrientationController.prototype.update = function () {
+  var interpolationFactor = this.scope.state.interpolationFactor;
+  var orientation = dtor(this.state.deviceOrientation);
   var alpha = dtor(this.state.alpha);
   var beta = dtor(this.state.beta);
   var gamma = dtor(this.state.gamma);
-  var orientation = dtor(this.state.deviceOrientation);
   var angle = 0;
 
   if (0 != alpha && 0 != beta && 0 != gamma) {
@@ -42414,9 +42903,10 @@ OrientationController.prototype.update = function () {
     //this.state.quaternions.direction.multiply(this.state.quaternions.device);
     //this.state.quaternions.direction.multiply(this.state.quaternions.world);
     //AxisController.prototype.update.call(this);
-    this.state.target.quaternion.slerp(this.state.quaternions.direction, 0.5);
+    this.state.target.quaternion.slerp(this.state.quaternions.direction,
+                                       interpolationFactor);
   }
   return this;
 };
 
-}, {"keycode":9,"inherits":39,"./controller":28,"../constants":17}]}, {}, {"1":"Axis"})
+}, {"keycode":9,"inherits":40,"./controller":29,"../constants":17}]}, {}, {"1":"Axis"})

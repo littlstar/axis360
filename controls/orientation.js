@@ -119,17 +119,14 @@ function OrientationController (scope) {
    */
 
   this.state.define('deviceOrientation', function () {
-    var orientation = null;
-    var angle = 0;
-    if (window.screen.orientation && window.screen.orientation.angle) {
-      angle = window.screen.orientation.angle;
+    var orientation = screen.orientation || screen.mozOrientation || screen.msOrientation;
+    var type = null;
+
+    if (orientation && orientation.type) {
+      type = orientation.type;
     }
 
-    if (window.screen.mozOrientation && window.screen.mozOrientation.angle) {
-      angle = window.screen.mozOrientation.angle;
-    }
-
-    switch (angle) {
+    switch (type) {
       case 'landscape-primary': return 90;
       case 'landscape-secondary': return -90;
       case 'portrait-secondary': return 180;

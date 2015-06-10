@@ -1,9 +1,9 @@
 {
   "name": "axis",
-  "version": "1.3.6",
+  "version": "1.4.0",
   "private": true,
   "devDependencies": {
-    "duo": "^0.11.x"
+    "duo": "^0.12.x"
   },
   "dependencies": {
     "jsdoc": "^3.3.0"
