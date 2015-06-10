@@ -404,6 +404,6 @@ KeyboardController.prototype.onkeyup = function (e) {
     this.state.forceUpdate = true;
     this.state.keyupTimeout = setTimeout(function () {
       this.state.forceUpdate = false;
-    }.bind(this), 1000);
+    }.bind(this), this.scope.state.controllerUpdateTimeout);
   }
 };

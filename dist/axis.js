@@ -37353,10 +37353,15 @@ Projections.prototype.apply = function (name) {
       this.constraints = {};
     }
 
-    if (2 != dimensions.ratio) {
+    if ('cylinder' == this.scope.geometry()) {
       this.scope.orientation.x = 0;
       this.constraints.y = true;
       this.constraints.x = false;
+    } else {
+      this.scope.orientation.x = this.scope.orientation.x || 0;
+      this.scope.orientation.y = this.scope.orientation.y || 0;
+      this.constraints.y = this.constraints.y || false;
+      this.constraints.x = this.constraints.x || false;
     }
 
     // apply projection
@@ -37597,7 +37602,7 @@ exports.DEFAULT_KEY_PAN_SPEED = 16;
  * @type {Number}
  */
 
-exports.ANIMATION_FACTOR = 12;
+exports.ANIMATION_FACTOR = 24;
 
 /**
  * Max tiny planet projection camera lens value.
@@ -40114,11 +40119,6 @@ module.exports = function (THREE) {
  * @type {Object}
  */
 
-var constraints = flat.constraints = {
-  keys: {up: true, down: true, left: true, right: true},
-  panoramic: true,
-  x: true, y: true
-};
 
 /**
  * Applies a flat projection to Axis frame
@@ -40144,11 +40144,14 @@ function flat (axis) {
   // projection is only supported in a spherical geometry
   if ('cylinder' == axis.geometry()) { return; }
 
-  // cancel current projection animations
-  this.cancel();
-
   // apply equilinear projection
   this.apply('equilinear');
+
+  this.constraints = {
+    keys: {up: true, down: true, left: true, right: true},
+    panoramic: true,
+    x: true, y: true
+  };
 
   // update camera lens
   camera.setLens(80);
@@ -40335,14 +40338,6 @@ var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 // cylinder zoom offet
 var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
 
-/**
- * Equilinear projection constraints.
- *
- * @public
- * @type {Object}
- */
-
-var constraints = equilinear.constraints = {};
 
 /**
  * Applies an equilinear projection to Axis frame
@@ -40371,6 +40366,8 @@ function equilinear (axis) {
   var zoom = CYLINDRICAL_ZOOM;
   var rotation = new three.Vector3(0, 0, 0);
 
+  this.constraints = {};
+
   if ('tinyplanet' != axis.projections.current) {
     rotation.x = camera.position.x;
     rotation.y = camera.position.y;
@@ -40380,6 +40377,11 @@ function equilinear (axis) {
   // apply zoom to cylinder geometry type
   if ('cylinder' == axis.geometry()) {
     fov += zoom;
+    this.constraints.y = true;
+    this.constraints.x = false;
+  } else {
+    this.constraints.y = false;
+    this.constraints.x = false;
   }
 
   // animate
@@ -40451,19 +40453,7 @@ var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 
 // min/max x/y coordinates
 var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE;
-
-/**
- * Tiny planet projection constraints.
- *
- * @public
- * @type {Object}
- */
-
-var constraints = tinyplanet.constraints = {
-  y: true,
-  cache: true,
-  keys: {up: true, down: true}
-};
+var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
 
 /**
  * Applies a tinyplanet projection to Axis frame
@@ -40475,8 +40465,6 @@ var constraints = tinyplanet.constraints = {
 module.exports = tinyplanet;
 function tinyplanet (axis) {
 
-  // this projection requires an already initialized
-  // camera on the `Axis' instance
   var camera = axis.camera;
   var rotation = new three.Vector3(0, 0, 0);
 
@@ -40490,36 +40478,23 @@ function tinyplanet (axis) {
   // projection is only supported in a spherical geometry
   if ('cylinder' == axis.geometry()) { return; }
 
-  // cancel current projection animations
-  this.cancel();
+  this.constraints = {
+    y: true,
+    cache: true,
+    keys: {up: true, down: true}
+  };
 
-  // apply equilinear if current projection is a mirror ball
-  if ('mirrorball' == axis.projection()) {
-    this.apply('equilinear');
-  }
-
-  // cache coordinates if current projection is not
-  // already tiny planet
-  if ('tinyplanet' != axis.projection()) {
-    // cache current coordinates
-    axis.cache(axis.coords());
-  }
-
-  // set camera lens
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
-
-  // update axis field of view
   axis.fov(camera.fov);
-
-  // begin animation
   axis.debug("animate: TINY_PLANET begin");
-  constraints.x = true;
-  constraints.y = false;
+  this.constraints.x = true;
+  this.constraints.y = false;
   rotation.x = camera.target.x || 0;
   rotation.y = camera.target.y || 0;
   rotation.z = camera.target.z || -1;
   this.animate(function () {
     var y = rotation.y;
+    var x = rotation.x;
     axis.debug("animate: TINY_PLANET y=%d", y);
     if (y > MIN_Y_COORDINATE) {
 
@@ -40528,15 +40503,22 @@ function tinyplanet (axis) {
       } else {
         rotation.y = MIN_Y_COORDINATE;
       }
+
+      if (x > MIN_X_COORDINATE) {
+        rotation.x = x -ANIMATION_FACTOR;
+      } else {
+        rotation.x = MIN_X_COORDINATE;
+      }
+
+      axis.lookAt(rotation.x, rotation.y, rotation.z);
     } else {
+      axis.lookAt(rotation.x, rotation.y, rotation.z);
       axis.orientation.x = -Infinity;
-      constraints.x = false;
-      constraints.y = true;
+      this.constraints.x = false;
+      this.constraints.y = true;
       axis.debug("animate: TINY_PLANET end");
       this.cancel();
     }
-
-    axis.lookAt(rotation.x, rotation.y, rotation.z);
   });
 };
 
@@ -40603,8 +40585,8 @@ var AxisController = require('./controller')
  */
 
 function normalizeMovements (e, o) {
-  o.x = e.movementX || e.mozMovementX || e.webkitMovementX || 0;
-  o.y = e.movementY || e.mozMovementY || e.webkitMovementY || 0;
+  o.x = e.movementX || e.mozMovementX || e.webkitMovementX || o.x || 0;
+  o.y = e.movementY || e.mozMovementY || e.webkitMovementY || o.y || 0;
 }
 
 /**
@@ -40742,6 +40724,8 @@ MouseController.prototype.onmousedown = function (e) {
   clearTimeout(this.state.mouseupTimeout);
   this.state.forceUpdate = false;
   this.state.isMousedown = true;
+  this.state.movementsStart.x = e.screenX;
+  this.state.movementsStart.y = e.screenY;
 };
 
 /**
@@ -40778,10 +40762,15 @@ MouseController.prototype.onmousemove = function (e) {
     return;
   }
 
+  movements.x = e.screenX - this.state.movementsStart.x;
+  movements.y = e.screenY - this.state.movementsStart.y;
+
   // normalized movements from event
   normalizeMovements(e, movements);
-
   this.pan(movements);
+
+  this.state.movementsStart.x = e.screenX;
+  this.state.movementsStart.y = e.screenY;
 };
 
 /**

@@ -34,19 +34,6 @@
  */
 
 /**
- * Flat projection constraints.
- *
- * @public
- * @type {Object}
- */
-
-var constraints = flat.constraints = {
-  keys: {up: true, down: true, left: true, right: true},
-  panoramic: true,
-  x: true, y: true
-};
-
-/**
  * Applies a flat projection to Axis frame
  *
  * @api public
@@ -70,11 +57,14 @@ function flat (axis) {
   // projection is only supported in a spherical geometry
   if ('cylinder' == axis.geometry()) { return; }
 
-  // cancel current projection animations
-  this.cancel();
-
   // apply equilinear projection
   this.apply('equilinear');
+
+  this.constraints = {
+    keys: {up: true, down: true, left: true, right: true},
+    panoramic: true,
+    x: true, y: true
+  };
 
   // update camera lens
   camera.setLens(80);

@@ -141,11 +141,6 @@ function Axis (parent, opts) {
     new three.CanvasRenderer()
   );
 
-  /** Axis' VR effect instance. */
-  this.vreffect = new three.VREffect(this.renderer, function (e) {
-    self.debug('VREffect:', e);
-  });
-
   /** Axis' texture instance. */
   this.texture = null;
 
@@ -172,6 +167,7 @@ function Axis (parent, opts) {
 
   /** Axis' controls. */
   this.controls = {
+    vr: require('./controls/vr')(this),
     mouse: require('./controls/mouse')(this),
     touch: require('./controls/touch')(this),
     keyboard: require('./controls/keyboard')(this),
@@ -352,7 +348,7 @@ Axis.prototype.oncanplaythrough = function (e) {
   if (false == this.state.shouldAutoplay) {
     this.state.update('isPaused', true);
     this.video.pause();
-  } else {
+  } else if (false == this.state.isStopped) {
     this.video.play();
   }
 };
@@ -365,12 +361,11 @@ Axis.prototype.oncanplaythrough = function (e) {
  */
 
 Axis.prototype.onplay = function (e) {
-  raf(function() {
-    this.debug('onplay');
-    this.state.update('isPaused', false);
-    this.state.update('isEnded', false);
-    this.emit('play', e);
-  }.bind(this));
+  this.debug('onplay');
+  this.state.update('isPaused', false);
+  this.state.update('isEnded', false);
+  this.state.update('isStopped', false);
+  this.emit('play', e);
 };
 
 /**
@@ -798,6 +793,8 @@ Axis.prototype.pause = function () {
   if (false == this.state.isImage) {
     this.debug('pause');
     this.video.pause();
+    this.state.update('isPlaying', false);
+    this.state.update('isPaused', true);
   }
   return this;
 };
@@ -817,7 +814,7 @@ Axis.prototype.fullscreen = function (el) {
     fullscreen.exit();
     return;
   } else if (this.state.isVREnabled) {
-    opts = {vrDisplay: this.vreffect._vrHMD};
+    opts = {vrDisplay: this.state.vrHMD};
   } else if (! this.state.isFullscreen) {
     var canvasStyle = getComputedStyle(this.renderer.domElement);
     this.state.update('lastSize', {
@@ -865,9 +862,7 @@ Axis.prototype.mute = function (mute) {
   if (false == mute) {
     this.video.muted = false;
     this.state.update('isMuted', false);
-    if (0 == this.volume()) {
-      this.volume(this.state.lastvolume);
-    }
+    this.volume(this.state.lastVolume);
   } else {
     this.state.update('isMuted', true);
     this.video.muted = true;
@@ -983,10 +978,10 @@ Axis.prototype.resizable = function (resizable) {
 
 Axis.prototype.seek = function (seconds) {
   if (false == this.state.isImage) {
-    if (seconds >= 0 && seconds <= this.video.duration) {
+    //if (seconds >= 0 && seconds <= this.video.duration) {
       this.video.currentTime = seconds;
       this.emit('seek', seconds);
-    }
+    //}
   }
   return this;
 };
@@ -1047,40 +1042,10 @@ Axis.prototype.draw = function () {
   var sensor = this.state.vrPositionSensor;;
   var hmd = this.state.vrHMD;
 
-  if (this.state.isVREnabled) {
-    if (hmd) {
-      // get state
-      var vrstate = sensor.getImmediateState();
-      // get orientation
-      var orientation = vrstate.orientation;
-      // get position
-      var position = vrstate.position;
-      // create quat
-      var quat = new three.Quaternion(orientation.x,
-                                      orientation.y,
-                                      orientation.z,
-                                      orientation.w);
-     if (this.camera) {
-       this.camera.quaternion.copy(quat);
-       if (position) {
-         this.camera.position.applyQuaternion(position).multiplyScalar(1);
-       }
-
-       this.camera.updateProjectionMatrix();
-     }
-    }
-  }
-
-  if (this.orientation && 'function' == typeof this.orientation.update) {
-    this.orientation.update();
-  }
-
   this.emit('before:render');
 
   if (this.renderer && this.scene && this.camera) {
-    if (this.state.isVREnabled) {
-      this.vreffect.render(this.scene, this.camera);
-    } else {
+    if (false == this.state.isVREnabled) {
       this.renderer.render(this.scene, this.camera);
     }
   }
@@ -1274,7 +1239,8 @@ Axis.prototype.destroy = function () {
   empty(this.domElement);
   this.domElement.parentElement.removeChild(this.domElement);
   function empty (el) {
-    while (el.lastChild) el.removeChild(el);
+    try { while (el.lastChild) el.removeChild(el); }
+    catch (e) {}
   }
   return this;
 };
@@ -1287,8 +1253,9 @@ Axis.prototype.destroy = function () {
 
 Axis.prototype.stop = function () {
   if (true == this.state.isImage) { return; }
-  this.pause();
   this.video.currentTime = 0;
+  this.state.update('isStopped', true);
+  this.pause();
   return this;
 };
 

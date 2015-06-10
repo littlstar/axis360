@@ -723,6 +723,7 @@ AxisController.prototype.pan = function (delta) {
   if ('object' != typeof delta) {
     throw new TypeError("Expecting object.");
   }
+
   var orientation = this.state.orientation;
   var friction = this.scope.state.friction;
 

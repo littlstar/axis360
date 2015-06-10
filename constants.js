@@ -110,7 +110,18 @@ exports.DEFAULT_FRICTION = 0.0025;
  * @type {Number}
  */
 
-exports.DEFAULT_KEY_PAN_SPEED = 16;
+exports.DEFAULT_KEY_PAN_SPEED = 8;
+
+/**
+ * Default controller update timeout.
+ *
+ * @public
+ * @const
+ * @name DEFAULT_CONTROLLER_UPDATE_TIMEOUT
+ * @type {Number}
+ */
+
+exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
 
 /**
  * Animation factor unit applied to changes in
@@ -123,7 +134,7 @@ exports.DEFAULT_KEY_PAN_SPEED = 16;
  * @type {Number}
  */
 
-exports.ANIMATION_FACTOR = 12;
+exports.ANIMATION_FACTOR = 24;
 
 /**
  * Max tiny planet projection camera lens value.

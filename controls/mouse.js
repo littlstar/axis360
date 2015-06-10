@@ -215,7 +215,7 @@ MouseController.prototype.onmouseup = function (e) {
   this.state.isMousedown = false;
   this.state.mouseupTimeout = setTimeout(function () {
     this.state.forceUpdate = false;
-  }.bind(this), 1000);
+  }.bind(this), this.scope.state.controllerUpdateTimeout);
 };
 
 /**

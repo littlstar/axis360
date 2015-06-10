@@ -235,7 +235,7 @@ Projections.prototype.apply = function (name) {
       this.constraints = {};
     }
 
-    if (2 != dimensions.ratio) {
+    if ('cylinder' == this.scope.geometry()) {
       this.scope.orientation.x = 0;
       this.constraints.y = true;
       this.constraints.x = false;

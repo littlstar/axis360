@@ -63,7 +63,7 @@ function dtor (degrees) {
 }
 
 /**
- * Initialize keyboard controls on Axis.
+ * Initialize orientation controls on Axis.
  *
  * @public
  * @param {Axis} scope - The axis instance
@@ -119,7 +119,23 @@ function OrientationController (scope) {
    */
 
   this.state.define('deviceOrientation', function () {
-    return window.orientation;
+    var orientation = null;
+    var angle = 0;
+    if (window.screen.orientation && window.screen.orientation.angle) {
+      angle = window.screen.orientation.angle;
+    }
+
+    if (window.screen.mozOrientation && window.screen.mozOrientation.angle) {
+      angle = window.screen.mozOrientation.angle;
+    }
+
+    switch (angle) {
+      case 'landscape-primary': return 90;
+      case 'landscape-secondary': return -90;
+      case 'portrait-secondary': return 180;
+      case 'portrait-primary': return 0;
+      default: return window.orientation || 0;
+    }
   });
 
   /**
@@ -176,10 +192,11 @@ OrientationController.prototype.ondeviceorientation = function (e) {
  */
 
 OrientationController.prototype.update = function () {
+  var interpolationFactor = this.scope.state.interpolationFactor;
+  var orientation = dtor(this.state.deviceOrientation);
   var alpha = dtor(this.state.alpha);
   var beta = dtor(this.state.beta);
   var gamma = dtor(this.state.gamma);
-  var orientation = dtor(this.state.deviceOrientation);
   var angle = 0;
 
   if (0 != alpha && 0 != beta && 0 != gamma) {
@@ -197,7 +214,8 @@ OrientationController.prototype.update = function () {
     //this.state.quaternions.direction.multiply(this.state.quaternions.device);
     //this.state.quaternions.direction.multiply(this.state.quaternions.world);
     //AxisController.prototype.update.call(this);
-    this.state.target.quaternion.slerp(this.state.quaternions.direction, 0.5);
+    this.state.target.quaternion.slerp(this.state.quaternions.direction,
+                                       interpolationFactor);
   }
   return this;
 };

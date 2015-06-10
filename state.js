@@ -69,6 +69,7 @@ var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY;
 var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS;
 var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
+var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
 
 /**
  * State constructor
@@ -84,7 +85,7 @@ var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
  * user.
  * @param {Boolean} [opts.forceFocus = false] - Force focus to axis frame. This
  * will hijack mouse and key events.
- * @param {Boolean} [opts.isResizable = false] - Allow the axis frame to be
+ * @param {Boolean} [opts.resizable = false] - Allow the axis frame to be
  * resizable.
  * @param {Boolean} [opts.isClickable = true] - Allow the axis frame to be
  * clickable.
@@ -105,6 +106,8 @@ var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
  * @param {Number} [opts.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR] -
  * Interpolation factor to apply to quaternion rotations.
  * @param {Boolean} [opts.useSlerp = true] - Use spherical linear interpolations.
+ * @param {Number} [opts.updateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT] -
+ * View controller update timeout.
  */
 
 module.exports = State;
@@ -242,6 +245,9 @@ function State (scope, opts) {
   /** Interpolation factor to apply to quaternion rotations. */
   this.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR;
 
+  /** Controller update timeout value. */
+  this.controllerUpdateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
+
   /**
    * State predicates.
    */
@@ -269,6 +275,9 @@ function State (scope, opts) {
 
   /** Predicate indicating is video is paused. */
   this.isPaused = false;
+
+  /** Predicate indicating if video was stopped. */
+  this.isStopped = false;
 
   /** Predicate to indicating if Axis is clickable.*/
   this.isClickable = true;
@@ -370,6 +379,10 @@ State.prototype.reset = function (overrides) {
     opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR
   );
 
+  this.controllerUpdateTimeout = (
+    opts.updateTimeout || DEFAULT_CONTROLLER_UPDATE_TIMEOUT
+  );
+
   /**
    * State variables.
    */
@@ -409,6 +422,7 @@ State.prototype.reset = function (overrides) {
   this.isKeydown = false;
   this.isPlaying = false;
   this.isPaused = false;
+  this.isStopped = false;
   this.isAnimating = false;
   this.isFullscreen = false;
   this.isMousedown = false;

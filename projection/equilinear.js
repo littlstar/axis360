@@ -61,14 +61,6 @@ var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 // cylinder zoom offet
 var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
 
-/**
- * Equilinear projection constraints.
- *
- * @public
- * @type {Object}
- */
-
-var constraints = equilinear.constraints = {};
 
 /**
  * Applies an equilinear projection to Axis frame
@@ -96,6 +88,8 @@ function equilinear (axis) {
   var fov = DEFAULT_FOV;
   var zoom = CYLINDRICAL_ZOOM;
   var rotation = new three.Vector3(0, 0, 0);
+
+  this.constraints = {};
 
   if ('tinyplanet' != axis.projections.current) {
     rotation.x = camera.position.x;
