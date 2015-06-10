@@ -239,6 +239,11 @@ Projections.prototype.apply = function (name) {
       this.scope.orientation.x = 0;
       this.constraints.y = true;
       this.constraints.x = false;
+    } else {
+      this.scope.orientation.x = this.scope.orientation.x || 0;
+      this.scope.orientation.y = this.scope.orientation.y || 0;
+      this.constraints.y = this.constraints.y || false;
+      this.constraints.x = this.constraints.x || false;
     }
 
     // apply projection

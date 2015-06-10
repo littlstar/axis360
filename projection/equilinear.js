@@ -106,6 +106,11 @@ function equilinear (axis) {
   // apply zoom to cylinder geometry type
   if ('cylinder' == axis.geometry()) {
     fov += zoom;
+    this.constraints.y = true;
+    this.constraints.x = false;
+  } else {
+    this.constraints.y = false;
+    this.constraints.x = false;
   }
 
   // animate

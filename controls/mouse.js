@@ -59,8 +59,8 @@ var AxisController = require('./controller')
  */
 
 function normalizeMovements (e, o) {
-  o.x = e.movementX || e.mozMovementX || e.webkitMovementX || 0;
-  o.y = e.movementY || e.mozMovementY || e.webkitMovementY || 0;
+  o.x = e.movementX || e.mozMovementX || e.webkitMovementX || o.x || 0;
+  o.y = e.movementY || e.mozMovementY || e.webkitMovementY || o.y || 0;
 }
 
 /**
@@ -198,6 +198,8 @@ MouseController.prototype.onmousedown = function (e) {
   clearTimeout(this.state.mouseupTimeout);
   this.state.forceUpdate = false;
   this.state.isMousedown = true;
+  this.state.movementsStart.x = e.screenX;
+  this.state.movementsStart.y = e.screenY;
 };
 
 /**
@@ -234,10 +236,15 @@ MouseController.prototype.onmousemove = function (e) {
     return;
   }
 
+  movements.x = e.screenX - this.state.movementsStart.x;
+  movements.y = e.screenY - this.state.movementsStart.y;
+
   // normalized movements from event
   normalizeMovements(e, movements);
-
   this.pan(movements);
+
+  this.state.movementsStart.x = e.screenX;
+  this.state.movementsStart.y = e.screenY;
 };
 
 /**
