@@ -222,11 +222,11 @@ function KeyboardController (scope) {
   this.reset();
 
   this.use('up', function (data) {
-    this.pan({x: 0, y: -this.state.panSpeed});
+    this.pan({x: 0, y: -this.state.panSpeed / 2});
   });
 
   this.use('down', function (data) {
-    this.pan({x: 0, y: this.state.panSpeed});
+    this.pan({x: 0, y: this.state.panSpeed / 2});
   });
 
   this.use('left', function (data) {
@@ -377,16 +377,17 @@ KeyboardController.prototype.onkeydown = function (e) {
     // prevent default actions
     e.preventDefault();
 
-    /**
-     * Key down event.
-     *
-     * @public
-     * @event module:axis~Axis#keydown
-     * @type {Event}
-     */
-
-    this.scope.emit('keydown', e);
   }
+
+  /**
+   * Key down event.
+   *
+   * @public
+   * @event module:axis~Axis#keydown
+   * @type {Event}
+   */
+
+  this.scope.emit('keydown', e);
 };
 
 /**

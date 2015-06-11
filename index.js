@@ -137,7 +137,7 @@ function Axis (parent, opts) {
 
   /** Axis' renderer instance.*/
   this.renderer = opts.renderer || (
-    hasWebGL ?
+    false != opts.webgl && hasWebGL ?
     new three.WebGLRenderer({antialias: true}) :
     new three.CanvasRenderer()
   );
@@ -233,9 +233,13 @@ function Axis (parent, opts) {
   eventDelegation.element.bind('touchmove');
 
   // renderer options
-  this.renderer.autoClear = null != opts.autoClear ? opts.autoClear : true;
-  this.renderer.setPixelRatio(opts.devicePixelRatio || window.devicePixelRatio);
-  this.renderer.setClearColor(opts.clearColor || 0x000, 1);
+  try {
+    this.renderer.autoClear = null != opts.autoClear ? opts.autoClear : true;
+    this.renderer.setPixelRatio(opts.devicePixelRatio || window.devicePixelRatio);
+    this.renderer.setClearColor(opts.clearColor || 0x000, 1);
+  } catch (e) {
+    console.warn(e);
+  }
 
   // attach renderer to instance node container
   this.domElement.querySelector('.container').appendChild(this.renderer.domElement);
@@ -341,6 +345,8 @@ Axis.prototype.oncanplaythrough = function (e) {
     this.texture.minFilter = three.LinearFilter;
     this.texture.magFilter = three.LinearFilter;
     this.texture.generateMipmaps = false;
+    this.texture.image.width = this.video.videoWidth;
+    this.texture.image.height = this.video.videoHeight;
   }
 
   this.emit('canplaythrough', e);

@@ -320,6 +320,8 @@ Projections.prototype.initializeScene = function () {
     var material = new three.MeshBasicMaterial({map: scope.texture});
     var mesh = new three.Mesh(geo, material);
 
+    material.overdraw = 0.5
+
     // current projection
     var projection = scope.projection();
 

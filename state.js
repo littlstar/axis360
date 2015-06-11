@@ -42,6 +42,7 @@
 var EventEmitter = require('emitter')
   , fullscreen = require('fullscreen')
   , keycode = require('keycode')
+  , hasWebGL = require('has-webgl')
   , events = require('events')
   , three = require('three.js')
   , merge = require('merge')
@@ -108,6 +109,7 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * @param {Boolean} [opts.useSlerp = true] - Use spherical linear interpolations.
  * @param {Number} [opts.updateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT] -
  * View controller update timeout.
+ * @param {Boolean} [opts.webgl = true] - Use WebGL rendering.
  */
 
 module.exports = State;
@@ -315,6 +317,9 @@ function State (scope, opts) {
   /** Predicate indicating if touching. */
   this.isTouching = false;
 
+  /** Predicate indicating if WebGL is being used. */
+  this.useWebGL = true;
+
   /** Predicate indicating if a video should autoplay. */
   this.shouldAutoplay = false;
 
@@ -375,6 +380,7 @@ State.prototype.reset = function (overrides) {
   this.allowWheel = null == opts.allowWheel ? false : opts.allowWheel;
   this.friction = opts.friction || DEFAULT_FRICTION;
   this.useSlerp = opts.useSlerp || true;
+  this.useWebGL = opts.webgl && hasWebGL;
   this.interpolationFactor = (
     opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR
   );
@@ -414,6 +420,7 @@ State.prototype.reset = function (overrides) {
    * State predicates.
    */
 
+  this.useWebGL = hasWebGL;
   this.isReady = false;
   this.isMuted = false;
   this.isEnded = false;

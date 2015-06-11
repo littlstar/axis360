@@ -92,7 +92,8 @@
     <button id="toggle-vr-mode">Toggle VR Mode</button>
     <script type="text/javascript" charset="utf-8">
       //var Axis = require('axis')
-      var frame = new Axis(document.querySelector('.normal.video'), {
+    var frame = new Axis(document.querySelector('.normal.video'), {
+        webgl: false,
         crossorigin: true,
         resizable: true,
         preload: true,
