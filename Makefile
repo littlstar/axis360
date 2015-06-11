@@ -48,7 +48,7 @@ endef
 ##
 # Builds everything
 #
-all: build dist
+all: build dist doc
 
 ##
 # Builds all files

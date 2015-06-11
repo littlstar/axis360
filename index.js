@@ -92,10 +92,11 @@ Axis.util = require('./util');
  * Axis constructor
  *
  * @public
+ * @default
  * @class Axis
  * @extends EventEmitter
  * @param {Object} parent - Parent DOM Element
- * @param {Object} [opts] - Constructor options passed to the axis
+ * @param {Object} [opts] - Constructor ptions passed to the axis
  * state instance.
  * @see {@link module:axis/state~State}
  */
@@ -1421,4 +1422,26 @@ Axis.prototype.fov = function (fov) {
     this.state.update('fov', fov);
   }
   return this;
+};
+
+/**
+ * Enables VR mode.
+ *
+ * @public
+ */
+
+Axis.prototype.enableVRMode = function () {
+  this.state.isVREnabled = true;
+  return this.render();
+};
+
+/**
+ * Disables VR mode.
+ *
+ * @public
+ */
+
+Axis.prototype.disableVRMode = function () {
+  this.state.isVREnabled = false;
+  return this.render();
 };

@@ -113,14 +113,18 @@ var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var CARTESIAN_CALIBRATION_VALUE = constants.CARTESIAN_CALIBRATION_VALUE;
 
+// expose util
+Axis.util = require('./util');
+
 /**
  * Axis constructor
  *
  * @public
+ * @default
  * @class Axis
  * @extends EventEmitter
  * @param {Object} parent - Parent DOM Element
- * @param {Object} [opts] - Constructor options passed to the axis
+ * @param {Object} [opts] - Constructor ptions passed to the axis
  * state instance.
  * @see {@link module:axis/state~State}
  */
@@ -166,11 +170,6 @@ function Axis (parent, opts) {
     new three.CanvasRenderer()
   );
 
-  /** Axis' VR effect instance. */
-  this.vreffect = new three.VREffect(this.renderer, function (e) {
-    self.debug('VREffect:', e);
-  });
-
   /** Axis' texture instance. */
   this.texture = null;
 
@@ -197,6 +196,7 @@ function Axis (parent, opts) {
 
   /** Axis' controls. */
   this.controls = {
+    vr: require('./controls/vr')(this),
     mouse: require('./controls/mouse')(this),
     touch: require('./controls/touch')(this),
     keyboard: require('./controls/keyboard')(this),
@@ -377,7 +377,7 @@ Axis.prototype.oncanplaythrough = function (e) {
   if (false == this.state.shouldAutoplay) {
     this.state.update('isPaused', true);
     this.video.pause();
-  } else {
+  } else if (false == this.state.isStopped) {
     this.video.play();
   }
 };
@@ -390,12 +390,11 @@ Axis.prototype.oncanplaythrough = function (e) {
  */
 
 Axis.prototype.onplay = function (e) {
-  raf(function() {
-    this.debug('onplay');
-    this.state.update('isPaused', false);
-    this.state.update('isEnded', false);
-    this.emit('play', e);
-  }.bind(this));
+  this.debug('onplay');
+  this.state.update('isPaused', false);
+  this.state.update('isEnded', false);
+  this.state.update('isStopped', false);
+  this.emit('play', e);
 };
 
 /**
@@ -823,6 +822,8 @@ Axis.prototype.pause = function () {
   if (false == this.state.isImage) {
     this.debug('pause');
     this.video.pause();
+    this.state.update('isPlaying', false);
+    this.state.update('isPaused', true);
   }
   return this;
 };
@@ -842,7 +843,7 @@ Axis.prototype.fullscreen = function (el) {
     fullscreen.exit();
     return;
   } else if (this.state.isVREnabled) {
-    opts = {vrDisplay: this.vreffect._vrHMD};
+    opts = {vrDisplay: this.state.vrHMD};
   } else if (! this.state.isFullscreen) {
     var canvasStyle = getComputedStyle(this.renderer.domElement);
     this.state.update('lastSize', {
@@ -890,9 +891,7 @@ Axis.prototype.mute = function (mute) {
   if (false == mute) {
     this.video.muted = false;
     this.state.update('isMuted', false);
-    if (0 == this.volume()) {
-      this.volume(this.state.lastvolume);
-    }
+    this.volume(this.state.lastVolume);
   } else {
     this.state.update('isMuted', true);
     this.video.muted = true;
@@ -1008,10 +1007,10 @@ Axis.prototype.resizable = function (resizable) {
 
 Axis.prototype.seek = function (seconds) {
   if (false == this.state.isImage) {
-    if (seconds >= 0 &amp;&amp; seconds &lt;= this.video.duration) {
+    //if (seconds >= 0 &amp;&amp; seconds &lt;= this.video.duration) {
       this.video.currentTime = seconds;
       this.emit('seek', seconds);
-    }
+    //}
   }
   return this;
 };
@@ -1072,40 +1071,10 @@ Axis.prototype.draw = function () {
   var sensor = this.state.vrPositionSensor;;
   var hmd = this.state.vrHMD;
 
-  if (this.state.isVREnabled) {
-    if (hmd) {
-      // get state
-      var vrstate = sensor.getImmediateState();
-      // get orientation
-      var orientation = vrstate.orientation;
-      // get position
-      var position = vrstate.position;
-      // create quat
-      var quat = new three.Quaternion(orientation.x,
-                                      orientation.y,
-                                      orientation.z,
-                                      orientation.w);
-     if (this.camera) {
-       this.camera.quaternion.copy(quat);
-       if (position) {
-         this.camera.position.applyQuaternion(position).multiplyScalar(1);
-       }
-
-       this.camera.updateProjectionMatrix();
-     }
-    }
-  }
-
-  if (this.orientation &amp;&amp; 'function' == typeof this.orientation.update) {
-    this.orientation.update();
-  }
-
   this.emit('before:render');
 
   if (this.renderer &amp;&amp; this.scene &amp;&amp; this.camera) {
-    if (this.state.isVREnabled) {
-      this.vreffect.render(this.scene, this.camera);
-    } else {
+    if (false == this.state.isVREnabled) {
       this.renderer.render(this.scene, this.camera);
     }
   }
@@ -1299,7 +1268,8 @@ Axis.prototype.destroy = function () {
   empty(this.domElement);
   this.domElement.parentElement.removeChild(this.domElement);
   function empty (el) {
-    while (el.lastChild) el.removeChild(el);
+    try { while (el.lastChild) el.removeChild(el); }
+    catch (e) {}
   }
   return this;
 };
@@ -1312,8 +1282,9 @@ Axis.prototype.destroy = function () {
 
 Axis.prototype.stop = function () {
   if (true == this.state.isImage) { return; }
-  this.pause();
   this.video.currentTime = 0;
+  this.state.update('isStopped', true);
+  this.pause();
   return this;
 };
 
@@ -1453,8 +1424,10 @@ Axis.prototype.dimensions = function () {
   var ratio = 0;
 
   if (this.state.isImage) {
-    height = this.texture.image.height;
-    width = this.texture.image.width;
+    if (this.texture.image) {
+      height = this.texture.image.height;
+      width = this.texture.image.width;
+    }
   } else {
     height = this.video.videoHeight;
     width = this.video.videoWidth;
@@ -1478,6 +1451,28 @@ Axis.prototype.fov = function (fov) {
   }
   return this;
 };
+
+/**
+ * Enables VR mode.
+ *
+ * @public
+ */
+
+Axis.prototype.enableVRMode = function () {
+  this.state.isVREnabled = true;
+  return this.render();
+};
+
+/**
+ * Disables VR mode.
+ *
+ * @public
+ */
+
+Axis.prototype.disableVRMode = function () {
+  this.state.isVREnabled = false;
+  return this.render();
+};
 </code></pre>
         </article>
     </section>
@@ -1488,13 +1483,13 @@ Axis.prototype.fov = function (fov) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.html">axis/controls/keyboard</a></li><li><a href="module-axis_controls_orientation.html">axis/controls/orientation</a></li><li><a href="module-axis_controls_touch.html">axis/controls/touch</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.KeyboardController.html">KeyboardController</a></li><li><a href="module-axis_controls_orientation.OrientationController.html">OrientationController</a></li><li><a href="module-axis_controls_touch.TouchController.html">TouchController</a></li><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#three">three</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.html">axis/controls/keyboard</a></li><li><a href="module-axis_controls_orientation.html">axis/controls/orientation</a></li><li><a href="module-axis_controls_touch.html">axis/controls/touch</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.KeyboardController.html">KeyboardController</a></li><li><a href="module-axis_controls_orientation.OrientationController.html">OrientationController</a></li><li><a href="module-axis_controls_touch.TouchController.html">TouchController</a></li><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#createCamera">createCamera</a></li><li><a href="global.html#three">three</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Tue Jun 09 2015 14:09:16 GMT-0400 (EDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.1</a> on Thu Jun 11 2015 11:18:43 GMT-0400 (EDT)
 </footer>
 
 <script> prettyPrint(); </script>

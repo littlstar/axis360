@@ -9,24 +9,29 @@ var three = require('three.js')
 var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
 
 /**
- * Creates a `PerspectiveCamera' instance
- * and assigns it to `Axis' instance if
- * `.camera' is `null'. It will override the
- * camera if 'mirrorball' is the current
- * projection.
+ * Creates an instance of THREE.PerspectiveCamera
+ * and assigns it to a scope object if not null.
  *
- * @api public
- * @param {Axis} axis
+ * @public
+ * @name createCamera
+ * @param {Object} scope - Scope object to assign camera to.
+ * @param {Boolean} force - Force creation and assignment.
+ * @return {THREE.PerspectiveCamera}
  */
 
-module.exports = function (axis) {
-  var height = axis.height();
-  var width = axis.width();
+module.exports = function createCamera (scope, force) {
+  var height = scope.height();
+  var width = scope.width();
   var ratio = width / height;
-  if (null == axis.camera || 'mirrorball' == axis.projection()) {
-    axis.camera = new three.PerspectiveCamera(DEFAULT_FOV, ratio, 0.01, 1000);
-    axis.camera.target = new three.Vector3(0, 0, 0);
-    axis.camera.rotation.reorder('YXZ');
+  var camera = scope.camera;
+  var vector = null;
+  var target = null;
+  if (null == scope.camera || true == force) {
+    vector = new three.Vector3(0, 0, 0);
+    target = camera && camera.target ? camera.target : vector;
+    scope.camera = new three.PerspectiveCamera(DEFAULT_FOV, ratio, 0.01, 1000);
+    scope.camera.target = target;
+    scope.camera.rotation.reorder('YXZ');
   }
-  return axis.camera;
+  return scope.camera;
 };

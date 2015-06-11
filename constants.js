@@ -41,6 +41,7 @@ void module.exports;
  * @const
  * @name DEFAULT_FOV
  * @type {Number}
+ * @value 60
  */
 
 exports.DEFAULT_FOV = 60;

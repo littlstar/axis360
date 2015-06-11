@@ -83,19 +83,7 @@ var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 
 // min/max x/y coordinates
 var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE;
-
-/**
- * Tiny planet projection constraints.
- *
- * @public
- * @type {Object}
- */
-
-var constraints = tinyplanet.constraints = {
-  y: true,
-  cache: true,
-  keys: {up: true, down: true}
-};
+var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
 
 /**
  * Applies a tinyplanet projection to Axis frame
@@ -107,8 +95,6 @@ var constraints = tinyplanet.constraints = {
 module.exports = tinyplanet;
 function tinyplanet (axis) {
 
-  // this projection requires an already initialized
-  // camera on the `Axis' instance
   var camera = axis.camera;
   var rotation = new three.Vector3(0, 0, 0);
 
@@ -122,36 +108,23 @@ function tinyplanet (axis) {
   // projection is only supported in a spherical geometry
   if ('cylinder' == axis.geometry()) { return; }
 
-  // cancel current projection animations
-  this.cancel();
+  this.constraints = {
+    y: true,
+    cache: true,
+    keys: {up: true, down: true}
+  };
 
-  // apply equilinear if current projection is a mirror ball
-  if ('mirrorball' == axis.projection()) {
-    this.apply('equilinear');
-  }
-
-  // cache coordinates if current projection is not
-  // already tiny planet
-  if ('tinyplanet' != axis.projection()) {
-    // cache current coordinates
-    axis.cache(axis.coords());
-  }
-
-  // set camera lens
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
-
-  // update axis field of view
   axis.fov(camera.fov);
-
-  // begin animation
   axis.debug("animate: TINY_PLANET begin");
-  constraints.x = true;
-  constraints.y = false;
+  this.constraints.x = true;
+  this.constraints.y = false;
   rotation.x = camera.target.x || 0;
   rotation.y = camera.target.y || 0;
   rotation.z = camera.target.z || -1;
   this.animate(function () {
     var y = rotation.y;
+    var x = rotation.x;
     axis.debug("animate: TINY_PLANET y=%d", y);
     if (y > MIN_Y_COORDINATE) {
 
@@ -160,15 +133,22 @@ function tinyplanet (axis) {
       } else {
         rotation.y = MIN_Y_COORDINATE;
       }
+
+      if (x > MIN_X_COORDINATE) {
+        rotation.x = x -ANIMATION_FACTOR;
+      } else {
+        rotation.x = MIN_X_COORDINATE;
+      }
+
+      axis.lookAt(rotation.x, rotation.y, rotation.z);
     } else {
+      axis.lookAt(rotation.x, rotation.y, rotation.z);
       axis.orientation.x = -Infinity;
-      constraints.x = false;
-      constraints.y = true;
+      this.constraints.x = false;
+      this.constraints.y = true;
       axis.debug("animate: TINY_PLANET end");
       this.cancel();
     }
-
-    axis.lookAt(rotation.x, rotation.y, rotation.z);
   });
 };
 </code></pre>
@@ -181,13 +161,13 @@ function tinyplanet (axis) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.html">axis/controls/keyboard</a></li><li><a href="module-axis_controls_orientation.html">axis/controls/orientation</a></li><li><a href="module-axis_controls_touch.html">axis/controls/touch</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.KeyboardController.html">KeyboardController</a></li><li><a href="module-axis_controls_orientation.OrientationController.html">OrientationController</a></li><li><a href="module-axis_controls_touch.TouchController.html">TouchController</a></li><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#three">three</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.html">axis/controls/keyboard</a></li><li><a href="module-axis_controls_orientation.html">axis/controls/orientation</a></li><li><a href="module-axis_controls_touch.html">axis/controls/touch</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.KeyboardController.html">KeyboardController</a></li><li><a href="module-axis_controls_orientation.OrientationController.html">OrientationController</a></li><li><a href="module-axis_controls_touch.TouchController.html">TouchController</a></li><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#createCamera">createCamera</a></li><li><a href="global.html#three">three</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Tue Jun 09 2015 14:09:16 GMT-0400 (EDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.1</a> on Thu Jun 11 2015 11:18:43 GMT-0400 (EDT)
 </footer>
 
 <script> prettyPrint(); </script>

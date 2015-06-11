@@ -180,10 +180,11 @@ Axis.util = require('./util');
  * Axis constructor
  *
  * @public
+ * @default
  * @class Axis
  * @extends EventEmitter
  * @param {Object} parent - Parent DOM Element
- * @param {Object} [opts] - Constructor options passed to the axis
+ * @param {Object} [opts] - Constructor ptions passed to the axis
  * state instance.
  * @see {@link module:axis/state~State}
  */
@@ -1509,6 +1510,28 @@ Axis.prototype.fov = function (fov) {
     this.state.update('fov', fov);
   }
   return this;
+};
+
+/**
+ * Enables VR mode.
+ *
+ * @public
+ */
+
+Axis.prototype.enableVRMode = function () {
+  this.state.isVREnabled = true;
+  return this.render();
+};
+
+/**
+ * Disables VR mode.
+ *
+ * @public
+ */
+
+Axis.prototype.disableVRMode = function () {
+  this.state.isVREnabled = false;
+  return this.render();
 };
 
 }, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./template.html":11,"./projection":12,"./camera":13,"./geometry":14,"./state":15,"./util":16,"./constants":17,"three-canvas-renderer":18,"three-vr-effect":19,"./projection/flat":20,"./projection/fisheye":21,"./projection/equilinear":22,"./projection/tinyplanet":23,"./controls/vr":24,"./controls/mouse":25,"./controls/touch":26,"./controls/keyboard":27,"./controls/orientation":28,"./controls/controller":29}],
@@ -37489,6 +37512,7 @@ void module.exports;
  * @const
  * @name DEFAULT_FOV
  * @type {Number}
+ * @value 60
  */
 
 exports.DEFAULT_FOV = 60;
@@ -37766,26 +37790,31 @@ var three = require('three.js')
 var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
 
 /**
- * Creates a `PerspectiveCamera' instance
- * and assigns it to `Axis' instance if
- * `.camera' is `null'. It will override the
- * camera if 'mirrorball' is the current
- * projection.
+ * Creates an instance of THREE.PerspectiveCamera
+ * and assigns it to a scope object if not null.
  *
- * @api public
- * @param {Axis} axis
+ * @public
+ * @name createCamera
+ * @param {Object} scope - Scope object to assign camera to.
+ * @param {Boolean} force - Force creation and assignment.
+ * @return {THREE.PerspectiveCamera}
  */
 
-module.exports = function (axis) {
-  var height = axis.height();
-  var width = axis.width();
+module.exports = function createCamera (scope, force) {
+  var height = scope.height();
+  var width = scope.width();
   var ratio = width / height;
-  if (null == axis.camera || 'mirrorball' == axis.projection()) {
-    axis.camera = new three.PerspectiveCamera(DEFAULT_FOV, ratio, 0.01, 1000);
-    axis.camera.target = new three.Vector3(0, 0, 0);
-    axis.camera.rotation.reorder('YXZ');
+  var camera = scope.camera;
+  var vector = null;
+  var target = null;
+  if (null == scope.camera || true == force) {
+    vector = new three.Vector3(0, 0, 0);
+    target = camera && camera.target ? camera.target : vector;
+    scope.camera = new three.PerspectiveCamera(DEFAULT_FOV, ratio, 0.01, 1000);
+    scope.camera.target = target;
+    scope.camera.rotation.reorder('YXZ');
   }
-  return axis.camera;
+  return scope.camera;
 };
 
 }, {"three.js":2,"./constants":17}],
@@ -41984,6 +42013,7 @@ MouseController.prototype.onmousedown = function (e) {
 MouseController.prototype.onmouseup = function (e) {
   this.state.forceUpdate = true;
   this.state.isMousedown = false;
+  clearTimeout(this.state.mouseupTimeout);
   this.state.mouseupTimeout = setTimeout(function () {
     this.state.forceUpdate = false;
   }.bind(this), this.scope.state.controllerUpdateTimeout);
@@ -42645,6 +42675,7 @@ KeyboardController.prototype.onkeydown = function (e) {
   var code = e.which;
   var self = this;
 
+  clearTimeout(this.state.keyupTimeout);
   if (false == this.state.isEnabled) { return; }
 
   if (isFocused) {
@@ -42684,6 +42715,7 @@ KeyboardController.prototype.onkeyup = function (e) {
   this.state.keystate[code] = false;
   if (isFocused) {
     this.state.forceUpdate = true;
+    clearTimeout(this.state.keyupTimeout);
     this.state.keyupTimeout = setTimeout(function () {
       this.state.forceUpdate = false;
     }.bind(this), this.scope.state.controllerUpdateTimeout);

@@ -81,7 +81,7 @@ var EventEmitter = require('emitter')
  */
 
 var getVRDevices = require('./util').getVRDevices
-  , isVREnabled = require('./util').isVREnabled
+  , isVRPossible = require('./util').isVRPossible
   , constants = require('./constants')
   , isImage = require('./util').isImage
 
@@ -97,6 +97,7 @@ var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY;
 var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS;
 var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
+var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
 
 /**
  * State constructor
@@ -112,7 +113,7 @@ var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
  * user.
  * @param {Boolean} [opts.forceFocus = false] - Force focus to axis frame. This
  * will hijack mouse and key events.
- * @param {Boolean} [opts.isResizable = false] - Allow the axis frame to be
+ * @param {Boolean} [opts.resizable = false] - Allow the axis frame to be
  * resizable.
  * @param {Boolean} [opts.isClickable = true] - Allow the axis frame to be
  * clickable.
@@ -133,6 +134,8 @@ var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
  * @param {Number} [opts.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR] -
  * Interpolation factor to apply to quaternion rotations.
  * @param {Boolean} [opts.useSlerp = true] - Use spherical linear interpolations.
+ * @param {Number} [opts.updateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT] -
+ * View controller update timeout.
  */
 
 module.exports = State;
@@ -270,6 +273,9 @@ function State (scope, opts) {
   /** Interpolation factor to apply to quaternion rotations. */
   this.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR;
 
+  /** Controller update timeout value. */
+  this.controllerUpdateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
+
   /**
    * State predicates.
    */
@@ -297,6 +303,9 @@ function State (scope, opts) {
 
   /** Predicate indicating is video is paused. */
   this.isPaused = false;
+
+  /** Predicate indicating if video was stopped. */
+  this.isStopped = false;
 
   /** Predicate to indicating if Axis is clickable.*/
   this.isClickable = true;
@@ -339,6 +348,9 @@ function State (scope, opts) {
 
   /** Predicate indicating if slerp should be used. */
   this.useSlerp = true;
+
+  /** Predicate indicating if VR display is possible. */
+  this.isVRPossible = isVRPossible();
 
   // listen for fullscreen changes
   fullscreen.on('change', this.onfullscreenchange.bind(this));
@@ -395,6 +407,10 @@ State.prototype.reset = function (overrides) {
     opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR
   );
 
+  this.controllerUpdateTimeout = (
+    opts.updateTimeout || DEFAULT_CONTROLLER_UPDATE_TIMEOUT
+  );
+
   /**
    * State variables.
    */
@@ -434,11 +450,13 @@ State.prototype.reset = function (overrides) {
   this.isKeydown = false;
   this.isPlaying = false;
   this.isPaused = false;
+  this.isStopped = false;
   this.isAnimating = false;
   this.isFullscreen = false;
   this.isMousedown = false;
   this.isTouching = false;
-  this.isVREnabled = isVREnabled();
+  this.isVREnabled = false;
+  this.isVRPossible = isVRPossible();
   this.isHMDAvailable = false;
   this.isHMDPositionSensorAvailable = false;
 
@@ -573,8 +591,8 @@ State.prototype.pollForVRDevice = function () {
   var self = this;
 
   // poll if VR is enabled.
-  if (isVREnabled()) {
-    this.isVREnabled = true;
+  if (isVRPossible()) {
+    this.isVREnabled = false;
 
     // kill current poll
     clearInterval(this.vrPollID);
@@ -609,6 +627,7 @@ State.prototype.pollForVRDevice = function () {
         self.isHMDPositionSensorAvailable = false;
         self.vrHMD = null;
         self.vrPositionSensor = null;
+        self.scope.emit('vrhmdunavailable');
         return;
       }
     }
@@ -630,14 +649,15 @@ State.prototype.pollForVRDevice = function () {
         if (device instanceof PositionSensorVRDevice &amp;&amp;
             device.hardwareUnitId == hmd.hardwareUnitId) {
           sensor = device;
-        self.isHMDPositionSensorAvailable = true;
-        break;
+          self.isHMDPositionSensorAvailable = true;
+          break;
         }
       }
     }
 
     if (hmd &amp;&amp; sensor) {
-      if (self.vrHMD &amp;&amp; self.vrHMD != hmd.hardwareUnitId) {
+      if (null == self.vrHMD ||
+          (self.vrHMD &amp;&amp; self.vrHMD.hardwareUnitId != hmd.hardwareUnitId)) {
         self.vrHMD = hmd;
         self.vrPositionSensor = sensor;
 
@@ -706,13 +726,13 @@ State.prototype.onfullscreenchange = function (e) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.html">axis/controls/keyboard</a></li><li><a href="module-axis_controls_orientation.html">axis/controls/orientation</a></li><li><a href="module-axis_controls_touch.html">axis/controls/touch</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.KeyboardController.html">KeyboardController</a></li><li><a href="module-axis_controls_orientation.OrientationController.html">OrientationController</a></li><li><a href="module-axis_controls_touch.TouchController.html">TouchController</a></li><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#three">three</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-axis.html">axis</a></li><li><a href="module-axis_constants.html">axis/constants</a></li><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.html">axis/controls/keyboard</a></li><li><a href="module-axis_controls_orientation.html">axis/controls/orientation</a></li><li><a href="module-axis_controls_touch.html">axis/controls/touch</a></li><li><a href="module-axis_projection.html">axis/projection</a></li><li><a href="module-axis_projection_equilinear.html">axis/projection/equilinear</a></li><li><a href="module-axis_projection_fisheye.html">axis/projection/fisheye</a></li><li><a href="module-axis_projection_flat.html">axis/projection/flat</a></li><li><a href="module-axis_projection_tinyplanet.html">axis/projection/tinyplanet</a></li><li><a href="module-axis_state.html">axis/state</a></li></ul><h3>Classes</h3><ul><li><a href="module-axis_controls_controller.html">axis/controls/controller</a></li><li><a href="module-axis_controls_keyboard.KeyboardController.html">KeyboardController</a></li><li><a href="module-axis_controls_orientation.OrientationController.html">OrientationController</a></li><li><a href="module-axis_controls_touch.TouchController.html">TouchController</a></li><li><a href="module-axis_projection-Projections.html">Projections</a></li><li><a href="module-axis_state-State.html">State</a></li><li><a href="module-axis-Axis.html">Axis</a></li></ul><h3>Events</h3><ul><li><a href="module-axis_state-State.html#event:ready">ready</a></li><li><a href="module-axis_state-State.html#event:update">update</a></li><li><a href="module-axis-Axis.html#event:click">click</a></li><li><a href="module-axis-Axis.html#event:fullscreenchange">fullscreenchange</a></li><li><a href="module-axis-Axis.html#event:keydown">keydown</a></li><li><a href="module-axis-Axis.html#event:ready">ready</a></li><li><a href="module-axis-Axis.html#event:vrhmdavailable">vrhmdavailable</a></li></ul><h3>Global</h3><ul><li><a href="global.html#createCamera">createCamera</a></li><li><a href="global.html#three">three</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0</a> on Tue Jun 09 2015 14:09:16 GMT-0400 (EDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.1</a> on Thu Jun 11 2015 11:18:43 GMT-0400 (EDT)
 </footer>
 
 <script> prettyPrint(); </script>

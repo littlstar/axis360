@@ -363,6 +363,7 @@ KeyboardController.prototype.onkeydown = function (e) {
   var code = e.which;
   var self = this;
 
+  clearTimeout(this.state.keyupTimeout);
   if (false == this.state.isEnabled) { return; }
 
   if (isFocused) {
@@ -402,6 +403,7 @@ KeyboardController.prototype.onkeyup = function (e) {
   this.state.keystate[code] = false;
   if (isFocused) {
     this.state.forceUpdate = true;
+    clearTimeout(this.state.keyupTimeout);
     this.state.keyupTimeout = setTimeout(function () {
       this.state.forceUpdate = false;
     }.bind(this), this.scope.state.controllerUpdateTimeout);
