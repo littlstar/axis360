@@ -535,7 +535,7 @@ State.prototype.isConstrainedWith = function (key) {
 
 State.prototype.ready = function () {
   if (false == this.isReady) {
-    this.update('isReady', true);
+    this.isReady = true;
 
     /**
      * Ready  event.

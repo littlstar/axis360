@@ -758,6 +758,7 @@ Axis.prototype.src = function (src) {
   if (src) {
     this.debug('src', src);
     this.state.update('src', src);
+    this.state.update('isReady', false);
 
     if (!isImage(src)) {
       this.video.src = src;
@@ -985,10 +986,8 @@ Axis.prototype.resizable = function (resizable) {
 
 Axis.prototype.seek = function (seconds) {
   if (false == this.state.isImage) {
-    //if (seconds >= 0 && seconds <= this.video.duration) {
-      this.video.currentTime = seconds;
-      this.emit('seek', seconds);
-    //}
+    this.video.currentTime = seconds;
+    this.emit('seek', seconds);
   }
   return this;
 };
@@ -1262,6 +1261,8 @@ Axis.prototype.stop = function () {
   if (true == this.state.isImage) { return; }
   this.video.currentTime = 0;
   this.state.update('isStopped', true);
+  this.state.update('isPlaying', false);
+  this.state.update('isPaused', false);
   this.pause();
   return this;
 };
