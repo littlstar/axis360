@@ -440,7 +440,7 @@ Axis.prototype.oncanplaythrough = function (e) {
   this.emit('canplaythrough', e);
   this.state.ready();
 
-  if (false == this.state.shouldAutoplay) {
+  if (false == this.state.shouldAutoplay && false == this.state.isPlaying) {
     this.state.update('isPaused', true);
     this.video.pause();
   } else if (false == this.state.isStopped) {
@@ -1073,6 +1073,7 @@ Axis.prototype.resizable = function (resizable) {
  */
 
 Axis.prototype.seek = function (seconds) {
+  var isPlaying = this.state.isPlaying;
   if (false == this.state.isImage) {
     this.video.currentTime = seconds;
     this.emit('seek', seconds);
