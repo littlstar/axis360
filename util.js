@@ -40,6 +40,7 @@
 
 var three = require('three.js')
   , path = require('path')
+  , url = require('url')
 
 /**
  * Detect if file path is an image
@@ -51,7 +52,7 @@ var three = require('three.js')
 
 exports.isImage = isImage;
 function isImage (file) {
-  var ext = path.extname(file).toLowerCase();
+  var ext = path.extname(url.parse(file).pathname).toLowerCase();
   switch (ext) {
     case '.png':
     case '.jpg':

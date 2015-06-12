@@ -50,6 +50,7 @@
     "component/events": "master",
     "component/domify": "master",
     "component/path": "master",
-    "component/raf": "master"
+    "component/raf": "master",
+    "component/url": "*"
   }
 }
