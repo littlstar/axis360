@@ -61,7 +61,6 @@ var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 // cylinder zoom offet
 var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
 
-
 /**
  * Applies an equilinear projection to scope frame
  *
@@ -89,6 +88,8 @@ function equilinear (scope) {
   var zoom = CYLINDRICAL_ZOOM;
   var rotation = new three.Vector3(0, 0, 0);
   var current = this.current;
+  var targetX = Math.PI / 180;
+  var factor = targetX *.8999;
 
   this.constraints = {};
 
@@ -110,14 +111,27 @@ function equilinear (scope) {
 
   // animate
   scope.debug("animate: EQUILINEAR begin");
+  if ('tinyplanet' == current) {
+    scope.lookAt(0, 0, 0);
+  }
   this.animate(function () {
     scope.fov(fov);
+    var x = scope.orientation.x;
 
-    if ('tinyplanet' == current) {
-      scope.lookAt(0, 0, 0);
+    if (x > targetX) {
+      scope.orientation.x -= factor;
+    } else {
+      scope.orientation.x = targetX;
     }
 
-    scope.orientation.x = Math.PI/180;
-    this.cancel();
+    if (x < targetX) {
+      scope.orientation.x += factor;
+    } else {
+      scope.orientation.x = targetX;
+    }
+
+    if (scope.orientation.x == targetX) {
+      return this.cancel();
+    }
   });
 };

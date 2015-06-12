@@ -100,12 +100,13 @@ function tinyplanet (scope) {
   rotation.x = camera.target.x || 0;
   rotation.y = camera.target.y || 0;
   rotation.z = camera.target.z || -1;
+  console.log(rotation)
   this.animate(function () {
     var y = rotation.y;
     var x = rotation.x;
     scope.debug("animate: TINY_PLANET y=%d", y);
+    scope.lookAt(rotation.x, rotation.y, rotation.z);
     if (y > MIN_Y_COORDINATE) {
-
       if (y > MIN_Y_COORDINATE) {
         rotation.y = y -ANIMATION_FACTOR;
       } else {
@@ -118,9 +119,7 @@ function tinyplanet (scope) {
         rotation.x = MIN_X_COORDINATE;
       }
 
-      scope.lookAt(rotation.x, rotation.y, rotation.z);
     } else {
-      scope.lookAt(rotation.x, rotation.y, rotation.z);
       scope.orientation.x = -Infinity;
       this.constraints.x = false;
       this.constraints.y = true;

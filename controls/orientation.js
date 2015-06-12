@@ -119,19 +119,32 @@ function OrientationController (scope) {
    */
 
   this.state.define('deviceOrientation', function () {
-    var orientation = screen.orientation || screen.mozOrientation || screen.msOrientation;
+    var angle = 0;
     var type = null;
+    var orientation = (
+      screen.ourOrientation || // our injected orientation
+      screen.orientation    || // webkit orientation
+      screen.mozOrientation || // firefox orientation
+      screen.msOrientation  || // internet explorer orientation
+      null // unable to determine orientation object
+    );
+
 
     if (orientation && orientation.type) {
       type = orientation.type;
     }
 
+    if (orientation && orientation.angle) {
+      angle = orientation.angle;
+    }
+
+    // attempt to polyfil angle falling back to 0
     switch (type) {
-      case 'landscape-primary': return 90;
-      case 'landscape-secondary': return -90;
-      case 'portrait-secondary': return 180;
-      case 'portrait-primary': return 0;
-      default: return window.orientation || 0;
+      case 'landscape-primary': return angle || 90;
+      case 'landscape-secondary': return angle || -90;
+      case 'portrait-secondary': return angle || 180;
+      case 'portrait-primary': return angle || 0;
+      default: return angle || window.orientation || 0;
     }
   });
 

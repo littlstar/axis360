@@ -211,6 +211,7 @@ function Axis (parent, opts) {
   // init video events
   eventDelegation.video = events(this.video, this);
   eventDelegation.video.bind('canplaythrough');
+  eventDelegation.video.bind('loadeddata');
   eventDelegation.video.bind('play');
   eventDelegation.video.bind('pause');
   eventDelegation.video.bind('playing');
@@ -339,7 +340,21 @@ Axis.prototype.oncanplaythrough = function (e) {
   this.debug('oncanplaythrough');
   this.state.duration = this.video.duration;
 
+  this.emit('canplaythrough', e);
+  if (false == this.state.shouldAutoplay && false == this.state.isPlaying) {
+    this.state.update('isPaused', true);
+    this.video.pause();
+  } else if (false == this.state.isStopped) {
+    this.video.play();
+  }
+};
+
+Axis.prototype.onloadeddata = function (e) {
+  this.debug('loadeddata');
+
   if (null == this.texture) {
+    this.video.width = this.video.videoWidth;
+    this.video.height = this.video.videoHeight;
     this.texture = new three.Texture(this.video);
     this.texture.format = three.RGBFormat;
     this.texture.minFilter = three.LinearFilter;
@@ -349,15 +364,7 @@ Axis.prototype.oncanplaythrough = function (e) {
     this.texture.image.height = this.video.videoHeight;
   }
 
-  this.emit('canplaythrough', e);
   this.state.ready();
-
-  if (false == this.state.shouldAutoplay && false == this.state.isPlaying) {
-    this.state.update('isPaused', true);
-    this.video.pause();
-  } else if (false == this.state.isStopped) {
-    this.video.play();
-  }
 };
 
 /**
@@ -411,7 +418,7 @@ Axis.prototype.onplaying = function (e) {
  */
 
 Axis.prototype.onwaiting = function (e) {
-  this.debug('onwaiting', e);
+  this.debug('onwaiting');
   this.emit('wait', e);
 };
 
@@ -671,7 +678,6 @@ Axis.prototype.ontouchmove = function(e) {
     this.state.update('pointerY', y);
     this.cache({pointerX: x, pointerY: y});
     this.emit('touchmove', e);
-    this.refresh();
   }
 };
 
@@ -985,10 +991,25 @@ Axis.prototype.resizable = function (resizable) {
  */
 
 Axis.prototype.seek = function (seconds) {
+  var ua = navigator.userAgent.toLowerCase();
   var isPlaying = this.state.isPlaying;
+  var isReady = this.state.isReady;
+  var self = this;
   if (false == this.state.isImage) {
-    this.video.currentTime = seconds;
-    this.emit('seek', seconds);
+    // firefox emits `oncanplaythrough' when changing the
+    // `.currentTime' property on a video tag so we need
+    // to listen one time for that event and then seek to
+    // prevent errors from occuring.
+    if (/firefox/.test(ua) && !isReady) {
+      this.video.oncanplaythrough = function () {
+        this.oncanplaythrough = function () {};
+        this.currentTime = seconds;
+        self.emit('seek', seconds);
+      };
+    } else {
+      this.video.currentTime = seconds;
+      this.emit('seek', seconds);
+    }
   }
   return this;
 };

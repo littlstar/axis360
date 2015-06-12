@@ -136,7 +136,6 @@ Projections.prototype.cancel = function () {
   if (false == isNaN(this.animationFrameID)) {
     raf.cancel(this.animationFrameID);
     this.scope.state.update('isAnimating', false);
-    this.scope.update();
   }
   return this;
 };
@@ -159,7 +158,6 @@ Projections.prototype.animate = function (fn) {
         self.cancel();
       } else {
         fn.call(self);
-        self.scope.update();
         if (self.scope.state.isAnimating) {
           self.animate(fn);
         }

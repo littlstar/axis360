@@ -91,8 +91,10 @@
     <button id="go-fullscreen">Go fullscreen</button>
     <button id="toggle-vr-mode">Toggle VR Mode</button>
     <script type="text/javascript" charset="utf-8">
+      //DEBUG=1
       //var Axis = require('axis')
     var frame = new Axis(document.querySelector('.normal.video'), {
+        //webgl: false,
         crossorigin: true,
         resizable: true,
         preload: true,
@@ -110,8 +112,8 @@
       frame.on('vrhmdavailable', function (e) {
         console.log(e)
       });
-
       frame.render();
+
       var el = document.getElementById('go-fullscreen');
       el.onclick = function() {
         frame.fullscreen(frame.el);
