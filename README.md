@@ -33,6 +33,10 @@ var Axis = require('littlstar/axis');
 ```js
 var el = document.querySelector('#video');
 var frame = new Axis(el, {src: '/path/to/video.mp4'});
+frame.render()
+.once('ready', function () {
+  this.seek(5).play().projection('tiny planet');
+});
 ```
 
 ## License
