@@ -29,7 +29,7 @@
  * The equilinear projection mode.
  *
  * @public
- * @module axis/projection/equilinear
+ * @module scope/projection/equilinear
  * @type {Function}
  */
 
@@ -63,18 +63,18 @@ var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
 
 
 /**
- * Applies an equilinear projection to Axis frame
+ * Applies an equilinear projection to scope frame
  *
  * @public
- * @param {Axis} axis
+ * @param {Axis} scope
  */
 
 module.exports = equilinear;
-function equilinear (axis) {
+function equilinear (scope) {
 
   // this projection requires an already initialized
-  // camera on the `Axis' instance
-  var camera = axis.camera;
+  // camera on the `scope' instance
+  var camera = scope.camera;
 
   // bail if camera not present
   if (null == camera) { return; }
@@ -88,17 +88,18 @@ function equilinear (axis) {
   var fov = DEFAULT_FOV;
   var zoom = CYLINDRICAL_ZOOM;
   var rotation = new three.Vector3(0, 0, 0);
+  var current = this.current;
 
   this.constraints = {};
 
-  if ('tinyplanet' != axis.projections.current) {
-    rotation.x = camera.position.x;
-    rotation.y = camera.position.y;
-    rotation.z = camera.position.z;
+  if ('cylinder' == scope.geometry()) {
+    scope.orientation.x = 0;
+    this.constraints.y = true;
+    this.constraints.x = false;
   }
 
   // apply zoom to cylinder geometry type
-  if ('cylinder' == axis.geometry()) {
+  if ('cylinder' == scope.geometry()) {
     fov += zoom;
     this.constraints.y = true;
     this.constraints.x = false;
@@ -108,11 +109,15 @@ function equilinear (axis) {
   }
 
   // animate
-  axis.debug("animate: EQUILINEAR begin");
+  scope.debug("animate: EQUILINEAR begin");
   this.animate(function () {
-    axis.fov(fov);
-    axis.lookAt(rotation.x, rotation.y, rotation.z);
-    axis.orientation.x = Math.PI/180;
+    scope.fov(fov);
+
+    if ('tinyplanet' == current) {
+      scope.lookAt(0, 0, 0);
+    }
+
+    scope.orientation.x = Math.PI/180;
     this.cancel();
   });
 };

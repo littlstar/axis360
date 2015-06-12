@@ -48,14 +48,14 @@ function flat (axis) {
   var camera = axis.camera;
 
   // bail if camera not initialized
-  if (null == camera) { return; }
+  if (null == camera) { return false; }
 
   // bail if not ready
-  if (false == this.isReady()) { return; }
+  if (false == this.isReady()) { return false; }
 
   // bail if geometry is a cylinder because a flat
   // projection is only supported in a spherical geometry
-  if ('cylinder' == axis.geometry()) { return; }
+  if ('cylinder' == axis.geometry()) { return false; }
 
   // apply equilinear projection
   this.apply('equilinear');

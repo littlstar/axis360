@@ -29,7 +29,7 @@
  * The fisheye projection mode.
  *
  * @public
- * @module axis/projection/fisheye
+ * @module scope/projection/fisheye
  * @type {Function}
  */
 
@@ -61,47 +61,53 @@ var DEFAULT_FOV = constants.DEFAULT_FOV;
 var constraints = fisheye.constraints = {};
 
 /**
- * Applies a fisheye projection to Axis frame
+ * Applies a fisheye projection to scope frame
  *
  * @api public
- * @param {Axis} axis
+ * @param {Axis} scope
  */
 
 module.exports = fisheye;
-function fisheye (axis) {
+function fisheye (scope) {
 
   // this projection requires an already initialized
-  // camera on the `Axis' instance
-  var camera = axis.camera;
+  // camera on the `scope' instance
+  var camera = scope.camera;
 
   // bail if camera not initialized
-  if (null == camera) { return; }
+  if (null == camera) { return false; }
 
   // bail if not ready
-  if (false == this.isReady()) { return; }
+  if (false == this.isReady()) { return false; }
 
   // bail if geometry is a cylinder because fisheye
   // projection is only supported in a spherical geometry
-  if ('cylinder' == axis.geometry()) { return; }
+  if ('cylinder' == scope.geometry()) { return false; }
 
   // max Z and FOV
-  var maxZ = (axis.height() / 100) | 0;
+  var maxZ = (scope.height() / 100) | 0;
   var fov = DEFAULT_FOV + 20;
-  var rotation = new three.Vector3(0, 0, 0);
+  var current = this.current;
 
-  if ('tinyplanet' != axis.projections.current) {
-    rotation.x = camera.position.x;
-    rotation.y = camera.position.y;
-    rotation.z = camera.position.z;
+  this.constraints = {};
+
+  if ('cylinder' == scope.geometry()) {
+    scope.orientation.x = 0;
+    this.constraints.y = true;
+    this.constraints.x = false;
   }
 
   // begin animation
-  axis.debug("animate: FISHEYE begin");
+  scope.debug("animate: FISHEYE begin");
   this.animate(function () {
-    axis.fov(fov);
-    axis.camera.position.z = maxZ;
-    axis.lookAt(rotation.x, rotation.y, rotation.z);
-    axis.orientation.x = (Math.PI/180);
+    scope.fov(fov);
+    scope.camera.position.z = maxZ;
+
+    if ('tinyplanet' == current) {
+      scope.lookAt(0, 0, 0);
+    }
+
+    scope.orientation.x = (Math.PI/180);
     this.cancel();
   });
 };

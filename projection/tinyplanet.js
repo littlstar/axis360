@@ -29,7 +29,7 @@
  * The tiny planet projection mode.
  *
  * @public
- * @module axis/projection/tinyplanet
+ * @module scope/projection/tinyplanet
  * @type {Function}
  */
 
@@ -58,27 +58,27 @@ var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE;
 var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
 
 /**
- * Applies a tinyplanet projection to Axis frame
+ * Applies a tinyplanet projection to scope frame
  *
  * @api public
- * @param {Axis} axis
+ * @param {Axis} scope
  */
 
 module.exports = tinyplanet;
-function tinyplanet (axis) {
+function tinyplanet (scope) {
 
-  var camera = axis.camera;
+  var camera = scope.camera;
   var rotation = new three.Vector3(0, 0, 0);
 
   // bail if camera not initialized
-  if (null == camera) { return; }
+  if (null == camera) { return false; }
 
   // bail if not ready
-  if (false == this.isReady()) { return; }
+  if (false == this.isReady()) { return false; }
 
   // bail if geometry is a cylinder because tiny planet
   // projection is only supported in a spherical geometry
-  if ('cylinder' == axis.geometry()) { return; }
+  if ('cylinder' == scope.geometry()) { return false; }
 
   this.constraints = {
     y: true,
@@ -86,9 +86,15 @@ function tinyplanet (axis) {
     keys: {up: true, down: true}
   };
 
+  if ('cylinder' == scope.geometry()) {
+    scope.orientation.x = 0;
+    this.constraints.y = true;
+    this.constraints.x = false;
+  }
+
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
-  axis.fov(camera.fov);
-  axis.debug("animate: TINY_PLANET begin");
+  scope.fov(camera.fov);
+  scope.debug("animate: TINY_PLANET begin");
   this.constraints.x = true;
   this.constraints.y = false;
   rotation.x = camera.target.x || 0;
@@ -97,7 +103,7 @@ function tinyplanet (axis) {
   this.animate(function () {
     var y = rotation.y;
     var x = rotation.x;
-    axis.debug("animate: TINY_PLANET y=%d", y);
+    scope.debug("animate: TINY_PLANET y=%d", y);
     if (y > MIN_Y_COORDINATE) {
 
       if (y > MIN_Y_COORDINATE) {
@@ -112,13 +118,13 @@ function tinyplanet (axis) {
         rotation.x = MIN_X_COORDINATE;
       }
 
-      axis.lookAt(rotation.x, rotation.y, rotation.z);
+      scope.lookAt(rotation.x, rotation.y, rotation.z);
     } else {
-      axis.lookAt(rotation.x, rotation.y, rotation.z);
-      axis.orientation.x = -Infinity;
+      scope.lookAt(rotation.x, rotation.y, rotation.z);
+      scope.orientation.x = -Infinity;
       this.constraints.x = false;
       this.constraints.y = true;
-      axis.debug("animate: TINY_PLANET end");
+      scope.debug("animate: TINY_PLANET end");
       this.cancel();
     }
   });

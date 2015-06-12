@@ -235,19 +235,10 @@ Projections.prototype.apply = function (name) {
       this.constraints = {};
     }
 
-    if ('cylinder' == this.scope.geometry()) {
-      this.scope.orientation.x = 0;
-      this.constraints.y = true;
-      this.constraints.x = false;
-    } else {
-      this.scope.orientation.x = this.scope.orientation.x || 0;
-      this.scope.orientation.y = this.scope.orientation.y || 0;
-      this.constraints.y = this.constraints.y || false;
-      this.constraints.x = this.constraints.x || false;
-    }
-
     // apply projection
-    projection.call(this, this.scope);
+    if (false === projection.call(this, this.scope)) {
+      this.requested = this.current;
+    }
 
     // set current projection
     this.current = name;
@@ -344,17 +335,4 @@ Projections.prototype.initializeScene = function () {
     scope.scene = new three.Scene();
     scope.scene.add(mesh);
   }
-};
-
-/**
- * Predicate to determine if projection is mirrorball and
- * the request projection is a mirrorball.
- *
- * @public
- */
-
-Projections.prototype.isMirrorBall = function () {
-  return ! Boolean(
-    'mirrorball' != this.scope.state.projection &&
-    'mirrorball' != this.scope.state.projectionrequested);
 };
