@@ -278,7 +278,8 @@ Projections.prototype.contentHasCorrectSizing = function () {
  */
 
 Projections.prototype.isReady = function () {
-  return Boolean(this.scope.state.isReady);
+  var scope = this.scope
+  return Boolean(scope.camera && scope.texture && scope.scene);
 };
 
 /**
@@ -290,11 +291,7 @@ Projections.prototype.isReady = function () {
 Projections.prototype.initializeScene = function () {
   var scope = this.scope;
 
-  if (false == this.isReady()) {
-    scope.once('ready', init);
-  } else {
-    init();
-  }
+  init();
 
   function init () {
     // max FOV for animating

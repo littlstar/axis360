@@ -100,7 +100,6 @@ function tinyplanet (scope) {
   rotation.x = camera.target.x || 0;
   rotation.y = camera.target.y || 0;
   rotation.z = camera.target.z || -1;
-  console.log(rotation)
   this.animate(function () {
     var y = rotation.y;
     var x = rotation.x;
