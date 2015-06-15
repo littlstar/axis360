@@ -350,6 +350,8 @@ Axis.prototype.oncanplaythrough = function (e) {
 };
 
 Axis.prototype.onloadeddata = function (e) {
+  var percent = 0;
+  var video = this.video;
   this.debug('loadeddata');
 
   if (null == this.texture) {
@@ -443,22 +445,10 @@ Axis.prototype.onloadstart = function (e) {
 
 Axis.prototype.onprogress = function (e) {
   var video = this.video;
-  var percent = 0;
+  var percent = this.getPercentLoaded();
+  e.percent = percent;
+  this.state.update('percentloaded', percent);
   this.debug('onprogress');
-
-  try {
-    percent = video.buffered.end(0) / video.duration;
-  } catch (e) {
-    this.debug('error', e);
-    try {
-      percent = video.bufferedBytes / video.bytesTotal;
-    } catch (e) {
-      this.debug('error', e);
-    }
-  }
-
-  e.percent = percent * 100;
-  this.state.update('percentplayed', percent);
   this.emit('progress', e);
 };
 
@@ -1133,6 +1123,10 @@ Axis.prototype.render = function () {
 
   // initialize texture
   if (this.state.isImage) {
+    if (this.state.isCrossOrigin) {
+      three.ImageUtils.crossOrigin = 'anonymous';
+    }
+
     this.texture = three.ImageUtils.loadTexture(this.src(), null, function () {
       self.state.ready();
     });
@@ -1473,4 +1467,35 @@ Axis.prototype.enableVRMode = function () {
 Axis.prototype.disableVRMode = function () {
   this.state.isVREnabled = false;
   return this.render();
+};
+
+/**
+ * Returns percent of media loaded.
+ *
+ * @public
+ */
+
+Axis.prototype.getPercentLoaded = function () {
+  var video = this.video;
+  var percent = 0;
+
+  if (this.state.isImage) {
+    percent = 100;
+  } else {
+    try {
+      percent = video.buffered.end(0) / video.duration;
+    } catch (e) {
+      this.debug('error', e);
+      try {
+        percent = video.bufferedBytes / video.bytesTotal;
+      } catch (e) {
+        this.debug('error', e);
+      }
+    }
+
+    percent = percent || 0;
+    percent *= 100;
+  }
+
+  return Math.max(0, Math.min(percent, 100));
 };

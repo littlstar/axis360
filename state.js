@@ -146,7 +146,7 @@ function State (scope, opts) {
    */
 
   /** Percent of content loaded. */
-  this.percentplayed = 0;
+  this.percentloaded = 0;
 
   /** Original content size. */
   this.originalsize = {width: null, height: null};
@@ -329,6 +329,9 @@ function State (scope, opts) {
   /** Predicate indicating if VR display is possible. */
   this.isVRPossible = isVRPossible();
 
+  /** Predicate indicating if media resource is cross origin. */
+  this.isCrossOrigin = false
+
   // listen for fullscreen changes
   fullscreen.on('change', this.onfullscreenchange.bind(this));
 
@@ -373,6 +376,7 @@ State.prototype.reset = function (overrides) {
   this.isImage = opts.isImage || false;
   this.isClickable = null != opts.isClickable ? opts.isClickable : true;
   this.isInverted = opts.isInverted || false;
+  this.isCrossOrigin = opts.crossorigin || false;;
   this.forceFocus = opts.forceFocus || false;
   this.allowControls = null != opts.allowControls ? opts.allowControls : true;
   this.isResizable = opts.resizable || false;
@@ -393,7 +397,7 @@ State.prototype.reset = function (overrides) {
    * State variables.
    */
 
-  this.percentplayed = 0;
+  this.percentloaded = 0;
   this.originalsize = {width: null, height: null};
   this.orientation = window.orientation || 0;
   this.lastVolume = 0;
@@ -430,10 +434,10 @@ State.prototype.reset = function (overrides) {
   this.isPlaying = false;
   this.isPaused = false;
   this.isStopped = false;
+  this.isTouching = false;
   this.isAnimating = false;
   this.isFullscreen = false;
   this.isMousedown = false;
-  this.isTouching = false;
   this.isVREnabled = false;
   this.isVRPossible = isVRPossible();
   this.isHMDAvailable = false;
