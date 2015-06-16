@@ -164,7 +164,7 @@ function Axis (parent, opts) {
   this.camera = createCamera(this);
 
   /** Current axis orientation. */
-  this.orientation = {x: 0, y: 0, z: 0};
+  this.orientation = {x: 0, y: 0};
 
   /** Axis' controls. */
   this.controls = {
@@ -178,6 +178,24 @@ function Axis (parent, opts) {
   this.controls.default = (
     require('./controls/controller')(this).enable().target(this.camera)
   );
+
+  this.once('ready', function () {
+    var h = this.height()/2;
+    var w = this.width()/2;
+    var x = opts && opts.orientation ? opts.orientation.x : 0;
+    var y = opts && opts.orientation ? opts.orientation.y : h/w;
+
+    if ('number' == typeof x && x == x) {
+      this.orientation.x = x;
+    } else {
+      this.orientation.x = 0;
+    }
+
+    if ('number' == typeof y && y == y) {
+      this.orientation.y = y;
+    }
+  });
+
 
   /**
    * Sets an attribute on the instance's
