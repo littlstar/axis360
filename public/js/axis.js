@@ -1,1 +1,1 @@
-../../dist/axis.js
+../dist/axis.js

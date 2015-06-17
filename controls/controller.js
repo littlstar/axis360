@@ -570,10 +570,19 @@ function AxisController (scope, domElement) {
   this.events = events(this.domElement, this);
 
   // Update controller before rendering occurs on scope.
-  scope.on('before:render', function () {
-    self.update();
-  });
+  this.onbeforerender = this.onbeforerender.bind(this);
+  scope.on('before:render', this.onbeforerender);
 }
+
+/**
+ * Handles `before:render' event.
+ *
+ * @private
+ */
+
+AxisController.prototype.onbeforerender = function () {
+  this.update();
+};
 
 /**
  * Enables this controller.
@@ -736,5 +745,20 @@ AxisController.prototype.pan = function (delta) {
     orientation.x -= delta.y * friction;
   }
 
+  return this;
+};
+
+/**
+ * Cleans up controller state, etc.
+ *
+ * @public
+ * @method
+ * @name destroy
+ * @return {AxisController}
+ */
+
+AxisController.prototype.destroy = function () {
+  this.events.unbind();
+  this.scope.off('before:render', this.onbeforerender);
   return this;
 };

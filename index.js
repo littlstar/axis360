@@ -46,6 +46,15 @@ var three = require('three.js')
   , fullscreen = require('fullscreen')
   , keycode = require('keycode')
   , merge = require('merge')
+  , pkg = require('./package.json')
+
+var COMPANY = "Little Star Media, Inc";
+var YEAR = (new Date).getUTCFullYear();
+console.info("Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %s %d",
+            pkg.version,
+            pkg.bugs.url,
+            pkg.bugs.email,
+            COMPANY, YEAR);
 
 /**
  * Local dependencies
@@ -145,6 +154,10 @@ function Axis (parent, opts) {
   /** Axis' texture instance. */
   this.texture = null;
 
+  /** Axis' controllers. */
+
+  this.controls = {};
+
   /** Axis' state instance. */
   this.state = new State(this, opts);
 
@@ -165,19 +178,6 @@ function Axis (parent, opts) {
 
   /** Current axis orientation. */
   this.orientation = {x: 0, y: 0};
-
-  /** Axis' controls. */
-  this.controls = {
-    vr: require('./controls/vr')(this),
-    mouse: require('./controls/mouse')(this),
-    touch: require('./controls/touch')(this),
-    keyboard: require('./controls/keyboard')(this),
-    orientation: require('./controls/orientation')(this)
-  };
-
-  this.controls.default = (
-    require('./controls/controller')(this).enable().target(this.camera)
-  );
 
   this.once('ready', function () {
     var h = this.height()/2;
@@ -268,6 +268,9 @@ function Axis (parent, opts) {
   if (opts.muted) {
     this.mute(true);
   }
+
+  // Initializes controllers
+  this.initializeControllers();
 
   // initial volume
   this.volume(opts.volume || 1);
@@ -549,6 +552,8 @@ Axis.prototype.onmouseup = function (e) {
 
 Axis.prototype.onmouseleave = function (e) {
   this.debug('onmouseleave');
+  this.state.update('isFocused', false);
+  this.state.update('isMousedown', false);
   this.emit('mouseleave', e);
 };
 
@@ -1497,8 +1502,10 @@ Axis.prototype.fov = function (fov) {
  */
 
 Axis.prototype.enableVRMode = function () {
+  this.initializeControllers(null, true);
   this.state.isVREnabled = true;
-  return this.render();
+  this.controls.vr.enable();
+  return this;
 };
 
 /**
@@ -1508,7 +1515,9 @@ Axis.prototype.enableVRMode = function () {
  */
 
 Axis.prototype.disableVRMode = function () {
+  this.initializeControllers(null, true);
   this.state.isVREnabled = false;
+  this.controls.vr.disable();
   return this.render();
 };
 
@@ -1541,4 +1550,64 @@ Axis.prototype.getPercentLoaded = function () {
   }
 
   return Math.max(0, Math.min(percent, 100));
+};
+
+/**
+ * Returns percent of media played if applicable.
+ *
+ * @public
+ * @return {Number}
+ */
+
+Axis.prototype.getPercentPlayed = function () {
+  return (this.video.currentTime / this.video.duration * 100) || 0;
+};
+
+/**
+ * Initializes axis controllers if not created. An
+ * optional map can be used to indicate which controllers
+ * should be re-initialized if already created.
+ *
+ * @public
+ * @param {Object} [map] - Controllers to re-initialize.
+ * @param {Boolean} [force] - Force initialization of all controllers.
+ */
+
+Axis.prototype.initializeControllers = function (map, force) {
+  var controls = (this.controls = this.controls || {});
+  map = null != map && 'object' == typeof map ? map : {};
+
+  if (null == controls.vr || true == map.vr || true == force) {
+    if (controls.vr) { controls.vr.destroy(); }
+    controls.vr = require('./controls/vr')(this);
+  }
+
+  if (null == controls.mouse || true == map.mouse || true == force) {
+    if (controls.mouse) { controls.mouse.destroy(); }
+    controls.mouse = require('./controls/mouse')(this);
+  }
+
+  if (null == controls.touch || true == map.touch || true == force) {
+    if (controls.touch) { controls.touch.destroy(); }
+    controls.touch = require('./controls/touch')(this);
+  }
+
+  if (null == controls.keyboard || true == map.keyboard || true == force) {
+    if (controls.keyboard) { controls.keyboard.destroy(); }
+    controls.keyboard = require('./controls/keyboard')(this);
+  }
+
+  if (null == controls.orientation || true == map.orientation || true == force) {
+    if (controls.orientation) { controls.orientation.destroy(); }
+    controls.orientation = require('./controls/orientation')(this);
+  }
+
+  if (null == controls.default || true == map.default || true == force) {
+    if (controls.default) { controls.default.destroy(); }
+    controls.default = (
+      require('./controls/controller')(this).enable().target(this.camera)
+    );
+  }
+
+  return this;
 };

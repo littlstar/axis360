@@ -181,6 +181,7 @@ function MouseController (scope) {
   this.state.mouseupTimeout = 0;
 
   // initialize event delegation.
+  this.events.bind('mouseleave');
   this.events.bind('mousedown');
   this.events.bind('mousemove');
   this.events.bind('mouseup');
@@ -246,6 +247,18 @@ MouseController.prototype.onmousemove = function (e) {
 
   this.state.movementsStart.x = e.screenX;
   this.state.movementsStart.y = e.screenY;
+};
+
+/**
+ * Handles 'onmousemove' events.
+ *
+ * @private
+ * @name onmousemove
+ * @param {Event} e - Event object.
+ */
+
+MouseController.prototype.onmouseleave = function () {
+  this.onmouseup();
 };
 
 /**
