@@ -134,6 +134,15 @@ var three = require('three.js')
   , fullscreen = require('fullscreen')
   , keycode = require('keycode')
   , merge = require('merge')
+  , pkg = require('./package.json')
+
+var COMPANY = "Little Star Media, Inc";
+var YEAR = (new Date).getUTCFullYear();
+console.info("Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %s %d",
+            pkg.version,
+            pkg.bugs.url,
+            pkg.bugs.email,
+            COMPANY, YEAR);
 
 /**
  * Local dependencies
@@ -233,6 +242,10 @@ function Axis (parent, opts) {
   /** Axis' texture instance. */
   this.texture = null;
 
+  /** Axis' controllers. */
+
+  this.controls = {};
+
   /** Axis' state instance. */
   this.state = new State(this, opts);
 
@@ -252,20 +265,26 @@ function Axis (parent, opts) {
   this.camera = createCamera(this);
 
   /** Current axis orientation. */
-  this.orientation = {x: 0, y: 0, z: 0};
+  this.orientation = {x: 0, y: 0};
 
-  /** Axis' controls. */
-  this.controls = {
-    vr: require('./controls/vr')(this),
-    mouse: require('./controls/mouse')(this),
-    touch: require('./controls/touch')(this),
-    keyboard: require('./controls/keyboard')(this),
-    orientation: require('./controls/orientation')(this)
-  };
+  this.once('ready', function () {
+    var dimensions = this.dimensions();
+    var h = dimensions.height/2;
+    var w = dimensions.width/2;
+    var x = opts && opts.orientation ? opts.orientation.x : 0;
+    var y = opts && opts.orientation ? opts.orientation.y : w/h;
 
-  this.controls.default = (
-    require('./controls/controller')(this).enable().target(this.camera)
-  );
+    if ('number' == typeof x && x == x) {
+      this.orientation.x = x;
+    } else {
+      this.orientation.x = 0;
+    }
+
+    if ('number' == typeof y && y == y) {
+      this.orientation.y = y;
+    }
+  });
+
 
   /**
    * Sets an attribute on the instance's
@@ -299,6 +318,7 @@ function Axis (parent, opts) {
   // init video events
   eventDelegation.video = events(this.video, this);
   eventDelegation.video.bind('canplaythrough');
+  eventDelegation.video.bind('loadeddata');
   eventDelegation.video.bind('play');
   eventDelegation.video.bind('pause');
   eventDelegation.video.bind('playing');
@@ -315,6 +335,7 @@ function Axis (parent, opts) {
   eventDelegation.element.bind('mousemove');
   eventDelegation.element.bind('mousewheel');
   eventDelegation.element.bind('mousedown');
+  eventDelegation.element.bind('mouseleave');
   eventDelegation.element.bind('mouseup');
   eventDelegation.element.bind('touchstart');
   eventDelegation.element.bind('touchend');
@@ -337,6 +358,9 @@ function Axis (parent, opts) {
     this.mute(true);
   }
 
+  // Initializes controllers
+  this.initializeControllers();
+
   // initial volume
   this.volume(opts.volume || 1);
 
@@ -355,8 +379,19 @@ function Axis (parent, opts) {
     this.state.update('isAnimating', false);
 
     if (this.state.isFullscreen) {
+      // temporary set this;
+      this.state.tmp.forceFocus = this.state.forceFocus;
+      this.state.forceFocus = true;
+      if (this.state.isVREnabled) {
+        raf(function () { this.size(screen.width, screen.height); }.bind(this));
+      }
       this.emit('enterfullscreen');
     } else {
+      this.state.forceFocus = (
+        null != this.state.tmp.forceFocus ?
+        this.state.tmp.forceFocus : false
+      );
+
       if (this.state.isVREnabled) {
         // @TODO(werle) - not sure how to fix this bug but the scene
         // needs to be re-rendered
@@ -427,7 +462,23 @@ Axis.prototype.oncanplaythrough = function (e) {
   this.debug('oncanplaythrough');
   this.state.duration = this.video.duration;
 
+  this.emit('canplaythrough', e);
+  if (false == this.state.shouldAutoplay && false == this.state.isPlaying) {
+    this.state.update('isPaused', true);
+    this.video.pause();
+  } else if (false == this.state.isStopped) {
+    this.video.play();
+  }
+};
+
+Axis.prototype.onloadeddata = function (e) {
+  var percent = 0;
+  var video = this.video;
+  this.debug('loadeddata');
+
   if (null == this.texture) {
+    this.video.width = this.video.videoWidth;
+    this.video.height = this.video.videoHeight;
     this.texture = new three.Texture(this.video);
     this.texture.format = three.RGBFormat;
     this.texture.minFilter = three.LinearFilter;
@@ -437,15 +488,7 @@ Axis.prototype.oncanplaythrough = function (e) {
     this.texture.image.height = this.video.videoHeight;
   }
 
-  this.emit('canplaythrough', e);
   this.state.ready();
-
-  if (false == this.state.shouldAutoplay && false == this.state.isPlaying) {
-    this.state.update('isPaused', true);
-    this.video.pause();
-  } else if (false == this.state.isStopped) {
-    this.video.play();
-  }
 };
 
 /**
@@ -458,8 +501,8 @@ Axis.prototype.oncanplaythrough = function (e) {
 Axis.prototype.onplay = function (e) {
   this.debug('onplay');
   this.state.update('isPaused', false);
-  this.state.update('isEnded', false);
   this.state.update('isStopped', false);
+  this.state.update('isEnded', false);
   this.emit('play', e);
 };
 
@@ -499,7 +542,7 @@ Axis.prototype.onplaying = function (e) {
  */
 
 Axis.prototype.onwaiting = function (e) {
-  this.debug('onwaiting', e);
+  this.debug('onwaiting');
   this.emit('wait', e);
 };
 
@@ -524,22 +567,10 @@ Axis.prototype.onloadstart = function (e) {
 
 Axis.prototype.onprogress = function (e) {
   var video = this.video;
-  var percent = 0;
+  var percent = this.getPercentLoaded();
+  e.percent = percent;
+  this.state.update('percentloaded', percent);
   this.debug('onprogress');
-
-  try {
-    percent = video.buffered.end(0) / video.duration;
-  } catch (e) {
-    this.debug('error', e);
-    try {
-      percent = video.bufferedBytes / video.bytesTotal;
-    } catch (e) {
-      this.debug('error', e);
-    }
-  }
-
-  e.percent = percent * 100;
-  this.state.update('percentplayed', percent);
   this.emit('progress', e);
 };
 
@@ -599,6 +630,20 @@ Axis.prototype.onmouseup = function (e) {
   this.debug('onmouseup');
   this.state.update('isMousedown', false);
   this.emit('mouseup', e);
+};
+
+/**
+ * Handle `onmouseleave' event
+ *
+ * @private
+ * @param {Event} e
+ */
+
+Axis.prototype.onmouseleave = function (e) {
+  this.debug('onmouseleave');
+  this.state.update('isFocused', false);
+  this.state.update('isMousedown', false);
+  this.emit('mouseleave', e);
 };
 
 /**
@@ -715,8 +760,9 @@ Axis.prototype.onmousemove = function (e) {
     this.state.update('pointerX', x);
     this.state.update('pointerY', y);
     this.cache({pointerX: x, pointerY: y});
-    this.emit('mousemove', e);
   }
+
+  this.emit('mousemove', e);
 };
 
 /**
@@ -759,7 +805,6 @@ Axis.prototype.ontouchmove = function(e) {
     this.state.update('pointerY', y);
     this.cache({pointerX: x, pointerY: y});
     this.emit('touchmove', e);
-    this.refresh();
   }
 };
 
@@ -1073,10 +1118,25 @@ Axis.prototype.resizable = function (resizable) {
  */
 
 Axis.prototype.seek = function (seconds) {
+  var ua = navigator.userAgent.toLowerCase();
   var isPlaying = this.state.isPlaying;
+  var isReady = this.state.isReady;
+  var self = this;
   if (false == this.state.isImage) {
-    this.video.currentTime = seconds;
-    this.emit('seek', seconds);
+    // firefox emits `oncanplaythrough' when changing the
+    // `.currentTime' property on a video tag so we need
+    // to listen one time for that event and then seek to
+    // prevent errors from occuring.
+    if (/firefox/.test(ua) && !isReady) {
+      this.video.oncanplaythrough = function () {
+        this.oncanplaythrough = function () {};
+        this.currentTime = seconds;
+        self.emit('seek', seconds);
+      };
+    } else {
+      this.video.currentTime = seconds;
+      this.emit('seek', seconds);
+    }
   }
   return this;
 };
@@ -1200,6 +1260,10 @@ Axis.prototype.render = function () {
 
   // initialize texture
   if (this.state.isImage) {
+    if (this.state.isCrossOrigin) {
+      three.ImageUtils.crossOrigin = 'anonymous';
+    }
+
     this.texture = three.ImageUtils.loadTexture(this.src(), null, function () {
       self.state.ready();
     });
@@ -1527,8 +1591,10 @@ Axis.prototype.fov = function (fov) {
  */
 
 Axis.prototype.enableVRMode = function () {
+  this.initializeControllers(null, true);
   this.state.isVREnabled = true;
-  return this.render();
+  this.controls.vr.enable();
+  return this;
 };
 
 /**
@@ -1538,11 +1604,104 @@ Axis.prototype.enableVRMode = function () {
  */
 
 Axis.prototype.disableVRMode = function () {
+  this.initializeControllers(null, true);
   this.state.isVREnabled = false;
+  this.controls.vr.disable();
   return this.render();
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./template.html":11,"./projection":12,"./camera":13,"./geometry":14,"./state":15,"./util":16,"./constants":17,"three-canvas-renderer":18,"three-vr-effect":19,"./projection/flat":20,"./projection/fisheye":21,"./projection/equilinear":22,"./projection/tinyplanet":23,"./controls/vr":24,"./controls/mouse":25,"./controls/touch":26,"./controls/keyboard":27,"./controls/orientation":28,"./controls/controller":29}],
+/**
+ * Returns percent of media loaded.
+ *
+ * @public
+ */
+
+Axis.prototype.getPercentLoaded = function () {
+  var video = this.video;
+  var percent = 0;
+
+  if (this.state.isImage) {
+    percent = 100;
+  } else {
+    try {
+      percent = video.buffered.end(0) / video.duration;
+    } catch (e) {
+      this.debug('error', e);
+      try {
+        percent = video.bufferedBytes / video.bytesTotal;
+      } catch (e) {
+        this.debug('error', e);
+      }
+    }
+
+    percent = percent || 0;
+    percent *= 100;
+  }
+
+  return Math.max(0, Math.min(percent, 100));
+};
+
+/**
+ * Returns percent of media played if applicable.
+ *
+ * @public
+ * @return {Number}
+ */
+
+Axis.prototype.getPercentPlayed = function () {
+  return (this.video.currentTime / this.video.duration * 100) || 0;
+};
+
+/**
+ * Initializes axis controllers if not created. An
+ * optional map can be used to indicate which controllers
+ * should be re-initialized if already created.
+ *
+ * @public
+ * @param {Object} [map] - Controllers to re-initialize.
+ * @param {Boolean} [force] - Force initialization of all controllers.
+ */
+
+Axis.prototype.initializeControllers = function (map, force) {
+  var controls = (this.controls = this.controls || {});
+  map = null != map && 'object' == typeof map ? map : {};
+
+  if (null == controls.vr || true == map.vr || true == force) {
+    if (controls.vr) { controls.vr.destroy(); }
+    controls.vr = require('./controls/vr')(this);
+  }
+
+  if (null == controls.mouse || true == map.mouse || true == force) {
+    if (controls.mouse) { controls.mouse.destroy(); }
+    controls.mouse = require('./controls/mouse')(this);
+  }
+
+  if (null == controls.touch || true == map.touch || true == force) {
+    if (controls.touch) { controls.touch.destroy(); }
+    controls.touch = require('./controls/touch')(this);
+  }
+
+  if (null == controls.keyboard || true == map.keyboard || true == force) {
+    if (controls.keyboard) { controls.keyboard.destroy(); }
+    controls.keyboard = require('./controls/keyboard')(this);
+  }
+
+  if (null == controls.orientation || true == map.orientation || true == force) {
+    if (controls.orientation) { controls.orientation.destroy(); }
+    controls.orientation = require('./controls/orientation')(this);
+  }
+
+  if (null == controls.default || true == map.default || true == force) {
+    if (controls.default) { controls.default.destroy(); }
+    controls.default = (
+      require('./controls/controller')(this).enable().target(this.camera)
+    );
+  }
+
+  return this;
+};
+
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/controller":30}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
@@ -36544,8 +36703,8 @@ function parse(event) {
   }
 }
 
-}, {"event":30,"delegate":31}],
-30: [function(require, module, exports) {
+}, {"event":31,"delegate":32}],
+31: [function(require, module, exports) {
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
     prefix = bind !== 'addEventListener' ? 'on' : '';
@@ -36582,7 +36741,7 @@ exports.unbind = function(el, type, fn, capture){
   return fn;
 };
 }, {}],
-31: [function(require, module, exports) {
+32: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36626,8 +36785,8 @@ exports.unbind = function(el, type, fn, capture){
   event.unbind(el, type, fn, capture);
 };
 
-}, {"closest":32,"event":30}],
-32: [function(require, module, exports) {
+}, {"closest":33,"event":31}],
+33: [function(require, module, exports) {
 var matches = require('matches-selector')
 
 module.exports = function (element, selector, checkYoSelf, root) {
@@ -36648,8 +36807,8 @@ module.exports = function (element, selector, checkYoSelf, root) {
   }
 }
 
-}, {"matches-selector":33}],
-33: [function(require, module, exports) {
+}, {"matches-selector":34}],
+34: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -36697,8 +36856,8 @@ function match(el, selector) {
   return false;
 }
 
-}, {"query":34}],
-34: [function(require, module, exports) {
+}, {"query":35}],
+35: [function(require, module, exports) {
 function one(selector, el) {
   return el.querySelector(selector);
 }
@@ -36859,8 +37018,8 @@ if (document.addEventListener) {
   document.addEventListener('webkitfullscreenchange', change('webkitIsFullScreen'));
 }
 
-}, {"emitter":35}],
-35: [function(require, module, exports) {
+}, {"emitter":36}],
+36: [function(require, module, exports) {
 
 /**
  * Expose `Emitter`.
@@ -37113,9 +37272,38 @@ module.exports = function (a, b) {
 
 }, {}],
 11: [function(require, module, exports) {
-module.exports = '<section class="axis frame">\n  <div class="axis container">\n    <video class="axis" style="display: none"></video>\n  </div>\n</section>\n';
+module.exports = {
+  "name": "axis",
+  "version": "1.5.8",
+  "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
+  "keywords": [
+    "panoramic",
+    "video",
+    "photo",
+    "equirectangular",
+    "equilinear",
+    "cylindrical",
+    "cylinder",
+    "webgl"
+  ],
+  "devDependencies": {
+    "duo": "*"
+  },
+  "dependencies": {
+    "jsdoc": "^3.3.0"
+  },
+
+  "bugs": {
+    "url" : "https://github.com/littlstar/axis/issues",
+    "email" : "axis@littlstar.com"
+  }
+}
+;
 }, {}],
 12: [function(require, module, exports) {
+module.exports = '<section class="axis frame">\n  <div class="axis container">\n    <video class="axis" style="display: none"></video>\n  </div>\n</section>\n';
+}, {}],
+13: [function(require, module, exports) {
 
 'use strict';
 
@@ -37254,7 +37442,6 @@ Projections.prototype.cancel = function () {
   if (false == isNaN(this.animationFrameID)) {
     raf.cancel(this.animationFrameID);
     this.scope.state.update('isAnimating', false);
-    this.scope.update();
   }
   return this;
 };
@@ -37277,7 +37464,6 @@ Projections.prototype.animate = function (fn) {
         self.cancel();
       } else {
         fn.call(self);
-        self.scope.update();
         if (self.scope.state.isAnimating) {
           self.animate(fn);
         }
@@ -37353,19 +37539,10 @@ Projections.prototype.apply = function (name) {
       this.constraints = {};
     }
 
-    if ('cylinder' == this.scope.geometry()) {
-      this.scope.orientation.x = 0;
-      this.constraints.y = true;
-      this.constraints.x = false;
-    } else {
-      this.scope.orientation.x = this.scope.orientation.x || 0;
-      this.scope.orientation.y = this.scope.orientation.y || 0;
-      this.constraints.y = this.constraints.y || false;
-      this.constraints.x = this.constraints.x || false;
-    }
-
     // apply projection
-    projection.call(this, this.scope);
+    if (false === projection.call(this, this.scope)) {
+      this.requested = this.current;
+    }
 
     // set current projection
     this.current = name;
@@ -37407,7 +37584,8 @@ Projections.prototype.contentHasCorrectSizing = function () {
  */
 
 Projections.prototype.isReady = function () {
-  return Boolean(this.scope.state.isReady);
+  var scope = this.scope
+  return Boolean(scope.camera && scope.texture && scope.scene);
 };
 
 /**
@@ -37419,11 +37597,7 @@ Projections.prototype.isReady = function () {
 Projections.prototype.initializeScene = function () {
   var scope = this.scope;
 
-  if (false == this.isReady()) {
-    scope.once('ready', init);
-  } else {
-    init();
-  }
+  init();
 
   function init () {
     // max FOV for animating
@@ -37464,21 +37638,8 @@ Projections.prototype.initializeScene = function () {
   }
 };
 
-/**
- * Predicate to determine if projection is mirrorball and
- * the request projection is a mirrorball.
- *
- * @public
- */
-
-Projections.prototype.isMirrorBall = function () {
-  return ! Boolean(
-    'mirrorball' != this.scope.state.projection &&
-    'mirrorball' != this.scope.state.projectionrequested);
-};
-
-}, {"raf":6,"three.js":2,"./constants":17}],
-17: [function(require, module, exports) {
+}, {"raf":6,"three.js":2,"./constants":18}],
+18: [function(require, module, exports) {
 
 'use strict';
 
@@ -37522,10 +37683,9 @@ void module.exports;
  * @const
  * @name DEFAULT_FOV
  * @type {Number}
- * @value 60
  */
 
-exports.DEFAULT_FOV = 60;
+exports.DEFAULT_FOV = 80;
 
 /**
  * Default interpolation factor.
@@ -37640,7 +37800,7 @@ exports.TINY_PLANET_CAMERA_LENS_VALUE = 7.5;
  * @type {Number}
  */
 
-exports.FRAME_CLICK_THRESHOLD = 250;
+exports.FRAME_CLICK_THRESHOLD = 350;
 
 /**
  * Minimum wheel distance used to fence scrolling
@@ -37788,7 +37948,7 @@ exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;
 exports.EPSILON_VALUE = 0.000001;
 
 }, {}],
-13: [function(require, module, exports) {
+14: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -37827,14 +37987,14 @@ module.exports = function createCamera (scope, force) {
   return scope.camera;
 };
 
-}, {"three.js":2,"./constants":17}],
-14: [function(require, module, exports) {
+}, {"three.js":2,"./constants":18}],
+15: [function(require, module, exports) {
 exports.cylinder = require('./cylinder');
 exports.sphere = require('./sphere');
 exports.plane = require('./plane');
 
-}, {"./cylinder":36,"./sphere":37,"./plane":38}],
-36: [function(require, module, exports) {
+}, {"./cylinder":37,"./sphere":38,"./plane":39}],
+37: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -37865,7 +38025,7 @@ module.exports = function sphere (axis) {
 };
 
 }, {"three.js":2}],
-37: [function(require, module, exports) {
+38: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -37893,7 +38053,7 @@ module.exports = function sphere (axis) {
 };
 
 }, {"three.js":2}],
-38: [function(require, module, exports) {
+39: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -37919,7 +38079,7 @@ module.exports = function plane (axis) {
 };
 
 }, {"three.js":2}],
-15: [function(require, module, exports) {
+16: [function(require, module, exports) {
 
 'use strict';
 
@@ -38064,11 +38224,17 @@ function State (scope, opts) {
   this.vrPollID = 0;
 
   /**
+   * Temporary values.
+   */
+
+  this.tmp = {};
+
+  /**
    * State variables.
    */
 
   /** Percent of content loaded. */
-  this.percentplayed = 0;
+  this.percentloaded = 0;
 
   /** Original content size. */
   this.originalsize = {width: null, height: null};
@@ -38251,6 +38417,9 @@ function State (scope, opts) {
   /** Predicate indicating if VR display is possible. */
   this.isVRPossible = isVRPossible();
 
+  /** Predicate indicating if media resource is cross origin. */
+  this.isCrossOrigin = false
+
   // listen for fullscreen changes
   fullscreen.on('change', this.onfullscreenchange.bind(this));
 
@@ -38295,6 +38464,7 @@ State.prototype.reset = function (overrides) {
   this.isImage = opts.isImage || false;
   this.isClickable = null != opts.isClickable ? opts.isClickable : true;
   this.isInverted = opts.isInverted || false;
+  this.isCrossOrigin = opts.crossorigin || false;;
   this.forceFocus = opts.forceFocus || false;
   this.allowControls = null != opts.allowControls ? opts.allowControls : true;
   this.isResizable = opts.resizable || false;
@@ -38315,7 +38485,7 @@ State.prototype.reset = function (overrides) {
    * State variables.
    */
 
-  this.percentplayed = 0;
+  this.percentloaded = 0;
   this.originalsize = {width: null, height: null};
   this.orientation = window.orientation || 0;
   this.lastVolume = 0;
@@ -38352,10 +38522,10 @@ State.prototype.reset = function (overrides) {
   this.isPlaying = false;
   this.isPaused = false;
   this.isStopped = false;
+  this.isTouching = false;
   this.isAnimating = false;
   this.isFullscreen = false;
   this.isMousedown = false;
-  this.isTouching = false;
   this.isVREnabled = false;
   this.isVRPossible = isVRPossible();
   this.isHMDAvailable = false;
@@ -38618,8 +38788,8 @@ State.prototype.onfullscreenchange = function (e) {
   this.scope.emit('fullscreenchange', e);
 };
 
-}, {"emitter":4,"fullscreen":8,"keycode":9,"has-webgl":7,"events":5,"three.js":2,"merge":10,"path":39,"./util":16,"./constants":17}],
-39: [function(require, module, exports) {
+}, {"emitter":4,"fullscreen":8,"keycode":9,"has-webgl":7,"events":5,"three.js":2,"merge":10,"path":40,"./util":17,"./constants":18}],
+40: [function(require, module, exports) {
 
 exports.basename = function(path){
   return path.split('/').pop();
@@ -38636,7 +38806,7 @@ exports.extname = function(path){
   return '.' + ext;
 };
 }, {}],
-16: [function(require, module, exports) {
+17: [function(require, module, exports) {
 
 'use strict';
 
@@ -38679,6 +38849,7 @@ exports.extname = function(path){
 
 var three = require('three.js')
   , path = require('path')
+  , url = require('url')
 
 /**
  * Detect if file path is an image
@@ -38690,7 +38861,7 @@ var three = require('three.js')
 
 exports.isImage = isImage;
 function isImage (file) {
-  var ext = path.extname(file).toLowerCase();
+  var ext = path.extname(url.parse(file).pathname).toLowerCase();
   switch (ext) {
     case '.png':
     case '.jpg':
@@ -38731,8 +38902,93 @@ function getVRDevices (fn) {
   }
 }
 
-}, {"three.js":2,"path":39}],
-18: [function(require, module, exports) {
+}, {"three.js":2,"path":40,"url":41}],
+41: [function(require, module, exports) {
+
+/**
+ * Parse the given `url`.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api public
+ */
+
+exports.parse = function(url){
+  var a = document.createElement('a');
+  a.href = url;
+  return {
+    href: a.href,
+    host: a.host || location.host,
+    port: ('0' === a.port || '' === a.port) ? port(a.protocol) : a.port,
+    hash: a.hash,
+    hostname: a.hostname || location.hostname,
+    pathname: a.pathname.charAt(0) != '/' ? '/' + a.pathname : a.pathname,
+    protocol: !a.protocol || ':' == a.protocol ? location.protocol : a.protocol,
+    search: a.search,
+    query: a.search.slice(1)
+  };
+};
+
+/**
+ * Check if `url` is absolute.
+ *
+ * @param {String} url
+ * @return {Boolean}
+ * @api public
+ */
+
+exports.isAbsolute = function(url){
+  return 0 == url.indexOf('//') || !!~url.indexOf('://');
+};
+
+/**
+ * Check if `url` is relative.
+ *
+ * @param {String} url
+ * @return {Boolean}
+ * @api public
+ */
+
+exports.isRelative = function(url){
+  return !exports.isAbsolute(url);
+};
+
+/**
+ * Check if `url` is cross domain.
+ *
+ * @param {String} url
+ * @return {Boolean}
+ * @api public
+ */
+
+exports.isCrossDomain = function(url){
+  url = exports.parse(url);
+  var location = exports.parse(window.location.href);
+  return url.hostname !== location.hostname
+    || url.port !== location.port
+    || url.protocol !== location.protocol;
+};
+
+/**
+ * Return default port for `protocol`.
+ *
+ * @param  {String} protocol
+ * @return {String}
+ * @api private
+ */
+function port (protocol){
+  switch (protocol) {
+    case 'http:':
+      return 80;
+    case 'https:':
+      return 443;
+    default:
+      return location.port;
+  }
+}
+
+}, {}],
+19: [function(require, module, exports) {
 
 /**
  * Add CanvasRenderer stuff to the given `THREE` instance.
@@ -39845,8 +40101,8 @@ module.exports = function(THREE){
   return THREE.CanvasRenderer;
 };
 
-}, {"three-projector-renderer":40}],
-40: [function(require, module, exports) {
+}, {"three-projector-renderer":42}],
+42: [function(require, module, exports) {
 
 module.exports = function (THREE) {
   /**
@@ -40758,7 +41014,7 @@ module.exports = function (THREE) {
 };
 
 }, {}],
-19: [function(require, module, exports) {
+20: [function(require, module, exports) {
 
 module.exports = function (THREE) {
   /**
@@ -41013,7 +41269,7 @@ module.exports = function (THREE) {
 };
 
 }, {}],
-20: [function(require, module, exports) {
+21: [function(require, module, exports) {
 
 'use strict';
 
@@ -41064,14 +41320,14 @@ function flat (axis) {
   var camera = axis.camera;
 
   // bail if camera not initialized
-  if (null == camera) { return; }
+  if (null == camera) { return false; }
 
   // bail if not ready
-  if (false == this.isReady()) { return; }
+  if (false == this.isReady()) { return false; }
 
   // bail if geometry is a cylinder because a flat
   // projection is only supported in a spherical geometry
-  if ('cylinder' == axis.geometry()) { return; }
+  if ('cylinder' == axis.geometry()) { return false; }
 
   // apply equilinear projection
   this.apply('equilinear');
@@ -41093,7 +41349,7 @@ function flat (axis) {
 };
 
 }, {}],
-21: [function(require, module, exports) {
+22: [function(require, module, exports) {
 
 'use strict';
 
@@ -41125,7 +41381,7 @@ function flat (axis) {
  * The fisheye projection mode.
  *
  * @public
- * @module axis/projection/fisheye
+ * @module scope/projection/fisheye
  * @type {Function}
  */
 
@@ -41157,53 +41413,59 @@ var DEFAULT_FOV = constants.DEFAULT_FOV;
 var constraints = fisheye.constraints = {};
 
 /**
- * Applies a fisheye projection to Axis frame
+ * Applies a fisheye projection to scope frame
  *
  * @api public
- * @param {Axis} axis
+ * @param {Axis} scope
  */
 
 module.exports = fisheye;
-function fisheye (axis) {
+function fisheye (scope) {
 
   // this projection requires an already initialized
-  // camera on the `Axis' instance
-  var camera = axis.camera;
+  // camera on the `scope' instance
+  var camera = scope.camera;
 
   // bail if camera not initialized
-  if (null == camera) { return; }
+  if (null == camera) { return false; }
 
   // bail if not ready
-  if (false == this.isReady()) { return; }
+  if (false == this.isReady()) { return false; }
 
   // bail if geometry is a cylinder because fisheye
   // projection is only supported in a spherical geometry
-  if ('cylinder' == axis.geometry()) { return; }
+  if ('cylinder' == scope.geometry()) { return false; }
 
   // max Z and FOV
-  var maxZ = (axis.height() / 100) | 0;
+  var maxZ = (scope.height() / 100) | 0;
   var fov = DEFAULT_FOV + 20;
-  var rotation = new three.Vector3(0, 0, 0);
+  var current = this.current;
 
-  if ('tinyplanet' != axis.projections.current) {
-    rotation.x = camera.position.x;
-    rotation.y = camera.position.y;
-    rotation.z = camera.position.z;
+  this.constraints = {};
+
+  if ('cylinder' == scope.geometry()) {
+    scope.orientation.x = 0;
+    this.constraints.y = true;
+    this.constraints.x = false;
   }
 
   // begin animation
-  axis.debug("animate: FISHEYE begin");
+  scope.debug("animate: FISHEYE begin");
   this.animate(function () {
-    axis.fov(fov);
-    axis.camera.position.z = maxZ;
-    axis.lookAt(rotation.x, rotation.y, rotation.z);
-    axis.orientation.x = (Math.PI/180);
+    scope.fov(fov);
+    scope.camera.position.z = maxZ;
+
+    if ('tinyplanet' == current) {
+      scope.lookAt(0, 0, 0);
+    }
+
+    scope.orientation.x = (Math.PI/180);
     this.cancel();
   });
 };
 
-}, {"three.js":2,"../constants":17}],
-22: [function(require, module, exports) {
+}, {"three.js":2,"../constants":18}],
+23: [function(require, module, exports) {
 
 'use strict';
 
@@ -41235,7 +41497,7 @@ function fisheye (axis) {
  * The equilinear projection mode.
  *
  * @public
- * @module axis/projection/equilinear
+ * @module scope/projection/equilinear
  * @type {Function}
  */
 
@@ -41267,20 +41529,19 @@ var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 // cylinder zoom offet
 var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
 
-
 /**
- * Applies an equilinear projection to Axis frame
+ * Applies an equilinear projection to scope frame
  *
  * @public
- * @param {Axis} axis
+ * @param {Axis} scope
  */
 
 module.exports = equilinear;
-function equilinear (axis) {
+function equilinear (scope) {
 
   // this projection requires an already initialized
-  // camera on the `Axis' instance
-  var camera = axis.camera;
+  // camera on the `scope' instance
+  var camera = scope.camera;
 
   // bail if camera not present
   if (null == camera) { return; }
@@ -41294,17 +41555,20 @@ function equilinear (axis) {
   var fov = DEFAULT_FOV;
   var zoom = CYLINDRICAL_ZOOM;
   var rotation = new three.Vector3(0, 0, 0);
+  var current = this.current;
+  var targetX = Math.PI / 180;
+  var factor = targetX *.8999;
 
   this.constraints = {};
 
-  if ('tinyplanet' != axis.projections.current) {
-    rotation.x = camera.position.x;
-    rotation.y = camera.position.y;
-    rotation.z = camera.position.z;
+  if ('cylinder' == scope.geometry()) {
+    scope.orientation.x = 0;
+    this.constraints.y = true;
+    this.constraints.x = false;
   }
 
   // apply zoom to cylinder geometry type
-  if ('cylinder' == axis.geometry()) {
+  if ('cylinder' == scope.geometry()) {
     fov += zoom;
     this.constraints.y = true;
     this.constraints.x = false;
@@ -41314,17 +41578,34 @@ function equilinear (axis) {
   }
 
   // animate
-  axis.debug("animate: EQUILINEAR begin");
+  scope.debug("animate: EQUILINEAR begin");
+  if ('tinyplanet' == current) {
+    scope.lookAt(0, 0, 0);
+  }
   this.animate(function () {
-    axis.fov(fov);
-    axis.lookAt(rotation.x, rotation.y, rotation.z);
-    axis.orientation.x = Math.PI/180;
-    this.cancel();
+    scope.fov(fov);
+    var x = scope.orientation.x;
+
+    if (x > targetX) {
+      scope.orientation.x -= factor;
+    } else {
+      scope.orientation.x = targetX;
+    }
+
+    if (x < targetX) {
+      scope.orientation.x += factor;
+    } else {
+      scope.orientation.x = targetX;
+    }
+
+    if (scope.orientation.x == targetX) {
+      return this.cancel();
+    }
   });
 };
 
-}, {"raf":6,"three.js":2,"../constants":17,"../camera":13,"../geometry/plane":38,"../geometry/sphere":37,"../geometry/cylinder":36}],
-23: [function(require, module, exports) {
+}, {"raf":6,"three.js":2,"../constants":18,"../camera":14,"../geometry/plane":39,"../geometry/sphere":38,"../geometry/cylinder":37}],
+24: [function(require, module, exports) {
 
 'use strict';
 
@@ -41356,7 +41637,7 @@ function equilinear (axis) {
  * The tiny planet projection mode.
  *
  * @public
- * @module axis/projection/tinyplanet
+ * @module scope/projection/tinyplanet
  * @type {Function}
  */
 
@@ -41385,27 +41666,27 @@ var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE;
 var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
 
 /**
- * Applies a tinyplanet projection to Axis frame
+ * Applies a tinyplanet projection to scope frame
  *
  * @api public
- * @param {Axis} axis
+ * @param {Axis} scope
  */
 
 module.exports = tinyplanet;
-function tinyplanet (axis) {
+function tinyplanet (scope) {
 
-  var camera = axis.camera;
+  var camera = scope.camera;
   var rotation = new three.Vector3(0, 0, 0);
 
   // bail if camera not initialized
-  if (null == camera) { return; }
+  if (null == camera) { return false; }
 
   // bail if not ready
-  if (false == this.isReady()) { return; }
+  if (false == this.isReady()) { return false; }
 
   // bail if geometry is a cylinder because tiny planet
   // projection is only supported in a spherical geometry
-  if ('cylinder' == axis.geometry()) { return; }
+  if ('cylinder' == scope.geometry()) { return false; }
 
   this.constraints = {
     y: true,
@@ -41413,9 +41694,15 @@ function tinyplanet (axis) {
     keys: {up: true, down: true}
   };
 
+  if ('cylinder' == scope.geometry()) {
+    scope.orientation.x = 0;
+    this.constraints.y = true;
+    this.constraints.x = false;
+  }
+
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
-  axis.fov(camera.fov);
-  axis.debug("animate: TINY_PLANET begin");
+  scope.fov(camera.fov);
+  scope.debug("animate: TINY_PLANET begin");
   this.constraints.x = true;
   this.constraints.y = false;
   rotation.x = camera.target.x || 0;
@@ -41424,9 +41711,9 @@ function tinyplanet (axis) {
   this.animate(function () {
     var y = rotation.y;
     var x = rotation.x;
-    axis.debug("animate: TINY_PLANET y=%d", y);
+    scope.debug("animate: TINY_PLANET y=%d", y);
+    scope.lookAt(rotation.x, rotation.y, rotation.z);
     if (y > MIN_Y_COORDINATE) {
-
       if (y > MIN_Y_COORDINATE) {
         rotation.y = y -ANIMATION_FACTOR;
       } else {
@@ -41439,20 +41726,18 @@ function tinyplanet (axis) {
         rotation.x = MIN_X_COORDINATE;
       }
 
-      axis.lookAt(rotation.x, rotation.y, rotation.z);
     } else {
-      axis.lookAt(rotation.x, rotation.y, rotation.z);
-      axis.orientation.x = -Infinity;
+      scope.orientation.x = -Infinity;
       this.constraints.x = false;
       this.constraints.y = true;
-      axis.debug("animate: TINY_PLANET end");
+      scope.debug("animate: TINY_PLANET end");
       this.cancel();
     }
   });
 };
 
-}, {"three.js":2,"../constants":17}],
-24: [function(require, module, exports) {
+}, {"three.js":2,"../constants":18}],
+25: [function(require, module, exports) {
 
 'use strict';
 
@@ -41953,8 +42238,8 @@ VRController.prototype.update = function () {
   return this;
 };
 
-}, {"three.js":2,"inherits":41,"../camera":13,"./controller":29}],
-41: [function(require, module, exports) {
+}, {"three.js":2,"inherits":43,"../camera":14,"./controller":30}],
+43: [function(require, module, exports) {
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -41980,7 +42265,7 @@ if (typeof Object.create === 'function') {
 }
 
 }, {}],
-29: [function(require, module, exports) {
+30: [function(require, module, exports) {
 
 'use strict';
 
@@ -42553,10 +42838,19 @@ function AxisController (scope, domElement) {
   this.events = events(this.domElement, this);
 
   // Update controller before rendering occurs on scope.
-  scope.on('before:render', function () {
-    self.update();
-  });
+  this.onbeforerender = this.onbeforerender.bind(this);
+  scope.on('before:render', this.onbeforerender);
 }
+
+/**
+ * Handles `before:render' event.
+ *
+ * @private
+ */
+
+AxisController.prototype.onbeforerender = function () {
+  this.update();
+};
 
 /**
  * Enables this controller.
@@ -42722,8 +43016,23 @@ AxisController.prototype.pan = function (delta) {
   return this;
 };
 
+/**
+ * Cleans up controller state, etc.
+ *
+ * @public
+ * @method
+ * @name destroy
+ * @return {AxisController}
+ */
+
+AxisController.prototype.destroy = function () {
+  this.events.unbind();
+  this.scope.off('before:render', this.onbeforerender);
+  return this;
+};
+
 }, {"three.js":2,"events":5}],
-25: [function(require, module, exports) {
+26: [function(require, module, exports) {
 
 'use strict';
 
@@ -42907,6 +43216,7 @@ function MouseController (scope) {
   this.state.mouseupTimeout = 0;
 
   // initialize event delegation.
+  this.events.bind('mouseleave');
   this.events.bind('mousedown');
   this.events.bind('mousemove');
   this.events.bind('mouseup');
@@ -42975,6 +43285,18 @@ MouseController.prototype.onmousemove = function (e) {
 };
 
 /**
+ * Handles 'onmousemove' events.
+ *
+ * @private
+ * @name onmousemove
+ * @param {Event} e - Event object.
+ */
+
+MouseController.prototype.onmouseleave = function () {
+  this.onmouseup();
+};
+
+/**
  * Resets mouse controller state.
  *
  * @public
@@ -43010,8 +43332,8 @@ MouseController.prototype.update = function () {
   return this;
 };
 
-}, {"inherits":41,"./controller":29}],
-26: [function(require, module, exports) {
+}, {"inherits":43,"./controller":30}],
+27: [function(require, module, exports) {
 
 'use strict';
 
@@ -43234,8 +43556,8 @@ TouchController.prototype.update = function () {
   return this;
 };
 
-}, {"inherits":41,"three.js":2,"./controller":29,"../constants":17}],
-27: [function(require, module, exports) {
+}, {"inherits":43,"three.js":2,"./controller":30,"../constants":18}],
+28: [function(require, module, exports) {
 
 'use strict';
 
@@ -43649,8 +43971,8 @@ KeyboardController.prototype.onkeyup = function (e) {
   }
 };
 
-}, {"keycode":9,"inherits":41,"./controller":29,"../constants":17}],
-28: [function(require, module, exports) {
+}, {"keycode":9,"inherits":43,"./controller":30,"../constants":18}],
+29: [function(require, module, exports) {
 
 'use strict';
 
@@ -43772,19 +44094,32 @@ function OrientationController (scope) {
    */
 
   this.state.define('deviceOrientation', function () {
-    var orientation = screen.orientation || screen.mozOrientation || screen.msOrientation;
+    var angle = 0;
     var type = null;
+    var orientation = (
+      screen.ourOrientation || // our injected orientation
+      screen.orientation    || // webkit orientation
+      screen.mozOrientation || // firefox orientation
+      screen.msOrientation  || // internet explorer orientation
+      null // unable to determine orientation object
+    );
+
 
     if (orientation && orientation.type) {
       type = orientation.type;
     }
 
+    if (orientation && orientation.angle) {
+      angle = orientation.angle;
+    }
+
+    // attempt to polyfil angle falling back to 0
     switch (type) {
-      case 'landscape-primary': return 90;
-      case 'landscape-secondary': return -90;
-      case 'portrait-secondary': return 180;
-      case 'portrait-primary': return 0;
-      default: return window.orientation || 0;
+      case 'landscape-primary': return angle || 90;
+      case 'landscape-secondary': return angle || -90;
+      case 'portrait-secondary': return angle || 180;
+      case 'portrait-primary': return angle || 0;
+      default: return angle || window.orientation || 0;
     }
   });
 
@@ -43870,4 +44205,4 @@ OrientationController.prototype.update = function () {
   return this;
 };
 
-}, {"keycode":9,"inherits":41,"./controller":29,"../constants":17}]}, {}, {"1":"Axis"})
+}, {"keycode":9,"inherits":43,"./controller":30,"../constants":18}]}, {}, {"1":"Axis"})

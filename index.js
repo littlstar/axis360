@@ -180,10 +180,11 @@ function Axis (parent, opts) {
   this.orientation = {x: 0, y: 0};
 
   this.once('ready', function () {
-    var h = this.height()/2;
-    var w = this.width()/2;
+    var dimensions = this.dimensions();
+    var h = dimensions.height/2;
+    var w = dimensions.width/2;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : h/w;
+    var y = opts && opts.orientation ? opts.orientation.y : w/h;
 
     if ('number' == typeof x && x == x) {
       this.orientation.x = x;
