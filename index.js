@@ -287,8 +287,16 @@ function Axis (parent, opts) {
     this.state.update('isAnimating', false);
 
     if (this.state.isFullscreen) {
+      // temporary set this;
+      this.state.tmp.forceFocus = this.state.forceFocus;
+      this.state.forceFocus = true;
       this.emit('enterfullscreen');
     } else {
+      this.state.forceFocus = (
+        null != this.state.tmp.forceFocus ?
+        this.state.tmp.forceFocus : false
+      );
+
       if (this.state.isVREnabled) {
         // @TODO(werle) - not sure how to fix this bug but the scene
         // needs to be re-rendered

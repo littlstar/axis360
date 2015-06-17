@@ -142,6 +142,12 @@ function State (scope, opts) {
   this.vrPollID = 0;
 
   /**
+   * Temporary values.
+   */
+
+  this.tmp = {};
+
+  /**
    * State variables.
    */
 
