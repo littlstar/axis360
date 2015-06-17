@@ -290,6 +290,9 @@ function Axis (parent, opts) {
       // temporary set this;
       this.state.tmp.forceFocus = this.state.forceFocus;
       this.state.forceFocus = true;
+      if (this.state.isVREnabled) {
+        raf(function () { this.size(screen.width, screen.height); }.bind(this));
+      }
       this.emit('enterfullscreen');
     } else {
       this.state.forceFocus = (
