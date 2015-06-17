@@ -406,8 +406,8 @@ Axis.prototype.onloadeddata = function (e) {
 Axis.prototype.onplay = function (e) {
   this.debug('onplay');
   this.state.update('isPaused', false);
-  this.state.update('isEnded', false);
   this.state.update('isStopped', false);
+  this.state.update('isEnded', false);
   this.emit('play', e);
 };
 
