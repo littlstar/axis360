@@ -246,6 +246,7 @@ function Axis (parent, opts) {
   eventDelegation.element.bind('mousemove');
   eventDelegation.element.bind('mousewheel');
   eventDelegation.element.bind('mousedown');
+  eventDelegation.element.bind('mouseleave');
   eventDelegation.element.bind('mouseup');
   eventDelegation.element.bind('touchstart');
   eventDelegation.element.bind('touchend');
@@ -529,6 +530,18 @@ Axis.prototype.onmouseup = function (e) {
 };
 
 /**
+ * Handle `onmouseleave' event
+ *
+ * @private
+ * @param {Event} e
+ */
+
+Axis.prototype.onmouseleave = function (e) {
+  this.debug('onmouseleave');
+  this.emit('mouseleave', e);
+};
+
+/**
  * Handle `ontouchstart' event
  *
  * @private
@@ -642,8 +655,9 @@ Axis.prototype.onmousemove = function (e) {
     this.state.update('pointerX', x);
     this.state.update('pointerY', y);
     this.cache({pointerX: x, pointerY: y});
-    this.emit('mousemove', e);
   }
+
+  this.emit('mousemove', e);
 };
 
 /**
