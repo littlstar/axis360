@@ -1109,7 +1109,7 @@ Axis.prototype.draw = function () {
   var sensor = this.state.vrPositionSensor;;
   var hmd = this.state.vrHMD;
 
-  this.emit('before:render');
+  this.emit('beforerender');
 
   if (this.renderer && this.scene && this.camera) {
     if (false == this.state.isVREnabled) {
@@ -1299,16 +1299,17 @@ Axis.prototype.projection = function (type, fn) {
  */
 
 Axis.prototype.destroy = function () {
-  this.scene = null;
-  this.texture = null;
-  this.camera = null;
-  this.stop();
-  this.state.update('isAnimating', false);
-  this.state.update('isReady', false);
-  this.renderer.resetGLState();
-  raf.cancel(this.state.animationFrameID);
-  empty(this.domElement);
-  this.domElement.parentElement.removeChild(this.domElement);
+  try {
+    this.scene = null;
+    this.texture = null;
+    this.camera = null;
+    this.stop();
+    raf.cancel(this.state.animationFrameID);
+    this.state.reset();
+    this.renderer.resetGLState();
+    empty(this.domElement);
+    this.domElement.parentElement.removeChild(this.domElement);
+  } catch (e) { console.warn(e); }
   function empty (el) {
     try { while (el.lastChild) el.removeChild(el); }
     catch (e) {}
@@ -1324,11 +1325,12 @@ Axis.prototype.destroy = function () {
 
 Axis.prototype.stop = function () {
   if (true == this.state.isImage) { return; }
+  this.video.pause();
   this.video.currentTime = 0;
   this.state.update('isStopped', true);
   this.state.update('isPlaying', false);
   this.state.update('isPaused', false);
-  this.pause();
+  this.state.update('isAnimating', false);
   return this;
 };
 

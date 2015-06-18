@@ -571,7 +571,7 @@ function AxisController (scope, domElement) {
 
   // Update controller before rendering occurs on scope.
   this.onbeforerender = this.onbeforerender.bind(this);
-  scope.on('before:render', this.onbeforerender);
+  scope.on('beforerender', this.onbeforerender);
 }
 
 /**
@@ -581,6 +581,11 @@ function AxisController (scope, domElement) {
  */
 
 AxisController.prototype.onbeforerender = function () {
+  // update only if enabled.
+  if (false == this.state.forceUpdate &&
+      false == this.state.isEnabled) {
+    return this;
+  }
   this.update();
 };
 
