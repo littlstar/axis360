@@ -36982,6 +36982,7 @@ function fullscreen(el, opts){
   if (el.requestFullscreen) return el.requestFullscreen(opts);
   if (el.mozRequestFullScreen) return el.mozRequestFullScreen(opts);
   if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen(opts);
+  if (el.msRequestFullscreen) return el.msRequestFullscreen(opts);
 }
 
 /**
@@ -36995,6 +36996,7 @@ exports.exit = function(){
   if (doc.exitFullscreen) return doc.exitFullscreen();
   if (doc.mozCancelFullScreen) return doc.mozCancelFullScreen();
   if (doc.webkitCancelFullScreen) return doc.webkitCancelFullScreen();
+  if (doc.msCancelFullScreen) return doc.mdCancelFullScreen();
 };
 
 /**
@@ -37004,6 +37006,9 @@ exports.exit = function(){
 function change(prop) {
   return function(){
     var val = document[prop];
+    if (false === val) { document[prop] = true; }
+    if (null == val) { document[prop] = true; }
+    val = document[prop];
     exports.emit('change', val);
   }
 }
@@ -37016,6 +37021,7 @@ if (document.addEventListener) {
   document.addEventListener('fullscreenchange', change('fullscreen'));
   document.addEventListener('mozfullscreenchange', change('mozFullScreen'));
   document.addEventListener('webkitfullscreenchange', change('webkitIsFullScreen'));
+  document.addEventListener('msfullscreenchange', change('msFullscreenEnabled'));
 }
 
 }, {"emitter":36}],
@@ -37274,7 +37280,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.5.8",
+  "version": "1.5.9",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
