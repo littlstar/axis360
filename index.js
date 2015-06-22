@@ -48,14 +48,6 @@ var three = require('three.js')
   , merge = require('merge')
   , pkg = require('./package.json')
 
-var COMPANY = "Little Star Media, Inc";
-var YEAR = (new Date).getUTCFullYear();
-console.info("Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %s %d",
-            pkg.version,
-            pkg.bugs.url,
-            pkg.bugs.email,
-            COMPANY, YEAR);
-
 /**
  * Local dependencies
  * @private
@@ -69,13 +61,21 @@ var tpl = require('./template.html')
   , isImage = require('./util').isImage
   , constants = require('./constants')
 
-// uncomment to enable debugging
-//window.DEBUG = true;
-
 // install THREE.js addons
 Axis.THREE = three;
 require('three-canvas-renderer')(three);
 require('three-vr-effect')(three);
+
+// uncomment to enable debugging
+//window.DEBUG = true;
+
+var COMPANY = "Little Star Media, Inc (www.Littlstar.com)";
+var YEAR = (new Date).getUTCFullYear();
+console.info("Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %d %s",
+            pkg.version,
+            pkg.bugs.url,
+            pkg.bugs.email,
+            YEAR, COMPANY);
 
 // frame click threshold
 var FRAME_CLICK_THRESHOLD = constants.FRAME_CLICK_THRESHOLD;

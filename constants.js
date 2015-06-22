@@ -158,7 +158,7 @@ exports.TINY_PLANET_CAMERA_LENS_VALUE = 7.5;
  * @type {Number}
  */
 
-exports.FRAME_CLICK_THRESHOLD = 350;
+exports.FRAME_CLICK_THRESHOLD = 100;
 
 /**
  * Minimum wheel distance used to fence scrolling
