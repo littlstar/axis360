@@ -86,27 +86,24 @@
     <h3 id="title">
       <i class="fa fa-video-camera"></i>Axis 360 Video Test
     </h3>
-    <div class="normal video"></div>
-    <div class="vsn video"></div>
     <button id="go-fullscreen">Go fullscreen</button>
     <button id="toggle-vr-mode">Toggle VR Mode</button>
+    <div class="normal video"></div>
+    <div class="vsn video"></div>
     <script type="text/javascript" charset="utf-8">
       //DEBUG=1
-      //var Axis = require('axis')
-    var frame = new Axis(document.querySelector('.normal.video'), {
-        //webgl: false,
+      var frame = new Axis(document.querySelector('.normal.video'), {
         crossorigin: true,
         resizable: true,
         preload: true,
         autoplay: true,
-        //friction: 0.99,
-        width: window.innerWidth,
-        height: 500,
+        width: window.innerWidth * .8,
+        height: window.innerHeight * .8,
         loop: true,
         //src: 'https://d3uo9a4kiyu5sk.cloudfront.net/production/90598eca-0ec1-4677-bd13-495cd3c09dd8/web.mp4'
         //src: 'test.webm'
-        //src: '/public/assets/paramotor.mp4'
-        src: '/public/assets/hostel-luego.jpg'
+        src: '/public/assets/paramotor.mp4'
+        //src: '/public/assets/hostel-luego.jpg'
       });
 
       frame.on('vrhmdavailable', function (e) {

@@ -47,6 +47,9 @@ var inherits = require('inherits')
  */
 
 var AxisController = require('./controller')
+  , constants = require('../constants')
+
+var MOUSE_MOVEMENT_FRICTION = constants.MOUSE_MOVEMENT_FRICTION;
 
 /**
  * Normalizes properties in an Event object and
@@ -199,8 +202,8 @@ MouseController.prototype.onmousedown = function (e) {
   clearTimeout(this.state.mouseupTimeout);
   this.state.forceUpdate = false;
   this.state.isMousedown = true;
-  this.state.movementsStart.x = e.screenX;
-  this.state.movementsStart.y = e.screenY;
+  this.state.movementsStart.x = e.screenX * MOUSE_MOVEMENT_FRICTION;
+  this.state.movementsStart.y = e.screenY * MOUSE_MOVEMENT_FRICTION;
 };
 
 /**
@@ -238,15 +241,15 @@ MouseController.prototype.onmousemove = function (e) {
     return;
   }
 
-  movements.x = e.screenX - this.state.movementsStart.x;
-  movements.y = e.screenY - this.state.movementsStart.y;
+  movements.x = (e.screenX *MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.x;
+  movements.y = (e.screenY *MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.y;
 
   // normalized movements from event
   normalizeMovements(e, movements);
   this.pan(movements);
 
-  this.state.movementsStart.x = e.screenX;
-  this.state.movementsStart.y = e.screenY;
+  this.state.movementsStart.x = e.screenX * MOUSE_MOVEMENT_FRICTION;
+  this.state.movementsStart.y = e.screenY * MOUSE_MOVEMENT_FRICTION;
 };
 
 /**

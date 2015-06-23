@@ -1006,6 +1006,14 @@ Axis.prototype.refresh = function () {
     this.state.update('pointerY', 0);
   }
 
+  if (this.state.isFullscreen) {
+    if (this.state.lastDevicePixelRatio != window.devicePixelRatio) {
+      this.state.lastDevicePixelRatio = window.devicePixelRatio;
+      this.size(window.screen.width/window.devicePixelRatio,
+                window.screen.height/window.devicePixelRatio);
+    }
+  }
+
   this.emit('refresh');
   return this;
 };

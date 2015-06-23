@@ -56,6 +56,7 @@ var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 // min/max x/y coordinates
 var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE;
 var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
+var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
 /**
  * Applies a tinyplanet projection to scope frame
@@ -92,8 +93,9 @@ function tinyplanet (scope) {
     this.constraints.x = false;
   }
 
+  var fovOffset = 15;
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
-  scope.fov(camera.fov);
+  scope.fov(camera.fov + fovOffset);
   scope.debug("animate: TINY_PLANET begin");
   this.constraints.x = true;
   this.constraints.y = false;
@@ -105,12 +107,8 @@ function tinyplanet (scope) {
     var x = rotation.x;
     scope.debug("animate: TINY_PLANET y=%d", y);
     scope.lookAt(rotation.x, rotation.y, rotation.z);
-    if (y > MIN_Y_COORDINATE) {
-      if (y > MIN_Y_COORDINATE) {
-        rotation.y = y -ANIMATION_FACTOR;
-      } else {
-        rotation.y = MIN_Y_COORDINATE;
-      }
+    if (y > -360) {
+      rotation.y = y -ANIMATION_FACTOR;
 
       if (x > MIN_X_COORDINATE) {
         rotation.x = x -ANIMATION_FACTOR;

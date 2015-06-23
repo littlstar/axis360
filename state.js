@@ -256,6 +256,9 @@ function State (scope, opts) {
   /** Controller update timeout value. */
   this.controllerUpdateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
 
+  /** Last known device pixel ratio. */
+  this.lastDevicePixelRatio = window.devicePixelRatio;
+
   /**
    * State predicates.
    */
@@ -425,6 +428,7 @@ State.prototype.reset = function (overrides) {
   this.xAxisCenter = new three.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
   this.zee = new three.Vector3(0, 0, 1);
   this.euler = new three.Euler();
+  this.lastDevicePixelRatio = window.devicePixelRatio;
 
   /**
    * State predicates.

@@ -48,7 +48,7 @@ var three = require('three.js')
  * @private
  */
 
-var PI2 = ((Math.PI/2) * (180/Math.PI) - 5) * (Math.PI/180);
+var PI2 = ((Math.PI/2) * (180/Math.PI) - 30) * (Math.PI/180);
 
 /**
  * AxisController constructor

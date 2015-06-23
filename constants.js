@@ -43,7 +43,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 80;
+exports.DEFAULT_FOV = 100;
 
 /**
  * Default interpolation factor.
@@ -54,7 +54,7 @@ exports.DEFAULT_FOV = 80;
  * @type {Number}
  */
 
-exports.DEFAULT_INTERPOLATION_FACTOR = 0.2;
+exports.DEFAULT_INTERPOLATION_FACTOR = 0.15;
 
 /**
  * Default frame projection
@@ -99,7 +99,7 @@ exports.DEFAULT_GEOMETRY_RADIUS = 400;
  * @type {Number}
  */
 
-exports.DEFAULT_FRICTION = 0.0025;
+exports.DEFAULT_FRICTION = 0.002;
 
 /**
  * Default key pan speed in pixels
@@ -110,7 +110,7 @@ exports.DEFAULT_FRICTION = 0.0025;
  * @type {Number}
  */
 
-exports.DEFAULT_KEY_PAN_SPEED = 8;
+exports.DEFAULT_KEY_PAN_SPEED = 6;
 
 /**
  * Default controller update timeout.
@@ -193,7 +193,7 @@ exports.MAX_WHEEL_DISTANCE = 500;
  * @type {Number}
  */
 
-exports.MIN_Y_COORDINATE = -360;
+exports.MIN_Y_COORDINATE = -85;
 
 /**
  * Maximum possible y coordinate
@@ -304,3 +304,14 @@ exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;
  */
 
 exports.EPSILON_VALUE = 0.000001;
+
+/**
+ * Mouse movement friction
+ *
+ * @public
+ * @const
+ * @name MOUSE_MOVEMENT_FRICTION
+ * @type {Number}
+ */
+
+exports.MOUSE_MOVEMENT_FRICTION = 0.5;
