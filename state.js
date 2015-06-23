@@ -90,7 +90,7 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * resizable.
  * @param {Boolean} [opts.isClickable = true] - Allow the axis frame to be
  * clickable.
- * @param {Boolean} [opts.isInverted = false] - Inverts directional controls.
+ * @param {Boolean} [opts.inverted = false] - Inverts directional controls.
  * @param {Number} [opts.radius = 400] = Geometry radius.
  * @param {Number} [opts.height] - Frame height.
  * @param {Number} [opts.width] - Frame width.
@@ -381,7 +381,7 @@ State.prototype.reset = function (overrides) {
   this.src = opts.src || null;
   this.isImage = opts.isImage || false;
   this.isClickable = null != opts.isClickable ? opts.isClickable : true;
-  this.isInverted = opts.isInverted || false;
+  this.isInverted = opts.inverted || false;
   this.isCrossOrigin = opts.crossorigin || false;;
   this.forceFocus = opts.forceFocus || false;
   this.allowControls = null != opts.allowControls ? opts.allowControls : true;
