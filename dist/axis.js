@@ -136,14 +136,6 @@ var three = require('three.js')
   , merge = require('merge')
   , pkg = require('./package.json')
 
-var COMPANY = "Little Star Media, Inc";
-var YEAR = (new Date).getUTCFullYear();
-console.info("Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %s %d",
-            pkg.version,
-            pkg.bugs.url,
-            pkg.bugs.email,
-            COMPANY, YEAR);
-
 /**
  * Local dependencies
  * @private
@@ -157,13 +149,21 @@ var tpl = require('./template.html')
   , isImage = require('./util').isImage
   , constants = require('./constants')
 
-// uncomment to enable debugging
-//window.DEBUG = true;
-
 // install THREE.js addons
 Axis.THREE = three;
 require('three-canvas-renderer')(three);
 require('three-vr-effect')(three);
+
+// uncomment to enable debugging
+//window.DEBUG = true;
+
+var COMPANY = "Little Star Media, Inc (www.Littlstar.com)";
+var YEAR = (new Date).getUTCFullYear();
+console.info("Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %d %s",
+            pkg.version,
+            pkg.bugs.url,
+            pkg.bugs.email,
+            YEAR, COMPANY);
 
 // frame click threshold
 var FRAME_CLICK_THRESHOLD = constants.FRAME_CLICK_THRESHOLD;
@@ -1094,6 +1094,14 @@ Axis.prototype.refresh = function () {
     this.state.update('pointerY', 0);
   }
 
+  if (this.state.isFullscreen) {
+    if (this.state.lastDevicePixelRatio != window.devicePixelRatio) {
+      this.state.lastDevicePixelRatio = window.devicePixelRatio;
+      this.size(window.screen.width/window.devicePixelRatio,
+                window.screen.height/window.devicePixelRatio);
+    }
+  }
+
   this.emit('refresh');
   return this;
 };
@@ -1197,7 +1205,7 @@ Axis.prototype.draw = function () {
   var sensor = this.state.vrPositionSensor;;
   var hmd = this.state.vrHMD;
 
-  this.emit('before:render');
+  this.emit('beforerender');
 
   if (this.renderer && this.scene && this.camera) {
     if (false == this.state.isVREnabled) {
@@ -1387,16 +1395,17 @@ Axis.prototype.projection = function (type, fn) {
  */
 
 Axis.prototype.destroy = function () {
-  this.scene = null;
-  this.texture = null;
-  this.camera = null;
-  this.stop();
-  this.state.update('isAnimating', false);
-  this.state.update('isReady', false);
-  this.renderer.resetGLState();
-  raf.cancel(this.state.animationFrameID);
-  empty(this.domElement);
-  this.domElement.parentElement.removeChild(this.domElement);
+  try {
+    this.scene = null;
+    this.texture = null;
+    this.camera = null;
+    this.stop();
+    raf.cancel(this.state.animationFrameID);
+    this.state.reset();
+    this.renderer.resetGLState();
+    empty(this.domElement);
+    this.domElement.parentElement.removeChild(this.domElement);
+  } catch (e) { console.warn(e); }
   function empty (el) {
     try { while (el.lastChild) el.removeChild(el); }
     catch (e) {}
@@ -1412,11 +1421,12 @@ Axis.prototype.destroy = function () {
 
 Axis.prototype.stop = function () {
   if (true == this.state.isImage) { return; }
+  this.video.pause();
   this.video.currentTime = 0;
   this.state.update('isStopped', true);
   this.state.update('isPlaying', false);
   this.state.update('isPaused', false);
-  this.pause();
+  this.state.update('isAnimating', false);
   return this;
 };
 
@@ -36262,13 +36272,17 @@ module.exports = parse;
  * Tests for browser support.
  */
 
-var div = document.createElement('div');
-// Setup
-div.innerHTML = '  <link/><table></table><a href="/a">a</a><input type="checkbox"/>';
-// Make sure that link elements get serialized correctly by innerHTML
-// This requires a wrapper element in IE
-var innerHTMLBug = !div.getElementsByTagName('link').length;
-div = undefined;
+var innerHTMLBug = false;
+var bugTestDiv;
+if (typeof document !== 'undefined') {
+  bugTestDiv = document.createElement('div');
+  // Setup
+  bugTestDiv.innerHTML = '  <link/><table></table><a href="/a">a</a><input type="checkbox"/>';
+  // Make sure that link elements get serialized correctly by innerHTML
+  // This requires a wrapper element in IE
+  innerHTMLBug = !bugTestDiv.getElementsByTagName('link').length;
+  bugTestDiv = undefined;
+}
 
 /**
  * Wrap map from jquery.
@@ -37280,7 +37294,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.5.9",
+  "version": "1.5.12",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -37691,7 +37705,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 80;
+exports.DEFAULT_FOV = 100;
 
 /**
  * Default interpolation factor.
@@ -37702,7 +37716,7 @@ exports.DEFAULT_FOV = 80;
  * @type {Number}
  */
 
-exports.DEFAULT_INTERPOLATION_FACTOR = 0.2;
+exports.DEFAULT_INTERPOLATION_FACTOR = 0.15;
 
 /**
  * Default frame projection
@@ -37747,7 +37761,7 @@ exports.DEFAULT_GEOMETRY_RADIUS = 400;
  * @type {Number}
  */
 
-exports.DEFAULT_FRICTION = 0.0025;
+exports.DEFAULT_FRICTION = 0.002;
 
 /**
  * Default key pan speed in pixels
@@ -37758,7 +37772,7 @@ exports.DEFAULT_FRICTION = 0.0025;
  * @type {Number}
  */
 
-exports.DEFAULT_KEY_PAN_SPEED = 8;
+exports.DEFAULT_KEY_PAN_SPEED = 6;
 
 /**
  * Default controller update timeout.
@@ -37806,7 +37820,7 @@ exports.TINY_PLANET_CAMERA_LENS_VALUE = 7.5;
  * @type {Number}
  */
 
-exports.FRAME_CLICK_THRESHOLD = 350;
+exports.FRAME_CLICK_THRESHOLD = 100;
 
 /**
  * Minimum wheel distance used to fence scrolling
@@ -37841,7 +37855,7 @@ exports.MAX_WHEEL_DISTANCE = 500;
  * @type {Number}
  */
 
-exports.MIN_Y_COORDINATE = -360;
+exports.MIN_Y_COORDINATE = -85;
 
 /**
  * Maximum possible y coordinate
@@ -37952,6 +37966,17 @@ exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;
  */
 
 exports.EPSILON_VALUE = 0.000001;
+
+/**
+ * Mouse movement friction
+ *
+ * @public
+ * @const
+ * @name MOUSE_MOVEMENT_FRICTION
+ * @type {Number}
+ */
+
+exports.MOUSE_MOVEMENT_FRICTION = 0.5;
 
 }, {}],
 14: [function(require, module, exports) {
@@ -38178,7 +38203,7 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * resizable.
  * @param {Boolean} [opts.isClickable = true] - Allow the axis frame to be
  * clickable.
- * @param {Boolean} [opts.isInverted = false] - Inverts directional controls.
+ * @param {Boolean} [opts.inverted = false] - Inverts directional controls.
  * @param {Number} [opts.radius = 400] = Geometry radius.
  * @param {Number} [opts.height] - Frame height.
  * @param {Number} [opts.width] - Frame width.
@@ -38344,6 +38369,9 @@ function State (scope, opts) {
   /** Controller update timeout value. */
   this.controllerUpdateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
 
+  /** Last known device pixel ratio. */
+  this.lastDevicePixelRatio = window.devicePixelRatio;
+
   /**
    * State predicates.
    */
@@ -38469,7 +38497,7 @@ State.prototype.reset = function (overrides) {
   this.src = opts.src || null;
   this.isImage = opts.isImage || false;
   this.isClickable = null != opts.isClickable ? opts.isClickable : true;
-  this.isInverted = opts.isInverted || false;
+  this.isInverted = opts.inverted || false;
   this.isCrossOrigin = opts.crossorigin || false;;
   this.forceFocus = opts.forceFocus || false;
   this.allowControls = null != opts.allowControls ? opts.allowControls : true;
@@ -38513,6 +38541,7 @@ State.prototype.reset = function (overrides) {
   this.xAxisCenter = new three.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
   this.zee = new three.Vector3(0, 0, 1);
   this.euler = new three.Euler();
+  this.lastDevicePixelRatio = window.devicePixelRatio;
 
   /**
    * State predicates.
@@ -41670,6 +41699,7 @@ var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 // min/max x/y coordinates
 var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE;
 var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
+var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
 /**
  * Applies a tinyplanet projection to scope frame
@@ -41706,8 +41736,9 @@ function tinyplanet (scope) {
     this.constraints.x = false;
   }
 
+  var fovOffset = 15;
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
-  scope.fov(camera.fov);
+  scope.fov(camera.fov + fovOffset);
   scope.debug("animate: TINY_PLANET begin");
   this.constraints.x = true;
   this.constraints.y = false;
@@ -41719,12 +41750,8 @@ function tinyplanet (scope) {
     var x = rotation.x;
     scope.debug("animate: TINY_PLANET y=%d", y);
     scope.lookAt(rotation.x, rotation.y, rotation.z);
-    if (y > MIN_Y_COORDINATE) {
-      if (y > MIN_Y_COORDINATE) {
-        rotation.y = y -ANIMATION_FACTOR;
-      } else {
-        rotation.y = MIN_Y_COORDINATE;
-      }
+    if (y > -360) {
+      rotation.y = y -ANIMATION_FACTOR;
 
       if (x > MIN_X_COORDINATE) {
         rotation.x = x -ANIMATION_FACTOR;
@@ -42322,7 +42349,7 @@ var three = require('three.js')
  * @private
  */
 
-var PI2 = ((Math.PI/2) * (180/Math.PI) - 5) * (Math.PI/180);
+var PI2 = ((Math.PI/2) * (180/Math.PI) - 30) * (Math.PI/180);
 
 /**
  * AxisController constructor
@@ -42845,7 +42872,7 @@ function AxisController (scope, domElement) {
 
   // Update controller before rendering occurs on scope.
   this.onbeforerender = this.onbeforerender.bind(this);
-  scope.on('before:render', this.onbeforerender);
+  scope.on('beforerender', this.onbeforerender);
 }
 
 /**
@@ -42855,6 +42882,11 @@ function AxisController (scope, domElement) {
  */
 
 AxisController.prototype.onbeforerender = function () {
+  // update only if enabled.
+  if (false == this.state.forceUpdate &&
+      false == this.state.isEnabled) {
+    return this;
+  }
   this.update();
 };
 
@@ -43012,11 +43044,19 @@ AxisController.prototype.pan = function (delta) {
 
   // update controller orientation
   if (true != this.scope.state.isConstrainedWith('x')) {
-    orientation.y -= delta.x * friction;
+    if (this.scope.state.isInverted) {
+      orientation.y -= delta.x * friction;
+    } else {
+      orientation.y += delta.x * friction;
+    }
   }
 
   if (true != this.scope.state.isConstrainedWith('y')) {
-    orientation.x -= delta.y * friction;
+    if (this.scope.state.isInverted) {
+      orientation.x -= delta.y * friction;
+    } else {
+      orientation.x += delta.y * friction;
+    }
   }
 
   return this;
@@ -43032,8 +43072,9 @@ AxisController.prototype.pan = function (delta) {
  */
 
 AxisController.prototype.destroy = function () {
+  this.reset();
   this.events.unbind();
-  this.scope.off('before:render', this.onbeforerender);
+  this.scope.off('beforerender', this.onbeforerender);
   return this;
 };
 
@@ -43088,6 +43129,9 @@ var inherits = require('inherits')
  */
 
 var AxisController = require('./controller')
+  , constants = require('../constants')
+
+var MOUSE_MOVEMENT_FRICTION = constants.MOUSE_MOVEMENT_FRICTION;
 
 /**
  * Normalizes properties in an Event object and
@@ -43240,8 +43284,8 @@ MouseController.prototype.onmousedown = function (e) {
   clearTimeout(this.state.mouseupTimeout);
   this.state.forceUpdate = false;
   this.state.isMousedown = true;
-  this.state.movementsStart.x = e.screenX;
-  this.state.movementsStart.y = e.screenY;
+  this.state.movementsStart.x = e.screenX * MOUSE_MOVEMENT_FRICTION;
+  this.state.movementsStart.y = e.screenY * MOUSE_MOVEMENT_FRICTION;
 };
 
 /**
@@ -43279,15 +43323,15 @@ MouseController.prototype.onmousemove = function (e) {
     return;
   }
 
-  movements.x = e.screenX - this.state.movementsStart.x;
-  movements.y = e.screenY - this.state.movementsStart.y;
+  movements.x = (e.screenX *MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.x;
+  movements.y = (e.screenY *MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.y;
 
   // normalized movements from event
   normalizeMovements(e, movements);
   this.pan(movements);
 
-  this.state.movementsStart.x = e.screenX;
-  this.state.movementsStart.y = e.screenY;
+  this.state.movementsStart.x = e.screenX * MOUSE_MOVEMENT_FRICTION;
+  this.state.movementsStart.y = e.screenY * MOUSE_MOVEMENT_FRICTION;
 };
 
 /**
@@ -43338,7 +43382,7 @@ MouseController.prototype.update = function () {
   return this;
 };
 
-}, {"inherits":43,"./controller":30}],
+}, {"inherits":43,"./controller":30,"../constants":18}],
 27: [function(require, module, exports) {
 
 'use strict';
@@ -43533,9 +43577,11 @@ TouchController.prototype.ontouchmove = function (e) {
   var touch = e.touches[0];
   var x = touch.pageX - this.state.drag.x;
   var y = touch.pageY - this.state.drag.y;
-  this.state.drag.x = touch.pageX;
-  this.state.drag.y = touch.pageY;
-  this.pan({x: x, y: y});
+  if (this.scope.domElement.contains(e.target)) {
+    this.state.drag.x = touch.pageX;
+    this.state.drag.y = touch.pageY;
+    this.pan({x: x, y: y});
+  }
 };
 
 /**
@@ -43788,19 +43834,19 @@ function KeyboardController (scope) {
   this.reset();
 
   this.use('up', function (data) {
-    this.pan({x: 0, y: -this.state.panSpeed / 2});
-  });
-
-  this.use('down', function (data) {
     this.pan({x: 0, y: this.state.panSpeed / 2});
   });
 
+  this.use('down', function (data) {
+    this.pan({x: 0, y: -this.state.panSpeed / 2});
+  });
+
   this.use('left', function (data) {
-    this.pan({x: -this.state.panSpeed * 2, y: 0});
+    this.pan({x: this.state.panSpeed * 2, y: 0});
   });
 
   this.use('right', function (data) {
-    this.pan({x: this.state.panSpeed * 2, y: 0});
+    this.pan({x: -this.state.panSpeed * 2, y: 0});
   });
 }
 
