@@ -743,7 +743,7 @@ AxisController.prototype.pan = function (delta) {
 
   // update controller orientation
   if (true != this.scope.state.isConstrainedWith('x')) {
-    if (this.scope.state.inverted) {
+    if (this.scope.state.isInverted) {
       orientation.y -= delta.x * friction;
     } else {
       orientation.y += delta.x * friction;
@@ -751,7 +751,7 @@ AxisController.prototype.pan = function (delta) {
   }
 
   if (true != this.scope.state.isConstrainedWith('y')) {
-    if (this.scope.state.inverted) {
+    if (this.scope.state.isInverted) {
       orientation.x -= delta.y * friction;
     } else {
       orientation.x += delta.y * friction;
@@ -771,7 +771,8 @@ AxisController.prototype.pan = function (delta) {
  */
 
 AxisController.prototype.destroy = function () {
+  this.reset();
   this.events.unbind();
-  this.scope.off('before:render', this.onbeforerender);
+  this.scope.off('beforerender', this.onbeforerender);
   return this;
 };
