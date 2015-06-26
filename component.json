@@ -1,6 +1,6 @@
 {
   "name": "axis",
-  "version": "1.5.13",
+  "version": "1.5.14",
   "description": "360 video rendering engine",
   "main": "index.js",
   "scripts": [
