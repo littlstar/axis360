@@ -1406,7 +1406,9 @@ Axis.prototype.coords = function (x, y) {
  */
 
 Axis.prototype.update = function () {
-  return this.refresh().draw();
+  this.refresh();
+  this.draw();
+  return this;
 };
 
 /**

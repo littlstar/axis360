@@ -1494,7 +1494,9 @@ Axis.prototype.coords = function (x, y) {
  */
 
 Axis.prototype.update = function () {
-  return this.refresh().draw();
+  this.refresh();
+  this.draw();
+  return this;
 };
 
 /**
@@ -37294,7 +37296,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.5.12",
+  "version": "1.5.13",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -37372,9 +37374,8 @@ var raf = require('raf')
 
 var constants = require('./constants')
 
-// default field of view
 var DEFAULT_FOV = constants.DEFAULT_FOV;
-var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
+var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV;
 
 /**
  * Predicate to determine whether `n' is
@@ -37406,7 +37407,7 @@ function getCorrectGeometry (axis) {
   } else if (ratio == ratio && 2 == ratio) {
     geo = axis.geometry('sphere');
   } else {
-    axis.state.fov += CYLINDRICAL_ZOOM;
+    axis.fov(CYLINDRICAL_FOV);
     geo = axis.geometry('cylinder');
   }
 
@@ -37620,11 +37621,6 @@ Projections.prototype.initializeScene = function () {
   init();
 
   function init () {
-    // max FOV for animating
-    var maxFov = DEFAULT_FOV;
-    var width = scope.width();
-    var height = scope.height();
-
     // get geometry for content
     var geo = getCorrectGeometry(scope);
 
@@ -37636,18 +37632,6 @@ Projections.prototype.initializeScene = function () {
 
     // current projection
     var projection = scope.projection();
-
-    // current fov
-    var fov = scope.fov();
-
-    // zoom offset where applicable
-    var zoom = CYLINDRICAL_ZOOM;
-
-    // apply zoom to cylinder geometry type
-    if ('cylinder' == scope.geometry()) {
-      maxFov += zoom;
-      scope.fov(fov += zoom);
-    }
 
     // set mesh scale
     mesh.scale.x = -1;
@@ -37705,7 +37689,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 100;
+exports.DEFAULT_FOV = 80;
 
 /**
  * Default interpolation factor.
@@ -37820,7 +37804,7 @@ exports.TINY_PLANET_CAMERA_LENS_VALUE = 7.5;
  * @type {Number}
  */
 
-exports.FRAME_CLICK_THRESHOLD = 100;
+exports.FRAME_CLICK_THRESHOLD = 50;
 
 /**
  * Minimum wheel distance used to fence scrolling
@@ -37891,15 +37875,15 @@ exports.MIN_X_COORDINATE = 0;
 exports.MAX_X_COORDINATE = 360;
 
 /**
- * Cylindrical zoom offset for field of view
+ * Cylindrical field of view value
  *
  * @public
  * @const
- * @name CYLINDRICAL_ZOOM
+ * @name CYLINDRICAL_FOV
  * @type {Number}
  */
 
-exports.CYLINDRICAL_ZOOM = -16;
+exports.CYLINDRICAL_FOV = 40;
 
 /**
  * VR device poll timeout
@@ -38041,7 +38025,7 @@ var three = require('three.js')
  * @param {Axis} axis
  */
 
-module.exports = function sphere (axis) {
+module.exports = function (axis) {
   var radiusSegments = 64;
   var heightSegments = 1;
   var openEnded = true;
@@ -41557,12 +41541,10 @@ var constants = require('../constants')
 
 // default field of view
 var DEFAULT_FOV = constants.DEFAULT_FOV;
+var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV;
 
 // animation factor
 var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
-
-// cylinder zoom offet
-var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
 
 /**
  * Applies an equilinear projection to scope frame
@@ -41588,7 +41570,6 @@ function equilinear (scope) {
   if (false == this.contentHasCorrectSizing()) { return; }
 
   var fov = DEFAULT_FOV;
-  var zoom = CYLINDRICAL_ZOOM;
   var rotation = new three.Vector3(0, 0, 0);
   var current = this.current;
   var targetX = Math.PI / 180;
@@ -41598,15 +41579,16 @@ function equilinear (scope) {
 
   if ('cylinder' == scope.geometry()) {
     scope.orientation.x = 0;
+    fov = CYLINDRICAL_FOV;
     this.constraints.y = true;
     this.constraints.x = false;
   }
 
   // apply zoom to cylinder geometry type
   if ('cylinder' == scope.geometry()) {
-    fov += zoom;
     this.constraints.y = true;
     this.constraints.x = false;
+    scope.orientation.x = 0;
   } else {
     this.constraints.y = false;
     this.constraints.x = false;
@@ -42936,6 +42918,7 @@ AxisController.prototype.update = function () {
   var interpolationFactor = this.scope.state.interpolationFactor;
   var pi2 = PI2*.2;
   var ratio = this.scope.dimensions().ratio;
+  var geo = this.scope.geometry();
 
   // update only if enabled.
   if (false == this.state.forceUpdate &&
@@ -42943,8 +42926,12 @@ AxisController.prototype.update = function () {
     return this;
   }
 
-  // normalize x orientation
-  orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
+  if ('cylinder' == geo) {
+    orientation.x = 0;
+  } else {
+    // normalize x orientation
+    orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
+  }
 
   // update controller quaternions
   quaternions.x.setFromAxisAngle(vectors.x, orientation.x);

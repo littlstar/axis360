@@ -46,9 +46,8 @@ var raf = require('raf')
 
 var constants = require('./constants')
 
-// default field of view
 var DEFAULT_FOV = constants.DEFAULT_FOV;
-var CYLINDRICAL_ZOOM = constants.CYLINDRICAL_ZOOM;
+var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV;
 
 /**
  * Predicate to determine whether `n' is
@@ -80,7 +79,7 @@ function getCorrectGeometry (axis) {
   } else if (ratio == ratio && 2 == ratio) {
     geo = axis.geometry('sphere');
   } else {
-    axis.state.fov += CYLINDRICAL_ZOOM;
+    axis.fov(CYLINDRICAL_FOV);
     geo = axis.geometry('cylinder');
   }
 
@@ -294,11 +293,6 @@ Projections.prototype.initializeScene = function () {
   init();
 
   function init () {
-    // max FOV for animating
-    var maxFov = DEFAULT_FOV;
-    var width = scope.width();
-    var height = scope.height();
-
     // get geometry for content
     var geo = getCorrectGeometry(scope);
 
@@ -310,18 +304,6 @@ Projections.prototype.initializeScene = function () {
 
     // current projection
     var projection = scope.projection();
-
-    // current fov
-    var fov = scope.fov();
-
-    // zoom offset where applicable
-    var zoom = CYLINDRICAL_ZOOM;
-
-    // apply zoom to cylinder geometry type
-    if ('cylinder' == scope.geometry()) {
-      maxFov += zoom;
-      scope.fov(fov += zoom);
-    }
 
     // set mesh scale
     mesh.scale.x = -1;

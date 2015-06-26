@@ -13,7 +13,7 @@ var three = require('three.js')
  * @param {Axis} axis
  */
 
-module.exports = function sphere (axis) {
+module.exports = function (axis) {
   var radiusSegments = 64;
   var heightSegments = 1;
   var openEnded = true;

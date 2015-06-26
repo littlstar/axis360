@@ -635,6 +635,7 @@ AxisController.prototype.update = function () {
   var interpolationFactor = this.scope.state.interpolationFactor;
   var pi2 = PI2*.2;
   var ratio = this.scope.dimensions().ratio;
+  var geo = this.scope.geometry();
 
   // update only if enabled.
   if (false == this.state.forceUpdate &&
@@ -642,8 +643,12 @@ AxisController.prototype.update = function () {
     return this;
   }
 
-  // normalize x orientation
-  orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
+  if ('cylinder' == geo) {
+    orientation.x = 0;
+  } else {
+    // normalize x orientation
+    orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
+  }
 
   // update controller quaternions
   quaternions.x.setFromAxisAngle(vectors.x, orientation.x);

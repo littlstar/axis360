@@ -43,7 +43,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 100;
+exports.DEFAULT_FOV = 80;
 
 /**
  * Default interpolation factor.
@@ -229,15 +229,15 @@ exports.MIN_X_COORDINATE = 0;
 exports.MAX_X_COORDINATE = 360;
 
 /**
- * Cylindrical zoom offset for field of view
+ * Cylindrical field of view value
  *
  * @public
  * @const
- * @name CYLINDRICAL_ZOOM
+ * @name CYLINDRICAL_FOV
  * @type {Number}
  */
 
-exports.CYLINDRICAL_ZOOM = -16;
+exports.CYLINDRICAL_FOV = 40;
 
 /**
  * VR device poll timeout
