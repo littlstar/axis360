@@ -415,6 +415,7 @@ Axis.prototype.onplay = function (e) {
   this.state.update('isPaused', false);
   this.state.update('isStopped', false);
   this.state.update('isEnded', false);
+  this.state.update('isPlaying', true);
   this.emit('play', e);
 };
 
