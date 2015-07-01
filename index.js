@@ -184,7 +184,7 @@ function Axis (parent, opts) {
     var h = dimensions.height/2;
     var w = dimensions.width/2;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : w/h;
+    var y = opts && opts.orientation ? opts.orientation.y : (w/h) + 0.1;
 
     if ('number' == typeof x && x == x) {
       this.orientation.x = x;
