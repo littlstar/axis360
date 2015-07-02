@@ -109,27 +109,35 @@ function equilinear (scope) {
 
   // animate
   scope.debug("animate: EQUILINEAR begin");
+
   if ('tinyplanet' == current) {
     scope.lookAt(0, 0, 0);
   }
-  this.animate(function () {
+
+  if ('cylinder' == scope.geometry()) {
     scope.fov(fov);
-    var x = scope.orientation.x;
+    scope.orientation.x = targetX;
+    this.cancel();
+  } else {
+    this.animate(function () {
+      scope.fov(fov);
+      var x = scope.orientation.x;
 
-    if (x > targetX) {
-      scope.orientation.x -= factor;
-    } else {
-      scope.orientation.x = targetX;
-    }
+      if (x > targetX) {
+        scope.orientation.x -= factor;
+      } else {
+        scope.orientation.x = targetX;
+      }
 
-    if (x < targetX) {
-      scope.orientation.x += factor;
-    } else {
-      scope.orientation.x = targetX;
-    }
+      if (x < targetX) {
+        scope.orientation.x += factor;
+      } else {
+        scope.orientation.x = targetX;
+      }
 
-    if (scope.orientation.x == targetX) {
-      return this.cancel();
-    }
-  });
+      if (scope.orientation.x == targetX) {
+        return this.cancel();
+      }
+    });
+  }
 };

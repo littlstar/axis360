@@ -98,6 +98,54 @@ var CARTESIAN_CALIBRATION_VALUE = constants.CARTESIAN_CALIBRATION_VALUE;
 Axis.util = require('./util');
 
 /**
+ * Creates a renderer based on options
+ *
+ * @private
+ * @param {Object} opts
+ * @return {Object}
+ */
+
+function createRenderer (opts) {
+  opts = opts || {};
+  var useWebgl = false != opts.webgl && hasWebGL;
+
+  if ('object' == typeof opts.renderer) {
+    return opts.renderer;
+  }
+
+  if (useWebgl) {
+    return new three.WebGLRenderer({
+      antialias: true,
+      preserveDrawingBuffer: true
+    });
+  } else {
+    return new three.CanvasRenderer();
+  }
+}
+
+/**
+ * Creates a texture from a video DOM Element
+ *
+ * @private
+ * @param {Element} video
+ * @return {THREE.Texture}
+ */
+
+function createVideoTexture (video) {
+  var texture = null;
+  video.width = video.videoWidth;
+  video.height = video.videoHeight;
+  texture = new three.Texture(video);
+  texture.format = three.RGBFormat;
+  texture.minFilter = three.LinearFilter;
+  texture.magFilter = three.LinearFilter;
+  texture.generateMipmaps = false;
+  texture.image.width = video.videoWidth;
+  texture.image.height = video.videoHeight;
+  return texture;
+}
+
+/**
  * Axis constructor
  *
  * @public
@@ -106,12 +154,13 @@ Axis.util = require('./util');
  * @extends EventEmitter
  * @param {Object} parent - Parent DOM Element
  * @param {Object} [opts] - Constructor ptions passed to the axis
+ * @param {Boolean} [allowPreviewFrame] - Predicate to allow a preview frame.
  * state instance.
  * @see {@link module:axis/state~State}
  */
 
 module.exports = Axis;
-function Axis (parent, opts) {
+function Axis (parent, opts, allowPreviewFrame) {
 
   // normalize options
   opts = (opts = opts || {});
@@ -123,7 +172,7 @@ function Axis (parent, opts) {
 
   // ensure instance
   if (!(this instanceof Axis)) {
-    return new Axis(opts);
+    return new Axis(parent, opts, allowPreviewFrame);
   } else if (!(parent instanceof Element)) {
     throw new TypeError("Expecting DOM Element");
   }
@@ -145,17 +194,22 @@ function Axis (parent, opts) {
   this.scene = null;
 
   /** Axis' renderer instance.*/
-  this.renderer = opts.renderer || (
-    false != opts.webgl && hasWebGL ?
-    new three.WebGLRenderer({antialias: true}) :
-    new three.CanvasRenderer()
-  );
+  this.renderer = createRenderer(opts);
+
+  if (true == allowPreviewFrame) {
+    this.previewDomElement = document.createElement('div');
+    this.previewFrame = new Axis(this.previewDomElement, opts, false);
+    this.once('render', function () {
+      this.previewFrame.render();
+      this.previewFrame.orientation = this.orientation;
+      this.previewFrame.camera = this.camera;
+    });
+  }
 
   /** Axis' texture instance. */
   this.texture = null;
 
   /** Axis' controllers. */
-
   this.controls = {};
 
   /** Axis' state instance. */
@@ -389,15 +443,7 @@ Axis.prototype.onloadeddata = function (e) {
   this.debug('loadeddata');
 
   if (null == this.texture) {
-    this.video.width = this.video.videoWidth;
-    this.video.height = this.video.videoHeight;
-    this.texture = new three.Texture(this.video);
-    this.texture.format = three.RGBFormat;
-    this.texture.minFilter = three.LinearFilter;
-    this.texture.magFilter = three.LinearFilter;
-    this.texture.generateMipmaps = false;
-    this.texture.image.width = this.video.videoWidth;
-    this.texture.image.height = this.video.videoHeight;
+   this.texture = createVideoTexture(this.video);
   }
 
   this.state.ready();
@@ -813,6 +859,10 @@ Axis.prototype.src = function (src) {
       this.state.isImage = true;
     }
 
+    if (this.previewFrame) {
+      this.previewFrame.src(src);
+    }
+
     this.emit('source', src);
     return this;
   } else {
@@ -1043,6 +1093,18 @@ Axis.prototype.seek = function (seconds) {
   var isPlaying = this.state.isPlaying;
   var isReady = this.state.isReady;
   var self = this;
+  function afterseek () {
+    self.video.currentTime = seconds;
+    if (isPlaying) {
+      self.emit('seek', seconds);
+      self.play();
+    } else {
+      self.pause().once('play', function () {
+        self.pause();
+      });
+      self.emit('seek', seconds);
+    }
+  }
   if (false == this.state.isImage) {
     // firefox emits `oncanplaythrough' when changing the
     // `.currentTime' property on a video tag so we need
@@ -1051,12 +1113,10 @@ Axis.prototype.seek = function (seconds) {
     if (/firefox/.test(ua) && !isReady) {
       this.video.oncanplaythrough = function () {
         this.oncanplaythrough = function () {};
-        this.currentTime = seconds;
-        self.emit('seek', seconds);
+        afterseek();
       };
     } else {
-      this.video.currentTime = seconds;
-      this.emit('seek', seconds);
+      afterseek();
     }
   }
   return this;
@@ -1624,4 +1684,60 @@ Axis.prototype.initializeControllers = function (map, force) {
   }
 
   return this;
+};
+
+/**
+ * Returns a captured image at a specific moment in
+ * time based on current orientation, field of view,
+ * and projection type. If time is omitted then the
+ * current time is used. An exisiting optional `Image`
+ * object can be used otherwise a new one is created.
+ * The `Image` object is returned and its `src`
+ * attribute is set when the frame is able to capture
+ * a preview. If the current texture is an image then
+ * a preview image is generated immediately.
+ *
+ * @public
+ * @name getCaptureImageAt
+ * @param {Number} [time] - Optional Time to seek to preview.
+ * @param {Image} [out] - Optional Image object to set src to.
+ * @return {Image}
+ */
+
+Axis.prototype.getCaptureImageAt = function (time, out) {
+  var image = null;
+  var mime = 'image/png';
+  var self = this;
+
+  if (0 == arguments.length) {
+    time = null;
+    out = null;
+  } else if (1 == arguments.length) {
+    if ('object' == typeof time) {
+      out = time;
+      time = null;
+    }
+  }
+
+  image = out || new Image();
+
+  if (null != this.previewFrame && false == this.state.isImage) {
+    this.previewFrame.video.currentTime = time;
+    this.previewFrame.fov(this.fov());
+    this.previewFrame.projection(this.projection());
+    this.previewFrame.pause().once('seek', function () {
+      raf(function check () {
+        if (self.previewFrame.state.isAnimating) {
+          raf(check);
+        } else {
+          image.src = self.previewFrame.renderer.domElement.toDataURL(mime);
+        }
+      });
+    });
+    this.previewFrame.seek(time);
+  } else if (this.state.isImage) {
+    image.src = this.renderer.domElement.toDataURL(mime);
+  }
+
+  return image;
 };
