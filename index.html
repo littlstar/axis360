@@ -80,6 +80,13 @@
       #meta a:hover {
         text-decoration: underline;
       }
+
+      #preview {
+        display: block;
+        position: relative;
+        width: 500px;
+        height: 250px;
+      }
     </style>
   </head>
   <body>
@@ -88,12 +95,14 @@
     </h3>
     <button id="go-fullscreen">Go fullscreen</button>
     <button id="toggle-vr-mode">Toggle VR Mode</button>
+    <h4>Preview (every 500ms)</h4>
     <img id="preview"/>
     <div class="normal video"></div>
     <div class="vsn video"></div>
     <script type="text/javascript" charset="utf-8">
       //DEBUG=1
-      var frame = new Axis(document.querySelector('.normal.video'), {
+    var frame = new Axis(document.querySelector('.normal.video'), {
+        allowPreviewFrame: true,
         crossorigin: true,
         resizable: true,
         preload: true,
@@ -114,12 +123,14 @@
       frame.render();
 
       frame.on('ready', function () {
-        updatePreview();
         setInterval(updatePreview, 500);
+        //frame.on('refresh', function () {
+          //updatePreview();
+        //});
       });
+
       function updatePreview () {
-        //var img = frame.getCaptureImageAt();
-        //document.querySelector('#preview').src = img.src;
+        frame.getCaptureImageAt(document.querySelector('#preview'));
       }
 
       var el = document.getElementById('go-fullscreen');

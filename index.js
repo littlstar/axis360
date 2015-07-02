@@ -154,13 +154,12 @@ function createVideoTexture (video) {
  * @extends EventEmitter
  * @param {Object} parent - Parent DOM Element
  * @param {Object} [opts] - Constructor ptions passed to the axis
- * @param {Boolean} [allowPreviewFrame] - Predicate to allow a preview frame.
  * state instance.
  * @see {@link module:axis/state~State}
  */
 
 module.exports = Axis;
-function Axis (parent, opts, allowPreviewFrame) {
+function Axis (parent, opts) {
 
   // normalize options
   opts = (opts = opts || {});
@@ -172,7 +171,7 @@ function Axis (parent, opts, allowPreviewFrame) {
 
   // ensure instance
   if (!(this instanceof Axis)) {
-    return new Axis(parent, opts, allowPreviewFrame);
+    return new Axis(parent, opts);
   } else if (!(parent instanceof Element)) {
     throw new TypeError("Expecting DOM Element");
   }
@@ -196,9 +195,10 @@ function Axis (parent, opts, allowPreviewFrame) {
   /** Axis' renderer instance.*/
   this.renderer = createRenderer(opts);
 
-  if (true == allowPreviewFrame) {
+  if (true == opts.allowPreviewFrame) {
+    delete opts.allowPreviewFrame;
     this.previewDomElement = document.createElement('div');
-    this.previewFrame = new Axis(this.previewDomElement, opts, false);
+    this.previewFrame = new Axis(this.previewDomElement, opts);
     this.once('render', function () {
       this.previewFrame.render();
       this.previewFrame.orientation = this.orientation;
