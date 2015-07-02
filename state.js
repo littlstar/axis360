@@ -56,7 +56,6 @@ var EventEmitter = require('emitter')
 var getVRDevices = require('./util').getVRDevices
   , isVRPossible = require('./util').isVRPossible
   , constants = require('./constants')
-  , isImage = require('./util').isImage
 
 var VR_POLL_TIMEOUT = constants.VR_POLL_TIMEOUT;
 var MAX_FRICTION_VALUE = constants.MAX_FRICTION_VALUE;
@@ -302,6 +301,9 @@ function State (scope, opts) {
   /** Predicate indicating if frame is an image. */
   this.isImage = false;
 
+  /** Predicate indicating if video rendering should be forced. */
+  this.forceVideo = false;
+
   /** Predicate indicating focus should be forced. */
   this.forceFocus = false;
 
@@ -382,7 +384,8 @@ State.prototype.reset = function (overrides) {
   this.scrollVelocity = opts.scrollVelocity || DEFAULT_SCROLL_VELOCITY;
   this.fov = opts.fov || DEFAULT_FOV;
   this.src = opts.src || null;
-  this.isImage = opts.isImage || false;
+  this.isImage = null == opts.isImage ? false : opts.isImage;
+  this.forceVideo = null == opts.forceVideo ? false : opts.forceVideo;
   this.isClickable = null != opts.isClickable ? opts.isClickable : true;
   this.isInverted = opts.inverted || false;
   this.isCrossOrigin = opts.crossorigin || false;;

@@ -542,6 +542,7 @@ Axis.prototype.onprogress = function (e) {
 
 Axis.prototype.ontimeupdate = function (e) {
   this.debug('ontimeupdate');
+
   e.percent = this.video.currentTime / this.video.duration * 100;
   this.state.update('duration', this.video.duration);
   this.state.update('currentTime', this.video.currentTime);
@@ -852,7 +853,7 @@ Axis.prototype.src = function (src) {
     this.state.update('src', src);
     this.state.update('isReady', false);
 
-    if (!isImage(src)) {
+    if (!isImage(src) || this.state.forceVideo) {
       this.video.src = src;
       this.video.load();
     } else {
@@ -1248,6 +1249,7 @@ Axis.prototype.render = function () {
     this.texture = three.ImageUtils.loadTexture(this.src(), null, function () {
       self.state.ready();
     });
+    this.texture.minFilter = three.LinearFilter;
   }
 
   // initialize size
