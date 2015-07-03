@@ -217,29 +217,31 @@ Projections.prototype.get = function (name) {
  */
 
 Projections.prototype.apply = function (name) {
-  var projection = this.projections[name];
-  var dimensions = this.scope.dimensions();
-  if ('string' == typeof name && 'function' == typeof projection) {
-    // set currently requested
-    this.requested = name;
-    this.cancel();
-    this.initializeScene();
+  raf(function () {
+    var projection = this.projections[name];
+    var dimensions = this.scope.dimensions();
+    if ('string' == typeof name && 'function' == typeof projection) {
+      // set currently requested
+      this.requested = name;
+      this.cancel();
+      this.initializeScene();
 
-    // apply constraints
-    if ('object' == typeof projection.constraints) {
-      this.constraints = projection.constraints;
-    } else {
-      this.constraints = {};
+      // apply constraints
+      if ('object' == typeof projection.constraints) {
+        this.constraints = projection.constraints;
+      } else {
+        this.constraints = {};
+      }
+
+      // apply projection
+      if (false === projection.call(this, this.scope)) {
+        this.requested = this.current;
+      }
+
+      // set current projection
+      this.current = name;
     }
-
-    // apply projection
-    if (false === projection.call(this, this.scope)) {
-      this.requested = this.current;
-    }
-
-    // set current projection
-    this.current = name;
-  }
+  }.bind(this));
 
   return this;
 };

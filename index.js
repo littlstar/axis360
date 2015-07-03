@@ -198,7 +198,7 @@ function Axis (parent, opts) {
   /** Axis' renderer instance.*/
   this.renderer = createRenderer(opts);
 
-  if (true == opts.allowPreviewFrame) {
+  if (true == opts.allowPreviewFrame && !isImage(opts.src)) {
     delete opts.allowPreviewFrame;
     this.previewDomElement = document.createElement('div');
     this.previewFrame = new Axis(this.previewDomElement, opts);
@@ -1276,6 +1276,7 @@ Axis.prototype.render = function (shoudLoop) {
 
     this.texture = three.ImageUtils.loadTexture(this.src(), null, function () {
       self.state.ready();
+      self.emit('load');
     });
     this.texture.minFilter = three.LinearFilter;
   }
