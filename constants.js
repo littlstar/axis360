@@ -99,7 +99,7 @@ exports.DEFAULT_GEOMETRY_RADIUS = 400;
  * @type {Number}
  */
 
-exports.DEFAULT_FRICTION = 0.002;
+exports.DEFAULT_FRICTION = 0.001;
 
 /**
  * Default key pan speed in pixels
