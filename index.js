@@ -1720,6 +1720,23 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
   var mime = 'image/jpeg';
   var self = this;
 
+  function setCapture () {
+    if (capturing) { return; }
+    capturing = true;
+    self.previewFrame.size(self.width(), self.height());
+    self.previewFrame.fov(self.fov());
+    self.previewFrame.projection(self.projection());
+    self.previewFrame.pause();
+    raf(function check () {
+      if (self.previewFrame.state.isAnimating) {
+        raf(check);
+      } else {
+        image.src = self.previewFrame.renderer.domElement.toDataURL(mime);
+        capturing = false;
+      }
+    });
+  }
+
   if (0 == arguments.length) {
     time = null;
     out = null;
@@ -1735,22 +1752,6 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
   if (null != this.previewFrame && false == this.state.isImage) {
     this.previewFrame.once('refresh', setCapture);
     this.previewFrame.video.currentTime = time;
-    function setCapture () {
-      if (capturing) { return; }
-      capturing = true;
-      self.previewFrame.size(self.width(), self.height());
-      self.previewFrame.fov(self.fov());
-      self.previewFrame.projection(self.projection());
-      self.previewFrame.pause();
-      raf(function check () {
-        if (self.previewFrame.state.isAnimating) {
-          raf(check);
-        } else {
-          image.src = self.previewFrame.renderer.domElement.toDataURL(mime);
-          capturing = false;
-        }
-      });
-    }
   } else if (this.state.isImage) {
     image.src = this.renderer.domElement.toDataURL(mime);
   }
