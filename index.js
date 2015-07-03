@@ -884,12 +884,18 @@ Axis.prototype.src = function (src) {
  */
 
 Axis.prototype.play = function () {
+  var video = this.video;
   if (false == this.state.isImage) {
     if (true == this.state.isEnded) {
-      this.video.currentTime = 0;
+      video.currentTime = 0;
     }
     this.debug('play');
-    this.video.play();
+    video.play();
+    setTimeout(function () {
+      if (video.readyState != video.HAVE_ENOUGH_DATA) {
+        video.load();
+      }
+    }, 500);
   }
   return this;
 };
