@@ -972,12 +972,15 @@ Axis.prototype.src = function (src) {
  */
 
 Axis.prototype.play = function () {
+  var video = this.video;
+  var currentTime = video.currentTime;
   if (false == this.state.isImage) {
     if (true == this.state.isEnded) {
-      this.video.currentTime = 0;
+      video.currentTime = 0;
     }
     this.debug('play');
-    this.video.play();
+    video.currentTime = currentTime;
+    video.play();
   }
   return this;
 };
@@ -1184,21 +1187,41 @@ Axis.prototype.resizable = function (resizable) {
  */
 
 Axis.prototype.seek = function (seconds) {
-  var ua = navigator.userAgent.toLowerCase();
-  var isPlaying = this.state.isPlaying;
   var isReady = this.state.isReady;
   var self = this;
+  var ua = navigator.userAgent.toLowerCase();
   function afterseek () {
-    self.video.currentTime = seconds;
-    if (isPlaying) {
-      self.emit('seek', seconds);
-      self.play();
+    var currentTime = self.video.currentTime;
+    var isPlaying = self.state.isPlaying;
+    var video = self.video;
+
+    video.currentTime = seconds;
+
+    if (0 == seconds) {
+      self.state.update('isStopped', true);
     } else {
-      self.pause().once('play', function () {
-        self.pause();
-      });
-      self.emit('seek', seconds);
+      self.state.update('isStopped', false);
     }
+
+    if (isPlaying) {
+      self.play();
+    }
+
+    self.emit('seek', seconds);
+    setTimeout(function () {
+      self.debug('Attempting seeking correction');
+      if (video.readyState < video.HAVE_ENOUGH_DATA) {
+        self.debug('Video state does not have enough data.');
+        self.debug('Reloading video...');
+        video.load();
+        self.debug('Seeking video to %d...', seconds);
+        video.currentTime = seconds;
+        if (isPlaying) {
+          self.debug('Playing video at %d...', seconds);
+          video.play();
+        }
+      }
+    }, 1000);
   }
   if (false == this.state.isImage) {
     // firefox emits `oncanplaythrough' when changing the
@@ -37872,7 +37895,7 @@ exports.DEFAULT_GEOMETRY_RADIUS = 400;
  * @type {Number}
  */
 
-exports.DEFAULT_FRICTION = 0.002;
+exports.DEFAULT_FRICTION = 0.001;
 
 /**
  * Default key pan speed in pixels
