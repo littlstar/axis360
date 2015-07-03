@@ -1103,22 +1103,33 @@ Axis.prototype.seek = function (seconds) {
   var self = this;
   var ua = navigator.userAgent.toLowerCase();
   function afterseek () {
+    var currentTime = self.video.currentTime;
     var isPlaying = self.state.isPlaying;
-    self.video.currentTime = seconds;
+    var video = self.video;
+
+    video.currentTime = seconds;
+
     if (0 == seconds) {
       self.state.update('isStopped', true);
     } else {
       self.state.update('isStopped', false);
     }
+
     if (isPlaying) {
       self.play();
     }
+
     self.emit('seek', seconds);
     setTimeout(function () {
+      self.debug('Attempting seeking correction');
       if (video.readyState < video.HAVE_ENOUGH_DATA) {
-        video.currentTime = currentTime;
+        self.debug('Video state does not have enough data.');
+        self.debug('Reloading video...');
         video.load();
+        self.debug('Seeking video to %d...', seconds);
+        video.currentTime = seconds;
         if (isPlaying) {
+          self.debug('Playing video at %d...', seconds);
           video.play();
         }
       }
