@@ -885,17 +885,14 @@ Axis.prototype.src = function (src) {
 
 Axis.prototype.play = function () {
   var video = this.video;
+  var currentTime = video.currentTime;
   if (false == this.state.isImage) {
     if (true == this.state.isEnded) {
       video.currentTime = 0;
     }
     this.debug('play');
+    video.currentTime = currentTime;
     video.play();
-    setTimeout(function () {
-      if (video.readyState != video.HAVE_ENOUGH_DATA) {
-        video.load();
-      }
-    }, 500);
   }
   return this;
 };
@@ -1117,6 +1114,15 @@ Axis.prototype.seek = function (seconds) {
       self.play();
     }
     self.emit('seek', seconds);
+    setTimeout(function () {
+      if (video.readyState < video.HAVE_ENOUGH_DATA) {
+        video.currentTime = currentTime;
+        video.load();
+        if (isPlaying) {
+          video.play();
+        }
+      }
+    }, 1000);
   }
   if (false == this.state.isImage) {
     // firefox emits `oncanplaythrough' when changing the
