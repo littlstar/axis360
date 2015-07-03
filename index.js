@@ -1096,21 +1096,21 @@ Axis.prototype.resizable = function (resizable) {
  */
 
 Axis.prototype.seek = function (seconds) {
-  var ua = navigator.userAgent.toLowerCase();
-  var isPlaying = this.state.isPlaying;
   var isReady = this.state.isReady;
   var self = this;
+  var ua = navigator.userAgent.toLowerCase();
   function afterseek () {
+    var isPlaying = self.state.isPlaying;
     self.video.currentTime = seconds;
-    if (isPlaying) {
-      self.emit('seek', seconds);
-      self.play();
+    if (0 == seconds) {
+      self.state.update('isStopped', true);
     } else {
-      self.pause().once('play', function () {
-        self.pause();
-      });
-      self.emit('seek', seconds);
+      self.state.update('isStopped', false);
     }
+    if (isPlaying) {
+      self.play();
+    }
+    self.emit('seek', seconds);
   }
   if (false == this.state.isImage) {
     // firefox emits `oncanplaythrough' when changing the
