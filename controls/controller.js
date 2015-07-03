@@ -570,8 +570,8 @@ function AxisController (scope, domElement) {
   this.events = events(this.domElement, this);
 
   // Update controller before rendering occurs on scope.
-  this.onbeforerender = this.onbeforerender.bind(this);
-  scope.on('beforerender', this.onbeforerender);
+  this.onbeforedraw = this.onbeforedraw.bind(this);
+  scope.on('beforedraw', this.onbeforedraw);
 }
 
 /**
@@ -580,7 +580,7 @@ function AxisController (scope, domElement) {
  * @private
  */
 
-AxisController.prototype.onbeforerender = function () {
+AxisController.prototype.onbeforedraw = function () {
   // update only if enabled.
   if (false == this.state.forceUpdate &&
       false == this.state.isEnabled) {
@@ -778,6 +778,6 @@ AxisController.prototype.pan = function (delta) {
 AxisController.prototype.destroy = function () {
   this.reset();
   this.events.unbind();
-  this.scope.off('beforerender', this.onbeforerender);
+  this.scope.off('beforedraw', this.onbeforedraw);
   return this;
 };

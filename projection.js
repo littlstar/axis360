@@ -290,26 +290,19 @@ Projections.prototype.isReady = function () {
 Projections.prototype.initializeScene = function () {
   var scope = this.scope;
 
-  init();
+  // get geometry for content
+  var geo = getCorrectGeometry(scope);
 
-  function init () {
-    // get geometry for content
-    var geo = getCorrectGeometry(scope);
+  // create material and mesh
+  var material = new three.MeshBasicMaterial({map: scope.texture});
+  var mesh = new three.Mesh(geo, material);
 
-    // create material and mesh
-    var material = new three.MeshBasicMaterial({map: scope.texture});
-    var mesh = new three.Mesh(geo, material);
+  // set mesh scale
+  mesh.scale.x = -1;
+  material.overdraw = 0.5
 
-    material.overdraw = 0.5
-
-    // current projection
-    var projection = scope.projection();
-
-    // set mesh scale
-    mesh.scale.x = -1;
-
-    // add mesh to scene
-    scope.scene = new three.Scene();
-    scope.scene.add(mesh);
-  }
+  // add mesh to scene
+  scope.scene = new three.Scene();
+  scope.scene.add(mesh);
+  return this;
 };

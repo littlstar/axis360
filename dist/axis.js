@@ -242,13 +242,12 @@ function createVideoTexture (video) {
  * @extends EventEmitter
  * @param {Object} parent - Parent DOM Element
  * @param {Object} [opts] - Constructor ptions passed to the axis
- * @param {Boolean} [allowPreviewFrame] - Predicate to allow a preview frame.
  * state instance.
  * @see {@link module:axis/state~State}
  */
 
 module.exports = Axis;
-function Axis (parent, opts, allowPreviewFrame) {
+function Axis (parent, opts) {
 
   // normalize options
   opts = (opts = opts || {});
@@ -260,7 +259,7 @@ function Axis (parent, opts, allowPreviewFrame) {
 
   // ensure instance
   if (!(this instanceof Axis)) {
-    return new Axis(parent, opts, allowPreviewFrame);
+    return new Axis(parent, opts);
   } else if (!(parent instanceof Element)) {
     throw new TypeError("Expecting DOM Element");
   }
@@ -273,6 +272,9 @@ function Axis (parent, opts, allowPreviewFrame) {
   /** Instance constainer DOM element. */
   this.domElement = dom(tpl);
 
+  /** Current axis orientation. */
+  this.orientation = {x: 0, y: 0};
+
   /** Instance video DOM element. */
   this.video = this.domElement.querySelector('video');
 
@@ -284,13 +286,14 @@ function Axis (parent, opts, allowPreviewFrame) {
   /** Axis' renderer instance.*/
   this.renderer = createRenderer(opts);
 
-  if (true == allowPreviewFrame) {
+  if (true == opts.allowPreviewFrame) {
+    delete opts.allowPreviewFrame;
     this.previewDomElement = document.createElement('div');
-    this.previewFrame = new Axis(this.previewDomElement, opts, false);
+    this.previewFrame = new Axis(this.previewDomElement, opts);
+    this.previewFrame.orientation = this.orientation;
     this.once('render', function () {
-      this.previewFrame.render();
-      this.previewFrame.orientation = this.orientation;
       this.previewFrame.camera = this.camera;
+      this.previewFrame.render();
     });
   }
 
@@ -318,9 +321,6 @@ function Axis (parent, opts, allowPreviewFrame) {
   /** Axis' camera instance. */
   this.camera = createCamera(this);
 
-  /** Current axis orientation. */
-  this.orientation = {x: 0, y: 0};
-
   this.once('ready', function () {
     var dimensions = this.dimensions();
     var h = dimensions.height/2;
@@ -338,7 +338,6 @@ function Axis (parent, opts, allowPreviewFrame) {
       this.orientation.y = y;
     }
   });
-
 
   /**
    * Sets an attribute on the instance's
@@ -630,6 +629,7 @@ Axis.prototype.onprogress = function (e) {
 
 Axis.prototype.ontimeupdate = function (e) {
   this.debug('ontimeupdate');
+
   e.percent = this.video.currentTime / this.video.duration * 100;
   this.state.update('duration', this.video.duration);
   this.state.update('currentTime', this.video.currentTime);
@@ -646,6 +646,9 @@ Axis.prototype.ontimeupdate = function (e) {
 Axis.prototype.onended = function (e) {
   this.debug('onended');
   this.state.update('isEnded', true);
+  this.state.update('isPlaying', false);
+  this.state.update('isPlaying', false);
+  this.state.update('isStopped', true);
   this.emit('end');
   this.emit('ended');
 };
@@ -923,6 +926,10 @@ Axis.prototype.size = function (width, height) {
     this.state.originalsize.height = height;
   }
 
+  if (this.previewFrame) {
+    this.previewFrame.size(width, height);
+  }
+
   this.emit('size', width, height);
   return this;
 };
@@ -940,7 +947,7 @@ Axis.prototype.src = function (src) {
     this.state.update('src', src);
     this.state.update('isReady', false);
 
-    if (!isImage(src)) {
+    if (!isImage(src) || this.state.forceVideo) {
       this.video.src = src;
       this.video.load();
     } else {
@@ -967,7 +974,7 @@ Axis.prototype.src = function (src) {
 Axis.prototype.play = function () {
   if (false == this.state.isImage) {
     if (true == this.state.isEnded) {
-      this.seek(0);
+      this.video.currentTime = 0;
     }
     this.debug('play');
     this.video.play();
@@ -1263,10 +1270,8 @@ Axis.prototype.draw = function () {
   var radius = this.state.radius;
   var camera = this.camera;
   var scene = this.scene;
-  var sensor = this.state.vrPositionSensor;;
-  var hmd = this.state.vrHMD;
 
-  this.emit('beforerender');
+  this.emit('beforedraw');
 
   if (this.renderer && this.scene && this.camera) {
     if (false == this.state.isVREnabled) {
@@ -1305,9 +1310,10 @@ Axis.prototype.lookAt = function (x, y, z) {
  * Renders the frame
  *
  * @public
+ * @param {Boolean} [shoudLoop = true] - Predicate indicating if a render loop shouls start.
  */
 
-Axis.prototype.render = function () {
+Axis.prototype.render = function (shoudLoop) {
   var domElement = this.domElement;
   var self = this;
   var style = getComputedStyle(this.parent);
@@ -1336,6 +1342,7 @@ Axis.prototype.render = function () {
     this.texture = three.ImageUtils.loadTexture(this.src(), null, function () {
       self.state.ready();
     });
+    this.texture.minFilter = three.LinearFilter;
   }
 
   // initialize size
@@ -1347,14 +1354,16 @@ Axis.prototype.render = function () {
   }
 
   // start animation loop
-  raf.cancel(this.state.animationFrameID);
-  this.state.animationFrameID  = raf(function loop () {
-    var parentElement = domElement.parentElement;
-    if (parentElement && parentElement.contains(domElement)) {
-      raf(loop);
-      self.update();
-    }
-  });
+  if (false !== shoudLoop) {
+    raf.cancel(this.state.animationFrameID);
+    this.state.animationFrameID  = raf(function loop () {
+      var parentElement = domElement.parentElement;
+      if (parentElement && parentElement.contains(domElement)) {
+        raf(loop);
+        self.update();
+      }
+    });
+  }
 
   this.emit('render');
 
@@ -1629,7 +1638,7 @@ Axis.prototype.dimensions = function () {
   var ratio = 0;
 
   if (this.state.isImage) {
-    if (this.texture.image) {
+    if (this.texture && this.texture.image) {
       height = this.texture.image.height;
       width = this.texture.image.width;
     }
@@ -1793,8 +1802,10 @@ Axis.prototype.initializeControllers = function (map, force) {
  */
 
 Axis.prototype.getCaptureImageAt = function (time, out) {
+  var capturing = false;
   var image = null;
-  var mime = 'image/png';
+  var timer = null;
+  var mime = 'image/jpeg';
   var self = this;
 
   if (0 == arguments.length) {
@@ -1810,19 +1821,24 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
   image = out || new Image();
 
   if (null != this.previewFrame && false == this.state.isImage) {
+    this.previewFrame.once('refresh', setCapture);
     this.previewFrame.video.currentTime = time;
-    this.previewFrame.fov(this.fov());
-    this.previewFrame.projection(this.projection());
-    this.previewFrame.pause().once('seek', function () {
+    function setCapture () {
+      if (capturing) { return; }
+      capturing = true;
+      self.previewFrame.size(self.width(), self.height());
+      self.previewFrame.fov(self.fov());
+      self.previewFrame.projection(self.projection());
+      self.previewFrame.pause();
       raf(function check () {
         if (self.previewFrame.state.isAnimating) {
           raf(check);
         } else {
           image.src = self.previewFrame.renderer.domElement.toDataURL(mime);
+          capturing = false;
         }
       });
-    });
-    this.previewFrame.seek(time);
+    }
   } else if (this.state.isImage) {
     image.src = this.renderer.domElement.toDataURL(mime);
   }
@@ -37413,7 +37429,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.5.16",
+  "version": "1.5.20",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -37735,28 +37751,21 @@ Projections.prototype.isReady = function () {
 Projections.prototype.initializeScene = function () {
   var scope = this.scope;
 
-  init();
+  // get geometry for content
+  var geo = getCorrectGeometry(scope);
 
-  function init () {
-    // get geometry for content
-    var geo = getCorrectGeometry(scope);
+  // create material and mesh
+  var material = new three.MeshBasicMaterial({map: scope.texture});
+  var mesh = new three.Mesh(geo, material);
 
-    // create material and mesh
-    var material = new three.MeshBasicMaterial({map: scope.texture});
-    var mesh = new three.Mesh(geo, material);
+  // set mesh scale
+  mesh.scale.x = -1;
+  material.overdraw = 0.5
 
-    material.overdraw = 0.5
-
-    // current projection
-    var projection = scope.projection();
-
-    // set mesh scale
-    mesh.scale.x = -1;
-
-    // add mesh to scene
-    scope.scene = new three.Scene();
-    scope.scene.add(mesh);
-  }
+  // add mesh to scene
+  scope.scene = new three.Scene();
+  scope.scene.add(mesh);
+  return this;
 };
 
 }, {"raf":6,"three.js":2,"./constants":18}],
@@ -38270,7 +38279,6 @@ var EventEmitter = require('emitter')
 var getVRDevices = require('./util').getVRDevices
   , isVRPossible = require('./util').isVRPossible
   , constants = require('./constants')
-  , isImage = require('./util').isImage
 
 var VR_POLL_TIMEOUT = constants.VR_POLL_TIMEOUT;
 var MAX_FRICTION_VALUE = constants.MAX_FRICTION_VALUE;
@@ -38516,6 +38524,9 @@ function State (scope, opts) {
   /** Predicate indicating if frame is an image. */
   this.isImage = false;
 
+  /** Predicate indicating if video rendering should be forced. */
+  this.forceVideo = false;
+
   /** Predicate indicating focus should be forced. */
   this.forceFocus = false;
 
@@ -38596,7 +38607,8 @@ State.prototype.reset = function (overrides) {
   this.scrollVelocity = opts.scrollVelocity || DEFAULT_SCROLL_VELOCITY;
   this.fov = opts.fov || DEFAULT_FOV;
   this.src = opts.src || null;
-  this.isImage = opts.isImage || false;
+  this.isImage = null == opts.isImage ? false : opts.isImage;
+  this.forceVideo = null == opts.forceVideo ? false : opts.forceVideo;
   this.isClickable = null != opts.isClickable ? opts.isClickable : true;
   this.isInverted = opts.inverted || false;
   this.isCrossOrigin = opts.crossorigin || false;;
@@ -42978,8 +42990,8 @@ function AxisController (scope, domElement) {
   this.events = events(this.domElement, this);
 
   // Update controller before rendering occurs on scope.
-  this.onbeforerender = this.onbeforerender.bind(this);
-  scope.on('beforerender', this.onbeforerender);
+  this.onbeforedraw = this.onbeforedraw.bind(this);
+  scope.on('beforedraw', this.onbeforedraw);
 }
 
 /**
@@ -42988,7 +43000,7 @@ function AxisController (scope, domElement) {
  * @private
  */
 
-AxisController.prototype.onbeforerender = function () {
+AxisController.prototype.onbeforedraw = function () {
   // update only if enabled.
   if (false == this.state.forceUpdate &&
       false == this.state.isEnabled) {
@@ -43186,7 +43198,7 @@ AxisController.prototype.pan = function (delta) {
 AxisController.prototype.destroy = function () {
   this.reset();
   this.events.unbind();
-  this.scope.off('beforerender', this.onbeforerender);
+  this.scope.off('beforedraw', this.onbeforedraw);
   return this;
 };
 
