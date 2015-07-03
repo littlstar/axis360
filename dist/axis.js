@@ -286,7 +286,7 @@ function Axis (parent, opts) {
   /** Axis' renderer instance.*/
   this.renderer = createRenderer(opts);
 
-  if (true == opts.allowPreviewFrame) {
+  if (true == opts.allowPreviewFrame && !isImage(opts.src)) {
     delete opts.allowPreviewFrame;
     this.previewDomElement = document.createElement('div');
     this.previewFrame = new Axis(this.previewDomElement, opts);
@@ -1364,6 +1364,7 @@ Axis.prototype.render = function (shoudLoop) {
 
     this.texture = three.ImageUtils.loadTexture(this.src(), null, function () {
       self.state.ready();
+      self.emit('load');
     });
     this.texture.minFilter = three.LinearFilter;
   }
@@ -37453,7 +37454,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.5.21",
+  "version": "1.5.23",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -37702,29 +37703,31 @@ Projections.prototype.get = function (name) {
  */
 
 Projections.prototype.apply = function (name) {
-  var projection = this.projections[name];
-  var dimensions = this.scope.dimensions();
-  if ('string' == typeof name && 'function' == typeof projection) {
-    // set currently requested
-    this.requested = name;
-    this.cancel();
-    this.initializeScene();
+  raf(function () {
+    var projection = this.projections[name];
+    var dimensions = this.scope.dimensions();
+    if ('string' == typeof name && 'function' == typeof projection) {
+      // set currently requested
+      this.requested = name;
+      this.cancel();
+      this.initializeScene();
 
-    // apply constraints
-    if ('object' == typeof projection.constraints) {
-      this.constraints = projection.constraints;
-    } else {
-      this.constraints = {};
+      // apply constraints
+      if ('object' == typeof projection.constraints) {
+        this.constraints = projection.constraints;
+      } else {
+        this.constraints = {};
+      }
+
+      // apply projection
+      if (false === projection.call(this, this.scope)) {
+        this.requested = this.current;
+      }
+
+      // set current projection
+      this.current = name;
     }
-
-    // apply projection
-    if (false === projection.call(this, this.scope)) {
-      this.requested = this.current;
-    }
-
-    // set current projection
-    this.current = name;
-  }
+  }.bind(this));
 
   return this;
 };
@@ -37895,7 +37898,7 @@ exports.DEFAULT_GEOMETRY_RADIUS = 400;
  * @type {Number}
  */
 
-exports.DEFAULT_FRICTION = 0.001;
+exports.DEFAULT_FRICTION = 0.0016;
 
 /**
  * Default key pan speed in pixels
