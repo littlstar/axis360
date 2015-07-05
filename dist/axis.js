@@ -204,7 +204,7 @@ function getCorrectGeometry (axis) {
     geo = axis.geometry('plane')
   } else if (ratio == ratio && 2 == ratio) {
     geo = axis.geometry('sphere');
-  } else {
+  } else if (ratio == ratio) {
     axis.fov(CYLINDRICAL_FOV);
     geo = axis.geometry('cylinder');
   }
@@ -308,6 +308,10 @@ function Axis (parent, opts) {
 
   this.video.onerror = console.error.bind(console);
 
+  if (opts.time || opts.t) {
+    this.video.currentTime = parseFloat(opts.time) || parseFloat(opts.t) || 0;
+  }
+
   /** Axis' scene instance. */
   this.scene = null;
 
@@ -319,6 +323,10 @@ function Axis (parent, opts) {
     this.previewDomElement = document.createElement('div');
     this.previewFrame = new Axis(this.previewDomElement, opts);
     this.previewFrame.orientation = this.orientation;
+    this.previewFrame.video.volume = 0;
+    this.previewFrame.video.muted = true;
+    this.previewFrame.video.currentTime = 0;
+    this.previewFrame.video.pause();
     this.once('render', function () {
       this.previewFrame.camera = this.camera;
       this.previewFrame.render();
@@ -440,6 +448,12 @@ function Axis (parent, opts) {
     this.mute(true);
   }
 
+  // init when ready
+  this.once('ready', function () {
+    this.debug('ready');
+    this.projection('equilinear');
+  });
+
   // Initializes controllers
   this.initializeControllers();
 
@@ -449,12 +463,7 @@ function Axis (parent, opts) {
   // initialize frame source
   this.src(opts.src);
 
-  // init when ready
-  this.once('ready', function () {
-    this.debug('ready');
-    this.projection('equilinear');
-  });
-
+  // handle fullscreen changing
   this.on('fullscreenchange', function () {
     this.debug('fullscreenchange');
     this.state.update('isFocused', true);
@@ -481,11 +490,9 @@ function Axis (parent, opts) {
       }
 
       this.size(this.state.lastSize.width, this.state.lastSize.height);
-
       this.state.update('lastSize', {width: null, height: null});
       this.emit('exitfullscreen');
     }
-
   });
 }
 
@@ -543,7 +550,6 @@ Axis.prototype.onclick = function (e) {
 Axis.prototype.oncanplaythrough = function (e) {
   this.debug('oncanplaythrough');
   this.state.duration = this.video.duration;
-
   this.emit('canplaythrough', e);
   if (false == this.state.shouldAutoplay && false == this.state.isPlaying) {
     this.state.update('isPaused', true);
@@ -563,6 +569,7 @@ Axis.prototype.oncanplaythrough = function (e) {
 Axis.prototype.onloadeddata = function (e) {
   var percent = 0;
   var video = this.video;
+  this.texture = createVideoTexture(this.video);
   this.debug('loadeddata');
   this.emit('load');
   this.state.ready();
@@ -661,7 +668,6 @@ Axis.prototype.onprogress = function (e) {
 
 Axis.prototype.ontimeupdate = function (e) {
   this.debug('ontimeupdate');
-
   e.percent = this.video.currentTime / this.video.duration * 100;
   this.state.update('duration', this.video.duration);
   this.state.update('currentTime', this.video.currentTime);
@@ -769,19 +775,18 @@ Axis.prototype.onresize = function (e) {
   this.debug('onresize');
   var isResizable = this.state.isResizable;
   var isFullscreen = this.state.isFullscreen;
+  var containerStyle = getComputedStyle(this.domElement);
+  var canvasStyle = getComputedStyle(this.renderer.domElement);
+  var containerWidth = parseFloat(containerStyle.width);
+  var containerHeight = parseFloat(containerStyle.width);
+  var canvasWidth = parseFloat(canvasStyle.width);
+  var canvasHeight = parseFloat(canvasStyle.height);
+  var aspectRatio = canvasWidth / canvasHeight;
+  var resized = false;
+  var newWidth = 0;
+  var newHeight = 0;
 
   if (isResizable && ! isFullscreen) {
-    var containerStyle = getComputedStyle(this.domElement);
-    var canvasStyle = getComputedStyle(this.renderer.domElement);
-    var containerWidth = parseFloat(containerStyle.width);
-    var containerHeight = parseFloat(containerStyle.width);
-    var canvasWidth = parseFloat(canvasStyle.width);
-    var canvasHeight = parseFloat(canvasStyle.height);
-    var aspectRatio = canvasWidth / canvasHeight;
-    var resized = false;
-    var newWidth = 0;
-    var newHeight = 0;
-
     // adjust for width while accounting for height
     if (canvasWidth > containerWidth ||
         canvasWidth < containerWidth &&
@@ -877,10 +882,7 @@ Axis.prototype.ontouchmove = function(e) {
   var x = this.state.pointerX;
   var y = this.state.pointerY;
 
-  if (false == this.state.isTouching) {
-    return;
-  }
-
+  if (false == this.state.isTouching) { return; }
   if (1 == e.touches.length) {
     e.preventDefault();
 
@@ -938,7 +940,6 @@ Axis.prototype.onmousewheel = function (e) {
   }
 
   this.camera.setLens(this.state.fov);
-
   this.emit('mousewheel', e);
 };
 
@@ -999,7 +1000,7 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
     if (!isImage(src) || this.state.forceVideo && src != this.video.src) {
       this.video.src = src;
       this.video.load();
-      this.texture = createVideoTexture(this.video);
+      this.texture = null;
     } else {
       this.state.isImage = true;
       // initialize texture
@@ -1255,7 +1256,7 @@ Axis.prototype.seek = function (seconds) {
     var currentTime = self.video.currentTime;
     var isPlaying = self.state.isPlaying;
     var video = self.video;
-
+    seconds = seconds || 0;
     video.currentTime = seconds;
 
     if (0 == seconds) {
@@ -1421,7 +1422,6 @@ Axis.prototype.render = function (shoudLoop) {
 
   // initialize size
   this.size(width, height);
-  this.projection(this.projections.current);
 
   // start animation loop
   if (false !== shoudLoop) {
@@ -1765,9 +1765,10 @@ Axis.prototype.disableVRMode = function () {
  * Returns percent of media loaded.
  *
  * @public
+ * @param {Number} [trackIndex = 0]- Index of track added.
  */
 
-Axis.prototype.getPercentLoaded = function () {
+Axis.prototype.getPercentLoaded = function (trackIndex) {
   var video = this.video;
   var percent = 0;
 
@@ -1775,7 +1776,7 @@ Axis.prototype.getPercentLoaded = function () {
     percent = 100;
   } else {
     try {
-      percent = video.buffered.end(0) / video.duration;
+      percent = video.buffered.end(trackIndex || 0) / video.duration;
     } catch (e) {
       this.debug('error', e);
       try {
@@ -37523,7 +37524,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -37750,7 +37751,8 @@ Projections.prototype.apply = function (name) {
   raf(function () {
     var projection = this.projections[name];
     var dimensions = this.scope.dimensions();
-    if ('string' == typeof name && 'function' == typeof projection) {
+    var texture = this.scope.texture;
+    if (null != texture && 'string' == typeof name && 'function' == typeof projection) {
       // set currently requested
       this.requested = name;
       this.cancel();
@@ -41922,23 +41924,14 @@ function tinyplanet (scope) {
     var y = rotation.y;
     var x = rotation.x;
     scope.debug("animate: TINY_PLANET y=%d", y);
+    rotation.x = MIN_X_COORDINATE;
+    rotation.y = -360;
     scope.lookAt(rotation.x, rotation.y, rotation.z);
-    if (y > -360) {
-      rotation.y = y -ANIMATION_FACTOR;
-
-      if (x > MIN_X_COORDINATE) {
-        rotation.x = x -ANIMATION_FACTOR;
-      } else {
-        rotation.x = MIN_X_COORDINATE;
-      }
-
-    } else {
-      scope.orientation.x = -Infinity;
-      this.constraints.x = false;
-      this.constraints.y = true;
-      scope.debug("animate: TINY_PLANET end");
-      this.cancel();
-    }
+    scope.orientation.x = -Infinity;
+    this.constraints.x = false;
+    this.constraints.y = true;
+    scope.debug("animate: TINY_PLANET end");
+    this.cancel();
   });
 };
 

@@ -106,22 +106,13 @@ function tinyplanet (scope) {
     var y = rotation.y;
     var x = rotation.x;
     scope.debug("animate: TINY_PLANET y=%d", y);
+    rotation.x = MIN_X_COORDINATE;
+    rotation.y = -360;
     scope.lookAt(rotation.x, rotation.y, rotation.z);
-    if (y > -360) {
-      rotation.y = y -ANIMATION_FACTOR;
-
-      if (x > MIN_X_COORDINATE) {
-        rotation.x = x -ANIMATION_FACTOR;
-      } else {
-        rotation.x = MIN_X_COORDINATE;
-      }
-
-    } else {
-      scope.orientation.x = -Infinity;
-      this.constraints.x = false;
-      this.constraints.y = true;
-      scope.debug("animate: TINY_PLANET end");
-      this.cancel();
-    }
+    scope.orientation.x = -Infinity;
+    this.constraints.x = false;
+    this.constraints.y = true;
+    scope.debug("animate: TINY_PLANET end");
+    this.cancel();
   });
 };
