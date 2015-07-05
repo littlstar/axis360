@@ -195,7 +195,8 @@ Projections.prototype.apply = function (name) {
   raf(function () {
     var projection = this.projections[name];
     var dimensions = this.scope.dimensions();
-    if ('string' == typeof name && 'function' == typeof projection) {
+    var texture = this.scope.texture;
+    if (null != texture && 'string' == typeof name && 'function' == typeof projection) {
       // set currently requested
       this.requested = name;
       this.cancel();

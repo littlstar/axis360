@@ -116,7 +116,7 @@ function getCorrectGeometry (axis) {
     geo = axis.geometry('plane')
   } else if (ratio == ratio && 2 == ratio) {
     geo = axis.geometry('sphere');
-  } else {
+  } else if (ratio == ratio) {
     axis.fov(CYLINDRICAL_FOV);
     geo = axis.geometry('cylinder');
   }
@@ -352,6 +352,12 @@ function Axis (parent, opts) {
     this.mute(true);
   }
 
+  // init when ready
+  this.once('ready', function () {
+    this.debug('ready');
+    this.projection('equilinear');
+  });
+
   // Initializes controllers
   this.initializeControllers();
 
@@ -361,12 +367,7 @@ function Axis (parent, opts) {
   // initialize frame source
   this.src(opts.src);
 
-  // init when ready
-  this.once('ready', function () {
-    this.debug('ready');
-    this.projection('equilinear');
-  });
-
+  // handle fullscreen changing
   this.on('fullscreenchange', function () {
     this.debug('fullscreenchange');
     this.state.update('isFocused', true);
@@ -393,11 +394,9 @@ function Axis (parent, opts) {
       }
 
       this.size(this.state.lastSize.width, this.state.lastSize.height);
-
       this.state.update('lastSize', {width: null, height: null});
       this.emit('exitfullscreen');
     }
-
   });
 }
 
@@ -455,7 +454,6 @@ Axis.prototype.onclick = function (e) {
 Axis.prototype.oncanplaythrough = function (e) {
   this.debug('oncanplaythrough');
   this.state.duration = this.video.duration;
-
   this.emit('canplaythrough', e);
   if (false == this.state.shouldAutoplay && false == this.state.isPlaying) {
     this.state.update('isPaused', true);
@@ -475,6 +473,7 @@ Axis.prototype.oncanplaythrough = function (e) {
 Axis.prototype.onloadeddata = function (e) {
   var percent = 0;
   var video = this.video;
+  this.texture = createVideoTexture(this.video);
   this.debug('loadeddata');
   this.emit('load');
   this.state.ready();
@@ -573,7 +572,6 @@ Axis.prototype.onprogress = function (e) {
 
 Axis.prototype.ontimeupdate = function (e) {
   this.debug('ontimeupdate');
-
   e.percent = this.video.currentTime / this.video.duration * 100;
   this.state.update('duration', this.video.duration);
   this.state.update('currentTime', this.video.currentTime);
@@ -681,19 +679,18 @@ Axis.prototype.onresize = function (e) {
   this.debug('onresize');
   var isResizable = this.state.isResizable;
   var isFullscreen = this.state.isFullscreen;
+  var containerStyle = getComputedStyle(this.domElement);
+  var canvasStyle = getComputedStyle(this.renderer.domElement);
+  var containerWidth = parseFloat(containerStyle.width);
+  var containerHeight = parseFloat(containerStyle.width);
+  var canvasWidth = parseFloat(canvasStyle.width);
+  var canvasHeight = parseFloat(canvasStyle.height);
+  var aspectRatio = canvasWidth / canvasHeight;
+  var resized = false;
+  var newWidth = 0;
+  var newHeight = 0;
 
   if (isResizable && ! isFullscreen) {
-    var containerStyle = getComputedStyle(this.domElement);
-    var canvasStyle = getComputedStyle(this.renderer.domElement);
-    var containerWidth = parseFloat(containerStyle.width);
-    var containerHeight = parseFloat(containerStyle.width);
-    var canvasWidth = parseFloat(canvasStyle.width);
-    var canvasHeight = parseFloat(canvasStyle.height);
-    var aspectRatio = canvasWidth / canvasHeight;
-    var resized = false;
-    var newWidth = 0;
-    var newHeight = 0;
-
     // adjust for width while accounting for height
     if (canvasWidth > containerWidth ||
         canvasWidth < containerWidth &&
@@ -789,10 +786,7 @@ Axis.prototype.ontouchmove = function(e) {
   var x = this.state.pointerX;
   var y = this.state.pointerY;
 
-  if (false == this.state.isTouching) {
-    return;
-  }
-
+  if (false == this.state.isTouching) { return; }
   if (1 == e.touches.length) {
     e.preventDefault();
 
@@ -850,7 +844,6 @@ Axis.prototype.onmousewheel = function (e) {
   }
 
   this.camera.setLens(this.state.fov);
-
   this.emit('mousewheel', e);
 };
 
@@ -911,7 +904,7 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
     if (!isImage(src) || this.state.forceVideo && src != this.video.src) {
       this.video.src = src;
       this.video.load();
-      this.texture = createVideoTexture(this.video);
+      this.texture = null;
     } else {
       this.state.isImage = true;
       // initialize texture
@@ -1168,7 +1161,7 @@ Axis.prototype.seek = function (seconds) {
     var isPlaying = self.state.isPlaying;
     var video = self.video;
 
-    video.currentTime = seconds;
+    video.currentTime = seconds || 0;
 
     if (0 == seconds) {
       self.state.update('isStopped', true);
@@ -1333,7 +1326,6 @@ Axis.prototype.render = function (shoudLoop) {
 
   // initialize size
   this.size(width, height);
-  this.projection(this.projections.current);
 
   // start animation loop
   if (false !== shoudLoop) {
