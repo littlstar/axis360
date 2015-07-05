@@ -43,7 +43,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 80;
+exports.DEFAULT_FOV = 100;
 
 /**
  * Default interpolation factor.
