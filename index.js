@@ -220,6 +220,10 @@ function Axis (parent, opts) {
 
   this.video.onerror = console.error.bind(console);
 
+  if (opts.time || opts.t) {
+    this.video.currentTime = parseFloat(opts.time) || parseFloat(opts.t) || 0;
+  }
+
   /** Axis' scene instance. */
   this.scene = null;
 
@@ -231,6 +235,10 @@ function Axis (parent, opts) {
     this.previewDomElement = document.createElement('div');
     this.previewFrame = new Axis(this.previewDomElement, opts);
     this.previewFrame.orientation = this.orientation;
+    this.previewFrame.video.volume = 0;
+    this.previewFrame.video.muted = true;
+    this.previewFrame.video.currentTime = 0;
+    this.previewFrame.video.pause();
     this.once('render', function () {
       this.previewFrame.camera = this.camera;
       this.previewFrame.render();
@@ -1160,8 +1168,8 @@ Axis.prototype.seek = function (seconds) {
     var currentTime = self.video.currentTime;
     var isPlaying = self.state.isPlaying;
     var video = self.video;
-
-    video.currentTime = seconds || 0;
+    seconds = seconds || 0;
+    video.currentTime = seconds;
 
     if (0 == seconds) {
       self.state.update('isStopped', true);
@@ -1669,9 +1677,10 @@ Axis.prototype.disableVRMode = function () {
  * Returns percent of media loaded.
  *
  * @public
+ * @param {Number} [trackIndex = 0]- Index of track added.
  */
 
-Axis.prototype.getPercentLoaded = function () {
+Axis.prototype.getPercentLoaded = function (trackIndex) {
   var video = this.video;
   var percent = 0;
 
@@ -1679,7 +1688,7 @@ Axis.prototype.getPercentLoaded = function () {
     percent = 100;
   } else {
     try {
-      percent = video.buffered.end(0) / video.duration;
+      percent = video.buffered.end(trackIndex || 0) / video.duration;
     } catch (e) {
       this.debug('error', e);
       try {
