@@ -178,12 +178,40 @@ var MAX_Y_COORDINATE = constants.MAX_Y_COORDINATE;
 var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
 var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
+var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV
+
 // default projection
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var CARTESIAN_CALIBRATION_VALUE = constants.CARTESIAN_CALIBRATION_VALUE;
 
 // expose util
 Axis.util = require('./util');
+
+/**
+ * Creates the correct geometry for
+ * the current content in axis
+ *
+ * @private
+ * @param {Axis} axis
+ */
+
+function getCorrectGeometry (axis) {
+  var dimensions = axis.dimensions();
+  var ratio = dimensions.ratio;
+  var geo = null;
+
+  if ('flat' == axis.state.projectionrequested) {
+    geo = axis.geometry('plane')
+  } else if (ratio == ratio && 2 == ratio) {
+    geo = axis.geometry('sphere');
+  } else {
+    axis.fov(CYLINDRICAL_FOV);
+    geo = axis.geometry('cylinder');
+  }
+
+  return geo;
+}
+
 
 /**
  * Creates a renderer based on options
@@ -367,6 +395,7 @@ function Axis (parent, opts) {
   // init window events
   eventDelegation.window = events(window, this);
   eventDelegation.window.bind('resize');
+  eventDelegation.window.bind('blur');
 
   // init video events
   eventDelegation.video = events(this.video, this);
@@ -524,15 +553,18 @@ Axis.prototype.oncanplaythrough = function (e) {
   }
 };
 
+/**
+ * Handle `onloadeddata' event
+ *
+ * @private
+ * @param {Event} e
+ */
+
 Axis.prototype.onloadeddata = function (e) {
   var percent = 0;
   var video = this.video;
   this.debug('loadeddata');
-
-  if (null == this.texture) {
-   this.texture = createVideoTexture(this.video);
-  }
-
+  this.emit('load');
   this.state.ready();
 };
 
@@ -776,6 +808,20 @@ Axis.prototype.onresize = function (e) {
 };
 
 /**
+ * Handle `window.onblur' event
+ *
+ * @private
+ * @param {Event} e
+ */
+
+Axis.prototype.onblur = function () {
+  this.state.isMousedown = false;
+  this.state.isTouching = false;
+  this.controls.mouse.state.isMousedown = false;
+  this.controls.keyboard.reset();
+};
+
+/**
  * Handle `onmousemove' event
  *
  * @private
@@ -938,23 +984,38 @@ Axis.prototype.size = function (width, height) {
  * Sets or gets video src
  *
  * @public
- * @param {String} src - optional
+ * @param {String} [src] - Source string
+ * @param {Boolean} [preservePreviewFrame = false] - Predicate indicate if
+ * preview source should be preserved.
  */
 
-Axis.prototype.src = function (src) {
+Axis.prototype.src = function (src, preservePreviewFrame) {
+  var self = this;
   if (src) {
     this.debug('src', src);
     this.state.update('src', src);
     this.state.update('isReady', false);
 
-    if (!isImage(src) || this.state.forceVideo) {
+    if (!isImage(src) || this.state.forceVideo && src != this.video.src) {
       this.video.src = src;
       this.video.load();
+      this.texture = createVideoTexture(this.video);
     } else {
       this.state.isImage = true;
+      // initialize texture
+      if (this.state.isCrossOrigin) {
+        three.ImageUtils.crossOrigin = 'anonymous';
+      }
+
+      this.texture = three.ImageUtils.loadTexture(src, null, function () {
+        self.state.ready();
+        self.emit('load');
+      });
+
+      this.texture.minFilter = three.LinearFilter;
     }
 
-    if (this.previewFrame) {
+    if (true != preservePreviewFrame && this.previewFrame) {
       this.previewFrame.src(src);
     }
 
@@ -1233,8 +1294,10 @@ Axis.prototype.seek = function (seconds) {
         this.oncanplaythrough = function () {};
         afterseek();
       };
-    } else {
+    } else if (isReady) {
       afterseek();
+    } else {
+      this.once('ready', afterseek);
     }
   }
   return this;
@@ -1356,26 +1419,9 @@ Axis.prototype.render = function (shoudLoop) {
     height = height / aspectRatio;
   }
 
-  // initialize texture
-  if (this.state.isImage) {
-    if (this.state.isCrossOrigin) {
-      three.ImageUtils.crossOrigin = 'anonymous';
-    }
-
-    this.texture = three.ImageUtils.loadTexture(this.src(), null, function () {
-      self.state.ready();
-      self.emit('load');
-    });
-    this.texture.minFilter = three.LinearFilter;
-  }
-
   // initialize size
   this.size(width, height);
-
-  // initialize projection if camera has not been created
-  if (null == this.camera) {
-    this.projection(this.projections.current);
-  }
+  this.projection(this.projections.current);
 
   // start animation loop
   if (false !== shoudLoop) {
@@ -1390,7 +1436,6 @@ Axis.prototype.render = function (shoudLoop) {
   }
 
   this.emit('render');
-
   return this;
 };
 
@@ -1869,6 +1914,30 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
   }
 
   return image;
+};
+
+/**
+ * Initializes scene for a projection
+ *
+ * @public
+ */
+
+Axis.prototype.initializeScene = function () {
+  // get geometry for content
+  var geo = getCorrectGeometry(this);
+
+  // create material and mesh
+  var material = new three.MeshBasicMaterial({map: this.texture});
+  var mesh = new three.Mesh(geo, material);
+
+  // set mesh scale
+  mesh.scale.x = -1;
+  material.overdraw = 0.5
+
+  // add mesh to scene
+  this.scene = new three.Scene();
+  this.scene.add(mesh);
+  return this;
 };
 
 }, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/controller":30}],
@@ -37454,7 +37523,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.5.23",
+  "version": "1.6.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -37545,31 +37614,6 @@ var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV;
 
 function isNaN (n) {
   return 'number' == typeof n && n !== n
-}
-
-/**
- * Creates the correct geometry for
- * the current content in axis
- *
- * @private
- * @param {Axis} axis
- */
-
-function getCorrectGeometry (axis) {
-  var dimensions = axis.dimensions();
-  var ratio = dimensions.ratio;
-  var geo = null;
-
-  if ('flat' == axis.state.projectionrequested) {
-    geo = axis.geometry('plane')
-  } else if (ratio == ratio && 2 == ratio) {
-    geo = axis.geometry('sphere');
-  } else {
-    axis.fov(CYLINDRICAL_FOV);
-    geo = axis.geometry('cylinder');
-  }
-
-  return geo;
 }
 
 /**
@@ -37710,7 +37754,7 @@ Projections.prototype.apply = function (name) {
       // set currently requested
       this.requested = name;
       this.cancel();
-      this.initializeScene();
+      this.scope.initializeScene();
 
       // apply constraints
       if ('object' == typeof projection.constraints) {
@@ -37770,29 +37814,13 @@ Projections.prototype.isReady = function () {
 };
 
 /**
- * Initializes scene for a projection
+ * Refreshes current projection
  *
  * @public
  */
 
-Projections.prototype.initializeScene = function () {
-  var scope = this.scope;
-
-  // get geometry for content
-  var geo = getCorrectGeometry(scope);
-
-  // create material and mesh
-  var material = new three.MeshBasicMaterial({map: scope.texture});
-  var mesh = new three.Mesh(geo, material);
-
-  // set mesh scale
-  mesh.scale.x = -1;
-  material.overdraw = 0.5
-
-  // add mesh to scene
-  scope.scene = new three.Scene();
-  scope.scene.add(mesh);
-  return this;
+Projections.prototype.refreshCurrent = function () {
+  return this.apply(this.current);
 };
 
 }, {"raf":6,"three.js":2,"./constants":18}],
@@ -37842,7 +37870,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 80;
+exports.DEFAULT_FOV = 100;
 
 /**
  * Default interpolation factor.
@@ -38691,7 +38719,6 @@ State.prototype.reset = function (overrides) {
   this.isReady = false;
   this.isMuted = false;
   this.isEnded = false;
-  this.allowWheel = false;
   this.isFocused = false;
   this.isKeydown = false;
   this.isPlaying = false;
