@@ -240,7 +240,6 @@ function Axis (parent, opts) {
     this.previewFrame.video.currentTime = 0;
     this.previewFrame.video.pause();
     this.once('render', function () {
-      this.previewFrame.camera = this.camera;
       this.previewFrame.render();
     });
   }
@@ -1784,25 +1783,23 @@ Axis.prototype.initializeControllers = function (map, force) {
  */
 
 Axis.prototype.getCaptureImageAt = function (time, out) {
-  var capturing = false;
   var image = null;
   var timer = null;
   var mime = 'image/jpeg';
   var self = this;
 
   function setCapture () {
-    if (capturing) { return; }
-    capturing = true;
-    self.previewFrame.size(self.width(), self.height());
     self.previewFrame.fov(self.fov());
     self.previewFrame.projection(self.projection());
-    self.previewFrame.pause();
     raf(function check () {
+      self.previewFrame.camera.target.copy(self.camera.target);
+      self.previewFrame.camera.quaternion.copy(self.camera.quaternion);
       if (self.previewFrame.state.isAnimating) {
         raf(check);
       } else {
-        image.src = self.previewFrame.renderer.domElement.toDataURL(mime);
-        capturing = false;
+        raf(function () {
+          image.src = self.previewFrame.renderer.domElement.toDataURL(mime);
+        });
       }
     });
   }
@@ -1821,6 +1818,7 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
 
   if (null != this.previewFrame && false == this.state.isImage) {
     this.previewFrame.once('refresh', setCapture);
+    this.previewFrame.pause();
     this.previewFrame.video.currentTime = time;
   } else if (this.state.isImage) {
     image.src = this.renderer.domElement.toDataURL(mime);

@@ -81,6 +81,9 @@ function tinyplanet (scope) {
   // projection is only supported in a spherical geometry
   if ('cylinder' == scope.geometry()) { return false; }
 
+  // prevent duplicate tiny planet rotation requests
+  if ('tinyplanet' == this.current) { return false; }
+
   this.constraints = {
     y: true,
     cache: true,
