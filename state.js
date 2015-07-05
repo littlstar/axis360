@@ -441,7 +441,6 @@ State.prototype.reset = function (overrides) {
   this.isReady = false;
   this.isMuted = false;
   this.isEnded = false;
-  this.allowWheel = false;
   this.isFocused = false;
   this.isKeydown = false;
   this.isPlaying = false;

@@ -62,31 +62,6 @@ function isNaN (n) {
 }
 
 /**
- * Creates the correct geometry for
- * the current content in axis
- *
- * @private
- * @param {Axis} axis
- */
-
-function getCorrectGeometry (axis) {
-  var dimensions = axis.dimensions();
-  var ratio = dimensions.ratio;
-  var geo = null;
-
-  if ('flat' == axis.state.projectionrequested) {
-    geo = axis.geometry('plane')
-  } else if (ratio == ratio && 2 == ratio) {
-    geo = axis.geometry('sphere');
-  } else {
-    axis.fov(CYLINDRICAL_FOV);
-    geo = axis.geometry('cylinder');
-  }
-
-  return geo;
-}
-
-/**
  * Projections constructor
  *
  * @public
@@ -224,7 +199,7 @@ Projections.prototype.apply = function (name) {
       // set currently requested
       this.requested = name;
       this.cancel();
-      this.initializeScene();
+      this.scope.initializeScene();
 
       // apply constraints
       if ('object' == typeof projection.constraints) {
@@ -284,27 +259,11 @@ Projections.prototype.isReady = function () {
 };
 
 /**
- * Initializes scene for a projection
+ * Refreshes current projection
  *
  * @public
  */
 
-Projections.prototype.initializeScene = function () {
-  var scope = this.scope;
-
-  // get geometry for content
-  var geo = getCorrectGeometry(scope);
-
-  // create material and mesh
-  var material = new three.MeshBasicMaterial({map: scope.texture});
-  var mesh = new three.Mesh(geo, material);
-
-  // set mesh scale
-  mesh.scale.x = -1;
-  material.overdraw = 0.5
-
-  // add mesh to scene
-  scope.scene = new three.Scene();
-  scope.scene.add(mesh);
-  return this;
+Projections.prototype.refreshCurrent = function () {
+  return this.apply(this.current);
 };

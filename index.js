@@ -90,12 +90,40 @@ var MAX_Y_COORDINATE = constants.MAX_Y_COORDINATE;
 var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
 var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
+var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV
+
 // default projection
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var CARTESIAN_CALIBRATION_VALUE = constants.CARTESIAN_CALIBRATION_VALUE;
 
 // expose util
 Axis.util = require('./util');
+
+/**
+ * Creates the correct geometry for
+ * the current content in axis
+ *
+ * @private
+ * @param {Axis} axis
+ */
+
+function getCorrectGeometry (axis) {
+  var dimensions = axis.dimensions();
+  var ratio = dimensions.ratio;
+  var geo = null;
+
+  if ('flat' == axis.state.projectionrequested) {
+    geo = axis.geometry('plane')
+  } else if (ratio == ratio && 2 == ratio) {
+    geo = axis.geometry('sphere');
+  } else {
+    axis.fov(CYLINDRICAL_FOV);
+    geo = axis.geometry('cylinder');
+  }
+
+  return geo;
+}
+
 
 /**
  * Creates a renderer based on options
@@ -279,6 +307,7 @@ function Axis (parent, opts) {
   // init window events
   eventDelegation.window = events(window, this);
   eventDelegation.window.bind('resize');
+  eventDelegation.window.bind('blur');
 
   // init video events
   eventDelegation.video = events(this.video, this);
@@ -436,15 +465,18 @@ Axis.prototype.oncanplaythrough = function (e) {
   }
 };
 
+/**
+ * Handle `onloadeddata' event
+ *
+ * @private
+ * @param {Event} e
+ */
+
 Axis.prototype.onloadeddata = function (e) {
   var percent = 0;
   var video = this.video;
   this.debug('loadeddata');
-
-  if (null == this.texture) {
-   this.texture = createVideoTexture(this.video);
-  }
-
+  this.emit('load');
   this.state.ready();
 };
 
@@ -688,6 +720,20 @@ Axis.prototype.onresize = function (e) {
 };
 
 /**
+ * Handle `window.onblur' event
+ *
+ * @private
+ * @param {Event} e
+ */
+
+Axis.prototype.onblur = function () {
+  this.state.isMousedown = false;
+  this.state.isTouching = false;
+  this.controls.mouse.state.isMousedown = false;
+  this.controls.keyboard.reset();
+};
+
+/**
  * Handle `onmousemove' event
  *
  * @private
@@ -850,23 +896,38 @@ Axis.prototype.size = function (width, height) {
  * Sets or gets video src
  *
  * @public
- * @param {String} src - optional
+ * @param {String} [src] - Source string
+ * @param {Boolean} [preservePreviewFrame = false] - Predicate indicate if
+ * preview source should be preserved.
  */
 
-Axis.prototype.src = function (src) {
+Axis.prototype.src = function (src, preservePreviewFrame) {
+  var self = this;
   if (src) {
     this.debug('src', src);
     this.state.update('src', src);
     this.state.update('isReady', false);
 
-    if (!isImage(src) || this.state.forceVideo) {
+    if (!isImage(src) || this.state.forceVideo && src != this.video.src) {
       this.video.src = src;
       this.video.load();
+      this.texture = createVideoTexture(this.video);
     } else {
       this.state.isImage = true;
+      // initialize texture
+      if (this.state.isCrossOrigin) {
+        three.ImageUtils.crossOrigin = 'anonymous';
+      }
+
+      this.texture = three.ImageUtils.loadTexture(src, null, function () {
+        self.state.ready();
+        self.emit('load');
+      });
+
+      this.texture.minFilter = three.LinearFilter;
     }
 
-    if (this.previewFrame) {
+    if (true != preservePreviewFrame && this.previewFrame) {
       this.previewFrame.src(src);
     }
 
@@ -1145,8 +1206,10 @@ Axis.prototype.seek = function (seconds) {
         this.oncanplaythrough = function () {};
         afterseek();
       };
-    } else {
+    } else if (isReady) {
       afterseek();
+    } else {
+      this.once('ready', afterseek);
     }
   }
   return this;
@@ -1268,26 +1331,9 @@ Axis.prototype.render = function (shoudLoop) {
     height = height / aspectRatio;
   }
 
-  // initialize texture
-  if (this.state.isImage) {
-    if (this.state.isCrossOrigin) {
-      three.ImageUtils.crossOrigin = 'anonymous';
-    }
-
-    this.texture = three.ImageUtils.loadTexture(this.src(), null, function () {
-      self.state.ready();
-      self.emit('load');
-    });
-    this.texture.minFilter = three.LinearFilter;
-  }
-
   // initialize size
   this.size(width, height);
-
-  // initialize projection if camera has not been created
-  if (null == this.camera) {
-    this.projection(this.projections.current);
-  }
+  this.projection(this.projections.current);
 
   // start animation loop
   if (false !== shoudLoop) {
@@ -1302,7 +1348,6 @@ Axis.prototype.render = function (shoudLoop) {
   }
 
   this.emit('render');
-
   return this;
 };
 
@@ -1781,4 +1826,28 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
   }
 
   return image;
+};
+
+/**
+ * Initializes scene for a projection
+ *
+ * @public
+ */
+
+Axis.prototype.initializeScene = function () {
+  // get geometry for content
+  var geo = getCorrectGeometry(this);
+
+  // create material and mesh
+  var material = new three.MeshBasicMaterial({map: this.texture});
+  var mesh = new three.Mesh(geo, material);
+
+  // set mesh scale
+  mesh.scale.x = -1;
+  material.overdraw = 0.5
+
+  // add mesh to scene
+  this.scene = new three.Scene();
+  this.scene.add(mesh);
+  return this;
 };
