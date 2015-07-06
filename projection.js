@@ -212,7 +212,7 @@ Projections.prototype.apply = function (name) {
     texture = this.scope.texture;
 
     if (null != texture && 'string' == typeof name && 'function' == typeof projection) {
-      this.scope.initializeScene();
+      this.scope.refreshScene();
 
       // apply constraints
       if ('object' == typeof projection.constraints) {

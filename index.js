@@ -466,6 +466,15 @@ Axis.prototype.oncanplaythrough = function (e) {
   this.debug('oncanplaythrough');
   this.state.duration = this.video.duration;
   this.emit('canplaythrough', e);
+  this.emit('load');
+  if (null == this.texture ||
+      (this.texture && this.texture.image && 'VIDEO' != this.texture.image)) {
+    if (this.texture && this.texture.dispose) {
+      this.texture.dispose();
+    }
+
+    this.texture = createVideoTexture(this.video);
+  }
   this.state.ready();
   if (false == this.state.shouldAutoplay && false == this.state.isPlaying) {
     this.state.update('isPaused', true);
@@ -485,16 +494,7 @@ Axis.prototype.oncanplaythrough = function (e) {
 Axis.prototype.onloadeddata = function (e) {
   var percent = 0;
   var video = this.video;
-  if (null == this.texture ||
-      (this.texture && this.texture.image && 'VIDEO' != this.texture.image)) {
-    if (this.texture && this.texture.dispose) {
-      this.texture.dispose();
-    }
-
-    this.texture = createVideoTexture(this.video);
-  }
   this.debug('loadeddata');
-  this.emit('load');
 };
 
 /**
@@ -1826,7 +1826,7 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
   var self = this;
 
   function setCapture () {
-    preview.initializeScene();
+    preview.refreshScene();
     preview.fov(self.fov());
     preview.projection(self.projection());
     raf(function check () {
@@ -1874,19 +1874,21 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
 };
 
 /**
- * Initializes scene for a projection
+ * Initializes or refreshes current scene
+ * for projection.
  *
  * @public
  */
 
-Axis.prototype.initializeScene = function () {
+Axis.prototype.refreshScene = function () {
   var material = null;
+  var isReady = this.state.isReady;
   var texture = this.texture;
   var scene = this.scene;
   var mesh = null;
   var geo = null;
 
-  if (null == texture) { return this; }
+  if (null == texture || !isReady) { return this; }
 
   if (null == scene) {
     this.scene = new three.Scene();
@@ -1894,6 +1896,9 @@ Axis.prototype.initializeScene = function () {
 
   // get geometry for content
   geo = getCorrectGeometry(this);
+
+  // skip if geometry is unable to be determined
+  if (null == geo) { return this; }
 
   if (scene && scene.children.length >= 1) {
     mesh = scene.children[0];
