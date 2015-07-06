@@ -1062,13 +1062,11 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
 
 Axis.prototype.play = function () {
   var video = this.video;
-  var currentTime = video.currentTime;
   if (false == this.state.isImage) {
     if (true == this.state.isEnded) {
       video.currentTime = 0;
     }
     this.debug('play');
-    video.currentTime = currentTime;
     video.play();
   }
   return this;
@@ -1083,9 +1081,9 @@ Axis.prototype.play = function () {
 Axis.prototype.pause = function () {
   if (false == this.state.isImage) {
     this.debug('pause');
-    this.video.pause();
     this.state.update('isPlaying', false);
     this.state.update('isPaused', true);
+    this.video.pause();
   }
   return this;
 };
@@ -38177,7 +38175,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.6.5",
+  "version": "1.6.6",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -44823,6 +44821,16 @@ KeyboardController.prototype.onkeydown = function (e) {
   clearTimeout(this.state.keyupTimeout);
   if (false == this.state.isEnabled) { return; }
 
+  /**
+   * Key down event.
+   *
+   * @public
+   * @event module:axis~Axis#keydown
+   * @type {Event}
+   */
+
+  this.scope.emit('keydown', e);
+
   if (isFocused) {
     // only supported keys
     if (false == this.isKeySupported(code)) {
@@ -44833,18 +44841,7 @@ KeyboardController.prototype.onkeydown = function (e) {
 
     // prevent default actions
     e.preventDefault();
-
   }
-
-  /**
-   * Key down event.
-   *
-   * @public
-   * @event module:axis~Axis#keydown
-   * @type {Event}
-   */
-
-  this.scope.emit('keydown', e);
 };
 
 /**
