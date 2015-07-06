@@ -232,6 +232,7 @@ function Axis (parent, opts) {
 
   if (true == opts.allowPreviewFrame && !isImage(opts.src)) {
     delete opts.allowPreviewFrame;
+    opts.isPreviewFrame = true;
     this.previewDomElement = document.createElement('div');
     this.previewFrame = new Axis(this.previewDomElement, opts);
     this.previewFrame.orientation = this.orientation;
@@ -239,6 +240,7 @@ function Axis (parent, opts) {
     this.previewFrame.video.muted = true;
     this.previewFrame.video.currentTime = 0;
     this.previewFrame.video.pause();
+    delete opts.isPreviewFrame;
     this.once('render', function () {
       this.previewFrame.render();
     });
@@ -262,12 +264,11 @@ function Axis (parent, opts) {
   this.projection('equilinear', require('./projection/equilinear'));
   this.projection('tinyplanet', require('./projection/tinyplanet'));
 
-  // initialize projection
-  this.projection(this.projections.current);
 
   /** Axis' camera instance. */
   this.camera = createCamera(this);
 
+  // setup default state when ready
   this.once('ready', function () {
     var dimensions = this.dimensions();
     var h = dimensions.height/2;
@@ -284,6 +285,9 @@ function Axis (parent, opts) {
     if ('number' == typeof y && y == y) {
       this.orientation.y = y;
     }
+
+    // initialize projection
+    this.projection(this.projections.current);
   });
 
   /**
@@ -462,6 +466,7 @@ Axis.prototype.oncanplaythrough = function (e) {
   this.debug('oncanplaythrough');
   this.state.duration = this.video.duration;
   this.emit('canplaythrough', e);
+  this.state.ready();
   if (false == this.state.shouldAutoplay && false == this.state.isPlaying) {
     this.state.update('isPaused', true);
     this.video.pause();
@@ -482,11 +487,14 @@ Axis.prototype.onloadeddata = function (e) {
   var video = this.video;
   if (null == this.texture ||
       (this.texture && this.texture.image && 'VIDEO' != this.texture.image)) {
+    if (this.texture && this.texture.dispose) {
+      this.texture.dispose();
+    }
+
     this.texture = createVideoTexture(this.video);
   }
   this.debug('loadeddata');
   this.emit('load');
-  this.state.ready();
 };
 
 /**
@@ -912,11 +920,18 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
     this.state.update('isReady', false);
 
     if (!isImage(src) || this.state.forceVideo && src != this.video.src) {
+      this.state.update('isImage', false);
       this.video.src = src;
       this.video.load();
-      this.texture = null;
+      if (this.texture) {
+        if (this.video.readyState >= 4) {
+          this.texture.needsUpdate = true;
+        } else {
+          this.texture.needsUpdate = false;
+        }
+      }
     } else {
-      this.state.isImage = true;
+      this.state.update('isImage', true);
       // initialize texture
       if (this.state.isCrossOrigin) {
         three.ImageUtils.crossOrigin = 'anonymous';
@@ -925,9 +940,9 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
       if (this.texture && this.texture.image) {
         this.texture.image.onload = function () {
           self.texture.image.onload = null;
-          self.texture.needsUpdate = true;
           self.state.ready();
           self.emit('load');
+          self.texture.needsUpdate = true;
         };
         this.texture.image.src = src;
       } else {
@@ -1093,7 +1108,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 32) {
+      if (now - this.state.lastRefresh >= 64) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
@@ -1334,6 +1349,12 @@ Axis.prototype.render = function (shoudLoop) {
   var height = this.state.height || parseFloat(style.height);
   var aspectRatio = 0;
 
+  if (this.state.isPreviewFrame) {
+    if (null == shoudLoop) {
+      shoudLoop = false;
+    }
+  }
+
   // attach dom node to parent
   if (false == this.parent.contains(this.domElement)) {
     this.parent.appendChild(this.domElement);
@@ -1352,9 +1373,9 @@ Axis.prototype.render = function (shoudLoop) {
   if (false !== shoudLoop) {
     raf.cancel(this.state.animationFrameID);
     this.state.animationFrameID  = raf(function loop () {
+      raf(loop);
       var parentElement = domElement.parentElement;
       if (parentElement && parentElement.contains(domElement)) {
-        raf(loop);
         self.update();
       }
     });
@@ -1558,8 +1579,11 @@ Axis.prototype.coords = function (x, y) {
  */
 
 Axis.prototype.update = function () {
-  this.refresh();
-  this.draw();
+  this.refresh().once('refresh', function () {
+    this.draw().once('draw', function () {
+      this.emit('update');
+    });
+  });
   return this;
 };
 
@@ -1797,23 +1821,23 @@ Axis.prototype.initializeControllers = function (map, force) {
  */
 
 Axis.prototype.getCaptureImageAt = function (time, out) {
+  var preview = this.previewFrame;
   var image = null;
   var timer = null;
   var mime = 'image/jpeg';
   var self = this;
 
   function setCapture () {
-    self.previewFrame.fov(self.fov());
-    self.previewFrame.projection(self.projection());
+    preview.initializeScene();
+    preview.fov(self.fov());
+    preview.projection(self.projection());
     raf(function check () {
-      self.previewFrame.camera.target.copy(self.camera.target);
-      self.previewFrame.camera.quaternion.copy(self.camera.quaternion);
-      if (self.previewFrame.state.isAnimating) {
+      preview.camera.target.copy(self.camera.target);
+      preview.camera.quaternion.copy(self.camera.quaternion);
+      if (preview.state.isAnimating) {
         raf(check);
       } else {
-        raf(function () {
-          image.src = self.previewFrame.renderer.domElement.toDataURL(mime);
-        });
+        image.src = preview.renderer.domElement.toDataURL(mime);
       }
     });
   }
@@ -1830,10 +1854,20 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
 
   image = out || new Image();
 
-  if (null != this.previewFrame && false == this.state.isImage) {
-    this.previewFrame.once('refresh', setCapture);
-    this.previewFrame.pause();
-    this.previewFrame.video.currentTime = time;
+  if (null != preview && false == this.state.isImage) {
+    raf(function () { preview.update(); });
+    preview.once('update', setCapture);
+    if (preview.video.readyState < 4) {
+      preview.video.onload = function () {
+        preview.video.onload = null;
+        preview.update();
+      };
+      preview.video.load();
+    } else {
+      preview.update();
+    }
+    preview.video.currentTime = time;
+    preview.pause();
   } else if (this.state.isImage) {
     image.src = this.renderer.domElement.toDataURL(mime);
   }
@@ -1849,24 +1883,37 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
 
 Axis.prototype.initializeScene = function () {
   var material = null;
+  var texture = this.texture;
+  var scene = this.scene;
   var mesh = null;
   var geo = null;
 
-  if (null == this.texture) { return this; }
+  if (null == texture) { return this; }
+
+  if (null == scene) {
+    this.scene = new three.Scene();
+  }
 
   // get geometry for content
   geo = getCorrectGeometry(this);
-  // create material and mesh
-  material = new three.MeshBasicMaterial({map: this.texture});
-  // build mesh
-  mesh = new three.Mesh(geo, material);
 
-  // set mesh scale
-  mesh.scale.x = -1;
-  material.overdraw = 0.5
+  if (scene && scene.children.length >= 1) {
+    mesh = scene.children[0];
+    material = mesh.material;
+    if (material.map != texture) {
+      material.map = texture;
+    }
+  } else {
+    // create material and mesh
+    material = new three.MeshBasicMaterial({map: texture});
+    // build mesh
+    mesh = new three.Mesh(geo, material);
+    // set mesh scale
+    mesh.scale.x = -1;
+    material.overdraw = 0.5
+    // add mesh to scene
+    this.scene.add(mesh);
+  }
 
-  // add mesh to scene
-  this.scene = new three.Scene();
-  this.scene.add(mesh);
   return this;
 };

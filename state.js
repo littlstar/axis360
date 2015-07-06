@@ -109,6 +109,9 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * @param {Number} [opts.updateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT] -
  * View controller update timeout.
  * @param {Boolean} [opts.webgl = true] - Use WebGL rendering.
+ * @param {Boolean} [opts.isPreviewFrame = false] - Indicates frame is a
+ * preview frame preventing a refresh loop from occurring unless explicitly
+ * called.
  */
 
 module.exports = State;
@@ -129,7 +132,7 @@ function State (scope, opts) {
   documentEvents.bind('mousedown');
 
   // ensure options can't be overloaded
-  opts = Object.freeze(opts);
+  opts = Object.freeze(merge({}, opts));
   this.__defineGetter__('options', function () {
     return opts;
   });
@@ -179,6 +182,9 @@ function State (scope, opts) {
 
   /** Inverted state. */
   this.isInverted = false;
+
+  /** Preview frame state predicate.. */
+  this.isPreviewFrame = false;
 
   /** Total duration in seconds for video. */
   this.duration = 0;
@@ -388,6 +394,7 @@ State.prototype.reset = function (overrides) {
   this.forceVideo = null == opts.forceVideo ? false : opts.forceVideo;
   this.isClickable = null != opts.isClickable ? opts.isClickable : true;
   this.isInverted = opts.inverted || false;
+  this.isPreviewFrame = opts.isPreviewFrame || false;
   this.isCrossOrigin = opts.crossorigin || false;;
   this.forceFocus = opts.forceFocus || false;
   this.allowControls = null != opts.allowControls ? opts.allowControls : true;
