@@ -192,14 +192,26 @@ Projections.prototype.get = function (name) {
  */
 
 Projections.prototype.apply = function (name) {
+  // set currently requested
+  this.requested = name;
+  this.cancel();
+
   raf(function () {
-    var projection = this.projections[name];
-    var dimensions = this.scope.dimensions();
-    var texture = this.scope.texture;
+    var projection = null;
+    var dimensions = null;
+    var texture = null;
+
+    if (null == this.scope) { return; }
+
+    projection = this.projections[name];
+    if (null == projection) { return; }
+
+    dimensions = this.scope.dimensions();
+    if (null == dimensions) { return; }
+
+    texture = this.scope.texture;
+
     if (null != texture && 'string' == typeof name && 'function' == typeof projection) {
-      // set currently requested
-      this.requested = name;
-      this.cancel();
       this.scope.initializeScene();
 
       // apply constraints
@@ -218,7 +230,6 @@ Projections.prototype.apply = function (name) {
       this.current = name;
     }
   }.bind(this));
-
   return this;
 };
 

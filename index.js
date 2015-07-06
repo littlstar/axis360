@@ -480,7 +480,10 @@ Axis.prototype.oncanplaythrough = function (e) {
 Axis.prototype.onloadeddata = function (e) {
   var percent = 0;
   var video = this.video;
-  this.texture = createVideoTexture(this.video);
+  if (null == this.texture ||
+      (this.texture && this.texture.image && 'VIDEO' != this.texture.image)) {
+    this.texture = createVideoTexture(this.video);
+  }
   this.debug('loadeddata');
   this.emit('load');
   this.state.ready();
@@ -919,10 +922,20 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
         three.ImageUtils.crossOrigin = 'anonymous';
       }
 
-      this.texture = three.ImageUtils.loadTexture(src, null, function () {
-        self.state.ready();
-        self.emit('load');
-      });
+      if (this.texture && this.texture.image) {
+        this.texture.image.onload = function () {
+          self.texture.image.onload = null;
+          self.texture.needsUpdate = true;
+          self.state.ready();
+          self.emit('load');
+        };
+        this.texture.image.src = src;
+      } else {
+        this.texture = three.ImageUtils.loadTexture(src, null, function () {
+          self.state.ready();
+          self.emit('load');
+        });
+      }
 
       this.texture.minFilter = three.LinearFilter;
     }
@@ -1835,12 +1848,18 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
  */
 
 Axis.prototype.initializeScene = function () {
-  // get geometry for content
-  var geo = getCorrectGeometry(this);
+  var material = null;
+  var mesh = null;
+  var geo = null;
 
+  if (null == this.texture) { return this; }
+
+  // get geometry for content
+  geo = getCorrectGeometry(this);
   // create material and mesh
-  var material = new three.MeshBasicMaterial({map: this.texture});
-  var mesh = new three.Mesh(geo, material);
+  material = new three.MeshBasicMaterial({map: this.texture});
+  // build mesh
+  mesh = new three.Mesh(geo, material);
 
   // set mesh scale
   mesh.scale.x = -1;
