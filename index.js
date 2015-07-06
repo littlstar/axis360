@@ -974,13 +974,11 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
 
 Axis.prototype.play = function () {
   var video = this.video;
-  var currentTime = video.currentTime;
   if (false == this.state.isImage) {
     if (true == this.state.isEnded) {
       video.currentTime = 0;
     }
     this.debug('play');
-    video.currentTime = currentTime;
     video.play();
   }
   return this;
@@ -995,9 +993,9 @@ Axis.prototype.play = function () {
 Axis.prototype.pause = function () {
   if (false == this.state.isImage) {
     this.debug('pause');
-    this.video.pause();
     this.state.update('isPlaying', false);
     this.state.update('isPaused', true);
+    this.video.pause();
   }
   return this;
 };

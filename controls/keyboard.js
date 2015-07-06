@@ -366,6 +366,16 @@ KeyboardController.prototype.onkeydown = function (e) {
   clearTimeout(this.state.keyupTimeout);
   if (false == this.state.isEnabled) { return; }
 
+  /**
+   * Key down event.
+   *
+   * @public
+   * @event module:axis~Axis#keydown
+   * @type {Event}
+   */
+
+  this.scope.emit('keydown', e);
+
   if (isFocused) {
     // only supported keys
     if (false == this.isKeySupported(code)) {
@@ -376,18 +386,7 @@ KeyboardController.prototype.onkeydown = function (e) {
 
     // prevent default actions
     e.preventDefault();
-
   }
-
-  /**
-   * Key down event.
-   *
-   * @public
-   * @event module:axis~Axis#keydown
-   * @type {Event}
-   */
-
-  this.scope.emit('keydown', e);
 };
 
 /**
