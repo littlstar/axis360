@@ -1160,6 +1160,7 @@ Axis.prototype.resizable = function (resizable) {
  */
 
 Axis.prototype.seek = function (seconds) {
+  if (this.state.isImage) { return this; }
   var isReady = this.state.isReady;
   var self = this;
   var ua = navigator.userAgent.toLowerCase();
