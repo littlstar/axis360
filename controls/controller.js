@@ -550,6 +550,16 @@ function AxisController (scope, domElement) {
   };
 
   /**
+   * Previous controller orientation.
+   *
+   * @public
+   * @name state.previousOrientation
+   * @type {Object}
+   */
+
+  this.state.previousOrientation = {x: 0, y: 0};
+
+  /**
    * Controllers DOM Element.
    *
    * @public
@@ -650,6 +660,9 @@ AxisController.prototype.update = function () {
     orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
   }
 
+  this.state.previousOrientation.x = orientation.x;
+  this.state.previousOrientation.y = orientation.y;
+
   // update controller quaternions
   quaternions.x.setFromAxisAngle(vectors.x, orientation.x);
   quaternions.y.setFromAxisAngle(vectors.y, orientation.y);
@@ -663,6 +676,7 @@ AxisController.prototype.update = function () {
 
   // multiplty target quaternion with our x quaternion
   target.quaternion.multiply(quaternions.x);
+
   return this;
 };
 
@@ -780,4 +794,23 @@ AxisController.prototype.destroy = function () {
   this.events.unbind();
   this.scope.off('beforedraw', this.onbeforedraw);
   return this;
+};
+
+/**
+ * Returns current camera aspect ratio. If not available
+ * 1 is returned.
+ *
+ * @public
+ * @method
+ * @name getAspectRatio
+ * @param {Number} [max] - Optional max value
+ * @return {Number}
+ */
+
+AxisController.prototype.getAspectRatio = function (max) {
+  var scope = this.scope;
+  var camera = scope.camera;
+  var aspect = camera ? camera.aspect : 1;
+  max = max || aspect;
+  return Math.max(max, aspect);
 };

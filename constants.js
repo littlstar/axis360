@@ -43,7 +43,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 100;
+exports.DEFAULT_FOV = 90;
 
 /**
  * Default interpolation factor.
@@ -54,7 +54,7 @@ exports.DEFAULT_FOV = 100;
  * @type {Number}
  */
 
-exports.DEFAULT_INTERPOLATION_FACTOR = 0.15;
+exports.DEFAULT_INTERPOLATION_FACTOR = 0.1265;
 
 /**
  * Default frame projection
@@ -99,7 +99,7 @@ exports.DEFAULT_GEOMETRY_RADIUS = 400;
  * @type {Number}
  */
 
-exports.DEFAULT_FRICTION = 0.0016;
+exports.DEFAULT_FRICTION = 0.001755;
 
 /**
  * Default key pan speed in pixels
@@ -314,4 +314,4 @@ exports.EPSILON_VALUE = 0.000001;
  * @type {Number}
  */
 
-exports.MOUSE_MOVEMENT_FRICTION = 0.5;
+exports.MOUSE_MOVEMENT_FRICTION = 0.4;

@@ -221,20 +221,21 @@ function KeyboardController (scope) {
   // reset state
   this.reset();
 
+
   this.use('up', function (data) {
-    this.pan({x: 0, y: this.state.panSpeed / 2});
+    this.pan({x: 0, y: this.state.panSpeed / self.getAspectRatio(2)});
   });
 
   this.use('down', function (data) {
-    this.pan({x: 0, y: -this.state.panSpeed / 2});
+    this.pan({x: 0, y: -this.state.panSpeed / self.getAspectRatio(2)});
   });
 
   this.use('left', function (data) {
-    this.pan({x: this.state.panSpeed * 2, y: 0});
+    this.pan({x: this.state.panSpeed * self.getAspectRatio(2), y: 0});
   });
 
   this.use('right', function (data) {
-    this.pan({x: -this.state.panSpeed * 2, y: 0});
+    this.pan({x: -this.state.panSpeed * self.getAspectRatio(2), y: 0});
   });
 }
 

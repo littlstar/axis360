@@ -107,7 +107,10 @@ function fisheye (scope) {
       scope.lookAt(0, 0, 0);
     }
 
-    scope.orientation.x = (Math.PI/180);
+    if ('equilinear' != current) {
+      scope.orientation.x = (Math.PI/180);
+    }
+
     this.cancel();
   });
 };

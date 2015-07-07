@@ -96,12 +96,13 @@ function tinyplanet (scope) {
     this.constraints.x = false;
   }
 
+  this.constraints.x = true;
+  this.constraints.y = false;
+
   var fovOffset = 15;
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
   scope.fov(camera.fov + fovOffset);
   scope.debug("animate: TINY_PLANET begin");
-  this.constraints.x = true;
-  this.constraints.y = false;
   rotation.x = camera.target.x || 0;
   rotation.y = camera.target.y || 0;
   rotation.z = camera.target.z || -1;

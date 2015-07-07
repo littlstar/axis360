@@ -24,12 +24,14 @@ module.exports = function createCamera (scope, force) {
   var width = scope.width();
   var ratio = width / height;
   var camera = scope.camera;
+  var state = scope.state;
   var vector = null;
   var target = null;
+  var fov = state.opts ? state.opts.fov || DEFAULT_FOV : DEFAULT_FOV;
   if (null == scope.camera || true == force) {
     vector = new three.Vector3(0, 0, 0);
     target = camera && camera.target ? camera.target : vector;
-    scope.camera = new three.PerspectiveCamera(DEFAULT_FOV, ratio, 0.01, 1000);
+    scope.camera = new three.PerspectiveCamera(fov, ratio, 0.01, 1000);
     scope.camera.target = target;
     scope.camera.rotation.reorder('YXZ');
   }

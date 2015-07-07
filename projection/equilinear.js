@@ -82,7 +82,11 @@ function equilinear (scope) {
   // bail if content sizing is incorrect
   if (false == this.contentHasCorrectSizing()) { return; }
 
-  var fov = DEFAULT_FOV;
+  var fov = (
+    scope.state && scope.state.opts ?
+    scope.state.opts.fov || DEFAULT_FOV : DEFAULT_FOV
+  );
+
   var rotation = new three.Vector3(0, 0, 0);
   var current = this.current;
   var targetX = Math.PI / 180;
@@ -122,6 +126,10 @@ function equilinear (scope) {
     this.animate(function () {
       scope.fov(fov);
       var x = scope.orientation.x;
+
+      if (current == 'fisheye') {
+        return this.cancel();
+      }
 
       if (x > targetX) {
         scope.orientation.x -= factor;

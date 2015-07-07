@@ -241,8 +241,10 @@ MouseController.prototype.onmousemove = function (e) {
     return;
   }
 
-  movements.x = (e.screenX *MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.x;
-  movements.y = (e.screenY *MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.y;
+  movements.x = (e.screenX * MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.x;
+  movements.y = (e.screenY * MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.y;
+  movements.x /= this.getAspectRatio(2);
+  movements.y /= this.getAspectRatio(2);
 
   // normalized movements from event
   normalizeMovements(e, movements);

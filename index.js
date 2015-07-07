@@ -69,7 +69,7 @@ require('three-vr-effect')(three);
 // uncomment to enable debugging
 //window.DEBUG = true;
 
-var COMPANY = "Little Star Media, Inc (www.Littlstar.com)";
+var COMPANY = "Littlstar (littlstar.com)";
 var YEAR = (new Date).getUTCFullYear();
 console.info("Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %d %s",
             pkg.version,
@@ -269,11 +269,14 @@ function Axis (parent, opts) {
 
   // setup default state when ready
   this.once('ready', function () {
+    this.debug('ready');
+
     var dimensions = this.dimensions();
+    var aspect = this.camera.aspect || 1;
     var h = dimensions.height/2;
     var w = dimensions.width/2;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : (w/h) + 0.1;
+    var y = opts && opts.orientation ? opts.orientation.y : (w/h) + (aspect * 0.1);
 
     if ('number' == typeof x && x == x) {
       this.orientation.x = x;
@@ -286,7 +289,7 @@ function Axis (parent, opts) {
     }
 
     // initialize projection
-    this.projection(this.projections.current);
+    this.projection(opts.projection || 'equilinear');
   });
 
   /**
@@ -361,12 +364,6 @@ function Axis (parent, opts) {
   if (opts.muted) {
     this.mute(true);
   }
-
-  // init when ready
-  this.once('ready', function () {
-    this.debug('ready');
-    this.projection('equilinear');
-  });
 
   // Initializes controllers
   this.initializeControllers();
@@ -467,7 +464,7 @@ Axis.prototype.oncanplaythrough = function (e) {
   this.emit('canplaythrough', e);
   this.emit('load');
   if (null == this.texture ||
-      (this.texture && this.texture.image && 'VIDEO' != this.texture.image)) {
+      (this.texture && this.texture.image && 'VIDEO' != this.texture.image.tagName)) {
     if (this.texture && this.texture.dispose) {
       this.texture.dispose();
     }
