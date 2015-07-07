@@ -38178,7 +38178,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -42595,7 +42595,7 @@ function tinyplanet (scope) {
   this.constraints = {
     y: true,
     cache: true,
-    keys: {up: true, down: true}
+    keys: {up: true, down: true, j: true, k: true}
   };
 
   if ('cylinder' == scope.geometry()) {
