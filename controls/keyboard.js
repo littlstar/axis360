@@ -385,6 +385,16 @@ KeyboardController.prototype.onkeydown = function (e) {
   var code = e.which;
   var self = this;
 
+  /**
+   * Key down event.
+   *
+   * @public
+   * @event module:axis~Axis#keydown
+   * @type {Event}
+   */
+
+  this.scope.emit('keydown', e);
+
   if (false == this.state.isEnabled) {
     return;
   }
@@ -400,17 +410,6 @@ KeyboardController.prototype.onkeydown = function (e) {
     // prevent default actions
     e.preventDefault();
   }
-
-  /**
-   * Key down event.
-   *
-   * @public
-   * @event module:axis~Axis#keydown
-   * @type {Event}
-   */
-
-  this.scope.emit('keydown', e);
-
 };
 
 /**
@@ -425,13 +424,16 @@ KeyboardController.prototype.onkeyup = function (e) {
   var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused;
   var code = e.which;
   this.state.keystate[code] = false;
+  this.scope.emit('keyup', e);
   if (isFocused) {
+    e.preventDefault();
     this.state.forceUpdate = true;
     clearTimeout(this.state.keyupTimeout);
     this.state.keyupTimeout = setTimeout(function () {
       this.state.forceUpdate = false;
     }.bind(this), this.scope.state.controllerUpdateTimeout);
   }
+
 };
 
 /**
