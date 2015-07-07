@@ -157,7 +157,7 @@ require('three-vr-effect')(three);
 // uncomment to enable debugging
 //window.DEBUG = true;
 
-var COMPANY = "Little Star Media, Inc (www.Littlstar.com)";
+var COMPANY = "Littlstar (littlstar.com)";
 var YEAR = (new Date).getUTCFullYear();
 console.info("Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %d %s",
             pkg.version,
@@ -357,11 +357,14 @@ function Axis (parent, opts) {
 
   // setup default state when ready
   this.once('ready', function () {
+    this.debug('ready');
+
     var dimensions = this.dimensions();
+    var aspect = this.camera.aspect || 1;
     var h = dimensions.height/2;
     var w = dimensions.width/2;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : (w/h) + 0.1;
+    var y = opts && opts.orientation ? opts.orientation.y : (w/h) + (aspect * 0.1);
 
     if ('number' == typeof x && x == x) {
       this.orientation.x = x;
@@ -374,7 +377,7 @@ function Axis (parent, opts) {
     }
 
     // initialize projection
-    this.projection(this.projections.current);
+    this.projection(opts.projection || 'equilinear');
   });
 
   /**
@@ -449,12 +452,6 @@ function Axis (parent, opts) {
   if (opts.muted) {
     this.mute(true);
   }
-
-  // init when ready
-  this.once('ready', function () {
-    this.debug('ready');
-    this.projection('equilinear');
-  });
 
   // Initializes controllers
   this.initializeControllers();
@@ -555,7 +552,7 @@ Axis.prototype.oncanplaythrough = function (e) {
   this.emit('canplaythrough', e);
   this.emit('load');
   if (null == this.texture ||
-      (this.texture && this.texture.image && 'VIDEO' != this.texture.image)) {
+      (this.texture && this.texture.image && 'VIDEO' != this.texture.image.tagName)) {
     if (this.texture && this.texture.dispose) {
       this.texture.dispose();
     }
@@ -38181,7 +38178,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38540,7 +38537,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 100;
+exports.DEFAULT_FOV = 90;
 
 /**
  * Default interpolation factor.
@@ -38551,7 +38548,7 @@ exports.DEFAULT_FOV = 100;
  * @type {Number}
  */
 
-exports.DEFAULT_INTERPOLATION_FACTOR = 0.15;
+exports.DEFAULT_INTERPOLATION_FACTOR = 0.1265;
 
 /**
  * Default frame projection
@@ -38596,7 +38593,7 @@ exports.DEFAULT_GEOMETRY_RADIUS = 400;
  * @type {Number}
  */
 
-exports.DEFAULT_FRICTION = 0.0016;
+exports.DEFAULT_FRICTION = 0.001755;
 
 /**
  * Default key pan speed in pixels
@@ -38811,7 +38808,7 @@ exports.EPSILON_VALUE = 0.000001;
  * @type {Number}
  */
 
-exports.MOUSE_MOVEMENT_FRICTION = 0.5;
+exports.MOUSE_MOVEMENT_FRICTION = 0.4;
 
 }, {}],
 14: [function(require, module, exports) {
@@ -38841,12 +38838,14 @@ module.exports = function createCamera (scope, force) {
   var width = scope.width();
   var ratio = width / height;
   var camera = scope.camera;
+  var state = scope.state;
   var vector = null;
   var target = null;
+  var fov = state.opts ? state.opts.fov || DEFAULT_FOV : DEFAULT_FOV;
   if (null == scope.camera || true == force) {
     vector = new three.Vector3(0, 0, 0);
     target = camera && camera.target ? camera.target : vector;
-    scope.camera = new three.PerspectiveCamera(DEFAULT_FOV, ratio, 0.01, 1000);
+    scope.camera = new three.PerspectiveCamera(fov, ratio, 0.01, 1000);
     scope.camera.target = target;
     scope.camera.rotation.reorder('YXZ');
   }
@@ -42338,7 +42337,10 @@ function fisheye (scope) {
       scope.lookAt(0, 0, 0);
     }
 
-    scope.orientation.x = (Math.PI/180);
+    if ('equilinear' != current) {
+      scope.orientation.x = (Math.PI/180);
+    }
+
     this.cancel();
   });
 };
@@ -42429,7 +42431,11 @@ function equilinear (scope) {
   // bail if content sizing is incorrect
   if (false == this.contentHasCorrectSizing()) { return; }
 
-  var fov = DEFAULT_FOV;
+  var fov = (
+    scope.state && scope.state.opts ?
+    scope.state.opts.fov || DEFAULT_FOV : DEFAULT_FOV
+  );
+
   var rotation = new three.Vector3(0, 0, 0);
   var current = this.current;
   var targetX = Math.PI / 180;
@@ -42469,6 +42475,10 @@ function equilinear (scope) {
     this.animate(function () {
       scope.fov(fov);
       var x = scope.orientation.x;
+
+      if (current == 'fisheye') {
+        return this.cancel();
+      }
 
       if (x > targetX) {
         scope.orientation.x -= factor;
@@ -42589,12 +42599,13 @@ function tinyplanet (scope) {
     this.constraints.x = false;
   }
 
+  this.constraints.x = true;
+  this.constraints.y = false;
+
   var fovOffset = 15;
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
   scope.fov(camera.fov + fovOffset);
   scope.debug("animate: TINY_PLANET begin");
-  this.constraints.x = true;
-  this.constraints.y = false;
   rotation.x = camera.target.x || 0;
   rotation.y = camera.target.y || 0;
   rotation.z = camera.target.z || -1;
@@ -43695,6 +43706,16 @@ function AxisController (scope, domElement) {
   };
 
   /**
+   * Previous controller orientation.
+   *
+   * @public
+   * @name state.previousOrientation
+   * @type {Object}
+   */
+
+  this.state.previousOrientation = {x: 0, y: 0};
+
+  /**
    * Controllers DOM Element.
    *
    * @public
@@ -43795,6 +43816,9 @@ AxisController.prototype.update = function () {
     orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
   }
 
+  this.state.previousOrientation.x = orientation.x;
+  this.state.previousOrientation.y = orientation.y;
+
   // update controller quaternions
   quaternions.x.setFromAxisAngle(vectors.x, orientation.x);
   quaternions.y.setFromAxisAngle(vectors.y, orientation.y);
@@ -43808,6 +43832,7 @@ AxisController.prototype.update = function () {
 
   // multiplty target quaternion with our x quaternion
   target.quaternion.multiply(quaternions.x);
+
   return this;
 };
 
@@ -43925,6 +43950,25 @@ AxisController.prototype.destroy = function () {
   this.events.unbind();
   this.scope.off('beforedraw', this.onbeforedraw);
   return this;
+};
+
+/**
+ * Returns current camera aspect ratio. If not available
+ * 1 is returned.
+ *
+ * @public
+ * @method
+ * @name getAspectRatio
+ * @param {Number} [max] - Optional max value
+ * @return {Number}
+ */
+
+AxisController.prototype.getAspectRatio = function (max) {
+  var scope = this.scope;
+  var camera = scope.camera;
+  var aspect = camera ? camera.aspect : 1;
+  max = max || aspect;
+  return Math.max(max, aspect);
 };
 
 }, {"three.js":2,"events":5}],
@@ -44172,8 +44216,10 @@ MouseController.prototype.onmousemove = function (e) {
     return;
   }
 
-  movements.x = (e.screenX *MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.x;
-  movements.y = (e.screenY *MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.y;
+  movements.x = (e.screenX * MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.x;
+  movements.y = (e.screenY * MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.y;
+  movements.x /= this.getAspectRatio(2);
+  movements.y /= this.getAspectRatio(2);
 
   // normalized movements from event
   normalizeMovements(e, movements);
@@ -44682,20 +44728,21 @@ function KeyboardController (scope) {
   // reset state
   this.reset();
 
+
   this.use('up', function (data) {
-    this.pan({x: 0, y: this.state.panSpeed / 2});
+    this.pan({x: 0, y: this.state.panSpeed / self.getAspectRatio(2)});
   });
 
   this.use('down', function (data) {
-    this.pan({x: 0, y: -this.state.panSpeed / 2});
+    this.pan({x: 0, y: -this.state.panSpeed / self.getAspectRatio(2)});
   });
 
   this.use('left', function (data) {
-    this.pan({x: this.state.panSpeed * 2, y: 0});
+    this.pan({x: this.state.panSpeed * self.getAspectRatio(2), y: 0});
   });
 
   this.use('right', function (data) {
-    this.pan({x: -this.state.panSpeed * 2, y: 0});
+    this.pan({x: -this.state.panSpeed * self.getAspectRatio(2), y: 0});
   });
 }
 
