@@ -647,7 +647,6 @@ Axis.prototype.onmouseup = function (e) {
 
 Axis.prototype.onmouseleave = function (e) {
   this.debug('onmouseleave');
-  this.state.update('isFocused', false);
   this.state.update('isMousedown', false);
   this.emit('mouseleave', e);
 };

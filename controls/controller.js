@@ -596,7 +596,10 @@ AxisController.prototype.onbeforedraw = function () {
       false == this.state.isEnabled) {
     return this;
   }
-  this.update();
+
+  if (this.scope.state.isFocused) {
+    this.update();
+  }
 };
 
 /**
