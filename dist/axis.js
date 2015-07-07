@@ -38161,7 +38161,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.8.2",
+  "version": "1.9.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38601,6 +38601,17 @@ exports.DEFAULT_KEY_PAN_SPEED = 6;
 exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
 
 /**
+ * Default mouse movement friction factor.
+ *
+ * @public
+ * @const
+ * @name DEFAULT_MOUSE_MOVEMENT_FRICTION
+ * @type {Number}
+ */
+
+exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.3;
+
+/**
  * Animation factor unit applied to changes in
  * field of view and coordinates during projection
  * animations.
@@ -38781,17 +38792,6 @@ exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;
  */
 
 exports.EPSILON_VALUE = 0.000001;
-
-/**
- * Mouse movement friction
- *
- * @public
- * @const
- * @name MOUSE_MOVEMENT_FRICTION
- * @type {Number}
- */
-
-exports.MOUSE_MOVEMENT_FRICTION = 0.4;
 
 }, {}],
 14: [function(require, module, exports) {
@@ -38999,6 +38999,7 @@ var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY;
 var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS;
 var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
+var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
 var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
 
 /**
@@ -39033,6 +39034,8 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * a video.
  * @param {Number} [opts.friction = DEFAULT_FRICTION] - Friction to
  * apply to x and y coordinates.
+ * @param {Number} [opts.mouseFriction = DEFAULT_MOUSE_MOVEMENT_FRICTION] -
+ * Friction fractor to apply to mouse movements.
  * @param {Number} [opts.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR] -
  * Interpolation factor to apply to quaternion rotations.
  * @param {Boolean} [opts.useSlerp = true] - Use spherical linear interpolations.
@@ -39154,6 +39157,9 @@ function State (scope, opts) {
 
   /** Friction to apply to x and y coordinates. */
   this.friction = DEFAULT_FRICTION;
+
+  /** Friction to apply to mouse movements. */
+  this.mouseFriction = DEFAULT_MOUSE_MOVEMENT_FRICTION;
 
   /** Zee quaternion. */
   this.zee = null;
@@ -39335,6 +39341,7 @@ State.prototype.reset = function (overrides) {
   this.shouldAutoplay = null != opts.autoplay ? opts.autoplay : false;
   this.allowWheel = null == opts.allowWheel ? false : opts.allowWheel;
   this.friction = opts.friction || DEFAULT_FRICTION;
+  this.mouseFriction = opts.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   this.useSlerp = opts.useSlerp || true;
   this.useWebGL = opts.webgl && hasWebGL;
   this.interpolationFactor = (
@@ -44015,7 +44022,8 @@ var inherits = require('inherits')
 var AxisController = require('./controller')
   , constants = require('../constants')
 
-var MOUSE_MOVEMENT_FRICTION = constants.MOUSE_MOVEMENT_FRICTION;
+// default mouse friction value
+var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
 
 /**
  * Normalizes properties in an Event object and
@@ -44165,11 +44173,12 @@ function MouseController (scope) {
  */
 
 MouseController.prototype.onmousedown = function (e) {
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   clearTimeout(this.state.mouseupTimeout);
   this.state.forceUpdate = false;
   this.state.isMousedown = true;
-  this.state.movementsStart.x = e.screenX * MOUSE_MOVEMENT_FRICTION;
-  this.state.movementsStart.y = e.screenY * MOUSE_MOVEMENT_FRICTION;
+  this.state.movementsStart.x = e.screenX * friction;
+  this.state.movementsStart.y = e.screenY * friction;
 };
 
 /**
@@ -44198,17 +44207,16 @@ MouseController.prototype.onmouseup = function (e) {
  */
 
 MouseController.prototype.onmousemove = function (e) {
-  var friction = this.scope.state.friction;
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   var movements = this.state.movements;
-  var orientation = this.state.orientation;
 
   // handle mouse movements only if the mouse controller is enabled
   if (false == this.state.isEnabled || false == this.state.isMousedown) {
     return;
   }
 
-  movements.x = (e.screenX * MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.x;
-  movements.y = (e.screenY * MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.y;
+  movements.x = (e.screenX * friction) - this.state.movementsStart.x;
+  movements.y = (e.screenY * friction) - this.state.movementsStart.y;
   movements.x /= this.getAspectRatio(2);
   movements.y /= this.getAspectRatio(2);
 
@@ -44216,8 +44224,8 @@ MouseController.prototype.onmousemove = function (e) {
   normalizeMovements(e, movements);
   this.pan(movements);
 
-  this.state.movementsStart.x = e.screenX * MOUSE_MOVEMENT_FRICTION;
-  this.state.movementsStart.y = e.screenY * MOUSE_MOVEMENT_FRICTION;
+  this.state.movementsStart.x = e.screenX * friction;
+  this.state.movementsStart.y = e.screenY * friction;
 };
 
 /**
@@ -44883,6 +44891,16 @@ KeyboardController.prototype.onkeydown = function (e) {
   var code = e.which;
   var self = this;
 
+  /**
+   * Key down event.
+   *
+   * @public
+   * @event module:axis~Axis#keydown
+   * @type {Event}
+   */
+
+  this.scope.emit('keydown', e);
+
   if (false == this.state.isEnabled) {
     return;
   }
@@ -44898,17 +44916,6 @@ KeyboardController.prototype.onkeydown = function (e) {
     // prevent default actions
     e.preventDefault();
   }
-
-  /**
-   * Key down event.
-   *
-   * @public
-   * @event module:axis~Axis#keydown
-   * @type {Event}
-   */
-
-  this.scope.emit('keydown', e);
-
 };
 
 /**
@@ -44923,13 +44930,16 @@ KeyboardController.prototype.onkeyup = function (e) {
   var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused;
   var code = e.which;
   this.state.keystate[code] = false;
+  this.scope.emit('keyup', e);
   if (isFocused) {
+    e.preventDefault();
     this.state.forceUpdate = true;
     clearTimeout(this.state.keyupTimeout);
     this.state.keyupTimeout = setTimeout(function () {
       this.state.forceUpdate = false;
     }.bind(this), this.scope.state.controllerUpdateTimeout);
   }
+
 };
 
 /**
