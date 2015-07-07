@@ -1093,7 +1093,6 @@ Axis.prototype.unmute = function (mute) {
 Axis.prototype.refresh = function () {
   var constraints = this.projections.constraints;
   var video = this.video;
-  var delta = 4;
   var now = Date.now();
   var x = this.state.pointerX;
   var y = this.state.pointerY;
@@ -1112,21 +1111,6 @@ Axis.prototype.refresh = function () {
   }
 
   if (null == constraints || false != constraints.panoramic) {
-    // @TODO(werle) - make this delta configurable
-    delta = this.state.isInverted ? -delta : delta;
-
-    if (this.state.keys.up) {
-      y += delta;
-    } else if (this.state.keys.down) {
-      y -= delta;
-    }
-
-    if (this.state.keys.left) {
-      x -= delta;
-    } else if (this.state.keys.right) {
-      x += delta;
-    }
-
     if (this.camera) {
       this.camera.fov = this.state.fov;
       this.camera.updateProjectionMatrix();
