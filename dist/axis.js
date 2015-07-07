@@ -735,7 +735,6 @@ Axis.prototype.onmouseup = function (e) {
 
 Axis.prototype.onmouseleave = function (e) {
   this.debug('onmouseleave');
-  this.state.update('isFocused', false);
   this.state.update('isMousedown', false);
   this.emit('mouseleave', e);
 };
@@ -1181,7 +1180,6 @@ Axis.prototype.unmute = function (mute) {
 Axis.prototype.refresh = function () {
   var constraints = this.projections.constraints;
   var video = this.video;
-  var delta = 4;
   var now = Date.now();
   var x = this.state.pointerX;
   var y = this.state.pointerY;
@@ -1200,21 +1198,6 @@ Axis.prototype.refresh = function () {
   }
 
   if (null == constraints || false != constraints.panoramic) {
-    // @TODO(werle) - make this delta configurable
-    delta = this.state.isInverted ? -delta : delta;
-
-    if (this.state.keys.up) {
-      y += delta;
-    } else if (this.state.keys.down) {
-      y -= delta;
-    }
-
-    if (this.state.keys.left) {
-      x -= delta;
-    } else if (this.state.keys.right) {
-      x += delta;
-    }
-
     if (this.camera) {
       this.camera.fov = this.state.fov;
       this.camera.updateProjectionMatrix();
@@ -38178,7 +38161,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -43757,7 +43740,10 @@ AxisController.prototype.onbeforedraw = function () {
       false == this.state.isEnabled) {
     return this;
   }
-  this.update();
+
+  if (this.scope.state.isFocused) {
+    this.update();
+  }
 };
 
 /**
@@ -44731,6 +44717,7 @@ function KeyboardController (scope) {
   this.state.panSpeed = DEFAULT_KEY_PAN_SPEED;
 
   // initialize event delegation
+  this.events.bind('mousedown');
   this.events.bind('keydown');
   this.events.bind('keyup');
 
@@ -44796,12 +44783,14 @@ KeyboardController.prototype.reset = function () {
 KeyboardController.prototype.update = function () {
   var lastQuaternion = this.state.quaternions.last;
   var lastPosition = this.state.vectors.lastPosition;
+  var isKeydown = this.state.isKeydown;
+  var isFocused = this.scope.state.isFocused;
   var keystate = this.state.keystate;
   var handlers = this.state.handlers;
   var position = this.state.target.position;
   var offset = this.state.vectors.offset;
 
-  if (false == this.state.isKeydown) { return this; }
+  if (false == isKeydown || false == isFocused) { return this; }
   // call registered keycode handlers
   this.state.keycodes.forEach(function (code) {
     if (null == handlers[code]) { return; }
@@ -44894,18 +44883,9 @@ KeyboardController.prototype.onkeydown = function (e) {
   var code = e.which;
   var self = this;
 
-  clearTimeout(this.state.keyupTimeout);
-  if (false == this.state.isEnabled) { return; }
-
-  /**
-   * Key down event.
-   *
-   * @public
-   * @event module:axis~Axis#keydown
-   * @type {Event}
-   */
-
-  this.scope.emit('keydown', e);
+  if (false == this.state.isEnabled) {
+    return;
+  }
 
   if (isFocused) {
     // only supported keys
@@ -44918,6 +44898,17 @@ KeyboardController.prototype.onkeydown = function (e) {
     // prevent default actions
     e.preventDefault();
   }
+
+  /**
+   * Key down event.
+   *
+   * @public
+   * @event module:axis~Axis#keydown
+   * @type {Event}
+   */
+
+  this.scope.emit('keydown', e);
+
 };
 
 /**
@@ -44940,6 +44931,23 @@ KeyboardController.prototype.onkeyup = function (e) {
     }.bind(this), this.scope.state.controllerUpdateTimeout);
   }
 };
+
+/**
+ * Handle `onmousedown' events.
+ *
+ * @private
+ * @name onmousedown
+ * @param {Event} - Event object.
+ */
+
+KeyboardController.prototype.onmousedown = function (e) {
+  if (e.target == this.scope.domElement ||
+      this.scope.domElement.contains(e.target)) {
+    this.scope.state.update('isFocused', true);
+  } else {
+    this.scope.state.update('isFocused', false);
+  }
+}
 
 }, {"keycode":9,"inherits":43,"./controller":30,"../constants":18}],
 29: [function(require, module, exports) {
