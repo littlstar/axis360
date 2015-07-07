@@ -264,6 +264,9 @@ function State (scope, opts) {
   /** Last known device pixel ratio. */
   this.lastDevicePixelRatio = window.devicePixelRatio;
 
+  /** Vim mode ;) */
+  this.vim = false;
+
   /**
    * State predicates.
    */
@@ -411,6 +414,8 @@ State.prototype.reset = function (overrides) {
   this.controllerUpdateTimeout = (
     opts.updateTimeout || DEFAULT_CONTROLLER_UPDATE_TIMEOUT
   );
+
+  this.vim = null == opts.vim ? false : opts.vim;
 
   /**
    * State variables.

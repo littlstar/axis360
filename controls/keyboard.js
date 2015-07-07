@@ -84,7 +84,11 @@ var keycodes = module.exports.keycodes = {
   'left': 37,
   'up': 38,
   'right': 39,
-  'down': 40
+  'down': 40,
+  'k': keycode('k'), // up
+  'j': keycode('j'), // down
+  'h': keycode('h'), // left
+  'l': keycode('l'), // right
 };
 
 /**
@@ -152,7 +156,7 @@ function KeyboardController (scope) {
    * @type {Array}
    */
 
-  this.state.keynames = ['up', 'down', 'left', 'right'];
+  this.state.keynames = Object.keys(module.exports.keycodes);
 
   /**
    * Supported keys codes.
@@ -221,22 +225,33 @@ function KeyboardController (scope) {
   // reset state
   this.reset();
 
+  this.use('up', up);
+  this.use('down', down);
+  this.use('left', left);
+  this.use('right', right);
 
-  this.use('up', function (data) {
+  if (this.scope.state.vim) {
+    this.use('k', up);
+    this.use('j', down);
+    this.use('h', left);
+    this.use('l', right);
+  }
+
+  function up (data) {
     this.pan({x: 0, y: this.state.panSpeed / self.getAspectRatio(2)});
-  });
+  }
 
-  this.use('down', function (data) {
+  function down (data) {
     this.pan({x: 0, y: -this.state.panSpeed / self.getAspectRatio(2)});
-  });
+  }
 
-  this.use('left', function (data) {
+  function left (data) {
     this.pan({x: this.state.panSpeed * self.getAspectRatio(2), y: 0});
-  });
+  }
 
-  this.use('right', function (data) {
+ function right (data) {
     this.pan({x: -this.state.panSpeed * self.getAspectRatio(2), y: 0});
-  });
+  }
 }
 
 /**
@@ -277,10 +292,13 @@ KeyboardController.prototype.update = function () {
   if (false == this.state.isKeydown) { return this; }
   // call registered keycode handlers
   this.state.keycodes.forEach(function (code) {
+    if (null == handlers[code]) { return; }
     handlers[code].forEach(function (handle) {
       var name = keyname(code);
       if (this.state.keystate[code]) {
-        handle.call(this, {name: name, code: code});
+        if ('function' == typeof handle) {
+          handle.call(this, {name: name, code: code});
+        }
       }
     }, this);
   }, this);
