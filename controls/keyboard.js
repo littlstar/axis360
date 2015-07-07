@@ -381,6 +381,9 @@ KeyboardController.prototype.onkeydown = function (e) {
   var constraints = this.scope.projections.constraints;
   var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused;
   var handlers = this.state.handlers;
+  var ctrlKey = e.ctrlKey;
+  var metaKey = e.metaKey;
+  var altKey = e.altKey;
   var scope = this.scope;
   var code = e.which;
   var self = this;
@@ -394,6 +397,9 @@ KeyboardController.prototype.onkeydown = function (e) {
    */
 
   this.scope.emit('keydown', e);
+
+  // ignore control keys
+  if (ctrlKey || metaKey || altKey) { return; }
 
   if (false == this.state.isEnabled) {
     return;
