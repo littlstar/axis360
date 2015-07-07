@@ -124,6 +124,17 @@ exports.DEFAULT_KEY_PAN_SPEED = 6;
 exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
 
 /**
+ * Default mouse movement friction factor.
+ *
+ * @public
+ * @const
+ * @name DEFAULT_MOUSE_MOVEMENT_FRICTION
+ * @type {Number}
+ */
+
+exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.3;
+
+/**
  * Animation factor unit applied to changes in
  * field of view and coordinates during projection
  * animations.
@@ -304,14 +315,3 @@ exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;
  */
 
 exports.EPSILON_VALUE = 0.000001;
-
-/**
- * Mouse movement friction
- *
- * @public
- * @const
- * @name MOUSE_MOVEMENT_FRICTION
- * @type {Number}
- */
-
-exports.MOUSE_MOVEMENT_FRICTION = 0.4;

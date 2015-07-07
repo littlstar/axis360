@@ -69,6 +69,7 @@ var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY;
 var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS;
 var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
+var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
 var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
 
 /**
@@ -103,6 +104,8 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * a video.
  * @param {Number} [opts.friction = DEFAULT_FRICTION] - Friction to
  * apply to x and y coordinates.
+ * @param {Number} [opts.mouseFriction = DEFAULT_MOUSE_MOVEMENT_FRICTION] -
+ * Friction fractor to apply to mouse movements.
  * @param {Number} [opts.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR] -
  * Interpolation factor to apply to quaternion rotations.
  * @param {Boolean} [opts.useSlerp = true] - Use spherical linear interpolations.
@@ -224,6 +227,9 @@ function State (scope, opts) {
 
   /** Friction to apply to x and y coordinates. */
   this.friction = DEFAULT_FRICTION;
+
+  /** Friction to apply to mouse movements. */
+  this.mouseFriction = DEFAULT_MOUSE_MOVEMENT_FRICTION;
 
   /** Zee quaternion. */
   this.zee = null;
@@ -405,6 +411,7 @@ State.prototype.reset = function (overrides) {
   this.shouldAutoplay = null != opts.autoplay ? opts.autoplay : false;
   this.allowWheel = null == opts.allowWheel ? false : opts.allowWheel;
   this.friction = opts.friction || DEFAULT_FRICTION;
+  this.mouseFriction = opts.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   this.useSlerp = opts.useSlerp || true;
   this.useWebGL = opts.webgl && hasWebGL;
   this.interpolationFactor = (

@@ -49,7 +49,8 @@ var inherits = require('inherits')
 var AxisController = require('./controller')
   , constants = require('../constants')
 
-var MOUSE_MOVEMENT_FRICTION = constants.MOUSE_MOVEMENT_FRICTION;
+// default mouse friction value
+var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
 
 /**
  * Normalizes properties in an Event object and
@@ -199,11 +200,12 @@ function MouseController (scope) {
  */
 
 MouseController.prototype.onmousedown = function (e) {
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   clearTimeout(this.state.mouseupTimeout);
   this.state.forceUpdate = false;
   this.state.isMousedown = true;
-  this.state.movementsStart.x = e.screenX * MOUSE_MOVEMENT_FRICTION;
-  this.state.movementsStart.y = e.screenY * MOUSE_MOVEMENT_FRICTION;
+  this.state.movementsStart.x = e.screenX * friction;
+  this.state.movementsStart.y = e.screenY * friction;
 };
 
 /**
@@ -232,17 +234,16 @@ MouseController.prototype.onmouseup = function (e) {
  */
 
 MouseController.prototype.onmousemove = function (e) {
-  var friction = this.scope.state.friction;
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   var movements = this.state.movements;
-  var orientation = this.state.orientation;
 
   // handle mouse movements only if the mouse controller is enabled
   if (false == this.state.isEnabled || false == this.state.isMousedown) {
     return;
   }
 
-  movements.x = (e.screenX * MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.x;
-  movements.y = (e.screenY * MOUSE_MOVEMENT_FRICTION) - this.state.movementsStart.y;
+  movements.x = (e.screenX * friction) - this.state.movementsStart.x;
+  movements.y = (e.screenY * friction) - this.state.movementsStart.y;
   movements.x /= this.getAspectRatio(2);
   movements.y /= this.getAspectRatio(2);
 
@@ -250,8 +251,8 @@ MouseController.prototype.onmousemove = function (e) {
   normalizeMovements(e, movements);
   this.pan(movements);
 
-  this.state.movementsStart.x = e.screenX * MOUSE_MOVEMENT_FRICTION;
-  this.state.movementsStart.y = e.screenY * MOUSE_MOVEMENT_FRICTION;
+  this.state.movementsStart.x = e.screenX * friction;
+  this.state.movementsStart.y = e.screenY * friction;
 };
 
 /**
