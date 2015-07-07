@@ -87,7 +87,7 @@ function tinyplanet (scope) {
   this.constraints = {
     y: true,
     cache: true,
-    keys: {up: true, down: true}
+    keys: {up: true, down: true, j: true, k: true}
   };
 
   if ('cylinder' == scope.geometry()) {
