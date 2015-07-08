@@ -323,10 +323,12 @@ function Axis (parent, opts) {
     opts.isPreviewFrame = true;
     this.previewDomElement = document.createElement('div');
     this.previewFrame = new Axis(this.previewDomElement, opts);
-    this.previewFrame.video.volume = 0;
-    this.previewFrame.video.muted = true;
-    this.previewFrame.video.currentTime = 0;
-    this.previewFrame.video.pause();
+    this.previewFrame.once('ready', function () {
+      self.previewFrame.video.volume = 0;
+      self.previewFrame.video.muted = true;
+      self.previewFrame.video.currentTime = 0;
+      self.previewFrame.video.pause();
+    });
     delete opts.isPreviewFrame;
     this.once('render', function () {
       this.previewFrame.render();
@@ -38161,7 +38163,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
