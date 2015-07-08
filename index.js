@@ -217,12 +217,7 @@ function Axis (parent, opts) {
 
   /** Instance video DOM element. */
   this.video = this.domElement.querySelector('video');
-
-  this.video.onerror = console.error.bind(console);
-
-  if (opts.time || opts.t) {
-    this.video.currentTime = parseFloat(opts.time) || parseFloat(opts.t) || 0;
-  }
+  this.video.onerror = console.warn.bind(console);
 
   /** Axis' scene instance. */
   this.scene = null;
@@ -272,6 +267,10 @@ function Axis (parent, opts) {
   // setup default state when ready
   this.once('ready', function () {
     this.debug('ready');
+
+    if (opts.time || opts.t) {
+      self.video.currentTime = parseFloat(opts.time) || parseFloat(opts.t) || 0;
+    }
 
     var dimensions = this.dimensions();
     var aspect = this.camera.aspect || 1;
@@ -1796,10 +1795,12 @@ Axis.prototype.initializeControllers = function (map, force) {
  * @name getCaptureImageAt
  * @param {Number} [time] - Optional Time to seek to preview.
  * @param {Image} [out] - Optional Image object to set src to.
+ * @param {Function} [cb] - Optional callback called when image
+ * source has been set.
  * @return {Image}
  */
 
-Axis.prototype.getCaptureImageAt = function (time, out) {
+Axis.prototype.getCaptureImageAt = function (time, out, cb) {
   var preview = this.previewFrame;
   var image = null;
   var timer = null;
@@ -1837,9 +1838,29 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
       out = time;
       time = null;
     }
+  } else if (2 == arguments.length) {
+    if ('function' == typeof out) {
+      cb = out;
+      out = null;
+    }
+
+    if ('object' == typeof time) {
+      out = time;
+      time = null;
+    }
   }
 
+  cb = 'function' == typeof cb ? cb : function () {}
   image = out || new Image();
+  image.onload = function () {
+    this.onload = null;
+    cb(null, this);
+  };
+
+  image.onerror = function (e) {
+    this.onerror = null;
+    cb(e, this);
+  };
 
   if (null != preview && false == this.state.isImage) {
     raf(function () { preview.update(); });
@@ -1853,8 +1874,10 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
     } else {
       updatePreviewFrameVideo();
     }
-  } else if (this.state.isImage) {
-    image.src = this.renderer.domElement.toDataURL(mime);
+  } else if (this.renderer.domElement) {
+    raf(function () {
+      image.src = this.renderer.domElement.toDataURL(mime);
+    });
   }
 
   return image;
@@ -1864,10 +1887,14 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
  * Returns a screenshot of the current rendered frame
  *
  * @public
+ * @param {Image} [out] - Optional image to set source to.
+ * @param {Function} [cb] - Optional callback when image has loaded
+ * @return {Image}
  */
 
-Axis.prototype.toImage = function () {
-  return this.getCaptureImageAt();
+Axis.prototype.toImage = function (out, cb) {
+  out = out || new Image();
+  return this.getCaptureImageAt(out, cb);
 };
 
 /**
@@ -1915,5 +1942,27 @@ Axis.prototype.refreshScene = function () {
     this.scene.add(mesh);
   }
 
+  return this;
+};
+
+/**
+ * Focuses frame
+ *
+ * @public
+ */
+
+Axis.prototype.focus = function () {
+  this.state.update('isFocused', true);
+  return this;
+};
+
+/**
+ * Unfocuses frame
+ *
+ * @public
+ */
+
+Axis.prototype.unfocus = function () {
+  this.state.update('isFocused', false);
   return this;
 };
