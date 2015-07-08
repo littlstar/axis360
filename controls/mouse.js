@@ -63,8 +63,27 @@ var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
  */
 
 function normalizeMovements (e, o) {
-  o.x = e.movementX || e.mozMovementX || e.webkitMovementX || o.x || 0;
-  o.y = e.movementY || e.mozMovementY || e.webkitMovementY || o.y || 0;
+  o.x = (
+    e.movementX ||
+    e.oMovementX ||
+    e.msMovementX ||
+    e.mozMovementX ||
+    e.webkitMovementX ||
+    o.x ||
+    0
+  );
+
+  o.y = (
+    e.movementY ||
+    e.oMovementY ||
+    e.msMovementY ||
+    e.mozMovementY ||
+    e.webkitMovementY ||
+    o.y ||
+    0
+  );
+
+  return o;
 }
 
 /**
@@ -244,11 +263,12 @@ MouseController.prototype.onmousemove = function (e) {
 
   movements.x = (e.screenX * friction) - this.state.movementsStart.x;
   movements.y = (e.screenY * friction) - this.state.movementsStart.y;
-  movements.x /= this.getAspectRatio(2);
-  movements.y /= this.getAspectRatio(2);
 
   // normalized movements from event
   normalizeMovements(e, movements);
+  movements.y *= friction;
+  movements.x *= (friction / 0.5);
+
   this.pan(movements);
 
   this.state.movementsStart.x = e.screenX * friction;
