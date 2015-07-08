@@ -1911,6 +1911,12 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
     });
   }
 
+  function updatePreviewFrameVideo () {
+    preview.update();
+    preview.video.currentTime = time;
+    preview.pause();
+  }
+
   if (0 == arguments.length) {
     time = null;
     out = null;
@@ -1929,19 +1935,27 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
     if (preview.video.readyState < 4) {
       preview.video.onload = function () {
         preview.video.onload = null;
-        preview.update();
+        updatePreviewFrameVideo();
       };
       preview.video.load();
     } else {
-      preview.update();
+      updatePreviewFrameVideo();
     }
-    preview.video.currentTime = time;
-    preview.pause();
   } else if (this.state.isImage) {
     image.src = this.renderer.domElement.toDataURL(mime);
   }
 
   return image;
+};
+
+/**
+ * Returns a screenshot of the current rendered frame
+ *
+ * @public
+ */
+
+Axis.prototype.toImage = function () {
+  return this.getCaptureImageAt();
 };
 
 /**
@@ -38163,7 +38177,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.9.2",
+  "version": "1.10.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
