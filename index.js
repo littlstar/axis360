@@ -1823,6 +1823,12 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
     });
   }
 
+  function updatePreviewFrameVideo () {
+    preview.update();
+    preview.video.currentTime = time;
+    preview.pause();
+  }
+
   if (0 == arguments.length) {
     time = null;
     out = null;
@@ -1841,19 +1847,27 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
     if (preview.video.readyState < 4) {
       preview.video.onload = function () {
         preview.video.onload = null;
-        preview.update();
+        updatePreviewFrameVideo();
       };
       preview.video.load();
     } else {
-      preview.update();
+      updatePreviewFrameVideo();
     }
-    preview.video.currentTime = time;
-    preview.pause();
   } else if (this.state.isImage) {
     image.src = this.renderer.domElement.toDataURL(mime);
   }
 
   return image;
+};
+
+/**
+ * Returns a screenshot of the current rendered frame
+ *
+ * @public
+ */
+
+Axis.prototype.toImage = function () {
+  return this.getCaptureImageAt();
 };
 
 /**
