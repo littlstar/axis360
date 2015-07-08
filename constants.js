@@ -132,7 +132,7 @@ exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
  * @type {Number}
  */
 
-exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.3;
+exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.655;
 
 /**
  * Animation factor unit applied to changes in
