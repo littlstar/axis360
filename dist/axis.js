@@ -205,7 +205,6 @@ function getCorrectGeometry (axis) {
   } else if (ratio == ratio && 2 == ratio) {
     geo = axis.geometry('sphere');
   } else if (ratio == ratio) {
-    axis.fov(CYLINDRICAL_FOV);
     geo = axis.geometry('cylinder');
   }
 
@@ -305,12 +304,7 @@ function Axis (parent, opts) {
 
   /** Instance video DOM element. */
   this.video = this.domElement.querySelector('video');
-
-  this.video.onerror = console.error.bind(console);
-
-  if (opts.time || opts.t) {
-    this.video.currentTime = parseFloat(opts.time) || parseFloat(opts.t) || 0;
-  }
+  this.video.onerror = console.warn.bind(console);
 
   /** Axis' scene instance. */
   this.scene = null;
@@ -360,6 +354,10 @@ function Axis (parent, opts) {
   // setup default state when ready
   this.once('ready', function () {
     this.debug('ready');
+
+    if (opts.time || opts.t) {
+      self.video.currentTime = parseFloat(opts.time) || parseFloat(opts.t) || 0;
+    }
 
     var dimensions = this.dimensions();
     var aspect = this.camera.aspect || 1;
@@ -1884,10 +1882,12 @@ Axis.prototype.initializeControllers = function (map, force) {
  * @name getCaptureImageAt
  * @param {Number} [time] - Optional Time to seek to preview.
  * @param {Image} [out] - Optional Image object to set src to.
+ * @param {Function} [cb] - Optional callback called when image
+ * source has been set.
  * @return {Image}
  */
 
-Axis.prototype.getCaptureImageAt = function (time, out) {
+Axis.prototype.getCaptureImageAt = function (time, out, cb) {
   var preview = this.previewFrame;
   var image = null;
   var timer = null;
@@ -1925,9 +1925,29 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
       out = time;
       time = null;
     }
+  } else if (2 == arguments.length) {
+    if ('function' == typeof out) {
+      cb = out;
+      out = null;
+    }
+
+    if ('object' == typeof time) {
+      out = time;
+      time = null;
+    }
   }
 
+  cb = 'function' == typeof cb ? cb : function () {}
   image = out || new Image();
+  image.onload = function () {
+    this.onload = null;
+    cb(null, this);
+  };
+
+  image.onerror = function (e) {
+    this.onerror = null;
+    cb(e, this);
+  };
 
   if (null != preview && false == this.state.isImage) {
     raf(function () { preview.update(); });
@@ -1941,8 +1961,10 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
     } else {
       updatePreviewFrameVideo();
     }
-  } else if (this.state.isImage) {
-    image.src = this.renderer.domElement.toDataURL(mime);
+  } else if (this.renderer.domElement) {
+    raf(function () {
+      image.src = self.renderer.domElement.toDataURL(mime);
+    });
   }
 
   return image;
@@ -1952,10 +1974,14 @@ Axis.prototype.getCaptureImageAt = function (time, out) {
  * Returns a screenshot of the current rendered frame
  *
  * @public
+ * @param {Image} [out] - Optional image to set source to.
+ * @param {Function} [cb] - Optional callback when image has loaded
+ * @return {Image}
  */
 
-Axis.prototype.toImage = function () {
-  return this.getCaptureImageAt();
+Axis.prototype.toImage = function (out, cb) {
+  out = out || new Image();
+  return this.getCaptureImageAt(out, cb);
 };
 
 /**
@@ -2003,6 +2029,28 @@ Axis.prototype.refreshScene = function () {
     this.scene.add(mesh);
   }
 
+  return this;
+};
+
+/**
+ * Focuses frame
+ *
+ * @public
+ */
+
+Axis.prototype.focus = function () {
+  this.state.update('isFocused', true);
+  return this;
+};
+
+/**
+ * Unfocuses frame
+ *
+ * @public
+ */
+
+Axis.prototype.unfocus = function () {
+  this.state.update('isFocused', false);
   return this;
 };
 
@@ -38177,7 +38225,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38256,7 +38304,6 @@ var raf = require('raf')
 var constants = require('./constants')
 
 var DEFAULT_FOV = constants.DEFAULT_FOV;
-var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV;
 
 /**
  * Predicate to determine whether `n' is
@@ -38625,7 +38672,7 @@ exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
  * @type {Number}
  */
 
-exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.3;
+exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.655;
 
 /**
  * Animation factor unit applied to changes in
@@ -44052,8 +44099,27 @@ var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
  */
 
 function normalizeMovements (e, o) {
-  o.x = e.movementX || e.mozMovementX || e.webkitMovementX || o.x || 0;
-  o.y = e.movementY || e.mozMovementY || e.webkitMovementY || o.y || 0;
+  o.x = (
+    e.movementX ||
+    e.oMovementX ||
+    e.msMovementX ||
+    e.mozMovementX ||
+    e.webkitMovementX ||
+    o.x ||
+    0
+  );
+
+  o.y = (
+    e.movementY ||
+    e.oMovementY ||
+    e.msMovementY ||
+    e.mozMovementY ||
+    e.webkitMovementY ||
+    o.y ||
+    0
+  );
+
+  return o;
 }
 
 /**
@@ -44233,11 +44299,12 @@ MouseController.prototype.onmousemove = function (e) {
 
   movements.x = (e.screenX * friction) - this.state.movementsStart.x;
   movements.y = (e.screenY * friction) - this.state.movementsStart.y;
-  movements.x /= this.getAspectRatio(2);
-  movements.y /= this.getAspectRatio(2);
 
   // normalized movements from event
   normalizeMovements(e, movements);
+  movements.y *= friction;
+  movements.x *= (friction / 0.5);
+
   this.pan(movements);
 
   this.state.movementsStart.x = e.screenX * friction;

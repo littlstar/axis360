@@ -113,9 +113,9 @@
         t: 15,
         //src: 'https://d3uo9a4kiyu5sk.cloudfront.net/production/90598eca-0ec1-4677-bd13-495cd3c09dd8/web.mp4'
         //src: 'test.webm'
-        src: '/public/assets/paramotor.mp4'
+        //src: '/public/assets/paramotor.mp4'
         //src: '/public/assets/hostel-luego.jpg'
-        //src: 'public/assets/vsn.mp4',
+        src: 'public/assets/vsn.mp4',
       });
 
       frame.on('vrhmdavailable', function (e) {
@@ -125,8 +125,8 @@
 
       frame.once('ready', function () {
         frame.focus();
-        updatePreview();
-        setInterval(updatePreview, 2000);
+        //updatePreview();
+        //setInterval(updatePreview, 2000);
       });
 
       function updatePreview () {
