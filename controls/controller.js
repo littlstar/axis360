@@ -597,9 +597,7 @@ AxisController.prototype.onbeforedraw = function () {
     return this;
   }
 
-  if (this.scope.state.isFocused) {
-    this.update();
-  }
+  this.update();
 };
 
 /**
