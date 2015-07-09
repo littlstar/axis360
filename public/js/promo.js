@@ -23,7 +23,7 @@ void function (global) {
     var content = sources[(Math.random() * 100|0) % sources.length];
     var src = '/assets/'+ content.name + (h264Supported ? '.mp4' : '.webm');
     var a = domElement.querySelector('.attribution .name');
-    a.setAttribute('href', 'https://littlestar.com/'+ content.user);
+    a.setAttribute('href', 'http://littlstar.com/'+ content.user);
     a.setAttribute('target', '_blank');
     a.innerHTML = content.owner;
     promo.src(src);
@@ -31,12 +31,10 @@ void function (global) {
 
   var promo = global.promo = new Axis(domElement, {
     crossorigin: true,
-    forceFocus: true,
-    clickable: false,
     resizable: true,
     preload: true,
     autoplay: true,
-    height: (window.innerHeight * .7),
+    height: (window.innerHeight),
     muted: true,
     loop: true,
     vr: true
@@ -47,7 +45,7 @@ void function (global) {
   promo.domElement.style.opacity = 0;
   promo.domElement.classList.add('animated');
   promo.domElement.classList.add('fadeIn');
-  promo.render().once('ready', function () { promo.seek(2); });
+  promo.render().once('ready', function () { promo.focus().seek(2); });
   document.querySelector('.controls').addEventListener('click', function (e) {
     var el = null
     var type = null;

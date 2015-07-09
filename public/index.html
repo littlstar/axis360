@@ -217,7 +217,6 @@
               <li data-title="WebVR" data-type="vr" style="display:none"><a href="#" style="background-image: url(/assets/oculus.svg)"></a></li>
               <li data-title="Tiny Planet" data-type="tinyplanet"><a href="#" style="background-image: url(/assets/planet.svg)"></a></li>
               <li data-title="Fisheye" data-type="fisheye"><a href="#" style="background-image: url(/assets/lens.svg)"></a></li>
-              <li data-title="Mirror Ball" data-type="mirrorball"><a href="#" style="background-image: url(/assets/sphere.svg)"></a></li>
             </ul>
           </section>
         </nav>
@@ -325,15 +324,21 @@
             var frame = new Axis(domElement, {preload: true});
 
             frame
+            // set video source
             .src('/path/to/video.mp4')
+            // set frame height
             .height(500)
+            // set frame width
             .width(500)
+            // render to DOM
             .render()
-            .on('ready', function () {
+            .once('ready', function () {
               frame
-              .projection('tiny planet')
-              .seek(3) // in seconds
-              .coords(0, 90) // [lat, lon]
+              // seek to 2 seconds for current time
+              .seek(2)
+              // begin interval rotation around y axis every 100ms decrementing 0.002
+              .rotate('y', {value: -0.002, every: 100});
+              // play the video
               .play();
             });
           </code></pre>

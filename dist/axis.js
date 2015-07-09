@@ -1989,6 +1989,7 @@ Axis.prototype.toImage = function (out, cb) {
  * for projection.
  *
  * @public
+ * @return {Axis}
  */
 
 Axis.prototype.refreshScene = function () {
@@ -2036,6 +2037,7 @@ Axis.prototype.refreshScene = function () {
  * Focuses frame
  *
  * @public
+ * @return {Axis}
  */
 
 Axis.prototype.focus = function () {
@@ -2047,10 +2049,71 @@ Axis.prototype.focus = function () {
  * Unfocuses frame
  *
  * @public
+ * @return {Axis}
  */
 
 Axis.prototype.unfocus = function () {
   this.state.update('isFocused', false);
+  return this;
+};
+
+/**
+ * Rotate around an axis with timing and
+ * increment value
+ *
+ * @publc
+ * @param {String} coord - x or y
+ * @param {Object|Boolean} opts - Options to configure the rotation. If
+ * the value is `false` then rotations will stop
+ * @param {Number} opts.value - Value to increment rotation.
+ * @param {Number} opts.every - Interval in milliseconds when to apply value
+ * to the rotation around the coordniate axis.
+ * @return {Axis}
+ */
+
+Axis.prototype.rotate = function (coord, opts) {
+  var intervalRotations = this.state.intervalRotations;
+  var rotation = null;
+  var self = this;
+
+  if ('string' != typeof coord) {
+    throw new TypeError("Expecting coordinate to be a string.");
+  }
+
+  rotation = intervalRotations[coord];
+
+  if ('object' == typeof opts && null != opts) {
+    if ('number' == typeof opts.value) {
+      rotation.value = opts.value;
+    } else {
+      throw new TypeError("Expecting .value to be a number");
+    }
+
+    if ('number' == typeof opts.every) {
+      rotation.every = opts.every;
+    }
+
+    clearTimeout(rotation.interval);
+    rotation.interval = setTimeout(function interval () {
+      var isMousedown = self.controls.mouse.state.isMousedown;
+      var isTouching = self.controls.touch.state.isTouching;
+      var isKeydown = self.controls.keyboard.state.isKeydown;
+      clearTimeout(rotation.interval);
+      if (0 != rotation.every && 0 != rotation.value) {
+        setTimeout(interval, rotation.every);
+      }
+
+      if (!(isMousedown || isTouching || isKeydown)) {
+        self.orientation[coord] += rotation.value;
+      }
+    }, rotation.every);
+  } else if (false === opts) {
+    rotation.value = 0;
+    rotation.every = 0;
+    clearTimeout(rotation.interval);
+    return this;
+  }
+
   return this;
 };
 
@@ -38225,7 +38288,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.10.1",
+  "version": "1.11.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -39192,7 +39255,7 @@ function State (scope, opts) {
   this.radius = DEFAULT_GEOMETRY_RADIUS;
 
   /** Known center for frame of reference. */
-  this.center = {x: null, y: null, z:null};
+  this.center = {x: null, y: null, z: null};
 
   /** Known frame height. */
   this.height = 0;
@@ -39205,6 +39268,12 @@ function State (scope, opts) {
 
   /** State cache. */
   this.cache = {};
+
+  /** Interval rotations. */
+  this.intervalRotations = {
+    x: {value: 0, every: 0, interval: 0},
+    y: {value: 0, every: 0, invteral: 0}
+  };
 
   /** Scroll velocity. */
   this.scrollVelocity = DEFAULT_SCROLL_VELOCITY;
@@ -43811,9 +43880,7 @@ AxisController.prototype.onbeforedraw = function () {
     return this;
   }
 
-  if (this.scope.state.isFocused) {
-    this.update();
-  }
+  this.update();
 };
 
 /**
