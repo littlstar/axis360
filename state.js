@@ -199,7 +199,7 @@ function State (scope, opts) {
   this.radius = DEFAULT_GEOMETRY_RADIUS;
 
   /** Known center for frame of reference. */
-  this.center = {x: null, y: null, z:null};
+  this.center = {x: null, y: null, z: null};
 
   /** Known frame height. */
   this.height = 0;
@@ -212,6 +212,12 @@ function State (scope, opts) {
 
   /** State cache. */
   this.cache = {};
+
+  /** Interval rotations. */
+  this.intervalRotations = {
+    x: {value: 0, every: 0, interval: 0},
+    y: {value: 0, every: 0, invteral: 0}
+  };
 
   /** Scroll velocity. */
   this.scrollVelocity = DEFAULT_SCROLL_VELOCITY;
