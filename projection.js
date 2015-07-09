@@ -47,7 +47,6 @@ var raf = require('raf')
 var constants = require('./constants')
 
 var DEFAULT_FOV = constants.DEFAULT_FOV;
-var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV;
 
 /**
  * Predicate to determine whether `n' is

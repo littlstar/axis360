@@ -117,7 +117,6 @@ function getCorrectGeometry (axis) {
   } else if (ratio == ratio && 2 == ratio) {
     geo = axis.geometry('sphere');
   } else if (ratio == ratio) {
-    axis.fov(CYLINDRICAL_FOV);
     geo = axis.geometry('cylinder');
   }
 
@@ -1876,7 +1875,7 @@ Axis.prototype.getCaptureImageAt = function (time, out, cb) {
     }
   } else if (this.renderer.domElement) {
     raf(function () {
-      image.src = this.renderer.domElement.toDataURL(mime);
+      image.src = self.renderer.domElement.toDataURL(mime);
     });
   }
 
