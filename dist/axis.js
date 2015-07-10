@@ -38288,7 +38288,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38713,7 +38713,7 @@ exports.DEFAULT_FRICTION = 0.001755;
  * @type {Number}
  */
 
-exports.DEFAULT_KEY_PAN_SPEED = 6;
+exports.DEFAULT_KEY_PAN_SPEED = 4;
 
 /**
  * Default controller update timeout.
@@ -39791,6 +39791,63 @@ State.prototype.onfullscreenchange = function (e) {
    */
 
   this.scope.emit('fullscreenchange', e);
+};
+
+/**
+ * Converts state to a JSON serializable object.
+ *
+ * @public
+ * @return {Object}
+ */
+
+State.prototype.toJSON = function () {
+  return {
+    /** State variables. */
+    interpolationFactor: this.interpolationFactor,
+    scrollVelocity: this.scrollVelocity,
+    percentloaded: this.percentloaded,
+    mouseFriction: this.mouseFriction,
+    originalsize: this.originalsize,
+    currentTime: this.currentTime,
+    orientation: this.orientation,
+    projection: this.projection,
+    lastVolume: this.lastVolume,
+    lastRefresh: this.lastRefresh,
+    pointerX: this.pointerX,
+    pointerY: this.pointerY,
+    duration: this.duration,
+    friction: this.friction,
+    radius: this.radius,
+    center: this.center,
+    height: this.height,
+    width: this.width,
+    touch: this.touch,
+    keys: this.keys,
+    fov: this.fov,
+    src: this.src,
+
+    /** State predicate. */
+    isReady: this.isReady,
+    isMuted: this.isMuted,
+    isEnded: this.isEnded,
+    allowWheel: this.allowWheel,
+    isFocused: this.isFocused,
+    isKeydown: this.isKeydown,
+    isPlaying: this.isPlaying,
+    isPaused: this.isPaused,
+    isStopped: this.isStopped,
+    isAnimating: this.isAnimating,
+    isFullscreen: this.isFullscreen,
+    isImage: this.isImage,
+    isVREnabled: this.isVREnabled,
+    isHMDAvailable: this.isHMDAvailable,
+    isHMDPositionSensorAvailable: this.isHMDPositionSensorAvailable,
+    isResizable: this.isResizable,
+    isMousedown: this.isMousedown,
+    isTouching: this.isTouchingj,
+    isVRPossible: this.isVRPossible,
+    isCrossOrigin: this.isCrossOrigin,
+  };
 };
 
 }, {"emitter":4,"fullscreen":8,"keycode":9,"has-webgl":7,"events":5,"three.js":2,"merge":10,"path":40,"./util":17,"./constants":18}],
