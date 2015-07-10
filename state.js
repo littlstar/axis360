@@ -736,3 +736,60 @@ State.prototype.onfullscreenchange = function (e) {
 
   this.scope.emit('fullscreenchange', e);
 };
+
+/**
+ * Converts state to a JSON serializable object.
+ *
+ * @public
+ * @return {Object}
+ */
+
+State.prototype.toJSON = function () {
+  return {
+    /** State variables. */
+    interpolationFactor: this.interpolationFactor,
+    scrollVelocity: this.scrollVelocity,
+    percentloaded: this.percentloaded,
+    mouseFriction: this.mouseFriction,
+    originalsize: this.originalsize,
+    currentTime: this.currentTime,
+    orientation: this.orientation,
+    projection: this.projection,
+    lastVolume: this.lastVolume,
+    lastRefresh: this.lastRefresh,
+    pointerX: this.pointerX,
+    pointerY: this.pointerY,
+    duration: this.duration,
+    friction: this.friction,
+    radius: this.radius,
+    center: this.center,
+    height: this.height,
+    width: this.width,
+    touch: this.touch,
+    keys: this.keys,
+    fov: this.fov,
+    src: this.src,
+
+    /** State predicate. */
+    isReady: this.isReady,
+    isMuted: this.isMuted,
+    isEnded: this.isEnded,
+    allowWheel: this.allowWheel,
+    isFocused: this.isFocused,
+    isKeydown: this.isKeydown,
+    isPlaying: this.isPlaying,
+    isPaused: this.isPaused,
+    isStopped: this.isStopped,
+    isAnimating: this.isAnimating,
+    isFullscreen: this.isFullscreen,
+    isImage: this.isImage,
+    isVREnabled: this.isVREnabled,
+    isHMDAvailable: this.isHMDAvailable,
+    isHMDPositionSensorAvailable: this.isHMDPositionSensorAvailable,
+    isResizable: this.isResizable,
+    isMousedown: this.isMousedown,
+    isTouching: this.isTouchingj,
+    isVRPossible: this.isVRPossible,
+    isCrossOrigin: this.isCrossOrigin,
+  };
+};
