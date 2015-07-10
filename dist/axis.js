@@ -38288,7 +38288,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.11.1",
+  "version": "1.11.2",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -39284,9 +39284,6 @@ function State (scope, opts) {
   /** Currently played video time. */
   this.currentTime = 0;
 
-  /** Currently active control keys. */
-  this.keys = {up: false, down: false, left: false, right: false};
-
   /** Friction to apply to x and y coordinates. */
   this.friction = DEFAULT_FRICTION;
 
@@ -39505,7 +39502,6 @@ State.prototype.reset = function (overrides) {
   this.cache = {};
   this.animationFrameID = null;
   this.currentTime = 0;
-  this.keys = {up: false, down: false, left: false, right: false};
   this.pointerX = 0;
   this.pointerY = 0;
   this.orientationQuaternion = new three.Quaternion();;
