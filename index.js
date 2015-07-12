@@ -276,7 +276,7 @@ function Axis (parent, opts) {
     var h = dimensions.height/2;
     var w = dimensions.width/2;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : (w/h) + (aspect * 0.1);
+    var y = opts && opts.orientation ? opts.orientation.y : (w/h) + (0.1);
 
     if ('number' == typeof x && x == x) {
       this.orientation.x = x;
@@ -286,10 +286,16 @@ function Axis (parent, opts) {
 
     if ('number' == typeof y && y == y) {
       this.orientation.y = y;
+    } else {
+      this.orientation.y = 0;
     }
 
-    // initialize projection
-    this.projection(opts.projection || 'equilinear');
+    // initialize projection orientation if opts x and y are 0
+    if (opts.orientation &&
+        0 == opts.orientation.x &&
+          0 == opts.orientation.y) {
+      this.projection(opts.projection || 'equilinear');
+    }
   });
 
   /**

@@ -400,7 +400,7 @@ State.prototype.reset = function (overrides) {
   this.height = opts.height || 0;
   this.width = opts.width || 0;
   this.scrollVelocity = opts.scrollVelocity || DEFAULT_SCROLL_VELOCITY;
-  this.fov = opts.fov || DEFAULT_FOV;
+  this.fov = Number(opts.fov || DEFAULT_FOV);
   this.src = opts.src || null;
   this.isImage = null == opts.isImage ? false : opts.isImage;
   this.forceVideo = null == opts.forceVideo ? false : opts.forceVideo;

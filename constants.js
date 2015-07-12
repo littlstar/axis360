@@ -110,7 +110,7 @@ exports.DEFAULT_FRICTION = 0.001755;
  * @type {Number}
  */
 
-exports.DEFAULT_KEY_PAN_SPEED = 4;
+exports.DEFAULT_KEY_PAN_SPEED = 5;
 
 /**
  * Default controller update timeout.
