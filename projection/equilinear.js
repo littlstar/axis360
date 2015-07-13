@@ -104,10 +104,6 @@ function equilinear (scope) {
   // animate
   scope.debug("animate: EQUILINEAR begin");
 
-  if ('tinyplanet' == current) {
-    scope.lookAt(0, 0, 0);
-  }
-
   scope.fov(scope.state.originalfov || scope.state.fov);
 
   if ('cylinder' == scope.geometry()) {
@@ -116,6 +112,12 @@ function equilinear (scope) {
   } else {
     this.animate(function () {
       var x = scope.orientation.x;
+
+      if ('tinyplanet' == current) {
+        scope.lookAt(0, 0, 0);
+        scope.orientation.x = 0;
+        return this.cancel();
+      }
 
       if (current == 'fisheye') {
         return this.cancel();

@@ -103,9 +103,8 @@ function fisheye (scope) {
 
     if ('tinyplanet' == current) {
       scope.lookAt(0, 0, 0);
-    }
-
-    if ('equilinear' != current) {
+      scope.orientation.x = 0;
+    } else if ('equilinear' != current) {
       scope.orientation.x = (Math.PI/180);
     }
 
