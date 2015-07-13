@@ -178,11 +178,8 @@ var MAX_Y_COORDINATE = constants.MAX_Y_COORDINATE;
 var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
 var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
-var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV
-
 // default projection
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
-var CARTESIAN_CALIBRATION_VALUE = constants.CARTESIAN_CALIBRATION_VALUE;
 
 // expose util
 Axis.util = require('./util');
@@ -361,13 +358,14 @@ function Axis (parent, opts) {
     }
 
     var dimensions = this.dimensions();
+    var radius = 0;
     var aspect = this.camera.aspect || 1;
     var far = this.camera.far;
     var fov = opts.fov;
-    var h = dimensions.height/2;
-    var w = dimensions.width/2;
+    var h = dimensions.height/dimensions.ratio;
+    var w = dimensions.width/dimensions.ratio;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : (w/h) + (0.1);
+    var y = opts && opts.orientation ? opts.orientation.y : 2.1;
 
     if ('number' == typeof x && x == x) {
       this.orientation.x = x;
@@ -382,20 +380,29 @@ function Axis (parent, opts) {
     }
 
     if (!fov) {
-      fov = 2 * (2 * Math.atan(
+      fov = 1.8 * (2 * Math.atan(
         dimensions.height / (2 * far)
       )) * (180/Math.PI);
+
+      if (Math.sqrt(dimensions.ratio) > 2) {
+        fov *= 1.5;
+      }
     }
 
+    if (Math.sqrt(dimensions.ratio) <= 2) {
+      radius = (dimensions.width/4);
+      radius = (radius/2);
+    } else {
+      radius = (dimensions.width/6);
+    }
+
+    this.state.radius = radius;
     this.fov(fov);
+    this.refreshScene();
 
     // initialize projection orientation if opts x and y are 0
-    if (opts.orientation &&
-        0 == opts.orientation.x &&
-          0 == opts.orientation.y) {
-      this.projection(opts.projection || 'equilinear');
-    } else {
-      this.refreshScene();
+    if (opts.projection) {
+      this.projection(opts.projection);
     }
   });
 
@@ -1763,6 +1770,9 @@ Axis.prototype.fov = function (fov) {
   if (null == fov) {
     return this.state.fov;
   } else {
+    if (!this.state.fov) {
+      this.state.update('originalfov', fov);
+    }
     this.state.update('fov', fov);
   }
   return this;
@@ -38312,7 +38322,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38382,15 +38392,6 @@ module.exports = '<section class="axis frame">\n  <div class="axis container">\n
 
 var raf = require('raf')
   , three = require('three.js')
-
-/**
- * Local dependencies
- * @private
- */
-
-var constants = require('./constants')
-
-var DEFAULT_FOV = constants.DEFAULT_FOV;
 
 /**
  * Predicate to determine whether `n' is
@@ -38623,7 +38624,49 @@ Projections.prototype.refreshCurrent = function () {
   return this.apply(this.current);
 };
 
-}, {"raf":6,"three.js":2,"./constants":18}],
+}, {"raf":6,"three.js":2}],
+14: [function(require, module, exports) {
+
+/**
+ * Module dependencies
+ */
+
+var three = require('three.js')
+
+// default field of view
+var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
+
+/**
+ * Creates an instance of THREE.PerspectiveCamera
+ * and assigns it to a scope object if not null.
+ *
+ * @public
+ * @name createCamera
+ * @param {Object} scope - Scope object to assign camera to.
+ * @param {Boolean} force - Force creation and assignment.
+ * @return {THREE.PerspectiveCamera}
+ */
+
+module.exports = function createCamera (scope, force) {
+  var height = scope.height();
+  var width = scope.width();
+  var ratio = width / height;
+  var camera = scope.camera;
+  var state = scope.state;
+  var vector = null;
+  var target = null;
+  var fov = state.opts ? state.opts.fov || DEFAULT_FOV : DEFAULT_FOV;
+  if (null == scope.camera || true == force) {
+    vector = new three.Vector3(0, 0, 0);
+    target = camera && camera.target ? camera.target : vector;
+    scope.camera = new three.PerspectiveCamera(fov, ratio, 0.01, 1000);
+    scope.camera.target = target;
+    scope.camera.rotation.reorder('YXZ');
+  }
+  return scope.camera;
+};
+
+}, {"three.js":2,"./constants":18}],
 18: [function(require, module, exports) {
 
 'use strict';
@@ -38867,17 +38910,6 @@ exports.MIN_X_COORDINATE = 0;
 exports.MAX_X_COORDINATE = 360;
 
 /**
- * Cylindrical field of view value
- *
- * @public
- * @const
- * @name CYLINDRICAL_FOV
- * @type {Number}
- */
-
-exports.CYLINDRICAL_FOV = 40;
-
-/**
  * VR device poll timeout
  *
  * @public
@@ -38944,48 +38976,6 @@ exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;
 exports.EPSILON_VALUE = 0.000001;
 
 }, {}],
-14: [function(require, module, exports) {
-
-/**
- * Module dependencies
- */
-
-var three = require('three.js')
-
-// default field of view
-var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
-
-/**
- * Creates an instance of THREE.PerspectiveCamera
- * and assigns it to a scope object if not null.
- *
- * @public
- * @name createCamera
- * @param {Object} scope - Scope object to assign camera to.
- * @param {Boolean} force - Force creation and assignment.
- * @return {THREE.PerspectiveCamera}
- */
-
-module.exports = function createCamera (scope, force) {
-  var height = scope.height();
-  var width = scope.width();
-  var ratio = width / height;
-  var camera = scope.camera;
-  var state = scope.state;
-  var vector = null;
-  var target = null;
-  var fov = state.opts ? state.opts.fov || DEFAULT_FOV : DEFAULT_FOV;
-  if (null == scope.camera || true == force) {
-    vector = new three.Vector3(0, 0, 0);
-    target = camera && camera.target ? camera.target : vector;
-    scope.camera = new three.PerspectiveCamera(fov, ratio, 0.01, 1000);
-    scope.camera.target = target;
-    scope.camera.rotation.reorder('YXZ');
-  }
-  return scope.camera;
-};
-
-}, {"three.js":2,"./constants":18}],
 15: [function(require, module, exports) {
 exports.cylinder = require('./cylinder');
 exports.sphere = require('./sphere');
@@ -39143,7 +39133,6 @@ var MIN_FRICTION_VALUE = constants.MIN_FRICTION_VALUE;
 var MAX_FRICTION_TOLERANCE = constants.MAX_FRICTION_TOLERANCE;
 
 // defaults
-var DEFAULT_FOV = constants.DEFAULT_FOV;
 var DEFAULT_FRICTION = constants.DEFAULT_FRICTION;
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY;
@@ -39179,7 +39168,7 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * @param {Number} [opts.scrollVelocity = DEFAULT_SCROLL_VELOCITY] - Scroll velocity.
  * @param {Boolean} [opts.autoplay = false] - Indicates whether a video should
  * autoplay after loading.
- * @param {Number} [opts.fov = DEFAULT_FOV] - Field of view.
+ * @param {Number} [opts.fov] - Field of view.
  * @param {Boolean} [opts.isImage = false] - Force rendering of image instead of
  * a video.
  * @param {Number} [opts.friction = DEFAULT_FRICTION] - Friction to
@@ -39235,6 +39224,9 @@ function State (scope, opts) {
   /**
    * State variables.
    */
+
+  /** Original fov value. */
+  this.originalfov = 0;
 
   /** Percent of content loaded. */
   this.percentloaded = 0;
@@ -39333,7 +39325,7 @@ function State (scope, opts) {
   this.pointerX = 0;
 
   /** Current field of view. */
-  this.fov = DEFAULT_FOV;
+  this.fov = 0;
 
   /** Current frame source. */
   this.src = null;
@@ -39480,7 +39472,7 @@ State.prototype.reset = function (overrides) {
   this.height = opts.height || 0;
   this.width = opts.width || 0;
   this.scrollVelocity = opts.scrollVelocity || DEFAULT_SCROLL_VELOCITY;
-  this.fov = Number(opts.fov || DEFAULT_FOV);
+  this.fov = Number(opts.fov || this.fov);
   this.src = opts.src || null;
   this.isImage = null == opts.isImage ? false : opts.isImage;
   this.forceVideo = null == opts.forceVideo ? false : opts.forceVideo;
@@ -39511,6 +39503,7 @@ State.prototype.reset = function (overrides) {
    * State variables.
    */
 
+  this.originalfov = this.fov || 0;
   this.percentloaded = 0;
   this.originalsize = {width: null, height: null};
   this.orientation = window.orientation || 0;
@@ -42483,7 +42476,6 @@ var constants = require('../constants')
 
 // animation factor
 var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
-var DEFAULT_FOV = constants.DEFAULT_FOV;
 
 /**
  * Fisheye projection constraints.
@@ -42518,11 +42510,11 @@ function fisheye (scope) {
   // projection is only supported in a spherical geometry
   if ('cylinder' == scope.geometry()) { return false; }
 
-  // max Z and FOV
+  // max Z and fov
   var maxZ = (scope.height() / 100) | 0;
-  var fov = DEFAULT_FOV + 20;
   var current = this.current;
 
+  scope.fov(scope.fov() + 20);
   this.constraints = {};
 
   if ('cylinder' == scope.geometry()) {
@@ -42534,7 +42526,6 @@ function fisheye (scope) {
   // begin animation
   scope.debug("animate: FISHEYE begin");
   this.animate(function () {
-    scope.fov(fov);
     scope.camera.position.z = maxZ;
 
     if ('tinyplanet' == current) {
@@ -42605,10 +42596,6 @@ var constants = require('../constants')
   , createSphere = require('../geometry/sphere')
   , createCylinder = require('../geometry/cylinder')
 
-// default field of view
-var DEFAULT_FOV = constants.DEFAULT_FOV;
-var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV;
-
 // animation factor
 var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 
@@ -42635,11 +42622,6 @@ function equilinear (scope) {
   // bail if content sizing is incorrect
   if (false == this.contentHasCorrectSizing()) { return; }
 
-  var fov = (
-    scope.state && scope.state.opts ?
-    scope.state.opts.fov || DEFAULT_FOV : DEFAULT_FOV
-  );
-
   var rotation = new three.Vector3(0, 0, 0);
   var current = this.current;
   var targetX = Math.PI / 180;
@@ -42649,7 +42631,6 @@ function equilinear (scope) {
 
   if ('cylinder' == scope.geometry()) {
     scope.orientation.x = 0;
-    fov = CYLINDRICAL_FOV;
     this.constraints.y = true;
     this.constraints.x = false;
   }
@@ -42671,13 +42652,13 @@ function equilinear (scope) {
     scope.lookAt(0, 0, 0);
   }
 
+  scope.fov(scope.state.originalfov || scope.state.fov);
+
   if ('cylinder' == scope.geometry()) {
-    scope.fov(fov);
     scope.orientation.x = targetX;
     this.cancel();
   } else {
     this.animate(function () {
-      scope.fov(fov);
       var x = scope.orientation.x;
 
       if (current == 'fisheye') {
