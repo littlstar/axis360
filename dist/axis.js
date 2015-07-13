@@ -199,10 +199,11 @@ function getCorrectGeometry (axis) {
   var dimensions = axis.dimensions();
   var ratio = dimensions.ratio;
   var geo = null;
+  var m = Math.sqrt(ratio);
 
   if ('flat' == axis.state.projectionrequested) {
     geo = axis.geometry('plane')
-  } else if (ratio == ratio && 2 == ratio) {
+  } else if (m <= 2) {
     geo = axis.geometry('sphere');
   } else if (ratio == ratio) {
     geo = axis.geometry('cylinder');
@@ -361,10 +362,12 @@ function Axis (parent, opts) {
 
     var dimensions = this.dimensions();
     var aspect = this.camera.aspect || 1;
+    var far = this.camera.far;
+    var fov = opts.fov;
     var h = dimensions.height/2;
     var w = dimensions.width/2;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : (w/h) + (aspect * 0.1);
+    var y = opts && opts.orientation ? opts.orientation.y : (w/h) + (0.1);
 
     if ('number' == typeof x && x == x) {
       this.orientation.x = x;
@@ -374,10 +377,26 @@ function Axis (parent, opts) {
 
     if ('number' == typeof y && y == y) {
       this.orientation.y = y;
+    } else {
+      this.orientation.y = 0;
     }
 
-    // initialize projection
-    this.projection(opts.projection || 'equilinear');
+    if (!fov) {
+      fov = 2 * (2 * Math.atan(
+        dimensions.height / (2 * far)
+      )) * (180/Math.PI);
+    }
+
+    this.fov(fov);
+
+    // initialize projection orientation if opts x and y are 0
+    if (opts.orientation &&
+        0 == opts.orientation.x &&
+          0 == opts.orientation.y) {
+      this.projection(opts.projection || 'equilinear');
+    } else {
+      this.refreshScene();
+    }
   });
 
   /**
@@ -1857,6 +1876,11 @@ Axis.prototype.initializeControllers = function (map, force) {
     controls.orientation = require('./controls/orientation')(this);
   }
 
+  if (null == controls.pointer || true == map.pointer || true == force) {
+    if (controls.pointer) { controls.pointer.destroy(); }
+    controls.pointer = require('./controls/pointer')(this);
+  }
+
   if (null == controls.default || true == map.default || true == force) {
     if (controls.default) { controls.default.destroy(); }
     controls.default = (
@@ -2117,7 +2141,7 @@ Axis.prototype.rotate = function (coord, opts) {
   return this;
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/controller":30}],
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/pointer":30,"./controls/controller":31}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
@@ -37711,8 +37735,8 @@ function parse(event) {
   }
 }
 
-}, {"event":31,"delegate":32}],
-31: [function(require, module, exports) {
+}, {"event":32,"delegate":33}],
+32: [function(require, module, exports) {
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
     prefix = bind !== 'addEventListener' ? 'on' : '';
@@ -37749,7 +37773,7 @@ exports.unbind = function(el, type, fn, capture){
   return fn;
 };
 }, {}],
-32: [function(require, module, exports) {
+33: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -37793,8 +37817,8 @@ exports.unbind = function(el, type, fn, capture){
   event.unbind(el, type, fn, capture);
 };
 
-}, {"closest":33,"event":31}],
-33: [function(require, module, exports) {
+}, {"closest":34,"event":32}],
+34: [function(require, module, exports) {
 var matches = require('matches-selector')
 
 module.exports = function (element, selector, checkYoSelf, root) {
@@ -37815,8 +37839,8 @@ module.exports = function (element, selector, checkYoSelf, root) {
   }
 }
 
-}, {"matches-selector":34}],
-34: [function(require, module, exports) {
+}, {"matches-selector":35}],
+35: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -37864,8 +37888,8 @@ function match(el, selector) {
   return false;
 }
 
-}, {"query":35}],
-35: [function(require, module, exports) {
+}, {"query":36}],
+36: [function(require, module, exports) {
 function one(selector, el) {
   return el.querySelector(selector);
 }
@@ -38032,8 +38056,8 @@ if (document.addEventListener) {
   document.addEventListener('msfullscreenchange', change('msFullscreenEnabled'));
 }
 
-}, {"emitter":36}],
-36: [function(require, module, exports) {
+}, {"emitter":37}],
+37: [function(require, module, exports) {
 
 /**
  * Expose `Emitter`.
@@ -38288,7 +38312,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.11.2",
+  "version": "1.12.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38713,7 +38737,7 @@ exports.DEFAULT_FRICTION = 0.001755;
  * @type {Number}
  */
 
-exports.DEFAULT_KEY_PAN_SPEED = 4;
+exports.DEFAULT_KEY_PAN_SPEED = 5;
 
 /**
  * Default controller update timeout.
@@ -38967,8 +38991,8 @@ exports.cylinder = require('./cylinder');
 exports.sphere = require('./sphere');
 exports.plane = require('./plane');
 
-}, {"./cylinder":37,"./sphere":38,"./plane":39}],
-37: [function(require, module, exports) {
+}, {"./cylinder":38,"./sphere":39,"./plane":40}],
+38: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -38999,7 +39023,7 @@ module.exports = function (axis) {
 };
 
 }, {"three.js":2}],
-38: [function(require, module, exports) {
+39: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -39027,7 +39051,7 @@ module.exports = function sphere (axis) {
 };
 
 }, {"three.js":2}],
-39: [function(require, module, exports) {
+40: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -39456,7 +39480,7 @@ State.prototype.reset = function (overrides) {
   this.height = opts.height || 0;
   this.width = opts.width || 0;
   this.scrollVelocity = opts.scrollVelocity || DEFAULT_SCROLL_VELOCITY;
-  this.fov = opts.fov || DEFAULT_FOV;
+  this.fov = Number(opts.fov || DEFAULT_FOV);
   this.src = opts.src || null;
   this.isImage = null == opts.isImage ? false : opts.isImage;
   this.forceVideo = null == opts.forceVideo ? false : opts.forceVideo;
@@ -39846,8 +39870,8 @@ State.prototype.toJSON = function () {
   };
 };
 
-}, {"emitter":4,"fullscreen":8,"keycode":9,"has-webgl":7,"events":5,"three.js":2,"merge":10,"path":40,"./util":17,"./constants":18}],
-40: [function(require, module, exports) {
+}, {"emitter":4,"fullscreen":8,"keycode":9,"has-webgl":7,"events":5,"three.js":2,"merge":10,"path":41,"./util":17,"./constants":18}],
+41: [function(require, module, exports) {
 
 exports.basename = function(path){
   return path.split('/').pop();
@@ -39960,8 +39984,8 @@ function getVRDevices (fn) {
   }
 }
 
-}, {"three.js":2,"path":40,"url":41}],
-41: [function(require, module, exports) {
+}, {"three.js":2,"path":41,"url":42}],
+42: [function(require, module, exports) {
 
 /**
  * Parse the given `url`.
@@ -41159,8 +41183,8 @@ module.exports = function(THREE){
   return THREE.CanvasRenderer;
 };
 
-}, {"three-projector-renderer":42}],
-42: [function(require, module, exports) {
+}, {"three-projector-renderer":43}],
+43: [function(require, module, exports) {
 
 module.exports = function (THREE) {
   /**
@@ -42679,7 +42703,7 @@ function equilinear (scope) {
   }
 };
 
-}, {"raf":6,"three.js":2,"../constants":18,"../camera":14,"../geometry/plane":39,"../geometry/sphere":38,"../geometry/cylinder":37}],
+}, {"raf":6,"three.js":2,"../constants":18,"../camera":14,"../geometry/plane":40,"../geometry/sphere":39,"../geometry/cylinder":38}],
 24: [function(require, module, exports) {
 
 'use strict';
@@ -43306,8 +43330,8 @@ VRController.prototype.update = function () {
   return this;
 };
 
-}, {"three.js":2,"inherits":43,"../camera":14,"./controller":30}],
-43: [function(require, module, exports) {
+}, {"three.js":2,"inherits":44,"../camera":14,"./controller":31}],
+44: [function(require, module, exports) {
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -43333,7 +43357,7 @@ if (typeof Object.create === 'function') {
 }
 
 }, {}],
-30: [function(require, module, exports) {
+31: [function(require, module, exports) {
 
 'use strict';
 
@@ -44479,7 +44503,7 @@ MouseController.prototype.update = function () {
   return this;
 };
 
-}, {"inherits":43,"./controller":30,"../constants":18}],
+}, {"inherits":44,"./controller":31,"../constants":18}],
 27: [function(require, module, exports) {
 
 'use strict';
@@ -44705,7 +44729,7 @@ TouchController.prototype.update = function () {
   return this;
 };
 
-}, {"inherits":43,"three.js":2,"./controller":30,"../constants":18}],
+}, {"inherits":44,"three.js":2,"./controller":31,"../constants":18}],
 28: [function(require, module, exports) {
 
 'use strict';
@@ -45168,7 +45192,7 @@ KeyboardController.prototype.onmousedown = function (e) {
   }
 }
 
-}, {"keycode":9,"inherits":43,"./controller":30,"../constants":18}],
+}, {"keycode":9,"inherits":44,"./controller":31,"../constants":18}],
 29: [function(require, module, exports) {
 
 'use strict';
@@ -45402,4 +45426,473 @@ OrientationController.prototype.update = function () {
   return this;
 };
 
-}, {"keycode":9,"inherits":43,"./controller":30,"../constants":18}]}, {}, {"1":"Axis"})
+}, {"keycode":9,"inherits":44,"./controller":31,"../constants":18}],
+30: [function(require, module, exports) {
+
+'use strict';
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The pointer controls module.
+ *
+ * @module axis/controls/pointer
+ * @type {Function}
+ */
+
+void module.exports;
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var inherits = require('inherits')
+  , three = require('three.js')
+  , lock = require('pointer-lock')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var MouseController = require('./mouse').MouseController
+  , AxisController = require('./controller')
+  , constants = require('../constants')
+
+/**
+ * Initializes pointer controls on Axis.
+ *
+ * @public
+ * @param {Axis} scope - The axis instance
+ * @return {PointerController}
+ */
+
+module.exports = function pointer (axis) {
+  return PointerController(axis)
+  .target(axis.camera)
+  .enable()
+  .update();
+};
+
+/**
+ * PointerController constructor
+ *
+ * @public
+ * @constructor
+ * @class PointerController
+ * @extends MouseController
+ * @see {@link module:axis/controls/controller~MouseController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.PointerController = PointerController;
+inherits(PointerController, MouseController);
+function PointerController (scope) {
+
+  // ensure instance
+  if (!(this instanceof PointerController)) {
+    return new PointerController(scope);
+  }
+
+  // inherit from `MouseController'
+  MouseController.call(this, scope);
+
+  /**
+   * Reference to this instance.
+   *
+   * @private
+   * @type {PointerController}
+   */
+
+  var self = this;
+
+  /**
+   * Pointer lock on scopes DOM Element
+   *
+   * @public
+   * @name state.lock
+   * @type {EventEmitter}
+   */
+
+  this.state.lock = null;
+}
+
+PointerController.prototype.request = function () {
+  var self = this;
+  var scope = this.scope;
+
+  // init lock if not created
+  if (null == this.state.lock) {
+    this.state.lock = lock(scope.domElement);
+  }
+
+  // request lock from user
+  this.state.lock.request();
+
+  // handle updates when attained
+  this.state.lock.on('attain', function () {
+    var movements = self.state.movements;
+    self.state.isMousedown = true;
+    // update movements when lock has been attained
+    self.state.lock.on('data', function (e) {
+      self.state.isMousedown = true;
+      movements.x += e.x;
+      movements.y += e.y;
+    });
+
+    // reset state when released
+    self.state.lock.on('release', function () {
+      self.state.isMousedown = false;
+      self.state.lock.destroy();
+    });
+  });
+
+  return this;
+};
+
+/**
+ * Overloads MouseController#update() method.
+ *
+ * @public
+ * @method
+ * @name update
+ * @return {PointerController}
+ */
+
+PointerController.prototype.update = function () {
+  AxisController.prototype.update.call(this);
+  return this;
+};
+
+/**
+ * Overloads MouseController#disable() method.
+ *
+ * @public
+ * @method
+ * @name disable
+ * @return {PointerController}
+ */
+
+PointerController.prototype.disable = function () {
+  MouseController.prototype.disable.call(this);
+  if (null != this.state.lock) {
+    this.state.lock.release();
+    this.state.lock.destroy();
+  }
+  this.state.lock = null;
+  return this;
+};
+
+}, {"inherits":44,"three.js":2,"pointer-lock":45,"./mouse":26,"./controller":31,"../constants":18}],
+45: [function(require, module, exports) {
+module.exports = pointer
+
+pointer.available = available
+
+try {
+var EE = require('events').EventEmitter
+  , Stream = require('stream').Stream
+} catch (e) {
+  var EE = require('emitter')
+    , Stream = require('stream')
+}
+
+function available() {
+  return !!shim(document.body)
+}
+
+function pointer(el) {
+  var ael = el.addEventListener || el.attachEvent
+    , rel = el.removeEventListener || el.detachEvent
+    , doc = el.ownerDocument
+    , body = doc.body
+    , rpl = shim(el) 
+    , out = {dx: 0, dy: 0, dt: 0}
+    , ee = new EE
+    , stream = null
+    , lastPageX, lastPageY
+    , needsFullscreen = false
+    , mouseDownMS
+
+  ael.call(el, 'mousedown', onmousedown, false)
+  ael.call(el, 'mouseup', onmouseup, false)
+  ael.call(body, 'mousemove', onmove, false)
+
+  var vendors = ['', 'webkit', 'moz', 'ms', 'o']
+
+  for(var i = 0, len = vendors.length; i < len; ++i) {
+    ael.call(doc, vendors[i]+'pointerlockchange', onpointerlockchange)
+    ael.call(doc, vendors[i]+'pointerlockerror', onpointerlockerror)
+  }
+
+  ee.release = release
+  ee.target = pointerlockelement
+  ee.request = onmousedown
+  ee.destroy = function() {
+    rel.call(el, 'mouseup', onmouseup, false)
+    rel.call(el, 'mousedown', onmousedown, false)
+    rel.call(el, 'mousemove', onmove, false)
+  }
+
+  if(!shim) {
+    setTimeout(function() {
+      ee.emit('error', new Error('pointer lock is not supported'))
+    }, 0)
+  }
+  return ee
+
+  function onmousedown(ev) {
+    if(pointerlockelement()) {
+      return
+    }
+    mouseDownMS = +new Date
+    rpl.call(el)
+  }
+
+  function onmouseup(ev) {
+    if(!needsFullscreen) {
+      return
+    }
+
+    ee.emit('needs-fullscreen')
+    needsFullscreen = false
+  }
+
+  function onpointerlockchange(ev) {
+    if(!pointerlockelement()) {
+      if(stream) release()
+      return
+    }
+
+    stream = new Stream
+    stream.readable = true
+    stream.initial = {x: lastPageX, y: lastPageY, t: Date.now()}
+
+    ee.emit('attain', stream)
+  }
+
+  function onpointerlockerror(ev) {
+    var dt = +(new Date) - mouseDownMS
+    if(dt < 100) {
+      // we errored immediately, we need to do fullscreen first.
+      needsFullscreen = true
+      return
+    }
+
+    ee.emit('error')
+    if(stream) {
+      stream.emit('error', ev)
+    }
+    stream = null
+  }
+
+  function release() {
+    ee.emit('release')
+
+    if(stream) {
+      stream.emit('end')
+      stream.readable = false
+      stream.emit('close')
+      stream = null
+    }
+
+    var pel = pointerlockelement()
+    if(!pel) {
+      return
+    }
+
+    (doc.exitPointerLock ||
+    doc.mozExitPointerLock ||
+    doc.webkitExitPointerLock ||
+    doc.msExitPointerLock ||
+    doc.oExitPointerLock).call(doc)
+  }
+
+  function onmove(ev) {
+    lastPageX = ev.pageX
+    lastPageY = ev.pageY
+
+    if(!stream) return
+
+    // we're reusing a single object
+    // because I'd like to avoid piling up
+    // a ton of objects for the garbage
+    // collector.
+    out.dx =
+      ev.movementX || ev.webkitMovementX ||
+      ev.mozMovementX || ev.msMovementX ||
+      ev.oMovementX || 0
+
+    out.dy = 
+      ev.movementY || ev.webkitMovementY ||
+      ev.mozMovementY || ev.msMovementY ||
+      ev.oMovementY || 0
+
+    out.dt = Date.now() - stream.initial.t
+
+    ee.emit('data', out)
+    stream.emit('data', out)
+  }
+
+  function pointerlockelement() {
+    return 0 ||
+      doc.pointerLockElement ||
+      doc.mozPointerLockElement ||
+      doc.webkitPointerLockElement ||
+      doc.msPointerLockElement ||
+      doc.oPointerLockElement ||
+      null
+  }
+}
+
+function shim(el) {
+  return el.requestPointerLock ||
+    el.webkitRequestPointerLock ||
+    el.mozRequestPointerLock ||
+    el.msRequestPointerLock ||
+    el.oRequestPointerLock ||
+    null
+}
+
+}, {"stream":46,"emitter":37}],
+46: [function(require, module, exports) {
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+var Emitter = require('emitter');
+
+function Stream() {
+  Emitter.call(this);
+}
+Stream.prototype = new Emitter();
+module.exports = Stream;
+// Backwards-compat with node 0.4.x
+Stream.Stream = Stream;
+
+Stream.prototype.pipe = function(dest, options) {
+  var source = this;
+
+  function ondata(chunk) {
+    if (dest.writable) {
+      if (false === dest.write(chunk) && source.pause) {
+        source.pause();
+      }
+    }
+  }
+
+  source.on('data', ondata);
+
+  function ondrain() {
+    if (source.readable && source.resume) {
+      source.resume();
+    }
+  }
+
+  dest.on('drain', ondrain);
+
+  // If the 'end' option is not supplied, dest.end() will be called when
+  // source gets the 'end' or 'close' events.  Only dest.end() once.
+  if (!dest._isStdio && (!options || options.end !== false)) {
+    source.on('end', onend);
+    source.on('close', onclose);
+  }
+
+  var didOnEnd = false;
+  function onend() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    dest.end();
+  }
+
+
+  function onclose() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    if (typeof dest.destroy === 'function') dest.destroy();
+  }
+
+  // don't leave dangling pipes when there are errors.
+  function onerror(er) {
+    cleanup();
+    if (!this.hasListeners('error')) {
+      throw er; // Unhandled stream error in pipe.
+    }
+  }
+
+  source.on('error', onerror);
+  dest.on('error', onerror);
+
+  // remove all the event listeners that were added.
+  function cleanup() {
+    source.off('data', ondata);
+    dest.off('drain', ondrain);
+
+    source.off('end', onend);
+    source.off('close', onclose);
+
+    source.off('error', onerror);
+    dest.off('error', onerror);
+
+    source.off('end', cleanup);
+    source.off('close', cleanup);
+
+    dest.off('end', cleanup);
+    dest.off('close', cleanup);
+  }
+
+  source.on('end', cleanup);
+  source.on('close', cleanup);
+
+  dest.on('end', cleanup);
+  dest.on('close', cleanup);
+
+  dest.emit('pipe', source);
+
+  // Allow for unix-like usage: A.pipe(B).pipe(C)
+  return dest;
+}
+
+}, {"emitter":37}]}, {}, {"1":"Axis"})
