@@ -90,11 +90,8 @@ var MAX_Y_COORDINATE = constants.MAX_Y_COORDINATE;
 var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
 var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
-var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV
-
 // default projection
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
-var CARTESIAN_CALIBRATION_VALUE = constants.CARTESIAN_CALIBRATION_VALUE;
 
 // expose util
 Axis.util = require('./util');
@@ -273,13 +270,14 @@ function Axis (parent, opts) {
     }
 
     var dimensions = this.dimensions();
+    var radius = 0;
     var aspect = this.camera.aspect || 1;
     var far = this.camera.far;
     var fov = opts.fov;
-    var h = dimensions.height/2;
-    var w = dimensions.width/2;
+    var h = dimensions.height/dimensions.ratio;
+    var w = dimensions.width/dimensions.ratio;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : (w/h) + (0.1);
+    var y = opts && opts.orientation ? opts.orientation.y : 2.1;
 
     if ('number' == typeof x && x == x) {
       this.orientation.x = x;
@@ -294,20 +292,29 @@ function Axis (parent, opts) {
     }
 
     if (!fov) {
-      fov = 2 * (2 * Math.atan(
+      fov = 1.8 * (2 * Math.atan(
         dimensions.height / (2 * far)
       )) * (180/Math.PI);
+
+      if (Math.sqrt(dimensions.ratio) > 2) {
+        fov *= 1.5;
+      }
     }
 
+    if (Math.sqrt(dimensions.ratio) <= 2) {
+      radius = (dimensions.width/4);
+      radius = (radius/2);
+    } else {
+      radius = (dimensions.width/6);
+    }
+
+    this.state.radius = radius;
     this.fov(fov);
+    this.refreshScene();
 
     // initialize projection orientation if opts x and y are 0
-    if (opts.orientation &&
-        0 == opts.orientation.x &&
-          0 == opts.orientation.y) {
-      this.projection(opts.projection || 'equilinear');
-    } else {
-      this.refreshScene();
+    if (opts.projection) {
+      this.projection(opts.projection);
     }
   });
 
@@ -1675,6 +1682,9 @@ Axis.prototype.fov = function (fov) {
   if (null == fov) {
     return this.state.fov;
   } else {
+    if (!this.state.fov) {
+      this.state.update('originalfov', fov);
+    }
     this.state.update('fov', fov);
   }
   return this;

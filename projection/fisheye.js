@@ -49,7 +49,6 @@ var constants = require('../constants')
 
 // animation factor
 var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
-var DEFAULT_FOV = constants.DEFAULT_FOV;
 
 /**
  * Fisheye projection constraints.
@@ -84,11 +83,11 @@ function fisheye (scope) {
   // projection is only supported in a spherical geometry
   if ('cylinder' == scope.geometry()) { return false; }
 
-  // max Z and FOV
+  // max Z and fov
   var maxZ = (scope.height() / 100) | 0;
-  var fov = DEFAULT_FOV + 20;
   var current = this.current;
 
+  scope.fov(scope.fov() + 20);
   this.constraints = {};
 
   if ('cylinder' == scope.geometry()) {
@@ -100,7 +99,6 @@ function fisheye (scope) {
   // begin animation
   scope.debug("animate: FISHEYE begin");
   this.animate(function () {
-    scope.fov(fov);
     scope.camera.position.z = maxZ;
 
     if ('tinyplanet' == current) {

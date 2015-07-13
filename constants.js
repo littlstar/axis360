@@ -240,17 +240,6 @@ exports.MIN_X_COORDINATE = 0;
 exports.MAX_X_COORDINATE = 360;
 
 /**
- * Cylindrical field of view value
- *
- * @public
- * @const
- * @name CYLINDRICAL_FOV
- * @type {Number}
- */
-
-exports.CYLINDRICAL_FOV = 40;
-
-/**
  * VR device poll timeout
  *
  * @public

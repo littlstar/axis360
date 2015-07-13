@@ -52,10 +52,6 @@ var constants = require('../constants')
   , createSphere = require('../geometry/sphere')
   , createCylinder = require('../geometry/cylinder')
 
-// default field of view
-var DEFAULT_FOV = constants.DEFAULT_FOV;
-var CYLINDRICAL_FOV = constants.CYLINDRICAL_FOV;
-
 // animation factor
 var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 
@@ -82,11 +78,6 @@ function equilinear (scope) {
   // bail if content sizing is incorrect
   if (false == this.contentHasCorrectSizing()) { return; }
 
-  var fov = (
-    scope.state && scope.state.opts ?
-    scope.state.opts.fov || DEFAULT_FOV : DEFAULT_FOV
-  );
-
   var rotation = new three.Vector3(0, 0, 0);
   var current = this.current;
   var targetX = Math.PI / 180;
@@ -96,7 +87,6 @@ function equilinear (scope) {
 
   if ('cylinder' == scope.geometry()) {
     scope.orientation.x = 0;
-    fov = CYLINDRICAL_FOV;
     this.constraints.y = true;
     this.constraints.x = false;
   }
@@ -118,13 +108,13 @@ function equilinear (scope) {
     scope.lookAt(0, 0, 0);
   }
 
+  scope.fov(scope.state.originalfov || scope.state.fov);
+
   if ('cylinder' == scope.geometry()) {
-    scope.fov(fov);
     scope.orientation.x = targetX;
     this.cancel();
   } else {
     this.animate(function () {
-      scope.fov(fov);
       var x = scope.orientation.x;
 
       if (current == 'fisheye') {

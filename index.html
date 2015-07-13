@@ -111,13 +111,14 @@
         width: window.innerWidth * .8,
         height: window.innerHeight * .8,
         loop: true,
-        t: 15,
+        muted: true,
         //src: 'https://d3uo9a4kiyu5sk.cloudfront.net/production/90598eca-0ec1-4677-bd13-495cd3c09dd8/web.mp4'
         //src: 'test.webm'
-        //src: '/public/assets/paramotor.mp4'
+        src: '/public/assets/paramotor.mp4'
         //src: '/public/assets/hostel-luego.jpg'
         //src: 'public/assets/vsn.mp4',
-        src: 'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/mobile.mp4'
+        //src: 'http://360.littlstar.com/production/a0a5746e-87ac-4f20-9724-ecba40429e54/mobile.mp4',
+        //src: 'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/mobile.mp4'
       });
 
       frame.on('vrhmdavailable', function (e) {
@@ -127,7 +128,7 @@
 
       frame.once('ready', function () {
         frame.focus();
-        frame.rotate('y', {value: 0.005, every: 100});
+        //frame.rotate('y', {value: 0.005, every: 100});
         //updatePreview();
         //setInterval(updatePreview, 2000);
       });

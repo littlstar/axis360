@@ -40,15 +40,6 @@ var raf = require('raf')
   , three = require('three.js')
 
 /**
- * Local dependencies
- * @private
- */
-
-var constants = require('./constants')
-
-var DEFAULT_FOV = constants.DEFAULT_FOV;
-
-/**
  * Predicate to determine whether `n' is
  * in fact `NaN'
  *

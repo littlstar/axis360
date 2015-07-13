@@ -63,7 +63,6 @@ var MIN_FRICTION_VALUE = constants.MIN_FRICTION_VALUE;
 var MAX_FRICTION_TOLERANCE = constants.MAX_FRICTION_TOLERANCE;
 
 // defaults
-var DEFAULT_FOV = constants.DEFAULT_FOV;
 var DEFAULT_FRICTION = constants.DEFAULT_FRICTION;
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
 var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY;
@@ -99,7 +98,7 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * @param {Number} [opts.scrollVelocity = DEFAULT_SCROLL_VELOCITY] - Scroll velocity.
  * @param {Boolean} [opts.autoplay = false] - Indicates whether a video should
  * autoplay after loading.
- * @param {Number} [opts.fov = DEFAULT_FOV] - Field of view.
+ * @param {Number} [opts.fov] - Field of view.
  * @param {Boolean} [opts.isImage = false] - Force rendering of image instead of
  * a video.
  * @param {Number} [opts.friction = DEFAULT_FRICTION] - Friction to
@@ -155,6 +154,9 @@ function State (scope, opts) {
   /**
    * State variables.
    */
+
+  /** Original fov value. */
+  this.originalfov = 0;
 
   /** Percent of content loaded. */
   this.percentloaded = 0;
@@ -253,7 +255,7 @@ function State (scope, opts) {
   this.pointerX = 0;
 
   /** Current field of view. */
-  this.fov = DEFAULT_FOV;
+  this.fov = 0;
 
   /** Current frame source. */
   this.src = null;
@@ -400,7 +402,7 @@ State.prototype.reset = function (overrides) {
   this.height = opts.height || 0;
   this.width = opts.width || 0;
   this.scrollVelocity = opts.scrollVelocity || DEFAULT_SCROLL_VELOCITY;
-  this.fov = Number(opts.fov || DEFAULT_FOV);
+  this.fov = Number(opts.fov || this.fov);
   this.src = opts.src || null;
   this.isImage = null == opts.isImage ? false : opts.isImage;
   this.forceVideo = null == opts.forceVideo ? false : opts.forceVideo;
@@ -431,6 +433,7 @@ State.prototype.reset = function (overrides) {
    * State variables.
    */
 
+  this.originalfov = this.fov || 0;
   this.percentloaded = 0;
   this.originalsize = {width: null, height: null};
   this.orientation = window.orientation || 0;
