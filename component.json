@@ -23,6 +23,7 @@
     "projection/tinyplanet.js",
 
     "controls/touch.js",
+    "controls/pointer.js",
     "controls/keyboard.js",
     "controls/controller.js",
     "controls/orientation.js",
@@ -36,6 +37,7 @@
   "dependencies": {
     "littlstar/three-canvas-renderer": "master",
     "littlstar/three-vr-effect": "master",
+    "littlstar/pointer-lock": "master",
     "littlstar/fullscreen": "master",
 
     "yields/keycode": "master",

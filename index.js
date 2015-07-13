@@ -111,10 +111,11 @@ function getCorrectGeometry (axis) {
   var dimensions = axis.dimensions();
   var ratio = dimensions.ratio;
   var geo = null;
+  var m = Math.sqrt(ratio);
 
   if ('flat' == axis.state.projectionrequested) {
     geo = axis.geometry('plane')
-  } else if (ratio == ratio && 2 == ratio) {
+  } else if (m <= 2) {
     geo = axis.geometry('sphere');
   } else if (ratio == ratio) {
     geo = axis.geometry('cylinder');
@@ -273,6 +274,8 @@ function Axis (parent, opts) {
 
     var dimensions = this.dimensions();
     var aspect = this.camera.aspect || 1;
+    var far = this.camera.far;
+    var fov = opts.fov;
     var h = dimensions.height/2;
     var w = dimensions.width/2;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
@@ -290,11 +293,21 @@ function Axis (parent, opts) {
       this.orientation.y = 0;
     }
 
+    if (!fov) {
+      fov = 2 * (2 * Math.atan(
+        dimensions.height / (2 * far)
+      )) * (180/Math.PI);
+    }
+
+    this.fov(fov);
+
     // initialize projection orientation if opts x and y are 0
     if (opts.orientation &&
         0 == opts.orientation.x &&
           0 == opts.orientation.y) {
       this.projection(opts.projection || 'equilinear');
+    } else {
+      this.refreshScene();
     }
   });
 
@@ -1773,6 +1786,11 @@ Axis.prototype.initializeControllers = function (map, force) {
   if (null == controls.orientation || true == map.orientation || true == force) {
     if (controls.orientation) { controls.orientation.destroy(); }
     controls.orientation = require('./controls/orientation')(this);
+  }
+
+  if (null == controls.pointer || true == map.pointer || true == force) {
+    if (controls.pointer) { controls.pointer.destroy(); }
+    controls.pointer = require('./controls/pointer')(this);
   }
 
   if (null == controls.default || true == map.default || true == force) {

@@ -95,6 +95,7 @@
     </h3>
     <button id="go-fullscreen">Go fullscreen</button>
     <button id="toggle-vr-mode">Toggle VR Mode</button>
+    <button id="enable-pointer-lock">Enable Pointer Lock</button>
     <h4>Preview</h4>
     <img id="preview"/>
     <div class="normal video"></div>
@@ -113,9 +114,10 @@
         t: 15,
         //src: 'https://d3uo9a4kiyu5sk.cloudfront.net/production/90598eca-0ec1-4677-bd13-495cd3c09dd8/web.mp4'
         //src: 'test.webm'
-        src: '/public/assets/paramotor.mp4'
+        //src: '/public/assets/paramotor.mp4'
         //src: '/public/assets/hostel-luego.jpg'
         //src: 'public/assets/vsn.mp4',
+        src: 'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/mobile.mp4'
       });
 
       frame.on('vrhmdavailable', function (e) {
@@ -134,17 +136,23 @@
         frame.toImage(document.querySelector('#preview'));
       }
 
-      var el = document.getElementById('go-fullscreen');
-      el.onclick = function() {
+      document.querySelector('#go-fullscreen')
+      .addEventListener('click', function () {
         frame.fullscreen(frame.el);
-      };
+      });
 
       var isVREnabled = false;
-      document.getElementById('toggle-vr-mode').onclick = function () {
+      document.querySelector('#toggle-vr-mode')
+      .addEventListener('click', function () {
         if (isVREnabled) { frame.disableVRMode(); }
         else { frame.enableVRMode(); }
         isVREnabled = !isVREnabled;
-      };
+      });
+
+      document.querySelector('#enable-pointer-lock')
+      .addEventListener('click', function () {
+        frame.controls.pointer.request();
+      });
 
       /*var vsn = new Axis(document.querySelector('.vsn.video'), {
         src: 'public/assets/vsn.mp4',
