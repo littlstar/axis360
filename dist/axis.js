@@ -38322,7 +38322,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.13.0",
+  "version": "1.13.1",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -39032,7 +39032,7 @@ var three = require('three.js')
 module.exports = function sphere (axis) {
   var heightSegments = 50;
   var widthSegments = 80;
-  var radius = axis.state.radius;
+  var radius = Math.max(400, axis.state.radius);
   var phi = 100;
   return new three.SphereGeometry(radius,
                                   widthSegments,
@@ -42530,9 +42530,8 @@ function fisheye (scope) {
 
     if ('tinyplanet' == current) {
       scope.lookAt(0, 0, 0);
-    }
-
-    if ('equilinear' != current) {
+      scope.orientation.x = 0;
+    } else if ('equilinear' != current) {
       scope.orientation.x = (Math.PI/180);
     }
 
@@ -42648,10 +42647,6 @@ function equilinear (scope) {
   // animate
   scope.debug("animate: EQUILINEAR begin");
 
-  if ('tinyplanet' == current) {
-    scope.lookAt(0, 0, 0);
-  }
-
   scope.fov(scope.state.originalfov || scope.state.fov);
 
   if ('cylinder' == scope.geometry()) {
@@ -42660,6 +42655,12 @@ function equilinear (scope) {
   } else {
     this.animate(function () {
       var x = scope.orientation.x;
+
+      if ('tinyplanet' == current) {
+        scope.lookAt(0, 0, 0);
+        scope.orientation.x = 0;
+        return this.cancel();
+      }
 
       if (current == 'fisheye') {
         return this.cancel();
