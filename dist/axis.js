@@ -38322,7 +38322,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.13.1",
+  "version": "1.14.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38724,7 +38724,7 @@ exports.DEFAULT_FOV = 90;
  * @type {Number}
  */
 
-exports.DEFAULT_INTERPOLATION_FACTOR = 0.1265;
+exports.DEFAULT_INTERPOLATION_FACTOR = 0.06;
 
 /**
  * Default frame projection
@@ -38802,7 +38802,7 @@ exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
  * @type {Number}
  */
 
-exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.655;
+exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.35;
 
 /**
  * Animation factor unit applied to changes in
@@ -39177,7 +39177,6 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * Friction fractor to apply to mouse movements.
  * @param {Number} [opts.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR] -
  * Interpolation factor to apply to quaternion rotations.
- * @param {Boolean} [opts.useSlerp = true] - Use spherical linear interpolations.
  * @param {Number} [opts.updateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT] -
  * View controller update timeout.
  * @param {Boolean} [opts.webgl = true] - Use WebGL rendering.
@@ -39424,9 +39423,6 @@ function State (scope, opts) {
   /** Predicate indicating if a video should autoplay. */
   this.shouldAutoplay = false;
 
-  /** Predicate indicating if slerp should be used. */
-  this.useSlerp = true;
-
   /** Predicate indicating if VR display is possible. */
   this.isVRPossible = isVRPossible();
 
@@ -39487,7 +39483,6 @@ State.prototype.reset = function (overrides) {
   this.allowWheel = null == opts.allowWheel ? false : opts.allowWheel;
   this.friction = opts.friction || DEFAULT_FRICTION;
   this.mouseFriction = opts.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  this.useSlerp = opts.useSlerp || true;
   this.useWebGL = opts.webgl && hasWebGL;
   this.interpolationFactor = (
     opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR
@@ -43986,7 +43981,8 @@ AxisController.prototype.update = function () {
   var target = this.state.target;
   var friction = this.scope.state.friction;
   var interpolationFactor = this.scope.state.interpolationFactor;
-  var pi2 = PI2*.2;
+  //var pi2 = PI2*.2;
+  var pi2 = (Math.PI/180) * 4;
   var ratio = this.scope.dimensions().ratio;
   var geo = this.scope.geometry();
 
@@ -44003,6 +43999,7 @@ AxisController.prototype.update = function () {
     orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
   }
 
+
   this.state.previousOrientation.x = orientation.x;
   this.state.previousOrientation.y = orientation.y;
 
@@ -44011,12 +44008,7 @@ AxisController.prototype.update = function () {
   quaternions.y.setFromAxisAngle(vectors.y, orientation.y);
 
   // update target quaternion
-  if (this.scope.state.useSlerp) {
-    target.quaternion.slerp(quaternions.y, interpolationFactor);
-  } else {
-    target.quaternion.copy(quaternions.y);
-  }
-
+  target.quaternion.slerp(quaternions.y, interpolationFactor);
   // multiplty target quaternion with our x quaternion
   target.quaternion.multiply(quaternions.x);
 
