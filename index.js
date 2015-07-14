@@ -274,8 +274,6 @@ function Axis (parent, opts) {
     var aspect = this.camera.aspect || 1;
     var far = this.camera.far;
     var fov = opts.fov;
-    var h = dimensions.height/dimensions.ratio;
-    var w = dimensions.width/dimensions.ratio;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
     var y = opts && opts.orientation ? opts.orientation.y : 2.1;
 
