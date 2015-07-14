@@ -196,6 +196,9 @@ function State (scope, opts) {
   /** Last known size. */
   this.lastSize = {width: null, height: null};
 
+  /** Last known dimensions. */
+  this.lastDimensions = {width: 0, height: 0, ratio: 0};
+
   /** Current geometry radius. */
   this.radius = DEFAULT_GEOMETRY_RADIUS;
 

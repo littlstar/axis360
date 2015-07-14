@@ -90,8 +90,9 @@ var MAX_Y_COORDINATE = constants.MAX_Y_COORDINATE;
 var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
 var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
-// default projection
+// defaults
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
+var DEFAULT_FOV = constants.DEFAULT_FOV;
 
 // expose util
 Axis.util = require('./util');
@@ -290,13 +291,7 @@ function Axis (parent, opts) {
     }
 
     if (!fov) {
-      fov = 1.8 * (2 * Math.atan(
-        dimensions.height / (2 * far)
-      )) * (180/Math.PI);
-
-      if (Math.sqrt(dimensions.ratio) > 2) {
-        fov *= 1.5;
-      }
+      fov = this.getCalculatedFieldOfView();
     }
 
     if (Math.sqrt(dimensions.ratio) <= 2) {
@@ -937,6 +932,7 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
     this.debug('src', src);
     this.state.update('src', src);
     this.state.update('isReady', false);
+    this.state.update('lastDimensions', this.dimensions());
 
     if (!isImage(src) || this.state.forceVideo && src != this.video.src) {
       this.state.update('isImage', false);
@@ -962,6 +958,8 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
           self.state.ready();
           self.emit('load');
           self.texture.needsUpdate = true;
+          self.fov(self.getCalculatedFieldOfView());
+          self.refreshScene();
         };
         this.texture.image.src = src;
       } else {
@@ -2059,4 +2057,38 @@ Axis.prototype.rotate = function (coord, opts) {
   }
 
   return this;
+};
+
+/**
+ * Calculates and returns a vertical field of view
+ * value in degrees.
+ *
+ * @public
+ * @param {Object} [dimensions] - Optional dimensions overrides.
+ * @param {Number} [dimensions.height] - Height dimension.
+ * @param {Number} [dimensions.width] - Width dimension.
+ * @param {Number} [dimensions.ratio] - Aspect ratio (w/h) dimension.
+ * @return {Number}
+ */
+
+Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
+  dimensions = dimensions || this.dimensions();
+  var far = this.camera && this.camera.far || 0;
+  var scale = 1.8;
+  var highScale = 1.5;
+  var fov = 0
+
+  if (this.state.isImage) {
+    fov = DEFAULT_FOV;
+  } else {
+    fov = scale * (2 * Math.atan(
+      dimensions.height / (2 * far)
+    )) * (180/Math.PI);
+
+    if (Math.sqrt(dimensions.ratio) > 2) {
+      fov *= highScale;
+    }
+  }
+
+  return fov;
 };
