@@ -362,8 +362,6 @@ function Axis (parent, opts) {
     var aspect = this.camera.aspect || 1;
     var far = this.camera.far;
     var fov = opts.fov;
-    var h = dimensions.height/dimensions.ratio;
-    var w = dimensions.width/dimensions.ratio;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
     var y = opts && opts.orientation ? opts.orientation.y : 2.1;
 
@@ -38322,7 +38320,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38393,6 +38391,8 @@ module.exports = '<section class="axis frame">\n  <div class="axis container">\n
 var raf = require('raf')
   , three = require('three.js')
 
+var DEFAULT_PROJECTION = require('./constants').DEFAULT_PROJECTION
+
 /**
  * Predicate to determine whether `n' is
  * in fact `NaN'
@@ -38420,6 +38420,8 @@ function Projections (scope) {
     return new Projections(scope);
   }
 
+  var self = this;
+
   // projection scope
   this.scope = 'object' == typeof scope ? scope : {};
 
@@ -38438,7 +38440,7 @@ function Projections (scope) {
   this.requested = null;
 
   /** Current applied projection. */
-  this.current = null;
+  this.current = DEFAULT_PROJECTION;
 
   /** Current projection constraints. */
   this.constraints = null;
@@ -38624,49 +38626,7 @@ Projections.prototype.refreshCurrent = function () {
   return this.apply(this.current);
 };
 
-}, {"raf":6,"three.js":2}],
-14: [function(require, module, exports) {
-
-/**
- * Module dependencies
- */
-
-var three = require('three.js')
-
-// default field of view
-var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
-
-/**
- * Creates an instance of THREE.PerspectiveCamera
- * and assigns it to a scope object if not null.
- *
- * @public
- * @name createCamera
- * @param {Object} scope - Scope object to assign camera to.
- * @param {Boolean} force - Force creation and assignment.
- * @return {THREE.PerspectiveCamera}
- */
-
-module.exports = function createCamera (scope, force) {
-  var height = scope.height();
-  var width = scope.width();
-  var ratio = width / height;
-  var camera = scope.camera;
-  var state = scope.state;
-  var vector = null;
-  var target = null;
-  var fov = state.opts ? state.opts.fov || DEFAULT_FOV : DEFAULT_FOV;
-  if (null == scope.camera || true == force) {
-    vector = new three.Vector3(0, 0, 0);
-    target = camera && camera.target ? camera.target : vector;
-    scope.camera = new three.PerspectiveCamera(fov, ratio, 0.01, 1000);
-    scope.camera.target = target;
-    scope.camera.rotation.reorder('YXZ');
-  }
-  return scope.camera;
-};
-
-}, {"three.js":2,"./constants":18}],
+}, {"raf":6,"three.js":2,"./constants":18}],
 18: [function(require, module, exports) {
 
 'use strict';
@@ -38976,6 +38936,48 @@ exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;
 exports.EPSILON_VALUE = 0.000001;
 
 }, {}],
+14: [function(require, module, exports) {
+
+/**
+ * Module dependencies
+ */
+
+var three = require('three.js')
+
+// default field of view
+var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
+
+/**
+ * Creates an instance of THREE.PerspectiveCamera
+ * and assigns it to a scope object if not null.
+ *
+ * @public
+ * @name createCamera
+ * @param {Object} scope - Scope object to assign camera to.
+ * @param {Boolean} force - Force creation and assignment.
+ * @return {THREE.PerspectiveCamera}
+ */
+
+module.exports = function createCamera (scope, force) {
+  var height = scope.height();
+  var width = scope.width();
+  var ratio = width / height;
+  var camera = scope.camera;
+  var state = scope.state;
+  var vector = null;
+  var target = null;
+  var fov = state.opts ? state.opts.fov || DEFAULT_FOV : DEFAULT_FOV;
+  if (null == scope.camera || true == force) {
+    vector = new three.Vector3(0, 0, 0);
+    target = camera && camera.target ? camera.target : vector;
+    scope.camera = new three.PerspectiveCamera(fov, ratio, 0.01, 1000);
+    scope.camera.target = target;
+    scope.camera.rotation.reorder('YXZ');
+  }
+  return scope.camera;
+};
+
+}, {"three.js":2,"./constants":18}],
 15: [function(require, module, exports) {
 exports.cylinder = require('./cylinder');
 exports.sphere = require('./sphere');
@@ -42509,7 +42511,7 @@ function fisheye (scope) {
   var maxZ = (scope.height() / 100) | 0;
   var current = this.current;
 
-  scope.fov(scope.fov() + 20);
+  scope.fov(scope.state.originalfov + 20);
   this.constraints = {};
 
   if ('cylinder' == scope.geometry()) {
@@ -42524,8 +42526,8 @@ function fisheye (scope) {
     scope.camera.position.z = maxZ;
 
     if ('tinyplanet' == current) {
-      scope.lookAt(0, 0, 0);
       scope.orientation.x = 0;
+      scope.lookAt(0, 0, 0);
     } else if ('equilinear' != current) {
       scope.orientation.x = (Math.PI/180);
     }
@@ -42785,7 +42787,7 @@ function tinyplanet (scope) {
 
   var fovOffset = 15;
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
-  scope.fov(camera.fov + fovOffset);
+  scope.fov(scope.state.originalfov + fovOffset);
   scope.debug("animate: TINY_PLANET begin");
   rotation.x = camera.target.x || 0;
   rotation.y = camera.target.y || 0;
@@ -43383,9 +43385,19 @@ var three = require('three.js')
  * (PI / 2) constant value reference with a 5 degree
  * offset to prevent locking.
  * @private
+ * @type {Number}
  */
 
 var PI2 = ((Math.PI/2) * (180/Math.PI) - 30) * (Math.PI/180);
+
+/**
+ * Tiny planet interpolation factor
+ *
+ * @private
+ * @type {Number}
+ */
+
+var TINY_PLANET_INTERPOLATION_FACTOR = 0.13;
 
 /**
  * AxisController constructor
@@ -43981,7 +43993,6 @@ AxisController.prototype.update = function () {
   var target = this.state.target;
   var friction = this.scope.state.friction;
   var interpolationFactor = this.scope.state.interpolationFactor;
-  //var pi2 = PI2*.2;
   var pi2 = (Math.PI/180) * 4;
   var ratio = this.scope.dimensions().ratio;
   var geo = this.scope.geometry();
@@ -43992,13 +44003,17 @@ AxisController.prototype.update = function () {
     return this;
   }
 
+  if ('tinyplanet' == this.scope.projections.current) {
+    interpolationFactor = TINY_PLANET_INTERPOLATION_FACTOR;
+    pi2 = PI2*.2;
+  }
+
   if ('cylinder' == geo) {
     orientation.x = 0;
   } else {
     // normalize x orientation
     orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
   }
-
 
   this.state.previousOrientation.x = orientation.x;
   this.state.previousOrientation.y = orientation.y;
