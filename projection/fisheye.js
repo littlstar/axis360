@@ -87,7 +87,7 @@ function fisheye (scope) {
   var maxZ = (scope.height() / 100) | 0;
   var current = this.current;
 
-  scope.fov(scope.fov() + 20);
+  scope.fov(scope.state.originalfov + 20);
   this.constraints = {};
 
   if ('cylinder' == scope.geometry()) {
@@ -102,8 +102,8 @@ function fisheye (scope) {
     scope.camera.position.z = maxZ;
 
     if ('tinyplanet' == current) {
-      scope.lookAt(0, 0, 0);
       scope.orientation.x = 0;
+      scope.lookAt(0, 0, 0);
     } else if ('equilinear' != current) {
       scope.orientation.x = (Math.PI/180);
     }

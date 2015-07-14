@@ -46,9 +46,19 @@ var three = require('three.js')
  * (PI / 2) constant value reference with a 5 degree
  * offset to prevent locking.
  * @private
+ * @type {Number}
  */
 
 var PI2 = ((Math.PI/2) * (180/Math.PI) - 30) * (Math.PI/180);
+
+/**
+ * Tiny planet interpolation factor
+ *
+ * @private
+ * @type {Number}
+ */
+
+var TINY_PLANET_INTERPOLATION_FACTOR = 0.13;
 
 /**
  * AxisController constructor
@@ -644,7 +654,6 @@ AxisController.prototype.update = function () {
   var target = this.state.target;
   var friction = this.scope.state.friction;
   var interpolationFactor = this.scope.state.interpolationFactor;
-  //var pi2 = PI2*.2;
   var pi2 = (Math.PI/180) * 4;
   var ratio = this.scope.dimensions().ratio;
   var geo = this.scope.geometry();
@@ -655,13 +664,17 @@ AxisController.prototype.update = function () {
     return this;
   }
 
+  if ('tinyplanet' == this.scope.projections.current) {
+    interpolationFactor = TINY_PLANET_INTERPOLATION_FACTOR;
+    pi2 = PI2*.2;
+  }
+
   if ('cylinder' == geo) {
     orientation.x = 0;
   } else {
     // normalize x orientation
     orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
   }
-
 
   this.state.previousOrientation.x = orientation.x;
   this.state.previousOrientation.y = orientation.y;

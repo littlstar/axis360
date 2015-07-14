@@ -39,6 +39,8 @@
 var raf = require('raf')
   , three = require('three.js')
 
+var DEFAULT_PROJECTION = require('./constants').DEFAULT_PROJECTION
+
 /**
  * Predicate to determine whether `n' is
  * in fact `NaN'
@@ -66,6 +68,8 @@ function Projections (scope) {
     return new Projections(scope);
   }
 
+  var self = this;
+
   // projection scope
   this.scope = 'object' == typeof scope ? scope : {};
 
@@ -84,7 +88,7 @@ function Projections (scope) {
   this.requested = null;
 
   /** Current applied projection. */
-  this.current = null;
+  this.current = DEFAULT_PROJECTION;
 
   /** Current projection constraints. */
   this.constraints = null;
