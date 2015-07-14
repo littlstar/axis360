@@ -107,7 +107,6 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * Friction fractor to apply to mouse movements.
  * @param {Number} [opts.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR] -
  * Interpolation factor to apply to quaternion rotations.
- * @param {Boolean} [opts.useSlerp = true] - Use spherical linear interpolations.
  * @param {Number} [opts.updateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT] -
  * View controller update timeout.
  * @param {Boolean} [opts.webgl = true] - Use WebGL rendering.
@@ -354,9 +353,6 @@ function State (scope, opts) {
   /** Predicate indicating if a video should autoplay. */
   this.shouldAutoplay = false;
 
-  /** Predicate indicating if slerp should be used. */
-  this.useSlerp = true;
-
   /** Predicate indicating if VR display is possible. */
   this.isVRPossible = isVRPossible();
 
@@ -417,7 +413,6 @@ State.prototype.reset = function (overrides) {
   this.allowWheel = null == opts.allowWheel ? false : opts.allowWheel;
   this.friction = opts.friction || DEFAULT_FRICTION;
   this.mouseFriction = opts.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  this.useSlerp = opts.useSlerp || true;
   this.useWebGL = opts.webgl && hasWebGL;
   this.interpolationFactor = (
     opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR

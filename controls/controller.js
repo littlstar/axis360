@@ -644,7 +644,8 @@ AxisController.prototype.update = function () {
   var target = this.state.target;
   var friction = this.scope.state.friction;
   var interpolationFactor = this.scope.state.interpolationFactor;
-  var pi2 = PI2*.2;
+  //var pi2 = PI2*.2;
+  var pi2 = (Math.PI/180) * 4;
   var ratio = this.scope.dimensions().ratio;
   var geo = this.scope.geometry();
 
@@ -661,6 +662,7 @@ AxisController.prototype.update = function () {
     orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
   }
 
+
   this.state.previousOrientation.x = orientation.x;
   this.state.previousOrientation.y = orientation.y;
 
@@ -669,12 +671,7 @@ AxisController.prototype.update = function () {
   quaternions.y.setFromAxisAngle(vectors.y, orientation.y);
 
   // update target quaternion
-  if (this.scope.state.useSlerp) {
-    target.quaternion.slerp(quaternions.y, interpolationFactor);
-  } else {
-    target.quaternion.copy(quaternions.y);
-  }
-
+  target.quaternion.slerp(quaternions.y, interpolationFactor);
   // multiplty target quaternion with our x quaternion
   target.quaternion.multiply(quaternions.x);
 

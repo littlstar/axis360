@@ -54,7 +54,7 @@ exports.DEFAULT_FOV = 90;
  * @type {Number}
  */
 
-exports.DEFAULT_INTERPOLATION_FACTOR = 0.1265;
+exports.DEFAULT_INTERPOLATION_FACTOR = 0.06;
 
 /**
  * Default frame projection
@@ -132,7 +132,7 @@ exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
  * @type {Number}
  */
 
-exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.655;
+exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.35;
 
 /**
  * Animation factor unit applied to changes in
