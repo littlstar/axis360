@@ -1033,11 +1033,10 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
       this.state.update('isImage', false);
       this.video.src = src;
       this.video.load();
-      if (this.texture) {
-        if (this.video.readyState >= 4) {
-          this.texture.needsUpdate = true;
-        } else {
-          this.texture.needsUpdate = false;
+      this.video.onload = function () {
+        this.onload = null;
+        if (self.texture) {
+          self.texture.needsUpdate = true;
         }
       }
     } else {
@@ -38377,7 +38376,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.16.0",
+  "version": "1.16.1",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
