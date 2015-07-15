@@ -472,8 +472,10 @@ function Axis (parent, opts) {
     this.mute(true);
   }
 
-  // Initializes controllers
-  this.initializeControllers();
+  if (true != opts.isPreviewFrame) {
+    // Initializes controllers
+    this.initializeControllers();
+  }
 
   // initial volume
   this.volume(opts.volume || 1);
@@ -846,8 +848,13 @@ Axis.prototype.onresize = function (e) {
 Axis.prototype.onblur = function () {
   this.state.isMousedown = false;
   this.state.isTouching = false;
-  this.controls.mouse.state.isMousedown = false;
-  this.controls.keyboard.reset();
+  if (this.controls.mouse) {
+    this.controls.mouse.state.isMousedown = false;
+  }
+
+  if (this.controls.keyboard) {
+    this.controls.keyboard.reset();
+  }
 };
 
 /**
@@ -1887,6 +1894,11 @@ Axis.prototype.initializeControllers = function (map, force) {
     controls.pointer = require('./controls/pointer')(this);
   }
 
+  if (null == controls.movement || true == map.movement || true == force) {
+    if (controls.movement) { controls.movement.destroy(); }
+    controls.movement = require('./controls/movement')(this);
+  }
+
   if (null == controls.default || true == map.default || true == force) {
     if (controls.default) { controls.default.destroy(); }
     controls.default = (
@@ -2181,7 +2193,7 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   return fov;
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/pointer":30,"./controls/controller":31}],
+}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/pointer":30,"./controls/movement":31,"./controls/controller":32}],
 2: [function(require, module, exports) {
 // File:src/Three.js
 
@@ -37775,8 +37787,8 @@ function parse(event) {
   }
 }
 
-}, {"event":32,"delegate":33}],
-32: [function(require, module, exports) {
+}, {"event":33,"delegate":34}],
+33: [function(require, module, exports) {
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
     prefix = bind !== 'addEventListener' ? 'on' : '';
@@ -37813,7 +37825,7 @@ exports.unbind = function(el, type, fn, capture){
   return fn;
 };
 }, {}],
-33: [function(require, module, exports) {
+34: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -37857,30 +37869,43 @@ exports.unbind = function(el, type, fn, capture){
   event.unbind(el, type, fn, capture);
 };
 
-}, {"closest":34,"event":32}],
-34: [function(require, module, exports) {
+}, {"closest":35,"event":33}],
+35: [function(require, module, exports) {
+/**
+ * Module Dependencies
+ */
+
 var matches = require('matches-selector')
 
-module.exports = function (element, selector, checkYoSelf, root) {
-  element = checkYoSelf ? {parentNode: element} : element
+/**
+ * Export `closest`
+ */
 
-  root = root || document
+module.exports = closest
 
-  // Make sure `element !== document` and `element != null`
-  // otherwise we get an illegal invocation
-  while ((element = element.parentNode) && element !== document) {
-    if (matches(element, selector))
-      return element
-    // After `matches` on the edge case that
-    // the selector matches the root
-    // (when the root is not the document)
-    if (element === root)
-      return
+/**
+ * Closest
+ *
+ * @param {Element} el
+ * @param {String} selector
+ * @param {Element} scope (optional)
+ */
+
+function closest (el, selector, scope) {
+  scope = scope || document.documentElement;
+
+  // walk up the dom
+  while (el && el !== scope) {
+    if (matches(el, selector)) return el;
+    el = el.parentNode;
   }
+
+  // check scope for match
+  return matches(el, selector) ? el : null;
 }
 
-}, {"matches-selector":35}],
-35: [function(require, module, exports) {
+}, {"matches-selector":36}],
+36: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
@@ -37928,8 +37953,8 @@ function match(el, selector) {
   return false;
 }
 
-}, {"query":36}],
-36: [function(require, module, exports) {
+}, {"query":37}],
+37: [function(require, module, exports) {
 function one(selector, el) {
   return el.querySelector(selector);
 }
@@ -38096,8 +38121,8 @@ if (document.addEventListener) {
   document.addEventListener('msfullscreenchange', change('msFullscreenEnabled'));
 }
 
-}, {"emitter":37}],
-37: [function(require, module, exports) {
+}, {"emitter":38}],
+38: [function(require, module, exports) {
 
 /**
  * Expose `Emitter`.
@@ -38352,7 +38377,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -39015,8 +39040,8 @@ exports.cylinder = require('./cylinder');
 exports.sphere = require('./sphere');
 exports.plane = require('./plane');
 
-}, {"./cylinder":38,"./sphere":39,"./plane":40}],
-38: [function(require, module, exports) {
+}, {"./cylinder":39,"./sphere":40,"./plane":41}],
+39: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -39047,7 +39072,7 @@ module.exports = function (axis) {
 };
 
 }, {"three.js":2}],
-39: [function(require, module, exports) {
+40: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -39075,7 +39100,7 @@ module.exports = function sphere (axis) {
 };
 
 }, {"three.js":2}],
-40: [function(require, module, exports) {
+41: [function(require, module, exports) {
 
 /**
  * Module dependencies
@@ -39895,8 +39920,8 @@ State.prototype.toJSON = function () {
   };
 };
 
-}, {"emitter":4,"fullscreen":8,"keycode":9,"has-webgl":7,"events":5,"three.js":2,"merge":10,"path":41,"./util":17,"./constants":18}],
-41: [function(require, module, exports) {
+}, {"emitter":4,"fullscreen":8,"keycode":9,"has-webgl":7,"events":5,"three.js":2,"merge":10,"path":42,"./util":17,"./constants":18}],
+42: [function(require, module, exports) {
 
 exports.basename = function(path){
   return path.split('/').pop();
@@ -40009,8 +40034,44 @@ function getVRDevices (fn) {
   }
 }
 
-}, {"three.js":2,"path":41,"url":42}],
-42: [function(require, module, exports) {
+/**
+ * Normalizes properties in an Event object and
+ * sets them on the output object
+ *
+ * @public
+ * @param {Event} e - Event object containing movement properties.
+ * @param {Object} o - Output object
+ * @return {Object}
+ */
+
+exports.normalizeMovements = normalizeMovements;
+function normalizeMovements (e, o) {
+  o.x = (
+    e.movementX ||
+    e.oMovementX ||
+    e.msMovementX ||
+    e.mozMovementX ||
+    e.webkitMovementX ||
+    o.x ||
+    0
+  );
+
+  o.y = (
+    e.movementY ||
+    e.oMovementY ||
+    e.msMovementY ||
+    e.mozMovementY ||
+    e.webkitMovementY ||
+    o.y ||
+    0
+  );
+
+  return o;
+}
+
+
+}, {"three.js":2,"path":42,"url":43}],
+43: [function(require, module, exports) {
 
 /**
  * Parse the given `url`.
@@ -41208,8 +41269,8 @@ module.exports = function(THREE){
   return THREE.CanvasRenderer;
 };
 
-}, {"three-projector-renderer":43}],
-43: [function(require, module, exports) {
+}, {"three-projector-renderer":44}],
+44: [function(require, module, exports) {
 
 module.exports = function (THREE) {
   /**
@@ -42717,7 +42778,7 @@ function equilinear (scope) {
   }
 };
 
-}, {"raf":6,"three.js":2,"../constants":18,"../camera":14,"../geometry/plane":40,"../geometry/sphere":39,"../geometry/cylinder":38}],
+}, {"raf":6,"three.js":2,"../constants":18,"../camera":14,"../geometry/plane":41,"../geometry/sphere":40,"../geometry/cylinder":39}],
 24: [function(require, module, exports) {
 
 'use strict';
@@ -43344,8 +43405,8 @@ VRController.prototype.update = function () {
   return this;
 };
 
-}, {"three.js":2,"inherits":44,"../camera":14,"./controller":31}],
-44: [function(require, module, exports) {
+}, {"three.js":2,"inherits":45,"../camera":14,"./controller":32}],
+45: [function(require, module, exports) {
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -43371,7 +43432,7 @@ if (typeof Object.create === 'function') {
 }
 
 }, {}],
-31: [function(require, module, exports) {
+32: [function(require, module, exports) {
 
 'use strict';
 
@@ -43415,6 +43476,7 @@ void module.exports;
 
 var three = require('three.js')
   , events = require('events')
+  , Emitter = require('emitter')
 
 /**
  * (PI / 2) constant value reference with a 5 degree
@@ -43968,6 +44030,9 @@ function AxisController (scope, domElement) {
   scope.on('beforedraw', this.onbeforedraw);
 }
 
+// Inherit `EventEmitter'
+Emitter(AxisController.prototype);
+
 /**
  * Handles `before:render' event.
  *
@@ -43994,6 +44059,7 @@ AxisController.prototype.onbeforedraw = function () {
  */
 
 AxisController.prototype.enable = function () {
+  this.scope.debug("enable %s", this.constructor.name);
   this.state.isEnabled = true;
   return this;
 };
@@ -44008,6 +44074,7 @@ AxisController.prototype.enable = function () {
  */
 
 AxisController.prototype.disable = function () {
+  this.scope.debug("disable %s", this.constructor.name);
   this.state.isEnabled = false;
   return this;
 };
@@ -44200,7 +44267,7 @@ AxisController.prototype.getAspectRatio = function (max) {
   return Math.max(max, aspect);
 };
 
-}, {"three.js":2,"events":5}],
+}, {"three.js":2,"events":5,"emitter":4}],
 26: [function(require, module, exports) {
 
 'use strict';
@@ -44252,43 +44319,10 @@ var inherits = require('inherits')
 
 var AxisController = require('./controller')
   , constants = require('../constants')
+  , util = require('../util')
 
 // default mouse friction value
 var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
-
-/**
- * Normalizes properties in an Event object and
- * sets them on the output object
- *
- * @private
- * @param {Event} e - Event object containing movement properties.
- * @param {Object} o - Output object
- * @return {Object}
- */
-
-function normalizeMovements (e, o) {
-  o.x = (
-    e.movementX ||
-    e.oMovementX ||
-    e.msMovementX ||
-    e.mozMovementX ||
-    e.webkitMovementX ||
-    o.x ||
-    0
-  );
-
-  o.y = (
-    e.movementY ||
-    e.oMovementY ||
-    e.msMovementY ||
-    e.mozMovementY ||
-    e.webkitMovementY ||
-    o.y ||
-    0
-  );
-
-  return o;
-}
 
 /**
  * Initializes mouse controls on Axis.
@@ -44469,7 +44503,7 @@ MouseController.prototype.onmousemove = function (e) {
   movements.y = (e.screenY * friction) - this.state.movementsStart.y;
 
   // normalized movements from event
-  normalizeMovements(e, movements);
+  util.normalizeMovements(e, movements);
   movements.y *= friction;
   movements.x *= (friction / 0.5);
 
@@ -44527,7 +44561,7 @@ MouseController.prototype.update = function () {
   return this;
 };
 
-}, {"inherits":44,"./controller":31,"../constants":18}],
+}, {"inherits":45,"./controller":32,"../constants":18,"../util":17}],
 27: [function(require, module, exports) {
 
 'use strict';
@@ -44753,7 +44787,7 @@ TouchController.prototype.update = function () {
   return this;
 };
 
-}, {"inherits":44,"three.js":2,"./controller":31,"../constants":18}],
+}, {"inherits":45,"three.js":2,"./controller":32,"../constants":18}],
 28: [function(require, module, exports) {
 
 'use strict';
@@ -45216,7 +45250,7 @@ KeyboardController.prototype.onmousedown = function (e) {
   }
 }
 
-}, {"keycode":9,"inherits":44,"./controller":31,"../constants":18}],
+}, {"keycode":9,"inherits":45,"./controller":32,"../constants":18}],
 29: [function(require, module, exports) {
 
 'use strict';
@@ -45450,7 +45484,7 @@ OrientationController.prototype.update = function () {
   return this;
 };
 
-}, {"keycode":9,"inherits":44,"./controller":31,"../constants":18}],
+}, {"keycode":9,"inherits":45,"./controller":32,"../constants":18}],
 30: [function(require, module, exports) {
 
 'use strict';
@@ -45515,10 +45549,7 @@ var MouseController = require('./mouse').MouseController
  */
 
 module.exports = function pointer (axis) {
-  return PointerController(axis)
-  .target(axis.camera)
-  .enable()
-  .update();
+  return PointerController(axis).target(axis.camera)
 };
 
 /**
@@ -45564,14 +45595,54 @@ function PointerController (scope) {
   this.state.lock = null;
 }
 
+/**
+ * Enables mouse pointer lock
+ *
+ * @public
+ * @method
+ * @name enable
+ * @return {PointerController}
+ */
+
+PointerController.prototype.enable = function () {
+  // init lock if not created
+  if (null == this.state.lock) {
+    this.state.lock = lock(this.scope.domElement);
+  }
+
+  return MouseController.prototype.enable.call(this);;
+};
+
+/**
+ * Disables mouse pointer lock
+ *
+ * @public
+ * @method
+ * @name disable
+ * @return {PointerController}
+ */
+
+PointerController.prototype.disable = function () {
+  // init lock if not created
+  if (null != this.state.lock) {
+    this.state.isMousedown = false;
+    this.state.lock.destroy();
+  }
+  return MouseController.prototype.disable.call(this);;
+};
+
+/**
+ * Request mouse pointer lock.
+ *
+ * @private
+ * @method
+ * @name request
+ * @return {PointerController}
+ */
+
 PointerController.prototype.request = function () {
   var self = this;
   var scope = this.scope;
-
-  // init lock if not created
-  if (null == this.state.lock) {
-    this.state.lock = lock(scope.domElement);
-  }
 
   // request lock from user
   this.state.lock.request();
@@ -45590,7 +45661,9 @@ PointerController.prototype.request = function () {
     // reset state when released
     self.state.lock.on('release', function () {
       self.state.isMousedown = false;
-      self.state.lock.destroy();
+      if (self.state.lock) {
+        self.state.lock.destroy();
+      }
     });
   });
 
@@ -45630,8 +45703,8 @@ PointerController.prototype.disable = function () {
   return this;
 };
 
-}, {"inherits":44,"three.js":2,"pointer-lock":45,"./mouse":26,"./controller":31,"../constants":18}],
-45: [function(require, module, exports) {
+}, {"inherits":45,"three.js":2,"pointer-lock":46,"./mouse":26,"./controller":32,"../constants":18}],
+46: [function(require, module, exports) {
 module.exports = pointer
 
 pointer.available = available
@@ -45801,8 +45874,8 @@ function shim(el) {
     null
 }
 
-}, {"stream":46,"emitter":37}],
-46: [function(require, module, exports) {
+}, {"stream":47,"emitter":38}],
+47: [function(require, module, exports) {
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -45919,4 +45992,162 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 }
 
-}, {"emitter":37}]}, {}, {"1":"Axis"})
+}, {"emitter":38}],
+31: [function(require, module, exports) {
+
+'use strict';
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The movement controls module.
+ *
+ * @module axis/controls/movement
+ * @type {Function}
+ */
+
+void module.exports;
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var inherits = require('inherits')
+  , three = require('three.js')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var MouseController = require('./mouse').MouseController
+  , AxisController = require('./controller')
+  , constants = require('../constants')
+  , util = require('../util')
+
+/**
+ * Initializes movement controls on Axis.
+ *
+ * @public
+ * @param {Axis} scope - The axis instance
+ * @return {MovementController}
+ */
+
+module.exports = function movement (axis) {
+  return MovementController(axis).target(axis.camera)
+};
+
+/**
+ * MovementController constructor
+ *
+ * @public
+ * @constructor
+ * @class MovementController
+ * @extends MouseController
+ * @see {@link module:axis/controls/controller~MouseController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.MovementController = MovementController;
+inherits(MovementController, MouseController);
+function MovementController (scope) {
+
+  // ensure instance
+  if (!(this instanceof MovementController)) {
+    return new MovementController(scope);
+  }
+
+  // inherit from `MouseController'
+  MouseController.call(this, scope);
+
+  /**
+   * Reference to this instance.
+   *
+   * @private
+   * @type {MovementController}
+   */
+
+  var self = this;
+}
+
+/**
+ * Overloads MouseController#update() method.
+ *
+ * @public
+ * @method
+ * @name update
+ * @return {PointerController}
+ */
+
+MovementController.prototype.update = function () {
+  if (false == this.state.isMousedown) { return this; }
+  var movements = this.state.movements;
+  this.pan(movements);
+  AxisController.prototype.update.call(this);
+  return this;
+};
+
+/**
+ * Overloads MouseController#onmousemove
+ *
+ * @private
+ * @name onmousemove
+ * @param {Event} e - Event object.
+ */
+
+MovementController.prototype.onmousemove = function (e) {
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
+  var movements = this.state.movements;
+
+  // handle mouse movements only if the mouse controller is enabled
+  if (false == this.state.isEnabled || false == this.state.isMousedown) {
+    return;
+  }
+
+  movements.x = (e.screenX * friction) - this.state.movementsStart.x;
+  movements.y = (e.screenY * friction) - this.state.movementsStart.y;
+  movements.y *= (friction/4);
+  movements.x *= (friction/4);
+
+  // invert for true directional movement
+  movements.x *= -1;
+  movements.y *= -1;
+};
+
+/**
+ * Overloads MouseController#onmousemove
+ *
+ * @private
+ * @name onmousemove
+ * @param {Event} e - Event object.
+ */
+
+MovementController.prototype.onmouseup = function (e) {
+  clearTimeout(this.state.mouseupTimeout);
+  this.state.isMousedown = false;
+};
+
+}, {"inherits":45,"three.js":2,"./mouse":26,"./controller":32,"../constants":18,"../util":17}]}, {}, {"1":"Axis"})
