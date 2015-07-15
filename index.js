@@ -945,11 +945,10 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
       this.state.update('isImage', false);
       this.video.src = src;
       this.video.load();
-      if (this.texture) {
-        if (this.video.readyState >= 4) {
-          this.texture.needsUpdate = true;
-        } else {
-          this.texture.needsUpdate = false;
+      this.video.onload = function () {
+        this.onload = null;
+        if (self.texture) {
+          self.texture.needsUpdate = true;
         }
       }
     } else {
