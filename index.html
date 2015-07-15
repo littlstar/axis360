@@ -96,6 +96,7 @@
     <button id="go-fullscreen">Go fullscreen</button>
     <button id="toggle-vr-mode">Toggle VR Mode</button>
     <button id="enable-pointer-lock">Enable Pointer Lock</button>
+    <button id="toggle-mouse-movement-control">Toggle Mouse Movements Control</button>
     <h4>Preview</h4>
     <img id="preview"/>
     <div class="normal video"></div>
@@ -153,8 +154,21 @@
       document.querySelector('#enable-pointer-lock')
       .addEventListener('click', function () {
         frame.controls.pointer.request();
-      });
+        });
 
+      var isMouseMovementEnabled = false;
+      document.querySelector('#toggle-mouse-movement-control')
+      .addEventListener('click', function () {
+        if (isMouseMovementEnabled) {
+          frame.controls.movement.disable();
+          frame.controls.mouse.enable();
+        } else {
+          frame.controls.movement.enable();
+          frame.controls.mouse.disable();
+        }
+
+        isMouseMovementEnabled = !isMouseMovementEnabled;
+      });
       /*var vsn = new Axis(document.querySelector('.vsn.video'), {
         src: 'public/assets/vsn.mp4',
         resizable: true,

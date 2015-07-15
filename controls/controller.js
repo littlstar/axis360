@@ -620,6 +620,7 @@ AxisController.prototype.onbeforedraw = function () {
  */
 
 AxisController.prototype.enable = function () {
+  this.scope.debug("enable %s", this.constructor.name);
   this.state.isEnabled = true;
   return this;
 };
@@ -634,6 +635,7 @@ AxisController.prototype.enable = function () {
  */
 
 AxisController.prototype.disable = function () {
+  this.scope.debug("disable %s", this.constructor.name);
   this.state.isEnabled = false;
   return this;
 };

@@ -92,3 +92,39 @@ function getVRDevices (fn) {
     ).call(navigator, fn);
   }
 }
+
+/**
+ * Normalizes properties in an Event object and
+ * sets them on the output object
+ *
+ * @public
+ * @param {Event} e - Event object containing movement properties.
+ * @param {Object} o - Output object
+ * @return {Object}
+ */
+
+exports.normalizeMovements = normalizeMovements;
+function normalizeMovements (e, o) {
+  o.x = (
+    e.movementX ||
+    e.oMovementX ||
+    e.msMovementX ||
+    e.mozMovementX ||
+    e.webkitMovementX ||
+    o.x ||
+    0
+  );
+
+  o.y = (
+    e.movementY ||
+    e.oMovementY ||
+    e.msMovementY ||
+    e.mozMovementY ||
+    e.webkitMovementY ||
+    o.y ||
+    0
+  );
+
+  return o;
+}
+

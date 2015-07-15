@@ -61,10 +61,7 @@ var MouseController = require('./mouse').MouseController
  */
 
 module.exports = function pointer (axis) {
-  return PointerController(axis)
-  .target(axis.camera)
-  .enable()
-  .update();
+  return PointerController(axis).target(axis.camera)
 };
 
 /**
@@ -110,14 +107,54 @@ function PointerController (scope) {
   this.state.lock = null;
 }
 
-PointerController.prototype.request = function () {
-  var self = this;
-  var scope = this.scope;
+/**
+ * Enables mouse pointer lock
+ *
+ * @public
+ * @method
+ * @name enable
+ * @return {PointerController}
+ */
 
+PointerController.prototype.enable = function () {
   // init lock if not created
   if (null == this.state.lock) {
     this.state.lock = lock(scope.domElement);
   }
+
+  return MouseController.prototype.enable.call(this);;
+};
+
+/**
+ * Disables mouse pointer lock
+ *
+ * @public
+ * @method
+ * @name enable
+ * @return {PointerController}
+ */
+
+PointerController.prototype.enable = function () {
+  // init lock if not created
+  if (null != this.state.lock) {
+    this.state.isMousedown = false;
+    this.state.lock.destroy();
+  }
+  return MouseController.prototype.disable.call(this);;
+};
+
+/**
+ * Request mouse pointer lock.
+ *
+ * @private
+ * @method
+ * @name request
+ * @return {PointerController}
+ */
+
+PointerController.prototype.request = function () {
+  var self = this;
+  var scope = this.scope;
 
   // request lock from user
   this.state.lock.request();

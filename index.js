@@ -384,8 +384,10 @@ function Axis (parent, opts) {
     this.mute(true);
   }
 
-  // Initializes controllers
-  this.initializeControllers();
+  if (true != opts.isPreviewFrame) {
+    // Initializes controllers
+    this.initializeControllers();
+  }
 
   // initial volume
   this.volume(opts.volume || 1);
@@ -758,8 +760,13 @@ Axis.prototype.onresize = function (e) {
 Axis.prototype.onblur = function () {
   this.state.isMousedown = false;
   this.state.isTouching = false;
-  this.controls.mouse.state.isMousedown = false;
-  this.controls.keyboard.reset();
+  if (this.controls.mouse) {
+    this.controls.mouse.state.isMousedown = false;
+  }
+
+  if (this.controls.keyboard) {
+    this.controls.keyboard.reset();
+  }
 };
 
 /**
@@ -1797,6 +1804,11 @@ Axis.prototype.initializeControllers = function (map, force) {
   if (null == controls.pointer || true == map.pointer || true == force) {
     if (controls.pointer) { controls.pointer.destroy(); }
     controls.pointer = require('./controls/pointer')(this);
+  }
+
+  if (null == controls.movement || true == map.movement || true == force) {
+    if (controls.movement) { controls.movement.destroy(); }
+    controls.movement = require('./controls/movement')(this);
   }
 
   if (null == controls.default || true == map.default || true == force) {

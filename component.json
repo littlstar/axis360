@@ -24,6 +24,7 @@
 
     "controls/touch.js",
     "controls/pointer.js",
+    "controls/movement.js",
     "controls/keyboard.js",
     "controls/controller.js",
     "controls/orientation.js",
