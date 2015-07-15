@@ -119,7 +119,7 @@ function PointerController (scope) {
 PointerController.prototype.enable = function () {
   // init lock if not created
   if (null == this.state.lock) {
-    this.state.lock = lock(scope.domElement);
+    this.state.lock = lock(this.scope.domElement);
   }
 
   return MouseController.prototype.enable.call(this);;
@@ -130,11 +130,11 @@ PointerController.prototype.enable = function () {
  *
  * @public
  * @method
- * @name enable
+ * @name disable
  * @return {PointerController}
  */
 
-PointerController.prototype.enable = function () {
+PointerController.prototype.disable = function () {
   // init lock if not created
   if (null != this.state.lock) {
     this.state.isMousedown = false;
@@ -173,7 +173,9 @@ PointerController.prototype.request = function () {
     // reset state when released
     self.state.lock.on('release', function () {
       self.state.isMousedown = false;
-      self.state.lock.destroy();
+      if (self.state.lock) {
+        self.state.lock.destroy();
+      }
     });
   });
 

@@ -41,6 +41,7 @@ void module.exports;
 
 var three = require('three.js')
   , events = require('events')
+  , Emitter = require('emitter')
 
 /**
  * (PI / 2) constant value reference with a 5 degree
@@ -593,6 +594,9 @@ function AxisController (scope, domElement) {
   this.onbeforedraw = this.onbeforedraw.bind(this);
   scope.on('beforedraw', this.onbeforedraw);
 }
+
+// Inherit `EventEmitter'
+Emitter(AxisController.prototype);
 
 /**
  * Handles `before:render' event.
