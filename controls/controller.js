@@ -820,14 +820,12 @@ AxisController.prototype.destroy = function () {
  * @public
  * @method
  * @name getAspectRatio
- * @param {Number} [max] - Optional max value
  * @return {Number}
  */
 
-AxisController.prototype.getAspectRatio = function (max) {
+AxisController.prototype.getAspectRatio = function () {
   var scope = this.scope;
   var camera = scope.camera;
   var aspect = camera ? camera.aspect : 1;
-  max = max || aspect;
-  return Math.max(max, aspect);
+  return aspect;
 };
