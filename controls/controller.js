@@ -660,7 +660,7 @@ AxisController.prototype.update = function () {
   var target = this.state.target;
   var friction = this.scope.state.friction;
   var interpolationFactor = this.scope.state.interpolationFactor;
-  var pi2 = (Math.PI/180) * 4;
+  var pi2 = (Math.PI/180) * 5;
   var ratio = this.scope.dimensions().ratio;
   var geo = this.scope.geometry();
 
