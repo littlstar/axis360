@@ -99,7 +99,7 @@ function tinyplanet (scope) {
   this.constraints.x = true;
   this.constraints.y = false;
 
-  var fovOffset = 15;
+  var fovOffset = 25;
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
   scope.fov(scope.state.originalfov + fovOffset);
   scope.debug("animate: TINY_PLANET begin");
