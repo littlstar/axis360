@@ -216,7 +216,16 @@ function KeyboardController (scope) {
    * @default DEFAULT_KEY_PAN_SPEED
    */
 
-  this.state.panSpeed = DEFAULT_KEY_PAN_SPEED;
+  this.state.define('panSpeed', function () {
+    var d = self.scope.dimensions();
+    var r = d.ratio;
+    var h = d.height;
+    var w = d.width
+    return {
+      x: (Math.sqrt(w) / (r * r)),
+      y: (Math.sqrt(h) / (r * r)) / 4,
+    };
+  });
 
   // initialize event delegation
   this.events.bind('mousedown');
@@ -239,19 +248,19 @@ function KeyboardController (scope) {
   }
 
   function up (data) {
-    this.pan({x: 0, y: this.state.panSpeed / self.getAspectRatio(2)});
+    this.pan({x: 0, y: this.state.panSpeed.y});
   }
 
   function down (data) {
-    this.pan({x: 0, y: -this.state.panSpeed / self.getAspectRatio(2)});
+    this.pan({x: 0, y: -this.state.panSpeed.y});
   }
 
   function left (data) {
-    this.pan({x: this.state.panSpeed * self.getAspectRatio(2), y: 0});
+    this.pan({x: this.state.panSpeed.x, y: 0});
   }
 
  function right (data) {
-    this.pan({x: -this.state.panSpeed * self.getAspectRatio(2), y: 0});
+    this.pan({x: -this.state.panSpeed.x, y: 0});
   }
 }
 
