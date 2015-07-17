@@ -10,7 +10,7 @@ Fisheye.
 
 ![](public/assets/tiny-planet.png)
 
-![](public/assets/oculus.png)
+![](public/assets/iceland-oculus.png)
 
 ## Status
 
@@ -33,9 +33,12 @@ var Axis = require('littlstar/axis');
 ```js
 var el = document.querySelector('#video');
 var frame = new Axis(el, {src: '/path/to/video.mp4'});
-frame.render()
-.once('ready', function () {
-  this.seek(5).play().projection('tiny planet');
+frame.once('ready', function () {
+  frame
+  .seek(5)
+  .play()
+  .projection('tiny planet')
+  .rotate('y', {value: 0.002, every: 500});
 });
 ```
 
