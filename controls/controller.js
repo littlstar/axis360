@@ -682,6 +682,14 @@ AxisController.prototype.update = function () {
     orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
   }
 
+  if ('tinyplanet' == this.scope.projections.current) {
+    if (orientation.x < 0 && target.position.z <= 0) {
+      target.position.negate();
+    } else if (orientation.x >= 0 && target.position.z >= 0) {
+      target.position.negate();
+    }
+  }
+
   this.state.previousOrientation.x = orientation.x;
   this.state.previousOrientation.y = orientation.y;
 
