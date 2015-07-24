@@ -38376,7 +38376,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.16.1",
+  "version": "1.17.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -42880,7 +42880,7 @@ function tinyplanet (scope) {
   this.constraints.x = true;
   this.constraints.y = false;
 
-  var fovOffset = 15;
+  var fovOffset = 25;
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
   scope.fov(scope.state.originalfov + fovOffset);
   scope.debug("animate: TINY_PLANET begin");
@@ -44094,7 +44094,7 @@ AxisController.prototype.update = function () {
   var target = this.state.target;
   var friction = this.scope.state.friction;
   var interpolationFactor = this.scope.state.interpolationFactor;
-  var pi2 = (Math.PI/180) * 4;
+  var pi2 = (Math.PI/180) * 5.25;
   var ratio = this.scope.dimensions().ratio;
   var geo = this.scope.geometry();
 
@@ -44114,6 +44114,14 @@ AxisController.prototype.update = function () {
   } else {
     // normalize x orientation
     orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
+  }
+
+  if ('tinyplanet' == this.scope.projections.current) {
+    if (orientation.x < 0 && target.position.z <= 0) {
+      target.position.negate();
+    } else if (orientation.x >= 0 && target.position.z >= 0) {
+      target.position.negate();
+    }
   }
 
   this.state.previousOrientation.x = orientation.x;
@@ -44254,16 +44262,14 @@ AxisController.prototype.destroy = function () {
  * @public
  * @method
  * @name getAspectRatio
- * @param {Number} [max] - Optional max value
  * @return {Number}
  */
 
-AxisController.prototype.getAspectRatio = function (max) {
+AxisController.prototype.getAspectRatio = function () {
   var scope = this.scope;
   var camera = scope.camera;
   var aspect = camera ? camera.aspect : 1;
-  max = max || aspect;
-  return Math.max(max, aspect);
+  return aspect;
 };
 
 }, {"three.js":2,"events":5,"emitter":4}],
@@ -44503,7 +44509,7 @@ MouseController.prototype.onmousemove = function (e) {
 
   // normalized movements from event
   util.normalizeMovements(e, movements);
-  movements.y *= friction;
+  movements.y *= (friction / 2);
   movements.x *= (friction / 0.5);
 
   this.pan(movements);
@@ -45006,7 +45012,16 @@ function KeyboardController (scope) {
    * @default DEFAULT_KEY_PAN_SPEED
    */
 
-  this.state.panSpeed = DEFAULT_KEY_PAN_SPEED;
+  this.state.define('panSpeed', function () {
+    var d = self.scope.dimensions();
+    var r = d.ratio;
+    var h = d.height;
+    var w = d.width
+    return {
+      x: (Math.sqrt(w) / (r * r)),
+      y: (Math.sqrt(h) / (r * r)) / 4,
+    };
+  });
 
   // initialize event delegation
   this.events.bind('mousedown');
@@ -45029,19 +45044,19 @@ function KeyboardController (scope) {
   }
 
   function up (data) {
-    this.pan({x: 0, y: this.state.panSpeed / self.getAspectRatio(2)});
+    this.pan({x: 0, y: this.state.panSpeed.y});
   }
 
   function down (data) {
-    this.pan({x: 0, y: -this.state.panSpeed / self.getAspectRatio(2)});
+    this.pan({x: 0, y: -this.state.panSpeed.y});
   }
 
   function left (data) {
-    this.pan({x: this.state.panSpeed * self.getAspectRatio(2), y: 0});
+    this.pan({x: this.state.panSpeed.x, y: 0});
   }
 
  function right (data) {
-    this.pan({x: -this.state.panSpeed * self.getAspectRatio(2), y: 0});
+    this.pan({x: -this.state.panSpeed.x, y: 0});
   }
 }
 
