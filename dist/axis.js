@@ -304,6 +304,7 @@ function Axis (parent, opts) {
   /** Instance video DOM element. */
   this.video = this.domElement.querySelector('video');
   this.video.onerror = console.warn.bind(console);
+  this.video.parentElement.removeChild(this.video);
 
   /** Axis' scene instance. */
   this.scene = null;
@@ -1216,7 +1217,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 64) {
+      if (now - this.state.lastRefresh >= 8) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
@@ -38376,7 +38377,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.17.0",
+  "version": "1.17.1",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
