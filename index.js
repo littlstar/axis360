@@ -216,6 +216,7 @@ function Axis (parent, opts) {
   /** Instance video DOM element. */
   this.video = this.domElement.querySelector('video');
   this.video.onerror = console.warn.bind(console);
+  this.video.parentElement.removeChild(this.video);
 
   /** Axis' scene instance. */
   this.scene = null;
@@ -1128,7 +1129,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 64) {
+      if (now - this.state.lastRefresh >= 8) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
