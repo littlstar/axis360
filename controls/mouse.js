@@ -233,7 +233,7 @@ MouseController.prototype.onmousemove = function (e) {
 
   // normalized movements from event
   util.normalizeMovements(e, movements);
-  movements.y *= friction;
+  movements.y *= (friction / 2);
   movements.x *= (friction / 0.5);
 
   this.pan(movements);
