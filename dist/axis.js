@@ -38376,7 +38376,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.17.2",
+  "version": "1.17.3",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -42880,9 +42880,8 @@ function tinyplanet (scope) {
   this.constraints.x = true;
   this.constraints.y = false;
 
-  var fovOffset = 25;
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
-  scope.fov(scope.state.originalfov + fovOffset);
+  scope.fov(Math.min(scope.state.originalfov * 2, 130));
   scope.debug("animate: TINY_PLANET begin");
   rotation.x = camera.target.x || 0;
   rotation.y = camera.target.y || 0;
