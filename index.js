@@ -141,8 +141,7 @@ function createRenderer (opts) {
 
   if (useWebgl) {
     return new three.WebGLRenderer({
-      antialias: true,
-      preserveDrawingBuffer: true
+      antialias: true
     });
   } else {
     return new three.CanvasRenderer();
