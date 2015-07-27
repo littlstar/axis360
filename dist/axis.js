@@ -229,8 +229,7 @@ function createRenderer (opts) {
 
   if (useWebgl) {
     return new three.WebGLRenderer({
-      antialias: true,
-      preserveDrawingBuffer: true
+      antialias: true
     });
   } else {
     return new three.CanvasRenderer();
@@ -38377,7 +38376,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.17.1",
+  "version": "1.17.2",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
