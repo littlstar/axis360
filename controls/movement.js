@@ -115,6 +115,18 @@ MovementController.prototype.update = function () {
 };
 
 /**
+ * Overloads MouseController#onmousedown
+ *
+ * @private
+ * @name onmousedown
+ * @param {Event} e - Event object.
+ */
+
+MovementController.prototype.onmousedown = function (e) {
+  MouseController.prototype.onmousedown.call(this, e);
+};
+
+/**
  * Overloads MouseController#onmousemove
  *
  * @private
@@ -133,7 +145,7 @@ MovementController.prototype.onmousemove = function (e) {
 
   movements.x = (e.screenX * friction) - this.state.movementsStart.x;
   movements.y = (e.screenY * friction) - this.state.movementsStart.y;
-  movements.y *= (friction/4);
+  movements.y *= (friction/8);
   movements.x *= (friction/4);
 
   // invert for true directional movement
