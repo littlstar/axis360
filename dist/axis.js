@@ -38376,7 +38376,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.17.3",
+  "version": "1.17.4",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -45017,8 +45017,8 @@ function KeyboardController (scope) {
     var h = d.height;
     var w = d.width
     return {
-      x: (Math.sqrt(w) / (r * r)),
-      y: (Math.sqrt(h) / (r * r)) / 4,
+      x: Math.min((Math.sqrt(h) / (r * r)), 10),
+      y: Math.min((Math.sqrt(w) / (r * r)) / 4, 10),
     };
   });
 
@@ -46124,6 +46124,18 @@ MovementController.prototype.update = function () {
 };
 
 /**
+ * Overloads MouseController#onmousedown
+ *
+ * @private
+ * @name onmousedown
+ * @param {Event} e - Event object.
+ */
+
+MovementController.prototype.onmousedown = function (e) {
+  MouseController.prototype.onmousedown.call(this, e);
+};
+
+/**
  * Overloads MouseController#onmousemove
  *
  * @private
@@ -46142,7 +46154,7 @@ MovementController.prototype.onmousemove = function (e) {
 
   movements.x = (e.screenX * friction) - this.state.movementsStart.x;
   movements.y = (e.screenY * friction) - this.state.movementsStart.y;
-  movements.y *= (friction/4);
+  movements.y *= (friction/8);
   movements.x *= (friction/4);
 
   // invert for true directional movement
