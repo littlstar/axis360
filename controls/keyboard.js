@@ -222,7 +222,7 @@ function KeyboardController (scope) {
     var h = d.height;
     var w = d.width
     return {
-      x: Math.min((Math.sqrt(h) / (r * r)), 10),
+      x: Math.min((Math.sqrt(h) / (r * r)), 20),
       y: Math.min((Math.sqrt(w) / (r * r)) / 4, 10),
     };
   });
