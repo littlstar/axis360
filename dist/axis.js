@@ -2173,16 +2173,14 @@ Axis.prototype.rotate = function (coord, opts) {
 Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   dimensions = dimensions || this.dimensions();
   var far = this.camera && this.camera.far || 0;
-  var scale = 1.8;
   var highScale = 1.5;
+  var height = dimensions.height;
   var fov = 0
 
   if (this.state.isImage) {
     fov = DEFAULT_FOV;
   } else {
-    fov = scale * (2 * Math.atan(
-      dimensions.height / (2 * far)
-    )) * (180/Math.PI);
+    fov = 2 * Math.atan(height / far) * (180/Math.PI);
 
     if (Math.sqrt(dimensions.ratio) > 2) {
       fov *= highScale;
@@ -38376,7 +38374,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.17.4",
+  "version": "1.17.5",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -45016,9 +45014,11 @@ function KeyboardController (scope) {
     var r = d.ratio;
     var h = d.height;
     var w = d.width
+    var x = Math.sqrt(w) / r;
+    var y = Math.min((Math.sqrt(w) / (r * r)) / 4, 5);
     return {
-      x: Math.min((Math.sqrt(h) / (r * r)), 10),
-      y: Math.min((Math.sqrt(w) / (r * r)) / 4, 10),
+      x: x * .55,
+      y: y * .45,
     };
   });
 
