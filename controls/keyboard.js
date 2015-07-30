@@ -221,9 +221,11 @@ function KeyboardController (scope) {
     var r = d.ratio;
     var h = d.height;
     var w = d.width
+    var x = Math.sqrt(w) / r;
+    var y = Math.min((Math.sqrt(w) / (r * r)) / 4, 5);
     return {
-      x: Math.min((Math.sqrt(h) / (r * r)), 20),
-      y: Math.min((Math.sqrt(w) / (r * r)) / 4, 10),
+      x: x * .55,
+      y: y * .45,
     };
   });
 
