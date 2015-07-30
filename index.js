@@ -2085,16 +2085,14 @@ Axis.prototype.rotate = function (coord, opts) {
 Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   dimensions = dimensions || this.dimensions();
   var far = this.camera && this.camera.far || 0;
-  var scale = 1.8;
   var highScale = 1.5;
+  var height = dimensions.height;
   var fov = 0
 
   if (this.state.isImage) {
     fov = DEFAULT_FOV;
   } else {
-    fov = scale * (2 * Math.atan(
-      dimensions.height / (2 * far)
-    )) * (180/Math.PI);
+    fov = 2 * Math.atan(height / far) * (180/Math.PI);
 
     if (Math.sqrt(dimensions.ratio) > 2) {
       fov *= highScale;
