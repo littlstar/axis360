@@ -399,6 +399,29 @@ function Axis (parent, opts) {
     }
   });
 
+  this.on('source', function () {
+    this.once('load', function () {
+      var dimensions = this.dimensions();
+      var radius = 0;
+      var fov = opts.fov;
+
+      if (!fov) {
+        fov = this.getCalculatedFieldOfView();
+      }
+
+      if (Math.sqrt(dimensions.ratio) <= 2) {
+        radius = (dimensions.width/4);
+        radius = (radius/2);
+      } else {
+        radius = (dimensions.width/6);
+      }
+
+      this.state.radius = radius;
+      this.fov(fov);
+      this.refreshScene();
+    });
+  });
+
   /**
    * Sets an attribute on the instance's
    * video DOM element from options passed in
@@ -1023,6 +1046,15 @@ Axis.prototype.size = function (width, height) {
 
 Axis.prototype.src = function (src, preservePreviewFrame) {
   var self = this;
+  function onImageLoaded () {
+    self.texture.image.onload = null;
+    self.state.ready();
+    self.emit('load');
+    self.texture.needsUpdate = true;
+    self.fov(self.getCalculatedFieldOfView());
+    self.refreshScene();
+  }
+
   if (src) {
     this.debug('src', src);
     this.state.update('src', src);
@@ -1046,21 +1078,11 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
         three.ImageUtils.crossOrigin = 'anonymous';
       }
 
-      if (this.texture && this.texture.image) {
-        this.texture.image.onload = function () {
-          self.texture.image.onload = null;
-          self.state.ready();
-          self.emit('load');
-          self.texture.needsUpdate = true;
-          self.fov(self.getCalculatedFieldOfView());
-          self.refreshScene();
-        };
+      if (this.texture && this.texture.image && this.texture.image != this.video) {
+        this.texture.image.onload = onImageLoaded;
         this.texture.image.src = src;
       } else {
-        this.texture = three.ImageUtils.loadTexture(src, null, function () {
-          self.state.ready();
-          self.emit('load');
-        });
+        this.texture = three.ImageUtils.loadTexture(src, null, onImageLoaded);
       }
 
       this.texture.minFilter = three.LinearFilter;
@@ -38369,7 +38391,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.17.6",
+  "version": "1.17.7",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -45012,7 +45034,7 @@ function KeyboardController (scope) {
     var x = Math.sqrt(w * r) / r;
     var y = Math.min((Math.sqrt(w) / (r * r)) / 4, 5);
     return {
-      x: x * .55,
+      x: Math.min(x * .55, 30),
       y: y * .45,
     };
   });
