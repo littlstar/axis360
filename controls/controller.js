@@ -670,6 +670,14 @@ AxisController.prototype.update = function () {
     return this;
   }
 
+  if (orientation.x != orientation.x) {
+    orientation.x = 0;
+  }
+
+  if (orientation.y != orientation.y) {
+    orientation.y = 0;
+  }
+
   if ('tinyplanet' == this.scope.projections.current) {
     interpolationFactor = TINY_PLANET_INTERPOLATION_FACTOR;
     pi2 = PI2*.2;
@@ -701,6 +709,13 @@ AxisController.prototype.update = function () {
   target.quaternion.slerp(quaternions.y, interpolationFactor);
   // multiplty target quaternion with our x quaternion
   target.quaternion.multiply(quaternions.x);
+
+  // avoid NaN
+  target.quaternion.set(target.quaternion.x || 0,
+                        target.quaternion.y || 0,
+                        target.quaternion.z || 0,
+                        target.quaternion.w || 0);
+
 
   return this;
 };
