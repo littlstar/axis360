@@ -990,13 +990,7 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
         three.ImageUtils.crossOrigin = 'anonymous';
       }
 
-      if (this.texture && this.texture.image && this.texture.image != this.video) {
-        this.texture.image.onload = onImageLoaded;
-        this.texture.image.src = src;
-      } else {
-        this.texture = three.ImageUtils.loadTexture(src, null, onImageLoaded);
-      }
-
+      this.texture = three.ImageUtils.loadTexture(src, null, onImageLoaded);
       this.texture.minFilter = three.LinearFilter;
     }
 
@@ -1692,7 +1686,7 @@ Axis.prototype.dimensions = function () {
     width = this.video.videoWidth;
   }
 
-  return {height: height, width: width, ratio: (width / height)};
+  return {height: height, width: width, ratio: (width / height) || 0};
 };
 
 /**
