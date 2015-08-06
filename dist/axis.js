@@ -1078,13 +1078,7 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
         three.ImageUtils.crossOrigin = 'anonymous';
       }
 
-      if (this.texture && this.texture.image && this.texture.image != this.video) {
-        this.texture.image.onload = onImageLoaded;
-        this.texture.image.src = src;
-      } else {
-        this.texture = three.ImageUtils.loadTexture(src, null, onImageLoaded);
-      }
-
+      this.texture = three.ImageUtils.loadTexture(src, null, onImageLoaded);
       this.texture.minFilter = three.LinearFilter;
     }
 
@@ -1780,7 +1774,7 @@ Axis.prototype.dimensions = function () {
     width = this.video.videoWidth;
   }
 
-  return {height: height, width: width, ratio: (width / height)};
+  return {height: height, width: width, ratio: (width / height) || 0};
 };
 
 /**
@@ -38391,7 +38385,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.17.7",
+  "version": "1.17.9",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -44118,6 +44112,14 @@ AxisController.prototype.update = function () {
     return this;
   }
 
+  if (orientation.x != orientation.x) {
+    orientation.x = 0;
+  }
+
+  if (orientation.y != orientation.y) {
+    orientation.y = 0;
+  }
+
   if ('tinyplanet' == this.scope.projections.current) {
     interpolationFactor = TINY_PLANET_INTERPOLATION_FACTOR;
     pi2 = PI2*.2;
@@ -44149,6 +44151,13 @@ AxisController.prototype.update = function () {
   target.quaternion.slerp(quaternions.y, interpolationFactor);
   // multiplty target quaternion with our x quaternion
   target.quaternion.multiply(quaternions.x);
+
+  // avoid NaN
+  target.quaternion.set(target.quaternion.x || 0,
+                        target.quaternion.y || 0,
+                        target.quaternion.z || 0,
+                        target.quaternion.w || 0);
+
 
   return this;
 };
@@ -45034,8 +45043,8 @@ function KeyboardController (scope) {
     var x = Math.sqrt(w * r) / r;
     var y = Math.min((Math.sqrt(w) / (r * r)) / 4, 5);
     return {
-      x: Math.min(x * .55, 30),
-      y: y * .45,
+      x: (Math.min(x * .55, 30)) || 0,
+      y: (y * .45) || 0,
     };
   });
 
