@@ -224,8 +224,8 @@ function KeyboardController (scope) {
     var x = Math.sqrt(w * r) / r;
     var y = Math.min((Math.sqrt(w) / (r * r)) / 4, 5);
     return {
-      x: Math.min(x * .55, 30),
-      y: y * .45,
+      x: (Math.min(x * .55, 30)) || 0,
+      y: (y * .45) || 0,
     };
   });
 
