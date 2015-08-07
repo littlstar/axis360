@@ -992,7 +992,7 @@ Axis.prototype.onmousewheel = function (e) {
 
   if (this.state.fov < min) {
     this.state.fov = min;
-  } else if (this.fov > max) {
+  } else if (this.state.fov > max) {
     this.state.fov = max;
   }
 
@@ -2191,15 +2191,14 @@ Axis.prototype.rotate = function (coord, opts) {
 
 Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   dimensions = dimensions || this.dimensions();
-  //var height = dimensions.height;
-  var height = this.height();
+  var height = dimensions.height;
   var far = this.camera && this.camera.far || 0;
   var fov = 0
 
   if (Math.sqrt(dimensions.ratio) <= 2 && this.state.isImage) {
     fov = DEFAULT_FOV;
   } else {
-    fov = (2 * Math.atan(height / far) * 180 / Math.PI) * 1.25;
+    fov = (2 * Math.atan(height / far) * 180 / Math.PI) * .8;
   }
 
   return fov;
@@ -38389,7 +38388,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.17.10",
+  "version": "1.17.11",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38880,7 +38879,7 @@ exports.FRAME_CLICK_THRESHOLD = 50;
  * @type {Number}
  */
 
-exports.MIN_WHEEL_DISTANCE = 5;
+exports.MIN_WHEEL_DISTANCE = 20;
 
 /**
  * Minimum wheel distance used to fence scrolling
@@ -38892,7 +38891,7 @@ exports.MIN_WHEEL_DISTANCE = 5;
  * @type {Number}
  */
 
-exports.MAX_WHEEL_DISTANCE = 500;
+exports.MAX_WHEEL_DISTANCE = 150;
 
 /**
  * Minimum possible y coordinate
@@ -45040,17 +45039,18 @@ function KeyboardController (scope) {
    */
 
   this.state.define('panSpeed', function () {
+    var min = Math.min;
+    var max = Math.max;
+    var sqrt = Math.sqrt;
     var d = self.scope.dimensions();
     var r = d.ratio;
     var h = d.height;
     var w = d.width
-    var x = Math.sqrt(w * r) / r;
-    var y = Math.min((Math.sqrt(w) / (r * r)) / 4, 5);
-    var min = Math.min;
-    var max = Math.max;
-    x = min(x * .55, 30) || 0;
+    var x = sqrt(w * r) / r;
+    var y = min((Math.sqrt(w) / (r * r)) / 4, 5);
+    x = min(x * .75, 30) || 0;
     y = y * .45 || 0;
-    x = max(8, min(x, 20));
+    x = max(8, min(x, 25));
     y = max(2, min(y, 8));
     return {x: x, y: y};
   });
