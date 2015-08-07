@@ -2191,15 +2191,25 @@ Axis.prototype.rotate = function (coord, opts) {
 
 Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   dimensions = dimensions || this.dimensions();
+  getCorrectGeometry(this);
+  var geometry = this.geometry();
   var height = dimensions.height;
   var far = this.camera && this.camera.far || 0;
   var fov = 0
 
   if (Math.sqrt(dimensions.ratio) <= 2 && this.state.isImage) {
     fov = DEFAULT_FOV;
+    if ('cylinder' == geometry) {
+      fov /=2;
+    }
+
   } else {
-    fov = (2 * Math.atan(height / far) * 180 / Math.PI) * .8;
+    fov = (2 * Math.atan(height / far) * 180 / Math.PI) *.8;
+    if ('cylinder' == geometry) {
+      fov *= 1.5;
+    }
   }
+
 
   return fov;
 };
@@ -38388,7 +38398,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.17.11",
+  "version": "1.17.12",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38741,7 +38751,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 90;
+exports.DEFAULT_FOV = 100;
 
 /**
  * Default interpolation factor.
