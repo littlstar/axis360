@@ -181,7 +181,7 @@ exports.FRAME_CLICK_THRESHOLD = 50;
  * @type {Number}
  */
 
-exports.MIN_WHEEL_DISTANCE = 5;
+exports.MIN_WHEEL_DISTANCE = 20;
 
 /**
  * Minimum wheel distance used to fence scrolling
@@ -193,7 +193,7 @@ exports.MIN_WHEEL_DISTANCE = 5;
  * @type {Number}
  */
 
-exports.MAX_WHEEL_DISTANCE = 500;
+exports.MAX_WHEEL_DISTANCE = 150;
 
 /**
  * Minimum possible y coordinate
