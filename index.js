@@ -761,9 +761,12 @@ Axis.prototype.onresize = function (e) {
       newHeight = containerHeight;
       newWidth = containerHeight * aspectRatio;
       resized = true;
+    } else {
+      this.fov(this.state.originalfov);
     }
 
     if (resized) {
+      this.fov(this.getCalculatedFieldOfView());
       this.size(newWidth, newHeight);
       this.emit('resize', {
         width: this.state.width,
@@ -2100,14 +2103,15 @@ Axis.prototype.rotate = function (coord, opts) {
 
 Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   dimensions = dimensions || this.dimensions();
-  var height = dimensions.height;
+  //var height = dimensions.height;
+  var height = this.height();
   var far = this.camera && this.camera.far || 0;
   var fov = 0
 
   if (Math.sqrt(dimensions.ratio) <= 2 && this.state.isImage) {
     fov = DEFAULT_FOV;
   } else {
-    fov = 2 * Math.atan(height / far) * 180 / Math.PI;
+    fov = (2 * Math.atan(height / far) * 180 / Math.PI) * 1.25;
   }
 
   return fov;
