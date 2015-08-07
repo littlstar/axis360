@@ -849,9 +849,12 @@ Axis.prototype.onresize = function (e) {
       newHeight = containerHeight;
       newWidth = containerHeight * aspectRatio;
       resized = true;
+    } else {
+      this.fov(this.state.originalfov);
     }
 
     if (resized) {
+      this.fov(this.getCalculatedFieldOfView());
       this.size(newWidth, newHeight);
       this.emit('resize', {
         width: this.state.width,
@@ -2188,14 +2191,15 @@ Axis.prototype.rotate = function (coord, opts) {
 
 Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   dimensions = dimensions || this.dimensions();
-  var height = dimensions.height;
+  //var height = dimensions.height;
+  var height = this.height();
   var far = this.camera && this.camera.far || 0;
   var fov = 0
 
   if (Math.sqrt(dimensions.ratio) <= 2 && this.state.isImage) {
     fov = DEFAULT_FOV;
   } else {
-    fov = 2 * Math.atan(height / far) * 180 / Math.PI;
+    fov = (2 * Math.atan(height / far) * 180 / Math.PI) * 1.25;
   }
 
   return fov;
@@ -38385,7 +38389,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.17.9",
+  "version": "1.17.10",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38827,7 +38831,7 @@ exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
  * @type {Number}
  */
 
-exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.35;
+exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.45;
 
 /**
  * Animation factor unit applied to changes in
@@ -45042,10 +45046,13 @@ function KeyboardController (scope) {
     var w = d.width
     var x = Math.sqrt(w * r) / r;
     var y = Math.min((Math.sqrt(w) / (r * r)) / 4, 5);
-    return {
-      x: (Math.min(x * .55, 30)) || 0,
-      y: (y * .45) || 0,
-    };
+    var min = Math.min;
+    var max = Math.max;
+    x = min(x * .55, 30) || 0;
+    y = y * .45 || 0;
+    x = max(8, min(x, 20));
+    y = max(2, min(y, 8));
+    return {x: x, y: y};
   });
 
   // initialize event delegation
