@@ -223,10 +223,13 @@ function KeyboardController (scope) {
     var w = d.width
     var x = Math.sqrt(w * r) / r;
     var y = Math.min((Math.sqrt(w) / (r * r)) / 4, 5);
-    return {
-      x: (Math.min(x * .55, 30)) || 0,
-      y: (y * .45) || 0,
-    };
+    var min = Math.min;
+    var max = Math.max;
+    x = min(x * .55, 30) || 0;
+    y = y * .45 || 0;
+    x = max(8, min(x, 20));
+    y = max(2, min(y, 8));
+    return {x: x, y: y};
   });
 
   // initialize event delegation

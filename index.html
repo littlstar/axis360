@@ -98,7 +98,7 @@
     <button id="enable-pointer-lock">Enable Pointer Lock</button>
     <button id="toggle-mouse-movement-control">Toggle Mouse Movements Control</button>
     <h4>Preview</h4>
-    <img id="preview"/>
+    <!--img id="preview"/-->
     <div class="normal video"></div>
     <div class="vsn video"></div>
     <script type="text/javascript" charset="utf-8">
@@ -114,7 +114,7 @@
         loop: true,
         muted: true,
         //src: 'test.webm'
-        //src: '/public/assets/paramotor.mp4'
+        src: '/public/assets/paramotor.mp4'
         //src: '/public/assets/hostel-luego.jpg'
         //src: 'public/assets/vsn.mp4',
         //src: 'https://ls-360-media.s3.amazonaws.com/production/b7333d11-5d58-462a-9bc7-e26fa1495569/web.mp4'
@@ -151,8 +151,10 @@
 
       document.querySelector('#enable-pointer-lock')
       .addEventListener('click', function () {
-        frame.controls.pointer.request();
-        });
+        var pointer = frame.controls.pointer;
+        pointer.enable();
+        pointer.request();
+      });
 
       var isMouseMovementEnabled = false;
       document.querySelector('#toggle-mouse-movement-control')
