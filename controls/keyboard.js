@@ -217,17 +217,18 @@ function KeyboardController (scope) {
    */
 
   this.state.define('panSpeed', function () {
+    var min = Math.min;
+    var max = Math.max;
+    var sqrt = Math.sqrt;
     var d = self.scope.dimensions();
     var r = d.ratio;
     var h = d.height;
     var w = d.width
-    var x = Math.sqrt(w * r) / r;
-    var y = Math.min((Math.sqrt(w) / (r * r)) / 4, 5);
-    var min = Math.min;
-    var max = Math.max;
-    x = min(x * .55, 30) || 0;
+    var x = sqrt(w * r) / r;
+    var y = min((Math.sqrt(w) / (r * r)) / 4, 5);
+    x = min(x * .75, 30) || 0;
     y = y * .45 || 0;
-    x = max(8, min(x, 20));
+    x = max(8, min(x, 25));
     y = max(2, min(y, 8));
     return {x: x, y: y};
   });
