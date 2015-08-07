@@ -904,7 +904,7 @@ Axis.prototype.onmousewheel = function (e) {
 
   if (this.state.fov < min) {
     this.state.fov = min;
-  } else if (this.fov > max) {
+  } else if (this.state.fov > max) {
     this.state.fov = max;
   }
 
