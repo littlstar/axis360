@@ -145,8 +145,8 @@ MovementController.prototype.onmousemove = function (e) {
 
   movements.x = (e.screenX * friction) - this.state.movementsStart.x;
   movements.y = (e.screenY * friction) - this.state.movementsStart.y;
-  movements.y *= (friction/8);
-  movements.x *= (friction/4);
+  movements.y *= (friction/12);
+  movements.x *= (friction/6);
 
   // invert for true directional movement
   movements.x *= -1;
