@@ -2119,7 +2119,7 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
     if ('cylinder' == geometry) {
       fov *= .7;
     } else {
-      fov *= .8;
+      fov *= .85;
     }
   }
 
