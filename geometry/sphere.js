@@ -16,7 +16,7 @@ var three = require('three.js')
 module.exports = function sphere (axis) {
   var heightSegments = 50;
   var widthSegments = 80;
-  var radius = Math.max(400, axis.state.radius);
+  var radius = Math.min(400, axis.state.radius);
   var phi = 100;
   return new three.SphereGeometry(radius,
                                   widthSegments,

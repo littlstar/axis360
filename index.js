@@ -2125,5 +2125,5 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
 
   // @TODO(werle) - fix this
   // this seems to be a comfortable limit for most content
-  return Math.max(fov, DEFAULT_FOV * .6);
+  return Math.min(DEFAULT_FOV, Math.max(fov, DEFAULT_FOV * .6));
 };
