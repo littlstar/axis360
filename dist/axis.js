@@ -38400,7 +38400,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.18.3",
+  "version": "1.18.4",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -39114,8 +39114,13 @@ var three = require('three.js')
 module.exports = function sphere (axis) {
   var heightSegments = 50;
   var widthSegments = 80;
-  var radius = Math.min(400, axis.state.radius);
+  var radius = axis.state.radius;
   var phi = 100;
+  if (radius < 400) {
+    radius = 400;
+  } else if (radius > 600) {
+    radius = 600;
+  }
   return new three.SphereGeometry(radius,
                                   widthSegments,
                                   heightSegments,
