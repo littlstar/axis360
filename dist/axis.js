@@ -350,6 +350,19 @@ function Axis (parent, opts) {
   /** Axis' camera instance. */
   this.camera = createCamera(this);
 
+  function getRadius () {
+    var dimensions = self.dimensions();
+    var radius = 0;
+    if ('cylinder' == self.geometry() ||
+        Math.sqrt(dimensions.ratio) <= 2) {
+      radius = dimensions.width / 4;
+      radius = radius / 2;
+    } else {
+      radius = dimensions.width / 6;
+    }
+    return radius | 0;
+  }
+
   // setup default state when ready
   this.once('ready', function () {
     this.debug('ready');
@@ -358,7 +371,6 @@ function Axis (parent, opts) {
       self.video.currentTime = parseFloat(opts.time) || parseFloat(opts.t) || 0;
     }
 
-    var dimensions = this.dimensions();
     var radius = 0;
     var aspect = this.camera.aspect || 1;
     var far = this.camera.far;
@@ -382,14 +394,7 @@ function Axis (parent, opts) {
       fov = this.getCalculatedFieldOfView();
     }
 
-    if (Math.sqrt(dimensions.ratio) <= 2) {
-      radius = (dimensions.width/4);
-      radius = (radius/2);
-    } else {
-      radius = (dimensions.width/6);
-    }
-
-    this.state.radius = radius;
+    this.state.radius = getRadius();
     this.fov(fov);
     this.refreshScene();
 
@@ -401,7 +406,6 @@ function Axis (parent, opts) {
 
   this.on('source', function () {
     this.once('load', function () {
-      var dimensions = this.dimensions();
       var radius = 0;
       var fov = opts.fov;
 
@@ -409,14 +413,7 @@ function Axis (parent, opts) {
         fov = this.getCalculatedFieldOfView();
       }
 
-      if (Math.sqrt(dimensions.ratio) <= 2) {
-        radius = (dimensions.width/4);
-        radius = (radius/2);
-      } else {
-        radius = (dimensions.width/6);
-      }
-
-      this.state.radius = radius;
+      this.state.radius = getRadius();
       this.fov(fov);
       this.refreshScene();
     });
@@ -2197,21 +2194,26 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   var far = this.camera && this.camera.far || 0;
   var fov = 0
 
-  if (Math.sqrt(dimensions.ratio) <= 2 && this.state.isImage) {
+  if (2 != dimensions.ratio && Math.sqrt(dimensions.ratio) < 2 && this.state.isImage) {
     fov = DEFAULT_FOV;
     if ('cylinder' == geometry) {
       fov /=2;
     }
 
   } else {
-    fov = (2 * Math.atan(height / far) * 180 / Math.PI) *.8;
+    fov = (2 * Math.atan(height / far) * 180 / Math.PI);
+
+    // scale down
     if ('cylinder' == geometry) {
-      fov *= 1.5;
+      fov *= .7;
+    } else {
+      fov *= .6;
     }
   }
 
-
-  return fov;
+  // @TODO(werle) - fix this
+  // this seems to be a comfortable limit for most content
+  return Math.max(fov, DEFAULT_FOV * .6);
 };
 
 }, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/pointer":30,"./controls/movement":31,"./controls/controller":32}],
@@ -38398,7 +38400,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.17.12",
+  "version": "1.18.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38840,7 +38842,7 @@ exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
  * @type {Number}
  */
 
-exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.45;
+exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.57;
 
 /**
  * Animation factor unit applied to changes in
@@ -39080,7 +39082,7 @@ var three = require('three.js')
 
 module.exports = function (axis) {
   var radiusSegments = 64;
-  var heightSegments = 1;
+  var heightSegments = 4;
   var openEnded = true;
   var radius = axis.state.radius;
   var height = axis.dimensions().height;
@@ -44115,7 +44117,7 @@ AxisController.prototype.update = function () {
   var target = this.state.target;
   var friction = this.scope.state.friction;
   var interpolationFactor = this.scope.state.interpolationFactor;
-  var pi2 = (Math.PI/180) * 5.25;
+  var pi2 = (Math.PI/180) * 5.4;
   var ratio = this.scope.dimensions().ratio;
   var geo = this.scope.geometry();
 
@@ -46197,8 +46199,8 @@ MovementController.prototype.onmousemove = function (e) {
 
   movements.x = (e.screenX * friction) - this.state.movementsStart.x;
   movements.y = (e.screenY * friction) - this.state.movementsStart.y;
-  movements.y *= (friction/8);
-  movements.x *= (friction/4);
+  movements.y *= (friction/12);
+  movements.x *= (friction/6);
 
   // invert for true directional movement
   movements.x *= -1;
