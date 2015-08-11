@@ -2207,7 +2207,7 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
     if ('cylinder' == geometry) {
       fov *= .7;
     } else {
-      fov *= .8;
+      fov *= .85;
     }
   }
 
@@ -38400,7 +38400,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.18.1",
+  "version": "1.18.2",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
