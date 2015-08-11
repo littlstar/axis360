@@ -2213,7 +2213,7 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
 
   // @TODO(werle) - fix this
   // this seems to be a comfortable limit for most content
-  return Math.max(fov, DEFAULT_FOV * .6);
+  return Math.min(DEFAULT_FOV, Math.max(fov, DEFAULT_FOV * .6));
 };
 
 }, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/pointer":30,"./controls/movement":31,"./controls/controller":32}],
@@ -38400,7 +38400,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.18.2",
+  "version": "1.18.3",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -39114,7 +39114,7 @@ var three = require('three.js')
 module.exports = function sphere (axis) {
   var heightSegments = 50;
   var widthSegments = 80;
-  var radius = Math.max(400, axis.state.radius);
+  var radius = Math.min(400, axis.state.radius);
   var phi = 100;
   return new three.SphereGeometry(radius,
                                   widthSegments,
