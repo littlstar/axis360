@@ -15,7 +15,7 @@ var three = require('three.js')
 
 module.exports = function (axis) {
   var radiusSegments = 64;
-  var heightSegments = 1;
+  var heightSegments = 4;
   var openEnded = true;
   var radius = axis.state.radius;
   var height = axis.dimensions().height;

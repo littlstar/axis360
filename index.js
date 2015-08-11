@@ -262,6 +262,19 @@ function Axis (parent, opts) {
   /** Axis' camera instance. */
   this.camera = createCamera(this);
 
+  function getRadius () {
+    var dimensions = self.dimensions();
+    var radius = 0;
+    if ('cylinder' == self.geometry() ||
+        Math.sqrt(dimensions.ratio) <= 2) {
+      radius = dimensions.width / 4;
+      radius = radius / 2;
+    } else {
+      radius = dimensions.width / 6;
+    }
+    return radius | 0;
+  }
+
   // setup default state when ready
   this.once('ready', function () {
     this.debug('ready');
@@ -270,7 +283,6 @@ function Axis (parent, opts) {
       self.video.currentTime = parseFloat(opts.time) || parseFloat(opts.t) || 0;
     }
 
-    var dimensions = this.dimensions();
     var radius = 0;
     var aspect = this.camera.aspect || 1;
     var far = this.camera.far;
@@ -294,14 +306,7 @@ function Axis (parent, opts) {
       fov = this.getCalculatedFieldOfView();
     }
 
-    if (Math.sqrt(dimensions.ratio) <= 2) {
-      radius = (dimensions.width/4);
-      radius = (radius/2);
-    } else {
-      radius = (dimensions.width/6);
-    }
-
-    this.state.radius = radius;
+    this.state.radius = getRadius();
     this.fov(fov);
     this.refreshScene();
 
@@ -313,7 +318,6 @@ function Axis (parent, opts) {
 
   this.on('source', function () {
     this.once('load', function () {
-      var dimensions = this.dimensions();
       var radius = 0;
       var fov = opts.fov;
 
@@ -321,14 +325,7 @@ function Axis (parent, opts) {
         fov = this.getCalculatedFieldOfView();
       }
 
-      if (Math.sqrt(dimensions.ratio) <= 2) {
-        radius = (dimensions.width/4);
-        radius = (radius/2);
-      } else {
-        radius = (dimensions.width/6);
-      }
-
-      this.state.radius = radius;
+      this.state.radius = getRadius();
       this.fov(fov);
       this.refreshScene();
     });
@@ -2109,19 +2106,24 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   var far = this.camera && this.camera.far || 0;
   var fov = 0
 
-  if (Math.sqrt(dimensions.ratio) <= 2 && this.state.isImage) {
+  if (2 != dimensions.ratio && Math.sqrt(dimensions.ratio) < 2 && this.state.isImage) {
     fov = DEFAULT_FOV;
     if ('cylinder' == geometry) {
       fov /=2;
     }
 
   } else {
-    fov = (2 * Math.atan(height / far) * 180 / Math.PI) *.8;
+    fov = (2 * Math.atan(height / far) * 180 / Math.PI);
+
+    // scale down
     if ('cylinder' == geometry) {
-      fov *= 1.5;
+      fov *= .7;
+    } else {
+      fov *= .6;
     }
   }
 
-
-  return fov;
+  // @TODO(werle) - fix this
+  // this seems to be a comfortable limit for most content
+  return Math.max(fov, DEFAULT_FOV * .6);
 };
