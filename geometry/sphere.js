@@ -16,8 +16,13 @@ var three = require('three.js')
 module.exports = function sphere (axis) {
   var heightSegments = 50;
   var widthSegments = 80;
-  var radius = Math.min(400, axis.state.radius);
+  var radius = axis.state.radius;
   var phi = 100;
+  if (radius < 400) {
+    radius = 400;
+  } else if (radius > 600) {
+    radius = 600;
+  }
   return new three.SphereGeometry(radius,
                                   widthSegments,
                                   heightSegments,
