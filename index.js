@@ -288,7 +288,7 @@ function Axis (parent, opts) {
     var far = this.camera.far;
     var fov = opts.fov;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : 2.1;
+    var y = opts && opts.orientation ? opts.orientation.y : 2 * Math.PI/3
 
     if ('number' == typeof x && x == x) {
       this.orientation.x = x;
@@ -1144,7 +1144,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 8) {
+      if (now - this.state.lastRefresh >= 16) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;

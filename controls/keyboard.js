@@ -50,8 +50,8 @@ var keycode = require('keycode')
 var AxisController = require('./controller')
   , constants = require('../constants')
 
-// default key panning speed in pixels
-var DEFAULT_KEY_PAN_SPEED = constants.DEFAULT_KEY_PAN_SPEED;
+// default key rotatening speed in pixels
+var DEFAULT_KEY_rotate_SPEED = constants.DEFAULT_KEY_rotate_SPEED;
 
 // our epsilon value
 var EPSILON_VALUE = constants.EPSILON_VALUE;
@@ -208,29 +208,16 @@ function KeyboardController (scope) {
   });
 
   /**
-   * Key panning speed in pixels
+   * Key rotatening speed in pixels
    *
    * @public
-   * @name state.panSpeed
+   * @name state.rotateSpeed
    * @type {Number}
-   * @default DEFAULT_KEY_PAN_SPEED
+   * @default DEFAULT_KEY_rotate_SPEED
    */
 
-  this.state.define('panSpeed', function () {
-    var min = Math.min;
-    var max = Math.max;
-    var sqrt = Math.sqrt;
-    var d = self.scope.dimensions();
-    var r = d.ratio;
-    var h = d.height;
-    var w = d.width
-    var x = sqrt(w * r) / r;
-    var y = min((Math.sqrt(w) / (r * r)) / 4, 5);
-    x = min(x * .75, 30) || 0;
-    y = y * .45 || 0;
-    x = max(8, min(x, 25));
-    y = max(2, min(y, 8));
-    return {x: x, y: y};
+  this.state.define('rotateSpeed', function () {
+    return {x: 2, y: 1}
   });
 
   // initialize event delegation
@@ -254,19 +241,19 @@ function KeyboardController (scope) {
   }
 
   function up (data) {
-    this.pan({x: 0, y: this.state.panSpeed.y});
+    this.rotate({x: 1, y: 0});
   }
 
   function down (data) {
-    this.pan({x: 0, y: -this.state.panSpeed.y});
+    this.rotate({x: -1, y: 0});
   }
 
   function left (data) {
-    this.pan({x: this.state.panSpeed.x, y: 0});
+    this.rotate({x: 0, y: 1});
   }
 
  function right (data) {
-    this.pan({x: -this.state.panSpeed.x, y: 0});
+    this.rotate({x: 0, y: -1});
   }
 }
 

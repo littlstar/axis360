@@ -194,7 +194,7 @@ TouchController.prototype.ontouchmove = function (e) {
   if (this.scope.domElement.contains(e.target)) {
     this.state.drag.x = touch.pageX;
     this.state.drag.y = touch.pageY;
-    this.pan({x: x, y: y});
+    this.rotate({x: x, y: y});
   }
 };
 
