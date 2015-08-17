@@ -44,15 +44,6 @@ var three = require('three.js')
   , Emitter = require('emitter')
 
 /**
- * (PI / 2) constant value reference with a 5 degree
- * offset to prevent locking.
- * @private
- * @type {Number}
- */
-
-var PI2 = ((Math.PI/2) * (180/Math.PI) - 30) * (Math.PI/180);
-
-/**
  * Tiny planet interpolation factor
  *
  * @private
@@ -120,16 +111,6 @@ function AxisController (scope, domElement) {
       this.__defineGetter__(key, getter);
       return this;
     },
-
-    /**
-     * Predicate indicating if state is frozen.
-     *
-     * @public
-     * @name state.isFrozen
-     * @type {Boolean}
-     */
-
-    get isFrozen () { return Object.isFrozen(this); },
 
     /**
      * Predicate indicating if controller is enabled.
@@ -344,26 +325,6 @@ function AxisController (scope, domElement) {
       z: new three.Vector3(0, 0, 1),
 
       /**
-       * Pan vector.
-       *
-       * @public
-       * @name state.vectors.pan
-       * @type {THREE.Vector3}
-       */
-
-      pan: new three.Vector3(0, 0, 0),
-
-      /**
-       * Pan offset vector.
-       *
-       * @public
-       * @name state.vectors.panOffset
-       * @type {THREE.Vector3}
-       */
-
-      panOffset: new three.Vector3(0, 0, 0),
-
-      /**
        * Target vector.
        *
        * @public
@@ -435,16 +396,6 @@ function AxisController (scope, domElement) {
       y: new three.Quaternion(),
 
       /**
-       * Z quaternion.
-       *
-       * @public
-       * @name state.quaternions.z
-       * @type {THREE.Quaternion}
-       */
-
-      z: new three.Quaternion(),
-
-      /**
        * Directional quaternion.
        *
        * @public
@@ -462,39 +413,6 @@ function AxisController (scope, domElement) {
        */
 
       last: new three.Quaternion(),
-
-      /**
-       * Inverse directional quaternion.
-       *
-       * @public
-       * @name state.quaternions.directionInverse
-       * @type {THREE.Quaternion}
-       */
-
-      directionInverse: new three.Quaternion(),
-
-      /**
-       * Screen rotation quaternion.
-       *
-       * @public
-       * @name state.quaternions.screen
-       * @type {THREE.Quaternion}
-       */
-
-      screen: new three.Quaternion(),
-
-      /**
-       * World rotation quaternion
-       *
-       * @public
-       * @name state.quaternions.world
-       * @type {THREE.Quaternion}
-       */
-
-      world: new three.Quaternion(-Math.sqrt(0.5),
-                                  0,
-                                  0,
-                                  Math.sqrt(0.5))
     },
 
     /**
@@ -559,16 +477,6 @@ function AxisController (scope, domElement) {
 
     z: 0
   };
-
-  /**
-   * Previous controller orientation.
-   *
-   * @public
-   * @name state.previousOrientation
-   * @type {Object}
-   */
-
-  this.state.previousOrientation = {x: 0, y: 0};
 
   /**
    * Controllers DOM Element.
@@ -658,9 +566,8 @@ AxisController.prototype.update = function () {
   var orientation = this.state.orientation;
   var vectors = this.state.vectors;
   var target = this.state.target;
-  var friction = this.scope.state.friction;
+  var quat = new three.Quaternion().copy(target.quaternion);
   var interpolationFactor = this.scope.state.interpolationFactor;
-  var pi2 = (Math.PI/180) * 5.4;
   var ratio = this.scope.dimensions().ratio;
   var geo = this.scope.geometry();
 
@@ -680,14 +587,13 @@ AxisController.prototype.update = function () {
 
   if ('tinyplanet' == this.scope.projections.current) {
     interpolationFactor = TINY_PLANET_INTERPOLATION_FACTOR;
-    pi2 = PI2*.2;
   }
 
   if ('cylinder' == geo) {
     orientation.x = 0;
   } else {
     // normalize x orientation
-    orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
+    orientation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, orientation.x));
   }
 
   if ('tinyplanet' == this.scope.projections.current) {
@@ -698,24 +604,26 @@ AxisController.prototype.update = function () {
     }
   }
 
-  this.state.previousOrientation.x = orientation.x;
-  this.state.previousOrientation.y = orientation.y;
-
   // update controller quaternions
-  quaternions.x.setFromAxisAngle(vectors.x, orientation.x);
   quaternions.y.setFromAxisAngle(vectors.y, orientation.y);
+  quaternions.x.setFromAxisAngle(vectors.x, orientation.x * interpolationFactor);
 
   // update target quaternion
-  target.quaternion.slerp(quaternions.y, interpolationFactor);
-  // multiplty target quaternion with our x quaternion
-  target.quaternion.multiply(quaternions.x);
+  quat.slerp(quaternions.y, interpolationFactor);
 
   // avoid NaN
-  target.quaternion.set(target.quaternion.x || 0,
-                        target.quaternion.y || 0,
-                        target.quaternion.z || 0,
-                        target.quaternion.w || 0);
+  target.quaternion.set(quat.x || 0,
+                        quat.y || 0,
+                        quat.z || 0,
+                        quat.w || 0);
 
+  quat.multiply(quaternions.x);
+
+  // avoid NaN
+  target.quaternion.set(quat.x || 0,
+                        quat.y || 0,
+                        quat.z || 0,
+                        quat.w || 0);
 
   return this;
 };
@@ -779,19 +687,19 @@ AxisController.prototype.target = function (target) {
 };
 
 /**
- * Pan controller target with x and y deltas in pixels.
+ * Rotate controller target with x and y radian rotations.
  *
  * @public
  * @method
- * @name pan
- * @param {Object} delta - X and Y deltas in pixels
- * @param {Number} delta.x - X delta value in pixels.
- * @param {Number} delta.y - Y delta value in pixels.
+ * @name rotate
+ * @param {Object} delta - X and Y deltas in radians.
+ * @param {Number} delta.x - X delta value in radians.
+ * @param {Number} delta.y - Y delta value in radians.
  * @throws TypeError
  * @return {AxisController}
  */
 
-AxisController.prototype.pan = function (delta) {
+AxisController.prototype.rotate = function (delta) {
   if (false == this.state.isEnabled) { return this; }
   if ('object' != typeof delta) {
     throw new TypeError("Expecting object.");
@@ -800,20 +708,23 @@ AxisController.prototype.pan = function (delta) {
   var orientation = this.state.orientation;
   var friction = this.scope.state.friction;
 
+  delta.x = Math.min(delta.x, 1);
+  delta.y = Math.min(delta.y, 1);
+
   // update controller orientation
   if (true != this.scope.state.isConstrainedWith('x')) {
     if (this.scope.state.isInverted) {
-      orientation.y -= delta.x * friction;
+      orientation.x -= delta.x * friction;
     } else {
-      orientation.y += delta.x * friction;
+      orientation.x += delta.x * friction;
     }
   }
 
   if (true != this.scope.state.isConstrainedWith('y')) {
     if (this.scope.state.isInverted) {
-      orientation.x -= delta.y * friction;
+      orientation.y -= delta.y * friction;
     } else {
-      orientation.x += delta.y * friction;
+      orientation.y += delta.y * friction;
     }
   }
 

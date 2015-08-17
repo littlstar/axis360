@@ -153,8 +153,9 @@ PointerController.prototype.disable = function () {
  */
 
 PointerController.prototype.request = function () {
-  var self = this;
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   var scope = this.scope;
+  var self = this;
 
   // request lock from user
   this.state.lock.request();
@@ -168,6 +169,9 @@ PointerController.prototype.request = function () {
       self.state.isMousedown = true;
       movements.x += e.x;
       movements.y += e.y;
+      // apply friction
+      movements.y *= (friction/4);
+      movements.x *= (friction/4);
     });
 
     // reset state when released

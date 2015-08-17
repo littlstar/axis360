@@ -220,8 +220,9 @@ MouseController.prototype.onmouseup = function (e) {
  */
 
 MouseController.prototype.onmousemove = function (e) {
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   var movements = this.state.movements;
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
+  var tmp = 0;
 
   // handle mouse movements only if the mouse controller is enabled
   if (false == this.state.isEnabled || false == this.state.isMousedown) {
@@ -233,11 +234,17 @@ MouseController.prototype.onmousemove = function (e) {
 
   // normalized movements from event
   util.normalizeMovements(e, movements);
-  movements.y *= (friction / 2);
-  movements.x *= (friction / 0.5);
 
-  this.pan(movements);
+  // apply friction
+  movements.y *= friction/2;
+  movements.x *= friction;
 
+  // swap for rotation
+  tmp = movements.y;
+  movements.y = movements.x;
+  movements.x = tmp;
+
+  this.rotate(movements);
   this.state.movementsStart.x = e.screenX * friction;
   this.state.movementsStart.y = e.screenY * friction;
 };

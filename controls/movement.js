@@ -109,7 +109,7 @@ function MovementController (scope) {
 MovementController.prototype.update = function () {
   if (false == this.state.isMousedown) { return this; }
   var movements = this.state.movements;
-  this.pan(movements);
+  this.rotate(movements);
   AxisController.prototype.update.call(this);
   return this;
 };
@@ -135,8 +135,9 @@ MovementController.prototype.onmousedown = function (e) {
  */
 
 MovementController.prototype.onmousemove = function (e) {
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   var movements = this.state.movements;
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
+  var tmp = 0;
 
   // handle mouse movements only if the mouse controller is enabled
   if (false == this.state.isEnabled || false == this.state.isMousedown) {
@@ -145,8 +146,16 @@ MovementController.prototype.onmousemove = function (e) {
 
   movements.x = (e.screenX * friction) - this.state.movementsStart.x;
   movements.y = (e.screenY * friction) - this.state.movementsStart.y;
-  movements.y *= (friction/12);
-  movements.x *= (friction/6);
+
+  // apply friction
+  movements.y *= (friction/8);
+  movements.x *= (friction/4);
+
+  // swap for rotation
+  tmp = movements.y;
+  movements.y = movements.x;
+  movements.x = tmp;
+
 
   // invert for true directional movement
   movements.x *= -1;
