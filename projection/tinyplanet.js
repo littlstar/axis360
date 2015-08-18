@@ -54,9 +54,7 @@ var TINY_PLANET_CAMERA_LENS_VALUE = constants.TINY_PLANET_CAMERA_LENS_VALUE;
 var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 
 // min/max x/y coordinates
-var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE;
 var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
-var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
 /**
  * Applies a tinyplanet projection to scope frame

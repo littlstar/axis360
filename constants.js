@@ -102,15 +102,15 @@ exports.DEFAULT_GEOMETRY_RADIUS = 400;
 exports.DEFAULT_FRICTION = 0.075;
 
 /**
- * Default key pan speed in pixels
+ * Default key rotate speed
  *
  * @public
  * @const
- * @name DEFAULT_KEY_PAN_SPEED
+ * @name DEFAULT_KEY_ROTATE_SPEED
  * @type {Number}
  */
 
-exports.DEFAULT_KEY_PAN_SPEED = 5;
+exports.DEFAULT_KEY_ROTATE_SPEED = 0.75;
 
 /**
  * Default controller update timeout.
@@ -132,7 +132,7 @@ exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
  * @type {Number}
  */
 
-exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.15;
+exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.05;
 
 /**
  * Animation factor unit applied to changes in
@@ -249,58 +249,3 @@ exports.MAX_X_COORDINATE = 360;
  */
 
 exports.VR_POLL_TIMEOUT = 3000;
-
-/**
- * Maximum friction value.
- *
- * @public
- * @const
- * @name MAX_FRICTION_VALUE
- * @type {Number}
- */
-
-exports.MAX_FRICTION_VALUE = 0.99;
-
-/**
- * Minimum friction value.
- *
- * @public
- * @const
- * @name MIN_FRICTION_VALUE
- * @type {Number}
- */
-
-exports.MIN_FRICTION_VALUE = 0;
-
-/**
- * Maximum friction tolerance.
- *
- * @public
- * @const
- * @name MAX_FRICTION_TOLERANCE
- * @type {Number}
- */
-
-exports.MAX_FRICTION_TOLERANCE = 20;
-
-/**
- * Cartesian calibration value.
- *
- * @public
- * @const
- * @name CARTESIAN_CALIBRATION_VALUE
- * @type {Number}
- */
-
-exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;
-
-/**
- * Axis epsilon value
- *
- * @public
- * @const
- * @name EPSILON_VALUE
- * @type {Number}
- */
-
-exports.EPSILON_VALUE = 0.000001;

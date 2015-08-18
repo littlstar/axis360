@@ -51,10 +51,7 @@ var AxisController = require('./controller')
   , constants = require('../constants')
 
 // default key rotatening speed in pixels
-var DEFAULT_KEY_rotate_SPEED = constants.DEFAULT_KEY_rotate_SPEED;
-
-// our epsilon value
-var EPSILON_VALUE = constants.EPSILON_VALUE;
+var DEFAULT_KEY_ROTATE_SPEED = constants.DEFAULT_KEY_ROTATE_SPEED;
 
 /**
  * Initialize keyboard controls on Axis.
@@ -213,12 +210,11 @@ function KeyboardController (scope) {
    * @public
    * @name state.rotateSpeed
    * @type {Number}
-   * @default DEFAULT_KEY_rotate_SPEED
+   * @default DEFAULT_KEY_ROTATE_SPEED
    */
 
-  this.state.define('rotateSpeed', function () {
-    return {x: 2, y: 1}
-  });
+  this.state.rotateSpeed = DEFAULT_KEY_ROTATE_SPEED;
+
 
   // initialize event delegation
   this.events.bind('mousedown');
@@ -241,19 +237,19 @@ function KeyboardController (scope) {
   }
 
   function up (data) {
-    this.rotate({x: 1, y: 0});
+    this.rotate({x: self.state.rotateSpeed, y: 0});
   }
 
   function down (data) {
-    this.rotate({x: -1, y: 0});
+    this.rotate({x: -self.state.rotateSpeed, y: 0});
   }
 
   function left (data) {
-    this.rotate({x: 0, y: 1});
+    this.rotate({x: 0, y: self.state.rotateSpeed});
   }
 
  function right (data) {
-    this.rotate({x: 0, y: -1});
+    this.rotate({x: 0, y: -self.state.rotateSpeed});
   }
 }
 

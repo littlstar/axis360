@@ -2101,29 +2101,27 @@ Axis.prototype.rotate = function (coord, opts) {
 Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   dimensions = dimensions || this.dimensions();
   getCorrectGeometry(this);
+
   var geometry = this.geometry();
-  var height = dimensions.height;
-  var far = this.camera && this.camera.far || 0;
+  var isImage = this.state.isImage;
+  var camera = this.camera;
+  var aspect = camera ? camera.aspect : 1;
+  var height = Math.min(this.height(), dimensions.height);
+  var scale = 1;
+  var far = (camera ? camera.far : 0) - this.state.radius;
   var fov = 0
 
-  if (2 != dimensions.ratio && Math.sqrt(dimensions.ratio) < 2 && this.state.isImage) {
-    fov = DEFAULT_FOV;
-    if ('cylinder' == geometry) {
-      fov /=2;
-    }
-
-  } else {
-    fov = (2 * Math.atan(height / far) * 180 / Math.PI);
-
-    // scale down
-    if ('cylinder' == geometry) {
-      fov *= .7;
-    } else {
-      fov *= .85;
-    }
+  if ('cylinder' == geometry) {
+    scale = .8;
   }
 
-  // @TODO(werle) - fix this
-  // this seems to be a comfortable limit for most content
-  return Math.min(DEFAULT_FOV, Math.max(fov, DEFAULT_FOV * .6));
+  if (height != this.height()) {
+    scale = .9;
+    aspect = dimensions.ratio;
+  }
+
+  fov = 2 * Math.atan(height * aspect / (2 * far)) * (180 / Math.PI);
+  fov *= scale;
+
+  return fov;
 };

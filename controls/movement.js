@@ -148,8 +148,8 @@ MovementController.prototype.onmousemove = function (e) {
   movements.y = (e.screenY * friction) - this.state.movementsStart.y;
 
   // apply friction
-  movements.y *= (friction/8);
-  movements.x *= (friction/4);
+  movements.y *= (friction);
+  movements.x *= (friction);
 
   // swap for rotation
   tmp = movements.y;
