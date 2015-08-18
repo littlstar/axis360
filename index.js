@@ -2108,11 +2108,13 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   var aspect = camera ? camera.aspect : 1;
   var height = Math.min(this.height(), dimensions.height);
   var scale = 1;
-  var far = (camera ? camera.far : 0) - this.state.radius;
+  var far = camera ? camera.far : 0;
   var fov = 0
 
   if ('cylinder' == geometry) {
     scale = .8;
+  } else {
+    far = far - this.state.radius;
   }
 
   if (height != this.height()) {
@@ -2123,5 +2125,5 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   fov = 2 * Math.atan(height * aspect / (2 * far)) * (180 / Math.PI);
   fov *= scale;
 
-  return fov;
+  return Math.abs(fov);
 };
