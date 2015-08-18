@@ -92,6 +92,8 @@ var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
 // defaults
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
+var CYLINDER_FOV = constants.CYLINDER_FOV;
+var MAX_CALC_FOV = constants.MAX_CALC_FOV;
 var DEFAULT_FOV = constants.DEFAULT_FOV;
 
 // expose util
@@ -763,7 +765,7 @@ Axis.prototype.onresize = function (e) {
     }
 
     if (resized) {
-      this.fov(this.getCalculatedFieldOfView());
+      //this.fov(this.getCalculatedFieldOfView());
       this.size(newWidth, newHeight);
       this.emit('resize', {
         width: this.state.width,
@@ -2106,24 +2108,15 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   var isImage = this.state.isImage;
   var camera = this.camera;
   var aspect = camera ? camera.aspect : 1;
-  var height = Math.min(this.height(), dimensions.height);
-  var scale = 1;
-  var far = camera ? camera.far : 0;
-  var fov = 0
+  var height = dimensions.height;
+  var far = (camera ? camera.far : 0) - (this.state.radius || 0)
+  var fov = 0;
 
   if ('cylinder' == geometry) {
-    scale = .8;
-  } else {
-    far = far - this.state.radius;
+    return CYLINDER_FOV;
   }
 
-  if (height != this.height()) {
-    scale = .9;
-    aspect = dimensions.ratio;
-  }
+  fov = 2 * Math.atan(height / (2 * far)) * (180 / Math.PI);
 
-  fov = 2 * Math.atan(height * aspect / (2 * far)) * (180 / Math.PI);
-  fov *= scale;
-
-  return Math.abs(fov);
+  return Math.min(Math.abs(fov), MAX_CALC_FOV);
 };

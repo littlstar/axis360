@@ -35,7 +35,7 @@
 void module.exports;
 
 /**
- * The default Axis field of view.
+ * The default Axis field of view in degrees.
  *
  * @public
  * @const
@@ -43,7 +43,29 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 80;
+exports.DEFAULT_FOV = 65;
+
+/**
+ * Cylinder field of view value in degrees.
+ *
+ * @public
+ * @const
+ * @name CYLINDER_FOV
+ * @type {Number}
+ */
+
+exports.CYLINDER_FOV = 60;
+
+/**
+ * Max calculated field of view in degrees.
+ *
+ * @public
+ * @const
+ * @name MAX_CALC_FOV
+ * @type {Number}
+ */
+
+exports.MAX_CALC_FOV = 75;
 
 /**
  * Default interpolation factor.
