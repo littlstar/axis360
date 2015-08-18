@@ -376,7 +376,7 @@ function Axis (parent, opts) {
     var far = this.camera.far;
     var fov = opts.fov;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : 2.1;
+    var y = opts && opts.orientation ? opts.orientation.y : 2 * Math.PI/3
 
     if ('number' == typeof x && x == x) {
       this.orientation.x = x;
@@ -1232,7 +1232,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 8) {
+      if (now - this.state.lastRefresh >= 16) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
@@ -2189,31 +2189,29 @@ Axis.prototype.rotate = function (coord, opts) {
 Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   dimensions = dimensions || this.dimensions();
   getCorrectGeometry(this);
+
   var geometry = this.geometry();
-  var height = dimensions.height;
-  var far = this.camera && this.camera.far || 0;
+  var isImage = this.state.isImage;
+  var camera = this.camera;
+  var aspect = camera ? camera.aspect : 1;
+  var height = Math.min(this.height(), dimensions.height);
+  var scale = 1;
+  var far = (camera ? camera.far : 0) - this.state.radius;
   var fov = 0
 
-  if (2 != dimensions.ratio && Math.sqrt(dimensions.ratio) < 2 && this.state.isImage) {
-    fov = DEFAULT_FOV;
-    if ('cylinder' == geometry) {
-      fov /=2;
-    }
-
-  } else {
-    fov = (2 * Math.atan(height / far) * 180 / Math.PI);
-
-    // scale down
-    if ('cylinder' == geometry) {
-      fov *= .7;
-    } else {
-      fov *= .85;
-    }
+  if ('cylinder' == geometry) {
+    scale = .8;
   }
 
-  // @TODO(werle) - fix this
-  // this seems to be a comfortable limit for most content
-  return Math.min(DEFAULT_FOV, Math.max(fov, DEFAULT_FOV * .6));
+  if (height != this.height()) {
+    scale = .9;
+    aspect = dimensions.ratio;
+  }
+
+  fov = 2 * Math.atan(height * aspect / (2 * far)) * (180 / Math.PI);
+  fov *= scale;
+
+  return fov;
 };
 
 }, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/pointer":30,"./controls/movement":31,"./controls/controller":32}],
@@ -38400,7 +38398,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.18.4",
+  "version": "1.19.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38753,7 +38751,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 100;
+exports.DEFAULT_FOV = 80;
 
 /**
  * Default interpolation factor.
@@ -38764,7 +38762,7 @@ exports.DEFAULT_FOV = 100;
  * @type {Number}
  */
 
-exports.DEFAULT_INTERPOLATION_FACTOR = 0.06;
+exports.DEFAULT_INTERPOLATION_FACTOR = 0.05;
 
 /**
  * Default frame projection
@@ -38809,18 +38807,18 @@ exports.DEFAULT_GEOMETRY_RADIUS = 400;
  * @type {Number}
  */
 
-exports.DEFAULT_FRICTION = 0.001755;
+exports.DEFAULT_FRICTION = 0.075;
 
 /**
- * Default key pan speed in pixels
+ * Default key rotate speed
  *
  * @public
  * @const
- * @name DEFAULT_KEY_PAN_SPEED
+ * @name DEFAULT_KEY_ROTATE_SPEED
  * @type {Number}
  */
 
-exports.DEFAULT_KEY_PAN_SPEED = 5;
+exports.DEFAULT_KEY_ROTATE_SPEED = 0.75;
 
 /**
  * Default controller update timeout.
@@ -38842,7 +38840,7 @@ exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
  * @type {Number}
  */
 
-exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.57;
+exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.05;
 
 /**
  * Animation factor unit applied to changes in
@@ -38959,61 +38957,6 @@ exports.MAX_X_COORDINATE = 360;
  */
 
 exports.VR_POLL_TIMEOUT = 3000;
-
-/**
- * Maximum friction value.
- *
- * @public
- * @const
- * @name MAX_FRICTION_VALUE
- * @type {Number}
- */
-
-exports.MAX_FRICTION_VALUE = 0.99;
-
-/**
- * Minimum friction value.
- *
- * @public
- * @const
- * @name MIN_FRICTION_VALUE
- * @type {Number}
- */
-
-exports.MIN_FRICTION_VALUE = 0;
-
-/**
- * Maximum friction tolerance.
- *
- * @public
- * @const
- * @name MAX_FRICTION_TOLERANCE
- * @type {Number}
- */
-
-exports.MAX_FRICTION_TOLERANCE = 20;
-
-/**
- * Cartesian calibration value.
- *
- * @public
- * @const
- * @name CARTESIAN_CALIBRATION_VALUE
- * @type {Number}
- */
-
-exports.CARTESIAN_CALIBRATION_VALUE = 1.9996;
-
-/**
- * Axis epsilon value
- *
- * @public
- * @const
- * @name EPSILON_VALUE
- * @type {Number}
- */
-
-exports.EPSILON_VALUE = 0.000001;
 
 }, {}],
 14: [function(require, module, exports) {
@@ -39215,9 +39158,6 @@ var getVRDevices = require('./util').getVRDevices
   , constants = require('./constants')
 
 var VR_POLL_TIMEOUT = constants.VR_POLL_TIMEOUT;
-var MAX_FRICTION_VALUE = constants.MAX_FRICTION_VALUE;
-var MIN_FRICTION_VALUE = constants.MIN_FRICTION_VALUE;
-var MAX_FRICTION_TOLERANCE = constants.MAX_FRICTION_TOLERANCE;
 
 // defaults
 var DEFAULT_FRICTION = constants.DEFAULT_FRICTION;
@@ -42864,9 +42804,7 @@ var TINY_PLANET_CAMERA_LENS_VALUE = constants.TINY_PLANET_CAMERA_LENS_VALUE;
 var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
 
 // min/max x/y coordinates
-var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE;
 var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
-var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
 /**
  * Applies a tinyplanet projection to scope frame
@@ -43506,15 +43444,6 @@ var three = require('three.js')
   , Emitter = require('emitter')
 
 /**
- * (PI / 2) constant value reference with a 5 degree
- * offset to prevent locking.
- * @private
- * @type {Number}
- */
-
-var PI2 = ((Math.PI/2) * (180/Math.PI) - 30) * (Math.PI/180);
-
-/**
  * Tiny planet interpolation factor
  *
  * @private
@@ -43582,16 +43511,6 @@ function AxisController (scope, domElement) {
       this.__defineGetter__(key, getter);
       return this;
     },
-
-    /**
-     * Predicate indicating if state is frozen.
-     *
-     * @public
-     * @name state.isFrozen
-     * @type {Boolean}
-     */
-
-    get isFrozen () { return Object.isFrozen(this); },
 
     /**
      * Predicate indicating if controller is enabled.
@@ -43806,26 +43725,6 @@ function AxisController (scope, domElement) {
       z: new three.Vector3(0, 0, 1),
 
       /**
-       * Pan vector.
-       *
-       * @public
-       * @name state.vectors.pan
-       * @type {THREE.Vector3}
-       */
-
-      pan: new three.Vector3(0, 0, 0),
-
-      /**
-       * Pan offset vector.
-       *
-       * @public
-       * @name state.vectors.panOffset
-       * @type {THREE.Vector3}
-       */
-
-      panOffset: new three.Vector3(0, 0, 0),
-
-      /**
        * Target vector.
        *
        * @public
@@ -43897,16 +43796,6 @@ function AxisController (scope, domElement) {
       y: new three.Quaternion(),
 
       /**
-       * Z quaternion.
-       *
-       * @public
-       * @name state.quaternions.z
-       * @type {THREE.Quaternion}
-       */
-
-      z: new three.Quaternion(),
-
-      /**
        * Directional quaternion.
        *
        * @public
@@ -43924,39 +43813,6 @@ function AxisController (scope, domElement) {
        */
 
       last: new three.Quaternion(),
-
-      /**
-       * Inverse directional quaternion.
-       *
-       * @public
-       * @name state.quaternions.directionInverse
-       * @type {THREE.Quaternion}
-       */
-
-      directionInverse: new three.Quaternion(),
-
-      /**
-       * Screen rotation quaternion.
-       *
-       * @public
-       * @name state.quaternions.screen
-       * @type {THREE.Quaternion}
-       */
-
-      screen: new three.Quaternion(),
-
-      /**
-       * World rotation quaternion
-       *
-       * @public
-       * @name state.quaternions.world
-       * @type {THREE.Quaternion}
-       */
-
-      world: new three.Quaternion(-Math.sqrt(0.5),
-                                  0,
-                                  0,
-                                  Math.sqrt(0.5))
     },
 
     /**
@@ -44021,16 +43877,6 @@ function AxisController (scope, domElement) {
 
     z: 0
   };
-
-  /**
-   * Previous controller orientation.
-   *
-   * @public
-   * @name state.previousOrientation
-   * @type {Object}
-   */
-
-  this.state.previousOrientation = {x: 0, y: 0};
 
   /**
    * Controllers DOM Element.
@@ -44120,9 +43966,8 @@ AxisController.prototype.update = function () {
   var orientation = this.state.orientation;
   var vectors = this.state.vectors;
   var target = this.state.target;
-  var friction = this.scope.state.friction;
+  var quat = new three.Quaternion().copy(target.quaternion);
   var interpolationFactor = this.scope.state.interpolationFactor;
-  var pi2 = (Math.PI/180) * 5.4;
   var ratio = this.scope.dimensions().ratio;
   var geo = this.scope.geometry();
 
@@ -44142,14 +43987,13 @@ AxisController.prototype.update = function () {
 
   if ('tinyplanet' == this.scope.projections.current) {
     interpolationFactor = TINY_PLANET_INTERPOLATION_FACTOR;
-    pi2 = PI2*.2;
   }
 
   if ('cylinder' == geo) {
     orientation.x = 0;
   } else {
     // normalize x orientation
-    orientation.x = Math.max(-pi2, Math.min(pi2, orientation.x));
+    orientation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, orientation.x));
   }
 
   if ('tinyplanet' == this.scope.projections.current) {
@@ -44160,24 +44004,26 @@ AxisController.prototype.update = function () {
     }
   }
 
-  this.state.previousOrientation.x = orientation.x;
-  this.state.previousOrientation.y = orientation.y;
-
   // update controller quaternions
-  quaternions.x.setFromAxisAngle(vectors.x, orientation.x);
   quaternions.y.setFromAxisAngle(vectors.y, orientation.y);
+  quaternions.x.setFromAxisAngle(vectors.x, orientation.x * interpolationFactor);
 
   // update target quaternion
-  target.quaternion.slerp(quaternions.y, interpolationFactor);
-  // multiplty target quaternion with our x quaternion
-  target.quaternion.multiply(quaternions.x);
+  quat.slerp(quaternions.y, interpolationFactor);
 
   // avoid NaN
-  target.quaternion.set(target.quaternion.x || 0,
-                        target.quaternion.y || 0,
-                        target.quaternion.z || 0,
-                        target.quaternion.w || 0);
+  target.quaternion.set(quat.x || 0,
+                        quat.y || 0,
+                        quat.z || 0,
+                        quat.w || 0);
 
+  quat.multiply(quaternions.x);
+
+  // avoid NaN
+  target.quaternion.set(quat.x || 0,
+                        quat.y || 0,
+                        quat.z || 0,
+                        quat.w || 0);
 
   return this;
 };
@@ -44241,19 +44087,19 @@ AxisController.prototype.target = function (target) {
 };
 
 /**
- * Pan controller target with x and y deltas in pixels.
+ * Rotate controller target with x and y radian rotations.
  *
  * @public
  * @method
- * @name pan
- * @param {Object} delta - X and Y deltas in pixels
- * @param {Number} delta.x - X delta value in pixels.
- * @param {Number} delta.y - Y delta value in pixels.
+ * @name rotate
+ * @param {Object} delta - X and Y deltas in radians.
+ * @param {Number} delta.x - X delta value in radians.
+ * @param {Number} delta.y - Y delta value in radians.
  * @throws TypeError
  * @return {AxisController}
  */
 
-AxisController.prototype.pan = function (delta) {
+AxisController.prototype.rotate = function (delta) {
   if (false == this.state.isEnabled) { return this; }
   if ('object' != typeof delta) {
     throw new TypeError("Expecting object.");
@@ -44262,20 +44108,23 @@ AxisController.prototype.pan = function (delta) {
   var orientation = this.state.orientation;
   var friction = this.scope.state.friction;
 
+  delta.x = Math.min(delta.x, 1);
+  delta.y = Math.min(delta.y, 1);
+
   // update controller orientation
   if (true != this.scope.state.isConstrainedWith('x')) {
     if (this.scope.state.isInverted) {
-      orientation.y -= delta.x * friction;
+      orientation.x -= delta.x * friction;
     } else {
-      orientation.y += delta.x * friction;
+      orientation.x += delta.x * friction;
     }
   }
 
   if (true != this.scope.state.isConstrainedWith('y')) {
     if (this.scope.state.isInverted) {
-      orientation.x -= delta.y * friction;
+      orientation.y -= delta.y * friction;
     } else {
-      orientation.x += delta.y * friction;
+      orientation.y += delta.y * friction;
     }
   }
 
@@ -44539,8 +44388,9 @@ MouseController.prototype.onmouseup = function (e) {
  */
 
 MouseController.prototype.onmousemove = function (e) {
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   var movements = this.state.movements;
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
+  var tmp = 0;
 
   // handle mouse movements only if the mouse controller is enabled
   if (false == this.state.isEnabled || false == this.state.isMousedown) {
@@ -44552,11 +44402,17 @@ MouseController.prototype.onmousemove = function (e) {
 
   // normalized movements from event
   util.normalizeMovements(e, movements);
-  movements.y *= (friction / 2);
-  movements.x *= (friction / 0.5);
 
-  this.pan(movements);
+  // apply friction
+  movements.y *= friction/2;
+  movements.x *= friction;
 
+  // swap for rotation
+  tmp = movements.y;
+  movements.y = movements.x;
+  movements.x = tmp;
+
+  this.rotate(movements);
   this.state.movementsStart.x = e.screenX * friction;
   this.state.movementsStart.y = e.screenY * friction;
 };
@@ -44807,7 +44663,7 @@ TouchController.prototype.ontouchmove = function (e) {
   if (this.scope.domElement.contains(e.target)) {
     this.state.drag.x = touch.pageX;
     this.state.drag.y = touch.pageY;
-    this.pan({x: x, y: y});
+    this.rotate({x: x, y: y});
   }
 };
 
@@ -44889,11 +44745,8 @@ var keycode = require('keycode')
 var AxisController = require('./controller')
   , constants = require('../constants')
 
-// default key panning speed in pixels
-var DEFAULT_KEY_PAN_SPEED = constants.DEFAULT_KEY_PAN_SPEED;
-
-// our epsilon value
-var EPSILON_VALUE = constants.EPSILON_VALUE;
+// default key rotatening speed in pixels
+var DEFAULT_KEY_ROTATE_SPEED = constants.DEFAULT_KEY_ROTATE_SPEED;
 
 /**
  * Initialize keyboard controls on Axis.
@@ -45047,30 +44900,16 @@ function KeyboardController (scope) {
   });
 
   /**
-   * Key panning speed in pixels
+   * Key rotatening speed in pixels
    *
    * @public
-   * @name state.panSpeed
+   * @name state.rotateSpeed
    * @type {Number}
-   * @default DEFAULT_KEY_PAN_SPEED
+   * @default DEFAULT_KEY_ROTATE_SPEED
    */
 
-  this.state.define('panSpeed', function () {
-    var min = Math.min;
-    var max = Math.max;
-    var sqrt = Math.sqrt;
-    var d = self.scope.dimensions();
-    var r = d.ratio;
-    var h = d.height;
-    var w = d.width
-    var x = sqrt(w * r) / r;
-    var y = min((Math.sqrt(w) / (r * r)) / 4, 5);
-    x = min(x * .75, 30) || 0;
-    y = y * .45 || 0;
-    x = max(8, min(x, 25));
-    y = max(2, min(y, 8));
-    return {x: x, y: y};
-  });
+  this.state.rotateSpeed = DEFAULT_KEY_ROTATE_SPEED;
+
 
   // initialize event delegation
   this.events.bind('mousedown');
@@ -45093,19 +44932,19 @@ function KeyboardController (scope) {
   }
 
   function up (data) {
-    this.pan({x: 0, y: this.state.panSpeed.y});
+    this.rotate({x: self.state.rotateSpeed, y: 0});
   }
 
   function down (data) {
-    this.pan({x: 0, y: -this.state.panSpeed.y});
+    this.rotate({x: -self.state.rotateSpeed, y: 0});
   }
 
   function left (data) {
-    this.pan({x: this.state.panSpeed.x, y: 0});
+    this.rotate({x: 0, y: self.state.rotateSpeed});
   }
 
  function right (data) {
-    this.pan({x: -this.state.panSpeed.x, y: 0});
+    this.rotate({x: 0, y: -self.state.rotateSpeed});
   }
 }
 
@@ -45704,8 +45543,9 @@ PointerController.prototype.disable = function () {
  */
 
 PointerController.prototype.request = function () {
-  var self = this;
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   var scope = this.scope;
+  var self = this;
 
   // request lock from user
   this.state.lock.request();
@@ -45719,6 +45559,9 @@ PointerController.prototype.request = function () {
       self.state.isMousedown = true;
       movements.x += e.x;
       movements.y += e.y;
+      // apply friction
+      movements.y *= (friction/4);
+      movements.x *= (friction/4);
     });
 
     // reset state when released
@@ -46168,7 +46011,7 @@ function MovementController (scope) {
 MovementController.prototype.update = function () {
   if (false == this.state.isMousedown) { return this; }
   var movements = this.state.movements;
-  this.pan(movements);
+  this.rotate(movements);
   AxisController.prototype.update.call(this);
   return this;
 };
@@ -46194,8 +46037,9 @@ MovementController.prototype.onmousedown = function (e) {
  */
 
 MovementController.prototype.onmousemove = function (e) {
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
   var movements = this.state.movements;
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
+  var tmp = 0;
 
   // handle mouse movements only if the mouse controller is enabled
   if (false == this.state.isEnabled || false == this.state.isMousedown) {
@@ -46204,8 +46048,16 @@ MovementController.prototype.onmousemove = function (e) {
 
   movements.x = (e.screenX * friction) - this.state.movementsStart.x;
   movements.y = (e.screenY * friction) - this.state.movementsStart.y;
-  movements.y *= (friction/12);
-  movements.x *= (friction/6);
+
+  // apply friction
+  movements.y *= (friction);
+  movements.x *= (friction);
+
+  // swap for rotation
+  tmp = movements.y;
+  movements.y = movements.x;
+  movements.x = tmp;
+
 
   // invert for true directional movement
   movements.x *= -1;
