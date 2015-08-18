@@ -58,9 +58,6 @@ var getVRDevices = require('./util').getVRDevices
   , constants = require('./constants')
 
 var VR_POLL_TIMEOUT = constants.VR_POLL_TIMEOUT;
-var MAX_FRICTION_VALUE = constants.MAX_FRICTION_VALUE;
-var MIN_FRICTION_VALUE = constants.MIN_FRICTION_VALUE;
-var MAX_FRICTION_TOLERANCE = constants.MAX_FRICTION_TOLERANCE;
 
 // defaults
 var DEFAULT_FRICTION = constants.DEFAULT_FRICTION;
