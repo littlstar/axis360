@@ -180,6 +180,8 @@ var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
 
 // defaults
 var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
+var CYLINDER_FOV = constants.CYLINDER_FOV;
+var MAX_CALC_FOV = constants.MAX_CALC_FOV;
 var DEFAULT_FOV = constants.DEFAULT_FOV;
 
 // expose util
@@ -851,7 +853,7 @@ Axis.prototype.onresize = function (e) {
     }
 
     if (resized) {
-      this.fov(this.getCalculatedFieldOfView());
+      //this.fov(this.getCalculatedFieldOfView());
       this.size(newWidth, newHeight);
       this.emit('resize', {
         width: this.state.width,
@@ -2194,26 +2196,17 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   var isImage = this.state.isImage;
   var camera = this.camera;
   var aspect = camera ? camera.aspect : 1;
-  var height = Math.min(this.height(), dimensions.height);
-  var scale = 1;
-  var far = camera ? camera.far : 0;
-  var fov = 0
+  var height = dimensions.height;
+  var far = (camera ? camera.far : 0) - (this.state.radius || 0)
+  var fov = 0;
 
   if ('cylinder' == geometry) {
-    scale = .8;
-  } else {
-    far = far - this.state.radius;
+    return CYLINDER_FOV;
   }
 
-  if (height != this.height()) {
-    scale = .9;
-    aspect = dimensions.ratio;
-  }
+  fov = 2 * Math.atan(height / (2 * far)) * (180 / Math.PI);
 
-  fov = 2 * Math.atan(height * aspect / (2 * far)) * (180 / Math.PI);
-  fov *= scale;
-
-  return Math.abs(fov);
+  return Math.min(Math.abs(fov), MAX_CALC_FOV);
 };
 
 }, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/pointer":30,"./controls/movement":31,"./controls/controller":32}],
@@ -38400,7 +38393,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.19.1",
+  "version": "1.19.2",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38745,7 +38738,7 @@ Projections.prototype.refreshCurrent = function () {
 void module.exports;
 
 /**
- * The default Axis field of view.
+ * The default Axis field of view in degrees.
  *
  * @public
  * @const
@@ -38753,7 +38746,29 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 80;
+exports.DEFAULT_FOV = 65;
+
+/**
+ * Cylinder field of view value in degrees.
+ *
+ * @public
+ * @const
+ * @name CYLINDER_FOV
+ * @type {Number}
+ */
+
+exports.CYLINDER_FOV = 60;
+
+/**
+ * Max calculated field of view in degrees.
+ *
+ * @public
+ * @const
+ * @name MAX_CALC_FOV
+ * @type {Number}
+ */
+
+exports.MAX_CALC_FOV = 75;
 
 /**
  * Default interpolation factor.
