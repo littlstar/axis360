@@ -2196,11 +2196,13 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   var aspect = camera ? camera.aspect : 1;
   var height = Math.min(this.height(), dimensions.height);
   var scale = 1;
-  var far = (camera ? camera.far : 0) - this.state.radius;
+  var far = camera ? camera.far : 0;
   var fov = 0
 
   if ('cylinder' == geometry) {
     scale = .8;
+  } else {
+    far = far - this.state.radius;
   }
 
   if (height != this.height()) {
@@ -2211,7 +2213,7 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   fov = 2 * Math.atan(height * aspect / (2 * far)) * (180 / Math.PI);
   fov *= scale;
 
-  return fov;
+  return Math.abs(fov);
 };
 
 }, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/pointer":30,"./controls/movement":31,"./controls/controller":32}],
@@ -38398,7 +38400,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.19.0",
+  "version": "1.19.1",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
