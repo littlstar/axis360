@@ -10,11 +10,10 @@
    * Require `name`.
    *
    * @param {String} name
-   * @param {Boolean} jumped
    * @api public
    */
 
-  function require(name, jumped){
+  function require(name){
     if (cache[name]) return cache[name].exports;
     if (modules[name]) return call(name, require);
     throw new Error('cannot find module "' + name + '"');
@@ -30,21 +29,26 @@
    */
 
   function call(id, require){
-    var m = { exports: {} };
+    var m = cache[id] = { exports: {} };
     var mod = modules[id];
     var name = mod[2];
     var fn = mod[0];
+    var threw = true;
 
-    fn.call(m.exports, function(req){
-      var dep = modules[id][1][req];
-      return require(dep || req);
-    }, m, m.exports, outer, modules, cache, entries);
-
-    // store to cache after successful resolve
-    cache[id] = m;
-
-    // expose as `name`.
-    if (name) cache[name] = cache[id];
+    try {
+      fn.call(m.exports, function(req){
+        var dep = modules[id][1][req];
+        return require(dep || req);
+      }, m, m.exports, outer, modules, cache, entries);
+      threw = false;
+    } finally {
+      if (threw) {
+        delete cache[id];
+      } else if (name) {
+        // expose as 'name'.
+        cache[name] = cache[id];
+      }
+    }
 
     return cache[id].exports;
   }
@@ -1296,9 +1300,10 @@ Axis.prototype.resizable = function (resizable) {
  *
  * @public
  * @param {Number} seconds
+ * @param {Boolean} emit
  */
 
-Axis.prototype.seek = function (seconds) {
+Axis.prototype.seek = function (seconds, emit) {
   if (this.state.isImage) { return this; }
   var isReady = this.state.isReady;
   var self = this;
@@ -1320,7 +1325,8 @@ Axis.prototype.seek = function (seconds) {
       self.play();
     }
 
-    self.emit('seek', seconds);
+    if (false != emit) self.emit('seek', seconds);
+
     setTimeout(function () {
       self.debug('Attempting seeking correction');
       if (video.readyState < video.HAVE_ENOUGH_DATA) {
@@ -38080,7 +38086,8 @@ var element = document.documentElement;
 
 exports.supported = !!(element.requestFullscreen
   || element.webkitRequestFullscreen
-  || element.mozRequestFullScreen);
+  || element.mozRequestFullScreen
+  || element.msRequestFullscreen);
 
 /**
  * Enter fullscreen mode for `el`.
@@ -38109,7 +38116,7 @@ exports.exit = function(){
   if (doc.exitFullscreen) return doc.exitFullscreen();
   if (doc.mozCancelFullScreen) return doc.mozCancelFullScreen();
   if (doc.webkitCancelFullScreen) return doc.webkitCancelFullScreen();
-  if (doc.msCancelFullScreen) return doc.mdCancelFullScreen();
+  if (doc.msExitFullscreen) return doc.msExitFullscreen();
 };
 
 /**
@@ -38118,9 +38125,12 @@ exports.exit = function(){
 
 function change(prop) {
   return function(){
-    var val = document[prop];
-    if (false === val) { document[prop] = true; }
-    if (null == val) { document[prop] = true; }
+    if (null == document[prop]) {
+      document[prop] = true;
+    } else {
+      document[prop] = !document[prop];
+    }
+
     val = document[prop];
     exports.emit('change', val);
   }
@@ -38134,7 +38144,8 @@ if (document.addEventListener) {
   document.addEventListener('fullscreenchange', change('fullscreen'));
   document.addEventListener('mozfullscreenchange', change('mozFullScreen'));
   document.addEventListener('webkitfullscreenchange', change('webkitIsFullScreen'));
-  document.addEventListener('msfullscreenchange', change('msFullscreenEnabled'));
+  document.addEventListener('MSFullscreenChange', change('msFullScreen'));
+  document.addEventListener('fullscreenChange', change('msFullScreen'));
 }
 
 }, {"emitter":38}],
@@ -38393,7 +38404,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.19.2",
+  "version": "1.19.3",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
