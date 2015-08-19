@@ -123,6 +123,10 @@ MovementController.prototype.update = function () {
  */
 
 MovementController.prototype.onmousedown = function (e) {
+  this.state.movements.x = 0;
+  this.state.movements.y = 0;
+  this.state.movementsStart.x = 0;
+  this.state.movementsStart.y = 0;
   MouseController.prototype.onmousedown.call(this, e);
 };
 
@@ -173,4 +177,6 @@ MovementController.prototype.onmousemove = function (e) {
 MovementController.prototype.onmouseup = function (e) {
   clearTimeout(this.state.mouseupTimeout);
   this.state.isMousedown = false;
+  this.state.movementsStart.x = 0;
+  this.state.movementsStart.y = 0;
 };
