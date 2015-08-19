@@ -1208,9 +1208,10 @@ Axis.prototype.resizable = function (resizable) {
  *
  * @public
  * @param {Number} seconds
+ * @param {Boolean} emit
  */
 
-Axis.prototype.seek = function (seconds) {
+Axis.prototype.seek = function (seconds, emit) {
   if (this.state.isImage) { return this; }
   var isReady = this.state.isReady;
   var self = this;
@@ -1232,7 +1233,8 @@ Axis.prototype.seek = function (seconds) {
       self.play();
     }
 
-    self.emit('seek', seconds);
+    if (false != emit) self.emit('seek', seconds);
+
     setTimeout(function () {
       self.debug('Attempting seeking correction');
       if (video.readyState < video.HAVE_ENOUGH_DATA) {
