@@ -10,10 +10,11 @@
    * Require `name`.
    *
    * @param {String} name
+   * @param {Boolean} jumped
    * @api public
    */
 
-  function require(name){
+  function require(name, jumped){
     if (cache[name]) return cache[name].exports;
     if (modules[name]) return call(name, require);
     throw new Error('cannot find module "' + name + '"');
@@ -29,26 +30,21 @@
    */
 
   function call(id, require){
-    var m = cache[id] = { exports: {} };
+    var m = { exports: {} };
     var mod = modules[id];
     var name = mod[2];
     var fn = mod[0];
-    var threw = true;
 
-    try {
-      fn.call(m.exports, function(req){
-        var dep = modules[id][1][req];
-        return require(dep || req);
-      }, m, m.exports, outer, modules, cache, entries);
-      threw = false;
-    } finally {
-      if (threw) {
-        delete cache[id];
-      } else if (name) {
-        // expose as 'name'.
-        cache[name] = cache[id];
-      }
-    }
+    fn.call(m.exports, function(req){
+      var dep = modules[id][1][req];
+      return require(dep || req);
+    }, m, m.exports, outer, modules, cache, entries);
+
+    // store to cache after successful resolve
+    cache[id] = m;
+
+    // expose as `name`.
+    if (name) cache[name] = cache[id];
 
     return cache[id].exports;
   }
@@ -38086,8 +38082,7 @@ var element = document.documentElement;
 
 exports.supported = !!(element.requestFullscreen
   || element.webkitRequestFullscreen
-  || element.mozRequestFullScreen
-  || element.msRequestFullscreen);
+  || element.mozRequestFullScreen);
 
 /**
  * Enter fullscreen mode for `el`.
@@ -38116,7 +38111,7 @@ exports.exit = function(){
   if (doc.exitFullscreen) return doc.exitFullscreen();
   if (doc.mozCancelFullScreen) return doc.mozCancelFullScreen();
   if (doc.webkitCancelFullScreen) return doc.webkitCancelFullScreen();
-  if (doc.msExitFullscreen) return doc.msExitFullscreen();
+  if (doc.msCancelFullScreen) return doc.mdCancelFullScreen();
 };
 
 /**
@@ -38125,12 +38120,9 @@ exports.exit = function(){
 
 function change(prop) {
   return function(){
-    if (null == document[prop]) {
-      document[prop] = true;
-    } else {
-      document[prop] = !document[prop];
-    }
-
+    var val = document[prop];
+    if (false === val) { document[prop] = true; }
+    if (null == val) { document[prop] = true; }
     val = document[prop];
     exports.emit('change', val);
   }
@@ -38144,8 +38136,7 @@ if (document.addEventListener) {
   document.addEventListener('fullscreenchange', change('fullscreen'));
   document.addEventListener('mozfullscreenchange', change('mozFullScreen'));
   document.addEventListener('webkitfullscreenchange', change('webkitIsFullScreen'));
-  document.addEventListener('MSFullscreenChange', change('msFullScreen'));
-  document.addEventListener('fullscreenChange', change('msFullScreen'));
+  document.addEventListener('msfullscreenchange', change('msFullscreenEnabled'));
 }
 
 }, {"emitter":38}],
@@ -38404,7 +38395,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.19.3",
+  "version": "1.19.4",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -44404,6 +44395,8 @@ MouseController.prototype.onmouseup = function (e) {
   clearTimeout(this.state.mouseupTimeout);
   this.state.mouseupTimeout = setTimeout(function () {
     this.state.forceUpdate = false;
+    this.state.movementsStart.x = 0;
+    this.state.movementsStart.y = 0;
   }.bind(this), this.scope.state.controllerUpdateTimeout);
 };
 
@@ -46053,6 +46046,10 @@ MovementController.prototype.update = function () {
  */
 
 MovementController.prototype.onmousedown = function (e) {
+  this.state.movements.x = 0;
+  this.state.movements.y = 0;
+  this.state.movementsStart.x = 0;
+  this.state.movementsStart.y = 0;
   MouseController.prototype.onmousedown.call(this, e);
 };
 
@@ -46103,6 +46100,8 @@ MovementController.prototype.onmousemove = function (e) {
 MovementController.prototype.onmouseup = function (e) {
   clearTimeout(this.state.mouseupTimeout);
   this.state.isMousedown = false;
+  this.state.movementsStart.x = 0;
+  this.state.movementsStart.y = 0;
 };
 
 }, {"inherits":45,"three.js":2,"./mouse":26,"./controller":32,"../constants":18,"../util":17}]}, {}, {"1":"Axis"})
