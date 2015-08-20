@@ -110,6 +110,8 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * @param {Boolean} [opts.isPreviewFrame = false] - Indicates frame is a
  * preview frame preventing a refresh loop from occurring unless explicitly
  * called.
+ * @param {Boolean} [opts.lockPoles = true] - Locks orientation at north and
+ * south poles (-PI/2, PI/2).
  */
 
 module.exports = State;
@@ -359,6 +361,9 @@ function State (scope, opts) {
   /** Predicate indicating if media resource is cross origin. */
   this.isCrossOrigin = false
 
+  /** Predicate indicating if north/south pole orientation should be locked. */
+  this.lockPoles = true;
+
   // listen for fullscreen changes
   fullscreen.on('change', this.onfullscreenchange.bind(this));
 
@@ -417,6 +422,7 @@ State.prototype.reset = function (overrides) {
   this.interpolationFactor = (
     opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR
   );
+  this.lockPoles = Boolean(null != opts.lockPoles ? opts.lockPoles : true);
 
   this.controllerUpdateTimeout = (
     opts.updateTimeout || DEFAULT_CONTROLLER_UPDATE_TIMEOUT
