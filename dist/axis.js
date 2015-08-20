@@ -853,7 +853,7 @@ Axis.prototype.onresize = function (e) {
     }
 
     if (resized) {
-      //this.fov(this.getCalculatedFieldOfView());
+      this.fov(this.getCalculatedFieldOfView());
       this.size(newWidth, newHeight);
       this.emit('resize', {
         width: this.state.width,
@@ -2207,6 +2207,9 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   }
 
   fov = 2 * Math.atan(height / (2 * far)) * (180 / Math.PI);
+
+  // scale up for potential clipping
+  fov *= 1.15;
 
   return Math.min(Math.abs(fov), MAX_CALC_FOV);
 };
@@ -38395,7 +38398,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.19.4",
+  "version": "1.19.5",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -39229,6 +39232,8 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * @param {Boolean} [opts.isPreviewFrame = false] - Indicates frame is a
  * preview frame preventing a refresh loop from occurring unless explicitly
  * called.
+ * @param {Boolean} [opts.lockPoles = true] - Locks orientation at north and
+ * south poles (-PI/2, PI/2).
  */
 
 module.exports = State;
@@ -39478,6 +39483,9 @@ function State (scope, opts) {
   /** Predicate indicating if media resource is cross origin. */
   this.isCrossOrigin = false
 
+  /** Predicate indicating if north/south pole orientation should be locked. */
+  this.lockPoles = true;
+
   // listen for fullscreen changes
   fullscreen.on('change', this.onfullscreenchange.bind(this));
 
@@ -39536,6 +39544,7 @@ State.prototype.reset = function (overrides) {
   this.interpolationFactor = (
     opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR
   );
+  this.lockPoles = Boolean(null != opts.lockPoles ? opts.lockPoles : true);
 
   this.controllerUpdateTimeout = (
     opts.updateTimeout || DEFAULT_CONTROLLER_UPDATE_TIMEOUT
@@ -42852,19 +42861,19 @@ function tinyplanet (scope) {
   if ('tinyplanet' == this.current) { return false; }
 
   this.constraints = {
-    y: true,
+    x: true,
     cache: true,
-    keys: {up: true, down: true, j: true, k: true}
+    keys: {left: true, right: true, h: true, l: true}
   };
 
   if ('cylinder' == scope.geometry()) {
     scope.orientation.x = 0;
-    this.constraints.y = true;
-    this.constraints.x = false;
+    this.constraints.y = false;
+    this.constraints.x = true;
   }
 
-  this.constraints.x = true;
-  this.constraints.y = false;
+  this.constraints.x = false;
+  this.constraints.y = true;
 
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
   scope.fov(Math.min(scope.state.originalfov * 2, 130));
@@ -42880,8 +42889,8 @@ function tinyplanet (scope) {
     rotation.y = -360;
     scope.lookAt(rotation.x, rotation.y, rotation.z);
     scope.orientation.x = -Infinity;
-    this.constraints.x = false;
-    this.constraints.y = true;
+    this.constraints.x = true;
+    this.constraints.y = false;
     scope.debug("animate: TINY_PLANET end");
     this.cancel();
   });
@@ -44010,9 +44019,11 @@ AxisController.prototype.update = function () {
 
   if ('cylinder' == geo) {
     orientation.x = 0;
-  } else {
+  } else if (false != this.scope.state.lockPoles) {
     // normalize x orientation
     orientation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, orientation.x));
+  } else {
+    interpolationFactor = 1;
   }
 
   if ('tinyplanet' == this.scope.projections.current) {
