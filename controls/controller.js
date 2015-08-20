@@ -591,9 +591,11 @@ AxisController.prototype.update = function () {
 
   if ('cylinder' == geo) {
     orientation.x = 0;
-  } else {
+  } else if (false != this.scope.state.lockPoles) {
     // normalize x orientation
     orientation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, orientation.x));
+  } else {
+    interpolationFactor = 1;
   }
 
   if ('tinyplanet' == this.scope.projections.current) {
