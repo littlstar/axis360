@@ -765,7 +765,7 @@ Axis.prototype.onresize = function (e) {
     }
 
     if (resized) {
-      //this.fov(this.getCalculatedFieldOfView());
+      this.fov(this.getCalculatedFieldOfView());
       this.size(newWidth, newHeight);
       this.emit('resize', {
         width: this.state.width,
@@ -2119,6 +2119,9 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
   }
 
   fov = 2 * Math.atan(height / (2 * far)) * (180 / Math.PI);
+
+  // scale up for potential clipping
+  fov *= 1.15;
 
   return Math.min(Math.abs(fov), MAX_CALC_FOV);
 };
