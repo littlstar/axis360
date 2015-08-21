@@ -194,6 +194,7 @@ Projections.prototype.apply = function (name) {
     var projection = null;
     var dimensions = null;
     var texture = null;
+    var previous = this.current;
 
     if (null == this.scope) { return; }
 
@@ -218,6 +219,11 @@ Projections.prototype.apply = function (name) {
       // apply projection
       if (false === projection.call(this, this.scope)) {
         this.requested = this.current;
+      } else {
+        this.scope.emit('projectionchange', {
+          current: name,
+          previous: previous
+        });
       }
 
       // set current projection
