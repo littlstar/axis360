@@ -38398,7 +38398,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "axis",
-  "version": "1.19.5",
+  "version": "1.19.6",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "keywords": [
     "panoramic",
@@ -38624,6 +38624,7 @@ Projections.prototype.apply = function (name) {
     var projection = null;
     var dimensions = null;
     var texture = null;
+    var previous = this.current;
 
     if (null == this.scope) { return; }
 
@@ -38648,6 +38649,11 @@ Projections.prototype.apply = function (name) {
       // apply projection
       if (false === projection.call(this, this.scope)) {
         this.requested = this.current;
+      } else {
+        this.scope.emit('projectionchange', {
+          current: name,
+          previous: previous
+        });
       }
 
       // set current projection
