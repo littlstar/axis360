@@ -765,7 +765,6 @@ Axis.prototype.onresize = function (e) {
     }
 
     if (resized) {
-      this.fov(this.getCalculatedFieldOfView());
       this.size(newWidth, newHeight);
       this.emit('resize', {
         width: this.state.width,
