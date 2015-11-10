@@ -1,7 +1,8 @@
 {
-  "name": "axis",
+  "name": "littlstar-axis",
   "version": "1.19.7",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
+  "main": "dist/axis.js",
   "keywords": [
     "panoramic",
     "video",
@@ -13,9 +14,7 @@
     "webgl"
   ],
   "devDependencies": {
-    "duo": "*"
-  },
-  "dependencies": {
+    "duo": "*",
     "jsdoc": "^3.3.0"
   },
 
