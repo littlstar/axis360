@@ -1,4 +1,12 @@
-(function outer(modules, cache, entries){
+(function umd(require){
+  if ('object' == typeof exports) {
+    module.exports = require('1');
+  } else if ('function' == typeof define && (define.amd || define.cmd)) {
+    define(function(){ return require('1'); });
+  } else {
+    this['Axis'] = require('1');
+  }
+})((function outer(modules, cache, entries){
 
   /**
    * Global
@@ -38396,9 +38404,13 @@ module.exports = function (a, b) {
 }, {}],
 11: [function(require, module, exports) {
 module.exports = {
-  "name": "axis",
+  "name": "littlstar-axis",
   "version": "1.19.7",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
+  "main": "dist/axis.js",
+  "scripts": {
+    "prepublish": "make && make dist"
+  },
   "keywords": [
     "panoramic",
     "video",
@@ -38410,9 +38422,7 @@ module.exports = {
     "webgl"
   ],
   "devDependencies": {
-    "duo": "*"
-  },
-  "dependencies": {
+    "duo": "*",
     "jsdoc": "^3.3.0"
   },
 
@@ -46120,4 +46130,4 @@ MovementController.prototype.onmouseup = function (e) {
   this.state.movementsStart.y = 0;
 };
 
-}, {"inherits":45,"three.js":2,"./mouse":26,"./controller":32,"../constants":18,"../util":17}]}, {}, {"1":"Axis"})
+}, {"inherits":45,"three.js":2,"./mouse":26,"./controller":32,"../constants":18,"../util":17}]}, {}, {"1":""}));
