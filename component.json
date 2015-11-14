@@ -12,6 +12,7 @@
     "constants.js",
     "projection.js",
 
+    "geometry/box.js",
     "geometry/index.js",
     "geometry/plane.js",
     "geometry/sphere.js",
