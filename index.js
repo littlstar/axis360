@@ -417,6 +417,7 @@ function Axis (parent, opts) {
   // initial volume
   this.volume(opts.volume || 1);
 
+
   // initialize frame source
   this.src(opts.src);
 
@@ -988,12 +989,26 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
 
     if (!isImage(src) || this.state.forceVideo && src != this.video.src) {
       this.state.update('isImage', false);
-      this.video.src = src;
-      this.video.load();
-      this.video.onload = function () {
-        this.onload = null;
-        if (self.texture) {
-          self.texture.needsUpdate = true;
+
+      var hls = null
+      if (this.state.options.live) {
+        hls = new Hls()
+        hls.loadSource(src)
+        hls.attachMedia(this.video)
+        hls.on(Hls.Events.MANIFEST_PARSED,function() {
+          if (self.texture) {
+            self.texture.needsUpdate = true;
+          }
+          self.video.play();
+        });
+      } else {
+        this.video.src = src;
+        this.video.load();
+        this.video.onload = function () {
+          this.onload = null;
+          if (self.texture) {
+            self.texture.needsUpdate = true;
+          }
         }
       }
     } else {

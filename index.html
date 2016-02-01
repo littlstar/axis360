@@ -4,6 +4,7 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <title>Axis - 360 Video Rendering Engine</title>
     <link rel="stylesheet" href="build/build.css" type="text/css" />
+    <script type="text/javascript" charset="utf-8" src="https://rawgit.com/dailymotion/hls.js/master/dist/hls.min.js"></script>
     <script type="text/javascript" charset="utf-8" src="build/build.js"></script>
     <style type="text/css" media="all">
       body {
@@ -119,8 +120,10 @@
         //src: 'http://360.littlstar.com/production/66ac8e41-efaa-44d2-bfcd-c169f7eec1bb/original.jpg',
 
         time: 10,
-        box: true,
-        src: 'cube-map.mp4',
+        //box: true,
+        live: true,
+        src: 'http://www.streambox.fr/playlists/x36xhzz/x36xhzz.m3u8',
+        //src: 'cube-map.mp4',
         //src: 'http://360.littlstar.com/staging/bb88cc00-7cd7-43d5-bd28-c5959934a9e3/web.mp4',
         //src: 'http://360.littlstar.com/staging/81d33ec5-8140-4d74-92bc-6d56f93a52cf/web.mp4',
         //src: '/public/assets/paramotor.mp4'
