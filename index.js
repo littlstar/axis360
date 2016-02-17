@@ -417,6 +417,7 @@ function Axis (parent, opts) {
   // initial volume
   this.volume(opts.volume || 1);
 
+
   // initialize frame source
   this.src(opts.src);
 
@@ -988,12 +989,18 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
 
     if (!isImage(src) || this.state.forceVideo && src != this.video.src) {
       this.state.update('isImage', false);
-      this.video.src = src;
-      this.video.load();
-      this.video.onload = function () {
-        this.onload = null;
-        if (self.texture) {
-          self.texture.needsUpdate = true;
+
+      var hls = null
+      if ('function' == typeof this.state.options.loader) {
+        this.state.options.loader(this, src, this.video)
+      } else {
+        this.video.src = src;
+        this.video.load();
+        this.video.onload = function () {
+          this.onload = null;
+          if (self.texture) {
+            self.texture.needsUpdate = true;
+          }
         }
       }
     } else {
