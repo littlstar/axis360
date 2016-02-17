@@ -293,7 +293,7 @@ function Axis (parent, opts) {
     var far = this.camera.far;
     var fov = opts.fov;
     var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : 2 * Math.PI/3
+    var y = opts && opts.orientation ? opts.orientation.y : Math.PI/2
 
     if ('number' == typeof x && x == x) {
       this.orientation.x = x;
