@@ -205,15 +205,20 @@ Axis.util = require('./util');
  *
  * @private
  * @param {Axis} axis
+ * @param {String} override
  */
 
-function getCorrectGeometry (axis) {
+function getCorrectGeometry (axis, override) {
   var dimensions = axis.dimensions();
   var ratio = dimensions.ratio;
   var geo = null;
   var m = Math.sqrt(ratio);
 
-  if ('flat' == axis.state.projectionrequested) {
+  if (override) {
+    geo = axis.geometry(override);
+  } else if (axis.state.options.box) {
+    geo = axis.geometry('box');
+  } else if ('flat' == axis.state.projectionrequested) {
     geo = axis.geometry('plane')
   } else if (m <= 2) {
     geo = axis.geometry('sphere');
@@ -243,7 +248,7 @@ function createRenderer (opts) {
 
   if (useWebgl) {
     return new three.WebGLRenderer({
-      antialias: true
+      antialias: true,
     });
   } else {
     return new three.CanvasRenderer();
@@ -262,11 +267,10 @@ function createVideoTexture (video) {
   var texture = null;
   video.width = video.videoWidth;
   video.height = video.videoHeight;
-  texture = new three.Texture(video);
+  texture = new three.VideoTexture(video);
   texture.format = three.RGBFormat;
   texture.minFilter = three.LinearFilter;
   texture.magFilter = three.LinearFilter;
-  texture.generateMipmaps = false;
   texture.image.width = video.videoWidth;
   texture.image.height = video.videoHeight;
   return texture;
@@ -359,7 +363,6 @@ function Axis (parent, opts) {
   this.projection('fisheye', require('./projection/fisheye'));
   this.projection('equilinear', require('./projection/equilinear'));
   this.projection('tinyplanet', require('./projection/tinyplanet'));
-
 
   /** Axis' camera instance. */
   this.camera = createCamera(this);
@@ -493,7 +496,7 @@ function Axis (parent, opts) {
   try {
     this.renderer.autoClear = null != opts.autoClear ? opts.autoClear : true;
     this.renderer.setPixelRatio(opts.devicePixelRatio || window.devicePixelRatio);
-    this.renderer.setClearColor(opts.clearColor || 0x000, 1);
+    this.renderer.setClearColor(opts.clearColor || 0xfff, 0.5);
   } catch (e) {
     console.warn(e);
   }
@@ -513,6 +516,7 @@ function Axis (parent, opts) {
 
   // initial volume
   this.volume(opts.volume || 1);
+
 
   // initialize frame source
   this.src(opts.src);
@@ -602,6 +606,8 @@ Axis.prototype.onclick = function (e) {
  */
 
 Axis.prototype.oncanplaythrough = function (e) {
+  var ratio = this.dimensions().ratio;
+  var r2 = Math.sqrt(ratio);
   this.debug('oncanplaythrough');
   this.state.duration = this.video.duration;
   this.emit('canplaythrough', e);
@@ -613,6 +619,13 @@ Axis.prototype.oncanplaythrough = function (e) {
     }
 
     this.texture = createVideoTexture(this.video);
+    if (this.state.options.box) {
+      this.texture.mapping = three.SphericalReflectionMapping;
+      this.texture.needsUpdate = true;
+      this.texture.repeat.set(1, 1);
+    } else if (r2 <= 2) {
+      this.texture.mapping = three.SphericalReflectionMapping
+    }
   }
   this.state.ready();
   if (false == this.state.shouldAutoplay && false == this.state.isPlaying) {
@@ -1076,12 +1089,18 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
 
     if (!isImage(src) || this.state.forceVideo && src != this.video.src) {
       this.state.update('isImage', false);
-      this.video.src = src;
-      this.video.load();
-      this.video.onload = function () {
-        this.onload = null;
-        if (self.texture) {
-          self.texture.needsUpdate = true;
+
+      var hls = null
+      if ('function' == typeof this.state.options.loader) {
+        this.state.options.loader(this, src, this.video)
+      } else {
+        this.video.src = src;
+        this.video.load();
+        this.video.onload = function () {
+          this.onload = null;
+          if (self.texture) {
+            self.texture.needsUpdate = true;
+          }
         }
       }
     } else {
@@ -1091,8 +1110,18 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
         three.ImageUtils.crossOrigin = 'anonymous';
       }
 
-      this.texture = three.ImageUtils.loadTexture(src, null, onImageLoaded);
+      var loader = new three.TextureLoader();
+      var crossOrigin = (
+        this.state.options.crossOrigin ||
+        this.state.options.crossorigin ||
+        false
+      );
+
+      loader.setCrossOrigin(crossOrigin);
+      this.texture = loader.load(src, onImageLoaded);
       this.texture.minFilter = three.LinearFilter;
+      this.texture.magFilter = three.LinearFilter;
+      this.texture.generateMipmaps = false;
     }
 
     if (true != preservePreviewFrame && this.previewFrame) {
@@ -1245,7 +1274,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 16) {
+      if (now - this.state.lastRefresh >= 64) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
@@ -1422,15 +1451,13 @@ Axis.prototype.draw = function () {
   var camera = this.camera;
   var scene = this.scene;
 
-  this.emit('beforedraw');
-
   if (this.renderer && this.scene && this.camera) {
+    this.emit('beforedraw');
     if (false == this.state.isVREnabled) {
       this.renderer.render(this.scene, this.camera);
     }
+    this.emit('draw');
   }
-
-  this.emit('draw');
 
   return this;
 };
@@ -1496,13 +1523,15 @@ Axis.prototype.render = function (shoudLoop) {
   // start animation loop
   if (false !== shoudLoop) {
     raf.cancel(this.state.animationFrameID);
-    this.state.animationFrameID  = raf(function loop () {
-      raf(loop);
-      var parentElement = domElement.parentElement;
-      if (parentElement && parentElement.contains(domElement)) {
-        self.update();
-      }
-    });
+    if (!this.state.animationFrameID || 0 == this.state.animationFrameID) {
+      this.state.animationFrameID  = raf(function loop () {
+        var parentElement = domElement.parentElement;
+        if (parentElement && parentElement.contains(domElement)) {
+          self.update();
+          self.state.animationFrameID = raf(loop);
+        }
+      });
+    }
   }
 
   this.emit('render');
@@ -1610,6 +1639,7 @@ Axis.prototype.destroy = function () {
     this.camera = null;
     this.stop();
     raf.cancel(this.state.animationFrameID);
+    this.state.animationFrameID = 0;
     this.state.reset();
     this.renderer.resetGLState();
     empty(this.domElement);
@@ -2070,6 +2100,7 @@ Axis.prototype.refreshScene = function () {
   var texture = this.texture;
   var scene = this.scene;
   var mesh = null;
+  var faces = null;
   var geo = null;
 
   if (null == texture || !isReady) { return this; }
@@ -2080,6 +2111,7 @@ Axis.prototype.refreshScene = function () {
 
   // get geometry for content
   geo = getCorrectGeometry(this);
+  faces = [];
 
   // skip if geometry is unable to be determined
   if (null == geo) { return this; }
@@ -2091,13 +2123,90 @@ Axis.prototype.refreshScene = function () {
       material.map = texture;
     }
   } else {
+
     // create material and mesh
     material = new three.MeshBasicMaterial({map: texture});
+
     // build mesh
+    // uv cube mapping faces
+    // (0, 1)                      (1, 1)
+    //           ---- ---- ----
+    //          |    |    |    |
+    //          |    |    |    |
+    // (0, .5)   ---- ---- ----    (1, .5)
+    //          |    |    |    |
+    //          |    |    |    |
+    //           ---- ---- ----
+    // (0, 0)                      (1, 0)
+    //
+    if (this.state.options.box) {
+      var f1 = [
+        new three.Vector2(0, 1),
+        new three.Vector2(0, .5),
+        new three.Vector2(1/3, .5),
+        new three.Vector2(1/3, 1),
+      ];
+
+      var f2 = [
+        new three.Vector2(1/3, 1),
+        new three.Vector2(1/3, .5),
+        new three.Vector2(2/3, .5),
+        new three.Vector2(2/3, 1),
+      ];
+
+      var f3 = [
+        new three.Vector2(2/3, 1),
+        new three.Vector2(2/3, .5),
+        new three.Vector2(1, .5),
+        new three.Vector2(1, 1),
+      ];
+
+      var f4 = [
+        new three.Vector2(0, .5),
+        new three.Vector2(0, 0),
+        new three.Vector2(1/3, 0),
+        new three.Vector2(1/3, .5),
+      ];
+
+      var f5 = [
+        new three.Vector2(1/3, .5),
+        new three.Vector2(1/3, 0),
+        new three.Vector2(2/3, .0),
+        new three.Vector2(2/3, .5),
+      ];
+
+      var f6 = [
+        new three.Vector2(2/3, .5),
+        new three.Vector2(2/3, 0),
+        new three.Vector2(1, 0),
+        new three.Vector2(1, .5),
+      ];
+
+      faces[0] = [f1[0], f1[1], f1[3]];
+      faces[1] = [f1[1], f1[2], f1[3]];
+
+      faces[2] = [f2[0], f2[1], f2[3]];
+      faces[3] = [f2[1], f2[2], f2[3]];
+
+      faces[4] = [f3[0], f3[1], f3[3]];
+      faces[5] = [f3[1], f3[2], f3[3]];
+
+      faces[6] = [f4[0], f4[1], f4[3]];
+      faces[7] = [f4[1], f4[2], f4[3]];
+
+      faces[8] = [f5[0], f5[1], f5[3]];
+      faces[9] = [f5[1], f5[2], f5[3]];
+
+      faces[10] = [f6[0], f6[1], f6[3]];
+      faces[11] = [f6[1], f6[2], f6[3]];
+
+      geo.faceVertexUvs[0] = faces;
+    }
+
     mesh = new three.Mesh(geo, material);
     // set mesh scale
+    material.overdraw = 1;
     mesh.scale.x = -1;
-    material.overdraw = 0.5
     // add mesh to scene
     this.scene.add(mesh);
   }
@@ -39455,7 +39564,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.19.9",
+  "version": "1.20.1",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
@@ -39849,7 +39958,7 @@ exports.MAX_CALC_FOV = 75;
  * @type {Number}
  */
 
-exports.DEFAULT_INTERPOLATION_FACTOR = 0.05;
+exports.DEFAULT_INTERPOLATION_FACTOR = 0.08;
 
 /**
  * Default frame projection
@@ -40092,8 +40201,9 @@ module.exports = function createCamera (scope, force) {
 exports.cylinder = require('./cylinder');
 exports.sphere = require('./sphere');
 exports.plane = require('./plane');
+exports.box = require('./box');
 
-}, {"./cylinder":39,"./sphere":40,"./plane":41}],
+}, {"./cylinder":39,"./sphere":40,"./plane":41,"./box":42}],
 39: [function(require, module, exports) {
 
 /**
@@ -40126,6 +40236,7 @@ module.exports = function (axis) {
 
 }, {"three.js":2}],
 40: [function(require, module, exports) {
+'use strict';
 
 /**
  * Module dependencies
@@ -40142,15 +40253,17 @@ var three = require('three.js')
  */
 
 module.exports = function sphere (axis) {
-  var heightSegments = 50;
-  var widthSegments = 80;
+  var heightSegments = 32;
+  var widthSegments = 32;
   var radius = axis.state.radius;
-  var phi = 100;
+  var phi = Math.PI * 2;
+
   if (radius < 400) {
-    radius = 400;
+    radius = 200;
   } else if (radius > 600) {
-    radius = 600;
+    radius = 400;
   }
+
   return new three.SphereGeometry(radius,
                                   widthSegments,
                                   heightSegments,
@@ -40181,6 +40294,28 @@ module.exports = function plane (axis) {
   return new three.PlaneBufferGeometry(width,
                                        height,
                                        segments);
+};
+
+}, {"three.js":2}],
+42: [function(require, module, exports) {
+'use strict';
+
+/**
+ * Module dependencies
+ */
+
+var three = require('three.js')
+
+/**
+ * Creates and returns a `BoxGeometry'
+ * geometry instance.
+ *
+ * @api public
+ * @param {Axis} axis
+ */
+
+module.exports = function box (axis) {
+  return new three.BoxGeometry(400, 400, 400);
 };
 
 }, {"three.js":2}],
@@ -40981,8 +41116,8 @@ State.prototype.toJSON = function () {
   };
 };
 
-}, {"emitter":4,"fullscreen":8,"keycode":9,"has-webgl":7,"events":5,"three.js":2,"merge":10,"path":42,"./util":17,"./constants":18}],
-42: [function(require, module, exports) {
+}, {"emitter":4,"fullscreen":8,"keycode":9,"has-webgl":7,"events":5,"three.js":2,"merge":10,"path":43,"./util":17,"./constants":18}],
+43: [function(require, module, exports) {
 
 exports.basename = function(path){
   return path.split('/').pop();
@@ -41131,8 +41266,8 @@ function normalizeMovements (e, o) {
 }
 
 
-}, {"three.js":2,"path":42,"url":43}],
-43: [function(require, module, exports) {
+}, {"three.js":2,"path":43,"url":44}],
+44: [function(require, module, exports) {
 
 /**
  * Parse the given `url`.
@@ -42330,8 +42465,8 @@ module.exports = function(THREE){
   return THREE.CanvasRenderer;
 };
 
-}, {"three-projector-renderer":44}],
-44: [function(require, module, exports) {
+}, {"three-projector-renderer":45}],
+45: [function(require, module, exports) {
 
 module.exports = function (THREE) {
   /**
@@ -44463,8 +44598,8 @@ VRController.prototype.update = function () {
   return this;
 };
 
-}, {"three.js":2,"inherits":45,"../camera":14,"./controller":32}],
-45: [function(require, module, exports) {
+}, {"three.js":2,"inherits":46,"../camera":14,"./controller":32}],
+46: [function(require, module, exports) {
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -45562,7 +45697,7 @@ MouseController.prototype.update = function () {
   return this;
 };
 
-}, {"inherits":45,"./controller":32,"../constants":18,"../util":17}],
+}, {"inherits":46,"./controller":32,"../constants":18,"../util":17}],
 27: [function(require, module, exports) {
 
 'use strict';
@@ -45788,7 +45923,7 @@ TouchController.prototype.update = function () {
   return this;
 };
 
-}, {"inherits":45,"three.js":2,"./controller":32,"../constants":18}],
+}, {"inherits":46,"three.js":2,"./controller":32,"../constants":18}],
 28: [function(require, module, exports) {
 
 'use strict';
@@ -46249,7 +46384,7 @@ KeyboardController.prototype.onmousedown = function (e) {
   }
 }
 
-}, {"keycode":9,"inherits":45,"./controller":32,"../constants":18}],
+}, {"keycode":9,"inherits":46,"./controller":32,"../constants":18}],
 29: [function(require, module, exports) {
 
 'use strict';
@@ -46483,7 +46618,7 @@ OrientationController.prototype.update = function () {
   return this;
 };
 
-}, {"keycode":9,"inherits":45,"./controller":32,"../constants":18}],
+}, {"keycode":9,"inherits":46,"./controller":32,"../constants":18}],
 30: [function(require, module, exports) {
 
 'use strict';
@@ -46706,8 +46841,8 @@ PointerController.prototype.disable = function () {
   return this;
 };
 
-}, {"inherits":45,"three.js":2,"pointer-lock":46,"./mouse":26,"./controller":32,"../constants":18}],
-46: [function(require, module, exports) {
+}, {"inherits":46,"three.js":2,"pointer-lock":47,"./mouse":26,"./controller":32,"../constants":18}],
+47: [function(require, module, exports) {
 module.exports = pointer
 
 pointer.available = available
@@ -46877,8 +47012,8 @@ function shim(el) {
     null
 }
 
-}, {"stream":47,"emitter":38}],
-47: [function(require, module, exports) {
+}, {"stream":48,"emitter":38}],
+48: [function(require, module, exports) {
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -47180,4 +47315,4 @@ MovementController.prototype.onmouseup = function (e) {
   this.state.movementsStart.y = 0;
 };
 
-}, {"inherits":45,"three.js":2,"./mouse":26,"./controller":32,"../constants":18,"../util":17}]}, {}, {"1":""}));
+}, {"inherits":46,"three.js":2,"./mouse":26,"./controller":32,"../constants":18,"../util":17}]}, {}, {"1":""}));
