@@ -933,6 +933,10 @@ Axis.prototype.onmousewheel = function (e) {
 
 Axis.prototype.size = function (width, height) {
   this.debug('size', width, height);
+
+  if (null == width) width = this.state.width
+  if (null == height) height = this.state.height
+
   this.state.width = width;
   this.state.height = height;
 
@@ -957,6 +961,12 @@ Axis.prototype.size = function (width, height) {
     this.previewFrame.size(width, height);
   }
 
+  try {
+    this.video.style.width = width + 'px'
+    this.video.style.height = height + 'px'
+  } catch (e) {
+    console.warn('Axis', e)
+  }
   this.emit('size', width, height);
   return this;
 };
