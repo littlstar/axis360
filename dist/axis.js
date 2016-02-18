@@ -1033,6 +1033,10 @@ Axis.prototype.onmousewheel = function (e) {
 
 Axis.prototype.size = function (width, height) {
   this.debug('size', width, height);
+
+  if (null == width) width = this.state.width
+  if (null == height) height = this.state.height
+
   this.state.width = width;
   this.state.height = height;
 
@@ -1057,6 +1061,12 @@ Axis.prototype.size = function (width, height) {
     this.previewFrame.size(width, height);
   }
 
+  try {
+    this.video.style.width = width + 'px'
+    this.video.style.height = height + 'px'
+  } catch (e) {
+    console.warn('Axis', e)
+  }
   this.emit('size', width, height);
   return this;
 };
@@ -1733,6 +1743,7 @@ Axis.prototype.coords = function (x, y) {
  */
 
 Axis.prototype.update = function () {
+  if (false == this.state.shouldUpdate) return this
   this.refresh().once('refresh', function () {
     this.draw().once('draw', function () {
       this.emit('update');
@@ -43951,7 +43962,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.20.3",
+  "version": "1.20.4",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
@@ -44991,6 +45002,9 @@ function State (scope, opts) {
   /**
    * State predicates.
    */
+
+  /** Allow for updates to be skippped. */
+  this.shouldUpdate = true;
 
   /** Predicate indicating if Axis is ready. */
   this.isReady = false;
