@@ -1061,12 +1061,6 @@ Axis.prototype.size = function (width, height) {
     this.previewFrame.size(width, height);
   }
 
-  try {
-    this.video.style.width = width + 'px'
-    this.video.style.height = height + 'px'
-  } catch (e) {
-    console.warn('Axis', e)
-  }
   this.emit('size', width, height);
   return this;
 };
@@ -43962,7 +43956,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.20.4",
+  "version": "1.20.5",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
