@@ -2103,6 +2103,7 @@ Axis.prototype.refreshScene = function () {
       geo.faceVertexUvs[0] = faces;
     }
 
+    material.side = three.DoubleSide
     mesh = new three.Mesh(geo, material);
     // set mesh scale
     material.overdraw = 1;

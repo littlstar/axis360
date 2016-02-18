@@ -598,14 +598,6 @@ AxisController.prototype.update = function () {
     interpolationFactor = 1;
   }
 
-  if ('tinyplanet' == this.scope.projections.current) {
-    if (orientation.x < 0 && target.position.z <= 0) {
-      target.position.negate();
-    } else if (orientation.x >= 0 && target.position.z >= 0) {
-      target.position.negate();
-    }
-  }
-
   // update controller quaternions
   quaternions.y.setFromAxisAngle(vectors.y, orientation.y);
   quaternions.x.setFromAxisAngle(vectors.x, orientation.x * interpolationFactor);
