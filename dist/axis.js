@@ -2203,6 +2203,7 @@ Axis.prototype.refreshScene = function () {
       geo.faceVertexUvs[0] = faces;
     }
 
+    material.side = three.DoubleSide
     mesh = new three.Mesh(geo, material);
     // set mesh scale
     material.overdraw = 1;
@@ -43950,7 +43951,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.20.2",
+  "version": "1.20.3",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
@@ -48472,7 +48473,7 @@ function tinyplanet (scope) {
     var x = rotation.x;
     scope.debug("animate: TINY_PLANET y=%d", y);
     rotation.x = MIN_X_COORDINATE;
-    rotation.y = -360;
+    rotation.y = -180;
     scope.lookAt(rotation.x, rotation.y, rotation.z);
     scope.orientation.x = -Infinity;
     this.constraints.x = true;
@@ -49610,14 +49611,6 @@ AxisController.prototype.update = function () {
     orientation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, orientation.x));
   } else {
     interpolationFactor = 1;
-  }
-
-  if ('tinyplanet' == this.scope.projections.current) {
-    if (orientation.x < 0 && target.position.z <= 0) {
-      target.position.negate();
-    } else if (orientation.x >= 0 && target.position.z >= 0) {
-      target.position.negate();
-    }
   }
 
   // update controller quaternions
