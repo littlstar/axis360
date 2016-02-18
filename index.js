@@ -1633,6 +1633,7 @@ Axis.prototype.coords = function (x, y) {
  */
 
 Axis.prototype.update = function () {
+  if (false == this.state.shouldUpdate) return this
   this.refresh().once('refresh', function () {
     this.draw().once('draw', function () {
       this.emit('update');

@@ -283,6 +283,9 @@ function State (scope, opts) {
    * State predicates.
    */
 
+  /** Allow for updates to be skippped. */
+  this.shouldUpdate = true;
+
   /** Predicate indicating if Axis is ready. */
   this.isReady = false;
 
