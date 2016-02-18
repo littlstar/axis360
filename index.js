@@ -961,12 +961,6 @@ Axis.prototype.size = function (width, height) {
     this.previewFrame.size(width, height);
   }
 
-  try {
-    this.video.style.width = width + 'px'
-    this.video.style.height = height + 'px'
-  } catch (e) {
-    console.warn('Axis', e)
-  }
   this.emit('size', width, height);
   return this;
 };
