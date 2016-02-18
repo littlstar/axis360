@@ -1037,6 +1037,7 @@ Axis.prototype.size = function (width, height) {
   if (null == width) width = this.state.width
   if (null == height) height = this.state.height
 
+  var container = this.domElement.querySelector('.container')
   this.state.width = width;
   this.state.height = height;
 
@@ -1061,6 +1062,10 @@ Axis.prototype.size = function (width, height) {
     this.previewFrame.size(width, height);
   }
 
+  if (container) {
+    container.style.width = width + 'px'
+    container.style.height = height + 'px'
+  }
   this.emit('size', width, height);
   return this;
 };
@@ -43956,7 +43961,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.20.5",
+  "version": "1.20.6",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
@@ -43985,7 +43990,7 @@ module.exports = {
 ;
 }, {}],
 12: [function(require, module, exports) {
-module.exports = '<section class="axis frame">\n  <div class="axis container">\n    <video class="axis" style="display: none"></video>\n  </div>\n</section>\n';
+module.exports = '<section class="axis frame">\n  <div class="axis container">\n    <video class="axis" style="display: none; width: 100%; height: 100%;"></video>\n  </div>\n</section>\n';
 }, {}],
 13: [function(require, module, exports) {
 
