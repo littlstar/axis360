@@ -937,6 +937,7 @@ Axis.prototype.size = function (width, height) {
   if (null == width) width = this.state.width
   if (null == height) height = this.state.height
 
+  var container = this.domElement.querySelector('.container')
   this.state.width = width;
   this.state.height = height;
 
@@ -961,6 +962,10 @@ Axis.prototype.size = function (width, height) {
     this.previewFrame.size(width, height);
   }
 
+  if (container) {
+    container.style.width = width + 'px'
+    container.style.height = height + 'px'
+  }
   this.emit('size', width, height);
   return this;
 };
