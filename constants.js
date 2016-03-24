@@ -76,7 +76,7 @@ exports.MAX_CALC_FOV = 75;
  * @type {Number}
  */
 
-exports.DEFAULT_INTERPOLATION_FACTOR = 0.05;
+exports.DEFAULT_INTERPOLATION_FACTOR = 0.1;
 
 /**
  * Default frame projection

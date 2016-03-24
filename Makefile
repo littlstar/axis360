@@ -79,7 +79,7 @@ dist: dist/axis.js dist/axis.css
 #
 dist/axis.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
-	$(DUO) -C --type js --global $(GLOBAL_NAMESPACE) < $(MAIN) > $@
+	$(DUO) -C --type js -s $(GLOBAL_NAMESPACE) < $(MAIN) > $@
 
 ##
 # Builds CSS dist file

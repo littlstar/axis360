@@ -108,7 +108,7 @@ function tinyplanet (scope) {
     var x = rotation.x;
     scope.debug("animate: TINY_PLANET y=%d", y);
     rotation.x = MIN_X_COORDINATE;
-    rotation.y = -360;
+    rotation.y = -180;
     scope.lookAt(rotation.x, rotation.y, rotation.z);
     scope.orientation.x = -Infinity;
     this.constraints.x = true;
