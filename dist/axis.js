@@ -2286,9 +2286,9 @@ Axis.prototype.rotate = function (coord, opts) {
 
     clearTimeout(rotation.interval);
     rotation.interval = setTimeout(function interval () {
-      var isMousedown = self.controls.mouse.state.isMousedown;
-      var isTouching = self.controls.touch.state.isTouching;
-      var isKeydown = self.controls.keyboard.state.isKeydown;
+      var isMousedown = self.controls.mouse && self.controls.mouse.state.isMousedown;
+      var isTouching = self.controls.touch && self.controls.touch.state.isTouching;
+      var isKeydown = self.controls.keyboard && self.controls.keyboard.state.isKeydown;
       clearTimeout(rotation.interval);
       if (0 != rotation.every && 0 != rotation.value) {
         setTimeout(interval, rotation.every);
@@ -44099,7 +44099,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.20.8",
+  "version": "1.20.9",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
