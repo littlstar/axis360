@@ -226,7 +226,7 @@ function State (scope, opts) {
   this.scrollVelocity = DEFAULT_SCROLL_VELOCITY;
 
   /** Animation frame ID. */
-  this.animationFrameID = null;
+  this.animationFrameID = 0;
 
   /** Currently played video time. */
   this.currentTime = 0;

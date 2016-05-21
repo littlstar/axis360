@@ -148,7 +148,7 @@ function createRenderer (opts) {
 
   if (useWebgl) {
     return new three.WebGLRenderer({
-      antialias: true,
+      //antialias: true,
     });
   } else {
     return new three.CanvasRenderer();
@@ -411,7 +411,9 @@ function Axis (parent, opts) {
 
   if (true != opts.isPreviewFrame) {
     // Initializes controllers
-    this.initializeControllers();
+    this.initializeControllers(merge({
+      keyboard: true, mouse: true
+    }, opts.controls));
   }
 
   // initial volume
@@ -1183,7 +1185,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 64) {
+      if (now - this.state.lastRefresh >= 256) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
@@ -1436,8 +1438,8 @@ Axis.prototype.render = function (shoudLoop) {
       this.state.animationFrameID  = raf(function loop () {
         var parentElement = domElement.parentElement;
         if (parentElement && parentElement.contains(domElement)) {
-          self.update();
           self.state.animationFrameID = raf(loop);
+          self.update();
         }
       });
     }
@@ -1643,12 +1645,9 @@ Axis.prototype.coords = function (x, y) {
 
 Axis.prototype.update = function () {
   if (false == this.state.shouldUpdate) return this
-  this.refresh().once('refresh', function () {
-    this.draw().once('draw', function () {
-      this.emit('update');
-    });
-  });
-  return this;
+  this.once('refresh', function () { this.draw() })
+  this.once('draw', function () { this.emit('update') })
+  return this.refresh()
 };
 
 /**
@@ -1758,7 +1757,7 @@ Axis.prototype.fov = function (fov) {
  */
 
 Axis.prototype.enableVRMode = function () {
-  this.initializeControllers(null, true);
+  this.initializeControllers({vr: true});
   this.state.isVREnabled = true;
   this.controls.vr.enable();
   return this;
@@ -1771,7 +1770,7 @@ Axis.prototype.enableVRMode = function () {
  */
 
 Axis.prototype.disableVRMode = function () {
-  this.initializeControllers(null, true);
+  this.initializeControllers({vr: false});
   this.state.isVREnabled = false;
   this.controls.vr.disable();
   return this.render();
@@ -1834,32 +1833,32 @@ Axis.prototype.initializeControllers = function (map, force) {
   var controls = (this.controls = this.controls || {});
   map = null != map && 'object' == typeof map ? map : {};
 
-  if (null == controls.vr || true == map.vr || true == force) {
+  if (true == map.vr || true == force) {
     if (controls.vr) { controls.vr.destroy(); }
     controls.vr = require('./controls/vr')(this);
   }
 
-  if (null == controls.mouse || true == map.mouse || true == force) {
+  if (true == map.mouse || true == force) {
     if (controls.mouse) { controls.mouse.destroy(); }
     controls.mouse = require('./controls/mouse')(this);
   }
 
-  if (null == controls.touch || true == map.touch || true == force) {
+  if (true == map.touch || true == force) {
     if (controls.touch) { controls.touch.destroy(); }
     controls.touch = require('./controls/touch')(this);
   }
 
-  if (null == controls.keyboard || true == map.keyboard || true == force) {
+  if (true == map.keyboard || true == force) {
     if (controls.keyboard) { controls.keyboard.destroy(); }
     controls.keyboard = require('./controls/keyboard')(this);
   }
 
-  if (null == controls.orientation || true == map.orientation || true == force) {
+  if (true == map.orientation || true == force) {
     if (controls.orientation) { controls.orientation.destroy(); }
     controls.orientation = require('./controls/orientation')(this);
   }
 
-  if (null == controls.pointer || true == map.pointer || true == force) {
+  if (true == map.pointer || true == force) {
     if (controls.pointer) { controls.pointer.destroy(); }
     controls.pointer = require('./controls/pointer')(this);
   }
