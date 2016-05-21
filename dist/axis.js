@@ -44099,7 +44099,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.20.9",
+  "version": "1.21.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
@@ -50716,6 +50716,11 @@ function KeyboardController (scope) {
   this.use('down', down);
   this.use('left', left);
   this.use('right', right);
+
+  this.use('w', up);
+  this.use('s', down);
+  this.use('a', left);
+  this.use('d', right);
 
   if (this.scope.state.vim) {
     this.use('k', up);
