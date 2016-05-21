@@ -229,6 +229,11 @@ function KeyboardController (scope) {
   this.use('left', left);
   this.use('right', right);
 
+  this.use('w', up);
+  this.use('s', down);
+  this.use('a', left);
+  this.use('d', right);
+
   if (this.scope.state.vim) {
     this.use('k', up);
     this.use('j', down);
