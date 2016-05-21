@@ -86,6 +86,11 @@ var keycodes = module.exports.keycodes = {
   'j': keycode('j'), // down
   'h': keycode('h'), // left
   'l': keycode('l'), // right
+
+  'w': keycode('w'), // up
+  's': keycode('s'), // down
+  'a': keycode('a'), // left
+  'd': keycode('d'), // right
 };
 
 /**
