@@ -2186,9 +2186,9 @@ Axis.prototype.rotate = function (coord, opts) {
 
     clearTimeout(rotation.interval);
     rotation.interval = setTimeout(function interval () {
-      var isMousedown = self.controls.mouse.state.isMousedown;
-      var isTouching = self.controls.touch.state.isTouching;
-      var isKeydown = self.controls.keyboard.state.isKeydown;
+      var isMousedown = self.controls.mouse && self.controls.mouse.state.isMousedown;
+      var isTouching = self.controls.touch && self.controls.touch.state.isTouching;
+      var isKeydown = self.controls.keyboard && self.controls.keyboard.state.isKeydown;
       clearTimeout(rotation.interval);
       if (0 != rotation.every && 0 != rotation.value) {
         setTimeout(interval, rotation.every);
