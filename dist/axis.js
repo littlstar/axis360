@@ -248,7 +248,7 @@ function createRenderer (opts) {
 
   if (useWebgl) {
     return new three.WebGLRenderer({
-      antialias: true,
+      //antialias: true,
     });
   } else {
     return new three.CanvasRenderer();
@@ -511,7 +511,9 @@ function Axis (parent, opts) {
 
   if (true != opts.isPreviewFrame) {
     // Initializes controllers
-    this.initializeControllers();
+    this.initializeControllers(merge({
+      keyboard: true, mouse: true
+    }, opts.controls));
   }
 
   // initial volume
@@ -1283,7 +1285,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 64) {
+      if (now - this.state.lastRefresh >= 256) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
@@ -1536,8 +1538,8 @@ Axis.prototype.render = function (shoudLoop) {
       this.state.animationFrameID  = raf(function loop () {
         var parentElement = domElement.parentElement;
         if (parentElement && parentElement.contains(domElement)) {
-          self.update();
           self.state.animationFrameID = raf(loop);
+          self.update();
         }
       });
     }
@@ -1743,12 +1745,9 @@ Axis.prototype.coords = function (x, y) {
 
 Axis.prototype.update = function () {
   if (false == this.state.shouldUpdate) return this
-  this.refresh().once('refresh', function () {
-    this.draw().once('draw', function () {
-      this.emit('update');
-    });
-  });
-  return this;
+  this.once('refresh', function () { this.draw() })
+  this.once('draw', function () { this.emit('update') })
+  return this.refresh()
 };
 
 /**
@@ -1858,7 +1857,7 @@ Axis.prototype.fov = function (fov) {
  */
 
 Axis.prototype.enableVRMode = function () {
-  this.initializeControllers(null, true);
+  this.initializeControllers({vr: true});
   this.state.isVREnabled = true;
   this.controls.vr.enable();
   return this;
@@ -1871,7 +1870,7 @@ Axis.prototype.enableVRMode = function () {
  */
 
 Axis.prototype.disableVRMode = function () {
-  this.initializeControllers(null, true);
+  this.initializeControllers({vr: false});
   this.state.isVREnabled = false;
   this.controls.vr.disable();
   return this.render();
@@ -1934,32 +1933,32 @@ Axis.prototype.initializeControllers = function (map, force) {
   var controls = (this.controls = this.controls || {});
   map = null != map && 'object' == typeof map ? map : {};
 
-  if (null == controls.vr || true == map.vr || true == force) {
+  if (true == map.vr || true == force) {
     if (controls.vr) { controls.vr.destroy(); }
     controls.vr = require('./controls/vr')(this);
   }
 
-  if (null == controls.mouse || true == map.mouse || true == force) {
+  if (true == map.mouse || true == force) {
     if (controls.mouse) { controls.mouse.destroy(); }
     controls.mouse = require('./controls/mouse')(this);
   }
 
-  if (null == controls.touch || true == map.touch || true == force) {
+  if (true == map.touch || true == force) {
     if (controls.touch) { controls.touch.destroy(); }
     controls.touch = require('./controls/touch')(this);
   }
 
-  if (null == controls.keyboard || true == map.keyboard || true == force) {
+  if (true == map.keyboard || true == force) {
     if (controls.keyboard) { controls.keyboard.destroy(); }
     controls.keyboard = require('./controls/keyboard')(this);
   }
 
-  if (null == controls.orientation || true == map.orientation || true == force) {
+  if (true == map.orientation || true == force) {
     if (controls.orientation) { controls.orientation.destroy(); }
     controls.orientation = require('./controls/orientation')(this);
   }
 
-  if (null == controls.pointer || true == map.pointer || true == force) {
+  if (true == map.pointer || true == force) {
     if (controls.pointer) { controls.pointer.destroy(); }
     controls.pointer = require('./controls/pointer')(this);
   }
@@ -43139,7 +43138,9 @@ function parse(html, doc) {
  * Expose `Emitter`.
  */
 
-module.exports = Emitter;
+if (typeof module !== 'undefined') {
+  module.exports = Emitter;
+}
 
 /**
  * Initialize a new `Emitter`.
@@ -43303,8 +43304,17 @@ Emitter.prototype.hasListeners = function(event){
  * Module dependencies.
  */
 
-var events = require('event');
-var delegate = require('delegate');
+try {
+  var events = require('event');
+} catch(err) {
+  var events = require('component-event');
+}
+
+try {
+  var delegate = require('delegate');
+} catch(err) {
+  var delegate = require('component-delegate');
+}
 
 /**
  * Expose `Events`.
@@ -43475,7 +43485,7 @@ function parse(event) {
   }
 }
 
-}, {"event":33,"delegate":34}],
+}, {"event":33,"component-event":33,"delegate":34,"component-delegate":34}],
 33: [function(require, module, exports) {
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
@@ -43518,8 +43528,17 @@ exports.unbind = function(el, type, fn, capture){
  * Module dependencies.
  */
 
-var closest = require('closest')
-  , event = require('event');
+try {
+  var closest = require('closest');
+} catch(err) {
+  var closest = require('component-closest');
+}
+
+try {
+  var event = require('event');
+} catch(err) {
+  var event = require('component-event');
+}
 
 /**
  * Delegate event `type` to `selector`
@@ -43557,13 +43576,17 @@ exports.unbind = function(el, type, fn, capture){
   event.unbind(el, type, fn, capture);
 };
 
-}, {"closest":35,"event":33}],
+}, {"closest":35,"component-closest":35,"event":33,"component-event":33}],
 35: [function(require, module, exports) {
 /**
  * Module Dependencies
  */
 
-var matches = require('matches-selector')
+try {
+  var matches = require('matches-selector')
+} catch (err) {
+  var matches = require('component-matches-selector')
+}
 
 /**
  * Export `closest`
@@ -43592,13 +43615,17 @@ function closest (el, selector, scope) {
   return matches(el, selector) ? el : null;
 }
 
-}, {"matches-selector":36}],
+}, {"matches-selector":36,"component-matches-selector":36}],
 36: [function(require, module, exports) {
 /**
  * Module dependencies.
  */
 
-var query = require('query');
+try {
+  var query = require('query');
+} catch (err) {
+  var query = require('component-query');
+}
 
 /**
  * Element prototype.
@@ -43641,7 +43668,7 @@ function match(el, selector) {
   return false;
 }
 
-}, {"query":37}],
+}, {"query":37,"component-query":37}],
 37: [function(require, module, exports) {
 function one(selector, el) {
   return el.querySelector(selector);
@@ -43821,7 +43848,9 @@ if (document.addEventListener) {
  * Expose `Emitter`.
  */
 
-module.exports = Emitter;
+if (typeof module !== 'undefined') {
+  module.exports = Emitter;
+}
 
 /**
  * Initialize a new `Emitter`.
@@ -44070,7 +44099,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.20.7",
+  "version": "1.20.8",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
@@ -45054,7 +45083,7 @@ function State (scope, opts) {
   this.scrollVelocity = DEFAULT_SCROLL_VELOCITY;
 
   /** Animation frame ID. */
-  this.animationFrameID = null;
+  this.animationFrameID = 0;
 
   /** Currently played video time. */
   this.currentTime = 0;
@@ -45896,8 +45925,7 @@ module.exports = function(THREE){
 
     var material = new THREE.SpriteCanvasMaterial();
 
-    THREE.Material.prototype.clone.call( this, material );
-
+    material.copy( this );
     material.color.copy( this.color );
     material.program = this.program;
 
@@ -45910,8 +45938,6 @@ module.exports = function(THREE){
   THREE.CanvasRenderer = function ( parameters ) {
 
     console.log( 'THREE.CanvasRenderer', THREE.REVISION );
-
-    var smoothstep = THREE.Math.smoothstep;
 
     parameters = parameters || {};
 
@@ -45933,7 +45959,7 @@ module.exports = function(THREE){
       _viewportWidth = _canvasWidth,
       _viewportHeight = _canvasHeight,
 
-      pixelRatio = 1,
+      _pixelRatio = 1,
 
       _context = _canvas.getContext( '2d', {
         alpha: parameters.alpha === true
@@ -45989,11 +46015,18 @@ module.exports = function(THREE){
       _normal = new THREE.Vector3(),
       _normalViewMatrix = new THREE.Matrix3();
 
+      /* TODO
+         _canvas.mozImageSmoothingEnabled = false;
+         _canvas.webkitImageSmoothingEnabled = false;
+         _canvas.msImageSmoothingEnabled = false;
+         _canvas.imageSmoothingEnabled = false;
+         */
+
       // dash+gap fallbacks for Firefox and everything else
 
       if ( _context.setLineDash === undefined ) {
 
-        _context.setLineDash = function () {}
+        _context.setLineDash = function () {};
 
       }
 
@@ -46012,31 +46045,43 @@ module.exports = function(THREE){
 
         }
 
-      }
+      };
 
       // WebGLRenderer compatibility
 
       this.supportsVertexTextures = function () {};
       this.setFaceCulling = function () {};
 
-      //
+      // API
+
+      this.getContext = function () {
+
+        return _context;
+
+      };
+
+      this.getContextAttributes = function () {
+
+        return _context.getContextAttributes();
+
+      };
 
       this.getPixelRatio = function () {
 
-        return pixelRatio;
+        return _pixelRatio;
 
       };
 
       this.setPixelRatio = function ( value ) {
 
-        pixelRatio = value;
+        if ( value !== undefined ) _pixelRatio = value;
 
       };
 
       this.setSize = function ( width, height, updateStyle ) {
 
-        _canvasWidth = width * pixelRatio;
-        _canvasHeight = height * pixelRatio;
+        _canvasWidth = width * _pixelRatio;
+        _canvasHeight = height * _pixelRatio;
 
         _canvas.width = _canvasWidth;
         _canvas.height = _canvasHeight;
@@ -46051,7 +46096,7 @@ module.exports = function(THREE){
 
         }
 
-        _clipBox.min.set( -_canvasWidthHalf, -_canvasHeightHalf ),
+        _clipBox.min.set( - _canvasWidthHalf, - _canvasHeightHalf );
         _clipBox.max.set(   _canvasWidthHalf,   _canvasHeightHalf );
 
         _clearBox.min.set( - _canvasWidthHalf, - _canvasHeightHalf );
@@ -46071,16 +46116,16 @@ module.exports = function(THREE){
 
       this.setViewport = function ( x, y, width, height ) {
 
-        _viewportX = x * pixelRatio;
-        _viewportY = y * pixelRatio;
+        _viewportX = x * _pixelRatio;
+        _viewportY = y * _pixelRatio;
 
-        _viewportWidth = width * pixelRatio;
-        _viewportHeight = height * pixelRatio;
+        _viewportWidth = width * _pixelRatio;
+        _viewportHeight = height * _pixelRatio;
 
       };
 
       this.setScissor = function () {};
-      this.enableScissorTest = function () {};
+      this.setScissorTest = function () {};
 
       this.setClearColor = function ( color, alpha ) {
 
@@ -46119,15 +46164,15 @@ module.exports = function(THREE){
 
       this.clear = function () {
 
-        if ( _clearBox.empty() === false ) {
+        if ( _clearBox.isEmpty() === false ) {
 
           _clearBox.intersect( _clipBox );
           _clearBox.expandByScalar( 2 );
 
           _clearBox.min.x = _clearBox.min.x + _canvasWidthHalf;
-          _clearBox.min.y =  - _clearBox.min.y + _canvasHeightHalf;		// higher y value !
+          _clearBox.min.y =  - _clearBox.min.y + _canvasHeightHalf;   // higher y value !
           _clearBox.max.x = _clearBox.max.x + _canvasWidthHalf;
-          _clearBox.max.y =  - _clearBox.max.y + _canvasHeightHalf;		// lower y value !
+          _clearBox.max.y =  - _clearBox.max.y + _canvasHeightHalf;   // lower y value !
 
           if ( _clearAlpha < 1 ) {
 
@@ -46228,7 +46273,7 @@ module.exports = function(THREE){
               _v2.positionScreen
             ] );
 
-            if ( _clipBox.isIntersectionBox( _elemBox ) === true ) {
+            if ( _clipBox.intersectsBox( _elemBox ) === true ) {
 
               renderLine( _v1, _v2, element, material );
 
@@ -46260,7 +46305,7 @@ module.exports = function(THREE){
               _v3.positionScreen
             ] );
 
-            if ( _clipBox.isIntersectionBox( _elemBox ) === true ) {
+            if ( _clipBox.intersectsBox( _elemBox ) === true ) {
 
               renderFace3( _v1, _v2, _v3, 0, 1, 2, element, material );
 
@@ -46381,53 +46426,42 @@ module.exports = function(THREE){
 
           var texture = material.map;
 
-          if ( texture !== null && texture.image !== undefined ) {
-
-            if ( texture.hasEventListener( 'update', onTextureUpdate ) === false ) {
-
-              if ( texture.image.width > 0 ) {
-
-                textureToPattern( texture );
-
-              }
-
-              texture.addEventListener( 'update', onTextureUpdate );
-
-            }
+          if ( texture !== null ) {
 
             var pattern = _patterns[ texture.id ];
 
-            if ( pattern !== undefined ) {
+            if ( pattern === undefined || pattern.version !== texture.version ) {
 
-              setFillStyle( pattern );
-
-            } else {
-
-              setFillStyle( 'rgba( 0, 0, 0, 1 )' );
+              pattern = textureToPattern( texture );
+              _patterns[ texture.id ] = pattern;
 
             }
 
-            //
+            if ( pattern.canvas !== undefined ) {
 
-            var bitmap = texture.image;
+              setFillStyle( pattern.canvas );
 
-            var ox = bitmap.width * texture.offset.x;
-            var oy = bitmap.height * texture.offset.y;
+              var bitmap = texture.image;
 
-            var sx = bitmap.width * texture.repeat.x;
-            var sy = bitmap.height * texture.repeat.y;
+              var ox = bitmap.width * texture.offset.x;
+              var oy = bitmap.height * texture.offset.y;
 
-            var cx = scaleX / sx;
-            var cy = scaleY / sy;
+              var sx = bitmap.width * texture.repeat.x;
+              var sy = bitmap.height * texture.repeat.y;
 
-            _context.save();
-            _context.translate( v1.x, v1.y );
-            if ( material.rotation !== 0 ) _context.rotate( material.rotation );
-            _context.translate( - scaleX / 2, - scaleY / 2 );
-            _context.scale( cx, cy );
-            _context.translate( - ox, - oy );
-            _context.fillRect( ox, oy, sx, sy );
-            _context.restore();
+              var cx = scaleX / sx;
+              var cy = scaleY / sy;
+
+              _context.save();
+              _context.translate( v1.x, v1.y );
+              if ( material.rotation !== 0 ) _context.rotate( material.rotation );
+              _context.translate( - scaleX / 2, - scaleY / 2 );
+              _context.scale( cx, cy );
+              _context.translate( - ox, - oy );
+              _context.fillRect( ox, oy, sx, sy );
+              _context.restore();
+
+            }
 
           } else {
 
@@ -46634,14 +46668,6 @@ module.exports = function(THREE){
 
           }
 
-        } else if ( material instanceof THREE.MeshDepthMaterial ) {
-
-          _color.r = _color.g = _color.b = 1 - smoothstep( v1.positionScreen.z * v1.positionScreen.w, _camera.near, _camera.far );
-
-          material.wireframe === true
-            ? strokePath( _color, material.wireframeLinewidth, material.wireframeLinecap, material.wireframeLinejoin )
-            : fillPath( _color );
-
         } else if ( material instanceof THREE.MeshNormalMaterial ) {
 
           _normal.copy( element.normalModel ).applyMatrix3( _normalViewMatrix );
@@ -46696,20 +46722,29 @@ module.exports = function(THREE){
 
       }
 
-      function onTextureUpdate ( event ) {
-
-        textureToPattern( event.target );
-
-      }
-
       function textureToPattern( texture ) {
 
-        if ( texture instanceof THREE.CompressedTexture ) return;
+        if ( texture.version === 0 ||
+            texture instanceof THREE.CompressedTexture ||
+              texture instanceof THREE.DataTexture ) {
 
-        var repeatX = texture.wrapS === THREE.RepeatWrapping;
-        var repeatY = texture.wrapT === THREE.RepeatWrapping;
+          return {
+            canvas: undefined,
+            version: texture.version
+          };
+
+        }
 
         var image = texture.image;
+
+        if ( image.complete === false ) {
+
+          return {
+            canvas: undefined,
+            version: 0
+          };
+
+        }
 
         var canvas = document.createElement( 'canvas' );
         canvas.width = image.width;
@@ -46719,45 +46754,55 @@ module.exports = function(THREE){
         context.setTransform( 1, 0, 0, - 1, 0, image.height );
         context.drawImage( image, 0, 0 );
 
-        _patterns[ texture.id ] = _context.createPattern(
-          canvas, repeatX === true && repeatY === true
-            ? 'repeat'
-            : repeatX === true && repeatY === false
-              ? 'repeat-x'
-              : repeatX === false && repeatY === true
-                ? 'repeat-y'
-                : 'no-repeat'
-        );
+        var repeatX = texture.wrapS === THREE.RepeatWrapping;
+        var repeatY = texture.wrapT === THREE.RepeatWrapping;
+
+        var repeat = 'no-repeat';
+
+        if ( repeatX === true && repeatY === true ) {
+
+          repeat = 'repeat';
+
+        } else if ( repeatX === true ) {
+
+          repeat = 'repeat-x';
+
+        } else if ( repeatY === true ) {
+
+          repeat = 'repeat-y';
+
+        }
+
+        var pattern = _context.createPattern( canvas, repeat );
+
+        if ( texture.onUpdate ) texture.onUpdate( texture );
+
+        return {
+          canvas: pattern,
+          version: texture.version
+        };
 
       }
 
       function patternPath( x0, y0, x1, y1, x2, y2, u0, v0, u1, v1, u2, v2, texture ) {
 
-        if ( texture instanceof THREE.DataTexture ) return;
+        var pattern = _patterns[ texture.id ];
 
-        if ( texture.hasEventListener( 'update', onTextureUpdate ) === false ) {
+        if ( pattern === undefined || pattern.version !== texture.version ) {
 
-          if ( texture.image !== undefined && texture.image.width > 0 ) {
-
-            textureToPattern( texture );
-
-          }
-
-          texture.addEventListener( 'update', onTextureUpdate );
+          pattern = textureToPattern( texture );
+          _patterns[ texture.id ] = pattern;
 
         }
 
-        var pattern = _patterns[ texture.id ];
+        if ( pattern.canvas !== undefined ) {
 
-        if ( pattern !== undefined ) {
-
-          setFillStyle( pattern );
+          setFillStyle( pattern.canvas );
 
         } else {
 
-          setFillStyle( 'rgba(0,0,0,1)' );
+          setFillStyle( 'rgba( 0, 0, 0, 1)' );
           _context.fill();
-
           return;
 
         }
@@ -46970,7 +47015,6 @@ module.exports = function(THREE){
       }
 
   };
-
   return THREE.CanvasRenderer;
 };
 
@@ -46990,6 +47034,7 @@ module.exports = function (THREE) {
 
     this.object = null;
     this.z = 0;
+    this.renderOrder = 0;
 
   };
 
@@ -47013,6 +47058,7 @@ module.exports = function (THREE) {
     this.uvs = [ new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2() ];
 
     this.z = 0;
+    this.renderOrder = 0;
 
   };
 
@@ -47048,6 +47094,7 @@ module.exports = function (THREE) {
     this.material = null;
 
     this.z = 0;
+    this.renderOrder = 0;
 
   };
 
@@ -47067,6 +47114,7 @@ module.exports = function (THREE) {
     this.scale = new THREE.Vector2();
 
     this.material = null;
+    this.renderOrder = 0;
 
   };
 
@@ -47137,7 +47185,7 @@ module.exports = function (THREE) {
 
       var normalMatrix = new THREE.Matrix3();
 
-      var setObject = function ( value ) {
+      function setObject( value ) {
 
         object = value;
         material = object.material;
@@ -47147,9 +47195,9 @@ module.exports = function (THREE) {
         normals.length = 0;
         uvs.length = 0;
 
-      };
+      }
 
-      var projectVertex = function ( vertex ) {
+      function projectVertex( vertex ) {
 
         var position = vertex.position;
         var positionWorld = vertex.positionWorld;
@@ -47168,30 +47216,30 @@ module.exports = function (THREE) {
           positionScreen.y >= - 1 && positionScreen.y <= 1 &&
           positionScreen.z >= - 1 && positionScreen.z <= 1;
 
-      };
+      }
 
-      var pushVertex = function ( x, y, z ) {
+      function pushVertex( x, y, z ) {
 
         _vertex = getNextVertexInPool();
         _vertex.position.set( x, y, z );
 
         projectVertex( _vertex );
 
-      };
+      }
 
-      var pushNormal = function ( x, y, z ) {
+      function pushNormal( x, y, z ) {
 
         normals.push( x, y, z );
 
-      };
+      }
 
-      var pushUv = function ( x, y ) {
+      function pushUv( x, y ) {
 
         uvs.push( x, y );
 
-      };
+      }
 
-      var checkTriangleVisibility = function ( v1, v2, v3 ) {
+      function checkTriangleVisibility( v1, v2, v3 ) {
 
         if ( v1.visible === true || v2.visible === true || v3.visible === true ) return true;
 
@@ -47199,20 +47247,20 @@ module.exports = function (THREE) {
         _points3[ 1 ] = v2.positionScreen;
         _points3[ 2 ] = v3.positionScreen;
 
-        return _clipBox.isIntersectionBox( _boundingBox.setFromPoints( _points3 ) );
+        return _clipBox.intersectsBox( _boundingBox.setFromPoints( _points3 ) );
 
-      };
+      }
 
-      var checkBackfaceCulling = function ( v1, v2, v3 ) {
+      function checkBackfaceCulling( v1, v2, v3 ) {
 
         return ( ( v3.positionScreen.x - v1.positionScreen.x ) *
                 ( v2.positionScreen.y - v1.positionScreen.y ) -
                 ( v3.positionScreen.y - v1.positionScreen.y ) *
                 ( v2.positionScreen.x - v1.positionScreen.x ) ) < 0;
 
-      };
+      }
 
-      var pushLine = function ( a, b ) {
+      function pushLine( a, b ) {
 
         var v1 = _vertexPool[ a ];
         var v2 = _vertexPool[ b ];
@@ -47223,14 +47271,15 @@ module.exports = function (THREE) {
         _line.v1.copy( v1 );
         _line.v2.copy( v2 );
         _line.z = ( v1.positionScreen.z + v2.positionScreen.z ) / 2;
+        _line.renderOrder = object.renderOrder;
 
         _line.material = object.material;
 
         _renderData.elements.push( _line );
 
-      };
+      }
 
-      var pushTriangle = function ( a, b, c ) {
+      function pushTriangle( a, b, c ) {
 
         var v1 = _vertexPool[ a ];
         var v2 = _vertexPool[ b ];
@@ -47247,19 +47296,21 @@ module.exports = function (THREE) {
           _face.v2.copy( v2 );
           _face.v3.copy( v3 );
           _face.z = ( v1.positionScreen.z + v2.positionScreen.z + v3.positionScreen.z ) / 3;
+          _face.renderOrder = object.renderOrder;
+
+          // use first vertex normal as face normal
+
+          _face.normalModel.fromArray( normals, a * 3 );
+          _face.normalModel.applyMatrix3( normalMatrix ).normalize();
 
           for ( var i = 0; i < 3; i ++ ) {
 
-            var offset = arguments[ i ] * 3;
             var normal = _face.vertexNormalsModel[ i ];
-
-            normal.set( normals[ offset ], normals[ offset + 1 ], normals[ offset + 2 ] );
+            normal.fromArray( normals, arguments[ i ] * 3 );
             normal.applyMatrix3( normalMatrix ).normalize();
 
-            var offset2 = arguments[ i ] * 2;
-
             var uv = _face.uvs[ i ];
-            uv.set( uvs[ offset2 ], uvs[ offset2 + 1 ] );
+            uv.fromArray( uvs, arguments[ i ] * 2 );
 
           }
 
@@ -47271,7 +47322,7 @@ module.exports = function (THREE) {
 
         }
 
-      };
+      }
 
       return {
         setObject: setObject,
@@ -47298,7 +47349,7 @@ module.exports = function (THREE) {
       _renderData.elements.length = 0;
 
       if ( scene.autoUpdate === true ) scene.updateMatrixWorld();
-      if ( camera.parent === undefined ) camera.updateMatrixWorld();
+      if ( camera.parent === null ) camera.updateMatrixWorld();
 
       _viewMatrix.copy( camera.matrixWorldInverse.getInverse( camera.matrixWorld ) );
       _viewProjectionMatrix.multiplyMatrices( camera.projectionMatrix, _viewMatrix );
@@ -47320,7 +47371,9 @@ module.exports = function (THREE) {
 
         } else if ( object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Sprite ) {
 
-          if ( object.material.visible === false ) return;
+          var material = object.material;
+
+          if ( material.visible === false ) return;
 
           if ( object.frustumCulled === false || _frustum.intersectsObject( object ) === true ) {
 
@@ -47331,6 +47384,7 @@ module.exports = function (THREE) {
             _vector3.setFromMatrixPosition( object.matrixWorld );
             _vector3.applyProjection( _viewProjectionMatrix );
             _object.z = _vector3.z;
+            _object.renderOrder = object.renderOrder;
 
             _renderData.objects.push( _object );
 
@@ -47364,7 +47418,7 @@ module.exports = function (THREE) {
           if ( geometry instanceof THREE.BufferGeometry ) {
 
             var attributes = geometry.attributes;
-            var offsets = geometry.offsets;
+            var groups = geometry.groups;
 
             if ( attributes.position === undefined ) continue;
 
@@ -47400,20 +47454,19 @@ module.exports = function (THREE) {
 
             }
 
-            if ( attributes.index !== undefined ) {
+            if ( geometry.index !== null ) {
 
-              var indices = attributes.index.array;
+              var indices = geometry.index.array;
 
-              if ( offsets.length > 0 ) {
+              if ( groups.length > 0 ) {
 
-                for ( var o = 0; o < offsets.length; o ++ ) {
+                for ( var o = 0; o < groups.length; o ++ ) {
 
-                  var offset = offsets[ o ];
-                  var index = offset.index;
+                  var group = groups[ o ];
 
-                  for ( var i = offset.start, l = offset.start + offset.count; i < l; i += 3 ) {
+                  for ( var i = group.start, l = group.start + group.count; i < l; i += 3 ) {
 
-                    renderList.pushTriangle( indices[ i ] + index, indices[ i + 1 ] + index, indices[ i + 2 ] + index );
+                    renderList.pushTriangle( indices[ i ], indices[ i + 1 ], indices[ i + 2 ] );
 
                   }
 
@@ -47449,7 +47502,7 @@ module.exports = function (THREE) {
 
             var material = object.material;
 
-            var isFaceMaterial = material instanceof THREE.MeshFaceMaterial;
+            var isFaceMaterial = material instanceof THREE.MultiMaterial;
             var objectMaterials = isFaceMaterial === true ? object.material : null;
 
             for ( var v = 0, vl = vertices.length; v < vl; v ++ ) {
@@ -47488,7 +47541,7 @@ module.exports = function (THREE) {
 
               var face = faces[ f ];
 
-              var material = isFaceMaterial === true
+              material = isFaceMaterial === true
                 ? objectMaterials.materials[ face.materialIndex ]
                 : object.material;
 
@@ -47505,8 +47558,10 @@ module.exports = function (THREE) {
                 var visible = renderList.checkBackfaceCulling( v1, v2, v3 );
 
                 if ( side !== THREE.DoubleSide ) {
+
                   if ( side === THREE.FrontSide && visible === false ) continue;
                   if ( side === THREE.BackSide && visible === true ) continue;
+
                 }
 
                 _face = getNextFaceInPool();
@@ -47561,6 +47616,7 @@ module.exports = function (THREE) {
                 _face.material = material;
 
                 _face.z = ( v1.positionScreen.z + v2.positionScreen.z + v3.positionScreen.z ) / 3;
+                _face.renderOrder = object.renderOrder;
 
                 _renderData.elements.push( _face );
 
@@ -47584,9 +47640,9 @@ module.exports = function (THREE) {
 
               }
 
-              if ( attributes.index !== undefined ) {
+              if ( geometry.index !== null ) {
 
-                var indices = attributes.index.array;
+                var indices = geometry.index.array;
 
                 for ( var i = 0, l = indices.length; i < l; i += 2 ) {
 
@@ -47596,7 +47652,7 @@ module.exports = function (THREE) {
 
               } else {
 
-                var step = object.mode === THREE.LinePieces ? 2 : 1;
+                var step = object instanceof THREE.LineSegments ? 2 : 1;
 
                 for ( var i = 0, l = ( positions.length / 3 ) - 1; i < l; i += step ) {
 
@@ -47619,8 +47675,7 @@ module.exports = function (THREE) {
             v1 = getNextVertexInPool();
             v1.positionScreen.copy( vertices[ 0 ] ).applyMatrix4( _modelViewProjectionMatrix );
 
-            // Handle LineStrip and LinePieces
-            var step = object.mode === THREE.LinePieces ? 2 : 1;
+            var step = object instanceof THREE.LineSegments ? 2 : 1;
 
             for ( var v = 1, vl = vertices.length; v < vl; v ++ ) {
 
@@ -47647,6 +47702,7 @@ module.exports = function (THREE) {
                 _line.v2.positionScreen.copy( _clippedVertex2PositionScreen );
 
                 _line.z = Math.max( _clippedVertex1PositionScreen.z, _clippedVertex2PositionScreen.z );
+                _line.renderOrder = object.renderOrder;
 
                 _line.material = object.material;
 
@@ -47681,6 +47737,7 @@ module.exports = function (THREE) {
             _sprite.x = _vector4.x * invW;
             _sprite.y = _vector4.y * invW;
             _sprite.z = _vector4.z;
+            _sprite.renderOrder = object.renderOrder;
             _sprite.object = object;
 
             _sprite.rotation = object.rotation;
@@ -47766,8 +47823,8 @@ module.exports = function (THREE) {
         var line = new THREE.RenderableLine();
         _linePool.push( line );
         _linePoolLength ++;
-        _lineCount ++
-          return line;
+        _lineCount ++;
+        return line;
 
       }
 
@@ -47782,8 +47839,8 @@ module.exports = function (THREE) {
         var sprite = new THREE.RenderableSprite();
         _spritePool.push( sprite );
         _spritePoolLength ++;
-        _spriteCount ++
-          return sprite;
+        _spriteCount ++;
+        return sprite;
 
       }
 
@@ -47795,7 +47852,11 @@ module.exports = function (THREE) {
 
     function painterSort( a, b ) {
 
-      if ( a.z !== b.z ) {
+      if ( a.renderOrder !== b.renderOrder ) {
+
+        return a.renderOrder - b.renderOrder;
+
+      } else if ( a.z !== b.z ) {
 
         return b.z - a.z;
 
@@ -47882,7 +47943,6 @@ module.exports = function (THREE) {
     }
 
   };
-
   return THREE.Projector;
 };
 
