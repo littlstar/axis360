@@ -44099,7 +44099,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.21.0",
+  "version": "1.21.1",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
@@ -50574,6 +50574,11 @@ var keycodes = module.exports.keycodes = {
   'j': keycode('j'), // down
   'h': keycode('h'), // left
   'l': keycode('l'), // right
+
+  'w': keycode('w'), // up
+  's': keycode('s'), // down
+  'a': keycode('a'), // left
+  'd': keycode('d'), // right
 };
 
 /**
