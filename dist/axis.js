@@ -169,7 +169,7 @@ require('three-vr-effect')(three);
 // uncomment to enable debugging
 //window.DEBUG = true;
 
-var COMPANY = "Littlstar (littlstar.com)";
+var COMPANY = "LITTLSTAR - (www.Littlstar.com) [Little Star Media, Inc] ";
 var YEAR = (new Date).getUTCFullYear();
 console.info("Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %d %s",
             pkg.version,
@@ -1285,7 +1285,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 256) {
+      if (now - this.state.lastRefresh >= 64) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
@@ -2336,10 +2336,7 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
     return CYLINDER_FOV;
   }
 
-  fov = 2 * Math.atan(height / (2 * far)) * (180 / Math.PI);
-
-  // scale up for potential clipping
-  fov *= 1.15;
+  fov = 2 * Math.atan(height / (2 * 1000)) * 180 / Math.PI
 
   return Math.min(Math.abs(fov), MAX_CALC_FOV);
 };
@@ -44099,7 +44096,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.21.1",
+  "version": "1.21.2",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
