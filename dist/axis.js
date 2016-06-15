@@ -1284,8 +1284,8 @@ Axis.prototype.refresh = function () {
   this.debug('refresh');
 
   if (false == this.state.isImage) {
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 64) {
+    if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+      if (now - this.state.lastRefresh >= 16) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
@@ -44096,7 +44096,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.21.2",
+  "version": "1.21.3",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
