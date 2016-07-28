@@ -8,13 +8,6 @@ video produced from the VSN Mobile V.360 video camera. Axis has support for
 rendering multiple projections such as Stereoscopic (Oculus), Tiny Planet and
 Fisheye.
 
-![](public/assets/tiny-planet.png)
-
-![](public/assets/iceland-oculus.png)
-
-Axis is currently in use in production on the Littlstar web platform.
-![](https://www.dropbox.com/s/fzg561w81t1rn3t/Screenshot%202015-07-17%2016.33.26.png?dl=1)
-
 ## Status
 
 Stable
@@ -74,6 +67,22 @@ frame.once('ready', () => {
 
 * [ ] - Rewrite in ES6
 * [ ] - Remove duo/component requirements
+* [ ] - Deprecate and start new project without THREE.js dependency.
+
+## Screenshots
+
+### Tiny planet projection
+
+![](public/assets/tiny-planet.png)
+
+### WebVR support
+
+![](public/assets/iceland-oculus.png)
+
+### Littlstar web player
+
+Axis is currently in use in production on the Littlstar web platform.
+![](https://www.dropbox.com/s/fzg561w81t1rn3t/Screenshot%202015-07-17%2016.33.26.png?dl=1)
 
 ## License
 
