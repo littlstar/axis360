@@ -63,7 +63,6 @@
     <script type="text/javascript" charset="utf-8">
       //DEBUG=1
     var frame = new Axis(document.querySelector('#player'), {
-        //allowPreviewFrame: true,
         crossorigin: true,
         resizable: true,
         preload: true,
@@ -73,9 +72,7 @@
         loop: true,
         allowWheel: true,
         muted: true,
-        //box: true,
-        //src: 'cube-map.mp4',
-        src: '/public/assets/paramotor.mp4'
+        src: '/public/assets/paramotor.mp4',
       });
 
       frame.on('vrhmdavailable', function (e) {
@@ -109,6 +106,7 @@
 
       document.querySelector('#enable-pointer-lock')
       .addEventListener('click', function () {
+        frame.initializeControllers({pointer: true});
         var pointer = frame.controls.pointer;
         pointer.enable();
         pointer.request();
