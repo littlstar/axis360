@@ -167,12 +167,14 @@ function createVideoTexture (video) {
   var texture = null;
   video.width = video.videoWidth;
   video.height = video.videoHeight;
-  texture = new three.VideoTexture(video);
+  texture = new three.Texture(video);
+
   texture.format = three.RGBFormat;
   texture.minFilter = three.LinearFilter;
   texture.magFilter = three.LinearFilter;
   texture.image.width = video.videoWidth;
   texture.image.height = video.videoHeight;
+
   return texture;
 }
 
@@ -2112,7 +2114,6 @@ Axis.prototype.refreshScene = function () {
       geo.faceVertexUvs[0] = faces;
     }
 
-    material.side = three.DoubleSide
     mesh = new three.Mesh(geo, material);
     // set mesh scale
     material.overdraw = 1;
