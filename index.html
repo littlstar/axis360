@@ -8,129 +8,71 @@
     <script type="text/javascript" charset="utf-8" src="build/build.js"></script>
     <style type="text/css" media="all">
       body {
-        display: block;
-        position: relative;
         margin: 0;
         padding: 0;
-        font-size: 14px;
-        line-height: 1.7;
-        color: #444;
-        background-color: #fff;
-        font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+        font-family: "Helvetica Neue Light",
+                     "HelveticaNeue-Light",
+                     "Helvetica Neue",
+                     "Lucida Grande",
+                     Helvetica,
+                     Arial,
+                     sans-serif;
       }
 
-      #title {
-        position: relative;
-        display: block;
-        margin: 0 auto;
-        font-size: 32px;
-        font-weight: 100;
-        text-align: center;
-      }
-
-      #title i {
-        margin-right: 10px;
-      }
-
-      #heading {
-        display: block;
-        position: relative;
-        padding: 15px;
-        border-top: 1px solid #ccc;
-        box-shadow: 0px 2px 2px -2px #f4002b;
-        font-size: 18px;
-        text-align: center;
-        background: #cecece;
-      }
-
-      .video {
+      #player {
         display: block;
         position: relative;
         width: 100%;
-        height: auto;
-        margin: 0 auto;
-        margin-top: 20px;
-        padding: 0;
-        border-radius: 3px;
-        background: #181818;
+        height: 100%;
       }
 
-      #meta {
+      #controls {
         display: block;
-        position: relative;
-        margin: 0;
-        margin-top: 20px;
-        padding: 10px;
-        font-size: 16px;
+        position: absolute;
+        z-index: 5;
+        width: 100%;
+        padding: 0.25rem 0.5rem;
       }
 
-      #meta > span:not(:last-child)::after {
-        content: ' - ';
-        margin: 0 5px;
+      button {
+        margin: .25rem;
+        padding: 0.25rem .5rem;
+        color: #141414;
+        font-weight: 300;
+        outline: none;
+        border-radius: 2px;
+        border: none;
+        background-color: rgba(206, 206, 206, 0.45);
+        font-size: .8rem;
+        cursor: pointer;
       }
 
-      #meta i {
-        margin-right: 5px;
-      }
-
-      #meta a {
-        color: #444;
-        text-decoration: none;
-      }
-
-      #meta a:hover {
-        text-decoration: underline;
-      }
-
-      #preview {
-        display: block;
-        position: relative;
-        width: 500px;
-        height: 250px;
+      button:hover {
+        background-color: rgba(206, 206, 206, .8);
       }
     </style>
   </head>
   <body>
-    <h3 id="title">
-      <i class="fa fa-video-camera"></i>Axis 360 Video Test
-    </h3>
-    <button id="go-fullscreen">Go fullscreen</button>
-    <button id="toggle-vr-mode">Toggle VR Mode</button>
-    <button id="enable-pointer-lock">Enable Pointer Lock</button>
-    <button id="toggle-mouse-movement-control">Toggle Mouse Movements Control</button>
-    <h4>Preview</h4>
-    <!--img id="preview"/-->
-    <div class="normal video"></div>
-    <div class="vsn video"></div>
+    <div id="controls">
+      <button id="go-fullscreen">Go Fullscreen</button>
+      <button id="toggle-vr-mode">Toggle VR Mode</button>
+      <button id="enable-pointer-lock">Enable Pointer Lock</button>
+      <button id="toggle-mouse-movement-control">Toggle Mouse Movements Control</button>
+    </div>
+    <div id="player"></div>
     <script type="text/javascript" charset="utf-8">
       //DEBUG=1
-    var frame = new Axis(document.querySelector('.normal.video'), {
-        //allowPreviewFrame: true,
+    var frame = new Axis(document.querySelector('#player'), {
         crossorigin: true,
         resizable: true,
         preload: true,
         autoplay: true,
-        width: window.innerWidth * .8,
-        height: window.innerHeight * .8,
+        width: window.innerWidth,
+        height: window.innerHeight,
         loop: true,
-        //allowWheel: true,
+        allowWheel: true,
         muted: true,
-        //fov: 65,
-        //src: 'test.webm',
-        //src: 'http://360.littlstar.com/production/66ac8e41-efaa-44d2-bfcd-c169f7eec1bb/original.jpg',
-
-        //box: true,
-        //src: 'cube-map.mp4',
-        //src: 'http://360.littlstar.com/staging/bb88cc00-7cd7-43d5-bd28-c5959934a9e3/web.mp4',
-        //src: 'http://360.littlstar.com/staging/81d33ec5-8140-4d74-92bc-6d56f93a52cf/web.mp4',
-        //src: '/public/assets/paramotor.mp4'
-        //src: '/public/assets/hostel-luego.jpg'
-        //src: 'public/assets/vsn.mp4',
-        //src: 'https://ls-360-media.s3.amazonaws.com/production/b7333d11-5d58-462a-9bc7-e26fa1495569/web.mp4'
-        //src: 'http://360.littlstar.com/production/912be07c-f2cd-4b4d-a63c-b370227dbe26/original.mp4'
-        //src: 'http://360.littlstar.com/production/66ac8e41-efaa-44d2-bfcd-c169f7eec1bb/lg.jpg'
-        src: 'http://360.littlstar.com/production/a0a5746e-87ac-4f20-9724-ecba40429e54/web.mp4'
-        //src: 'http://360.littlstar.com/staging/515ef0fd-814e-4567-a266-c9efe64e9d20/original.jpg'
+        src: '/public/assets/paramotor.mp4',
       });
 
       frame.on('vrhmdavailable', function (e) {
@@ -164,6 +106,7 @@
 
       document.querySelector('#enable-pointer-lock')
       .addEventListener('click', function () {
+        frame.initializeControllers({pointer: true});
         var pointer = frame.controls.pointer;
         pointer.enable();
         pointer.request();
@@ -182,18 +125,7 @@
 
         isMouseMovementEnabled = !isMouseMovementEnabled;
       });
-      /*var vsn = new Axis(document.querySelector('.vsn.video'), {
-        src: 'public/assets/vsn.mp4',
-        resizable: true,
-        autoplay: true,
-        wheel: true,
-        crossorigin: true
-      });
 
-      vsn.render();*/
-
-    </script>
-    <script type="text/javascript">
     </script>
   </body>
 </html>

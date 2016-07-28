@@ -86,6 +86,11 @@ var keycodes = module.exports.keycodes = {
   'j': keycode('j'), // down
   'h': keycode('h'), // left
   'l': keycode('l'), // right
+
+  'w': keycode('w'), // up
+  's': keycode('s'), // down
+  'a': keycode('a'), // left
+  'd': keycode('d'), // right
 };
 
 /**
@@ -228,6 +233,11 @@ function KeyboardController (scope) {
   this.use('down', down);
   this.use('left', left);
   this.use('right', right);
+
+  this.use('w', up);
+  this.use('s', down);
+  this.use('a', left);
+  this.use('d', right);
 
   if (this.scope.state.vim) {
     this.use('k', up);

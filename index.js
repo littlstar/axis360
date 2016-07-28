@@ -69,7 +69,7 @@ require('three-vr-effect')(three);
 // uncomment to enable debugging
 //window.DEBUG = true;
 
-var COMPANY = "Littlstar (littlstar.com)";
+var COMPANY = "LITTLSTAR - (www.Littlstar.com) [Little Star Media, Inc] ";
 var YEAR = (new Date).getUTCFullYear();
 console.info("Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %d %s",
             pkg.version,
@@ -148,7 +148,7 @@ function createRenderer (opts) {
 
   if (useWebgl) {
     return new three.WebGLRenderer({
-      antialias: true,
+      //antialias: true,
     });
   } else {
     return new three.CanvasRenderer();
@@ -167,12 +167,14 @@ function createVideoTexture (video) {
   var texture = null;
   video.width = video.videoWidth;
   video.height = video.videoHeight;
-  texture = new three.VideoTexture(video);
+  texture = new three.Texture(video);
+
   texture.format = three.RGBFormat;
   texture.minFilter = three.LinearFilter;
   texture.magFilter = three.LinearFilter;
   texture.image.width = video.videoWidth;
   texture.image.height = video.videoHeight;
+
   return texture;
 }
 
@@ -411,7 +413,9 @@ function Axis (parent, opts) {
 
   if (true != opts.isPreviewFrame) {
     // Initializes controllers
-    this.initializeControllers();
+    this.initializeControllers(merge({
+      keyboard: true, mouse: true
+    }, opts.controls));
   }
 
   // initial volume
@@ -1182,8 +1186,8 @@ Axis.prototype.refresh = function () {
   this.debug('refresh');
 
   if (false == this.state.isImage) {
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 64) {
+    if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+      if (now - this.state.lastRefresh >= 16) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
@@ -1436,8 +1440,8 @@ Axis.prototype.render = function (shoudLoop) {
       this.state.animationFrameID  = raf(function loop () {
         var parentElement = domElement.parentElement;
         if (parentElement && parentElement.contains(domElement)) {
-          self.update();
           self.state.animationFrameID = raf(loop);
+          self.update();
         }
       });
     }
@@ -1643,12 +1647,9 @@ Axis.prototype.coords = function (x, y) {
 
 Axis.prototype.update = function () {
   if (false == this.state.shouldUpdate) return this
-  this.refresh().once('refresh', function () {
-    this.draw().once('draw', function () {
-      this.emit('update');
-    });
-  });
-  return this;
+  this.once('refresh', function () { this.draw() })
+  this.once('draw', function () { this.emit('update') })
+  return this.refresh()
 };
 
 /**
@@ -1758,7 +1759,7 @@ Axis.prototype.fov = function (fov) {
  */
 
 Axis.prototype.enableVRMode = function () {
-  this.initializeControllers(null, true);
+  this.initializeControllers({vr: true});
   this.state.isVREnabled = true;
   this.controls.vr.enable();
   return this;
@@ -1771,7 +1772,7 @@ Axis.prototype.enableVRMode = function () {
  */
 
 Axis.prototype.disableVRMode = function () {
-  this.initializeControllers(null, true);
+  this.initializeControllers({vr: false});
   this.state.isVREnabled = false;
   this.controls.vr.disable();
   return this.render();
@@ -1834,32 +1835,32 @@ Axis.prototype.initializeControllers = function (map, force) {
   var controls = (this.controls = this.controls || {});
   map = null != map && 'object' == typeof map ? map : {};
 
-  if (null == controls.vr || true == map.vr || true == force) {
+  if (true == map.vr || true == force) {
     if (controls.vr) { controls.vr.destroy(); }
     controls.vr = require('./controls/vr')(this);
   }
 
-  if (null == controls.mouse || true == map.mouse || true == force) {
+  if (true == map.mouse || true == force) {
     if (controls.mouse) { controls.mouse.destroy(); }
     controls.mouse = require('./controls/mouse')(this);
   }
 
-  if (null == controls.touch || true == map.touch || true == force) {
+  if (true == map.touch || true == force) {
     if (controls.touch) { controls.touch.destroy(); }
     controls.touch = require('./controls/touch')(this);
   }
 
-  if (null == controls.keyboard || true == map.keyboard || true == force) {
+  if (true == map.keyboard || true == force) {
     if (controls.keyboard) { controls.keyboard.destroy(); }
     controls.keyboard = require('./controls/keyboard')(this);
   }
 
-  if (null == controls.orientation || true == map.orientation || true == force) {
+  if (true == map.orientation || true == force) {
     if (controls.orientation) { controls.orientation.destroy(); }
     controls.orientation = require('./controls/orientation')(this);
   }
 
-  if (null == controls.pointer || true == map.pointer || true == force) {
+  if (true == map.pointer || true == force) {
     if (controls.pointer) { controls.pointer.destroy(); }
     controls.pointer = require('./controls/pointer')(this);
   }
@@ -2113,7 +2114,6 @@ Axis.prototype.refreshScene = function () {
       geo.faceVertexUvs[0] = faces;
     }
 
-    material.side = three.DoubleSide
     mesh = new three.Mesh(geo, material);
     // set mesh scale
     material.overdraw = 1;
@@ -2187,9 +2187,9 @@ Axis.prototype.rotate = function (coord, opts) {
 
     clearTimeout(rotation.interval);
     rotation.interval = setTimeout(function interval () {
-      var isMousedown = self.controls.mouse.state.isMousedown;
-      var isTouching = self.controls.touch.state.isTouching;
-      var isKeydown = self.controls.keyboard.state.isKeydown;
+      var isMousedown = self.controls.mouse && self.controls.mouse.state.isMousedown;
+      var isTouching = self.controls.touch && self.controls.touch.state.isTouching;
+      var isKeydown = self.controls.keyboard && self.controls.keyboard.state.isKeydown;
       clearTimeout(rotation.interval);
       if (0 != rotation.every && 0 != rotation.value) {
         setTimeout(interval, rotation.every);
@@ -2237,10 +2237,7 @@ Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
     return CYLINDER_FOV;
   }
 
-  fov = 2 * Math.atan(height / (2 * far)) * (180 / Math.PI);
-
-  // scale up for potential clipping
-  fov *= 1.15;
+  fov = 2 * Math.atan(height / (2 * 1000)) * 180 / Math.PI
 
   return Math.min(Math.abs(fov), MAX_CALC_FOV);
 };
