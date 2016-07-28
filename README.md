@@ -17,33 +17,63 @@ Axis is currently in use in production on the Littlstar web platform.
 
 ## Status
 
-Development
+Stable
 
 ## Installation
 
+Axis can be built and installed in variou ways.
+
+### NPM
+
+Axis is available through *npm*
+
 ```sh
-$ component install littlstar/axis
+$ npm install littlstar/axis --save
 ```
 
-or
+### Distribution build
 
-```js
-var Axis = require('littlstar/axis');
+Axis is pre-built and available for download in the `dist/` directory of
+this repository.
+
+### Source
+
+Axis uses [duo](https://github.com/duojs/duo) internally for installing and
+building its dependency components.
+
+```sh
+$ git clone git@github.com:littlstar/axis.git
+$ cd axis
+$ make
 ```
 
-## Usage
+Distribution builds are now available in the `dist/` directory.
+Debug builds are now available in the `build/` directory.
+
+## Example
 
 ```js
-var el = document.querySelector('#video');
-var frame = new Axis(el, {src: '/path/to/video.mp4'});
-frame.once('ready', function () {
-  frame
-  .seek(5)
-  .play()
-  .projection('tiny planet')
-  .rotate('y', {value: 0.002, every: 500});
+const axis = requre('littlstar-axis')
+const domElement = document.querySelector('#video');
+const frame = axis(domElement, {
+  src: '/path/to/video.mp4'
+});
+
+frame.once('ready', () => {
+  frame.seek(5)
+  frame.play()
+  frame.projection('tiny planet')
+  frame.rotate('y', {
+    value: 0.002,
+    every: 500
+  });
 });
 ```
+
+## TODO
+
+* [ ] - Rewrite in ES6
+* [ ] - Remove duo/component requirements
 
 ## License
 
