@@ -410,7 +410,7 @@ function Axis (parent, opts) {
     }
 
     if (!fov) {
-      fov = this.getCalculatedFieldOfView();
+      fov = DEFAULT_FOV
     }
 
     this.state.radius = getRadius();
@@ -429,7 +429,7 @@ function Axis (parent, opts) {
       var fov = opts.fov;
 
       if (!fov) {
-        fov = this.getCalculatedFieldOfView();
+        fov = DEFAULT_FOV;
       }
 
       this.state.radius = getRadius();
@@ -1023,7 +1023,7 @@ Axis.prototype.onmousewheel = function (e) {
     this.state.fov = max;
   }
 
-  this.camera.setLens(this.state.fov);
+  this.camera.setFocalLength(this.state.fov);
   this.emit('mousewheel', e);
 };
 
@@ -1090,7 +1090,7 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
     self.state.ready();
     self.emit('load');
     self.texture.needsUpdate = true;
-    self.fov(self.getCalculatedFieldOfView());
+    self.fov(DEFAULT_FOV);
     self.refreshScene();
   }
 
@@ -1287,7 +1287,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState >= video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 16) {
+      if (now - this.state.lastRefresh >= 64) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
@@ -2322,24 +2322,10 @@ Axis.prototype.rotate = function (coord, opts) {
  */
 
 Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
-  dimensions = dimensions || this.dimensions();
-  getCorrectGeometry(this);
-
-  var geometry = this.geometry();
-  var isImage = this.state.isImage;
-  var camera = this.camera;
-  var aspect = camera ? camera.aspect : 1;
-  var height = dimensions.height;
-  var far = (camera ? camera.far : 0) - (this.state.radius || 0)
-  var fov = 0;
-
-  if ('cylinder' == geometry) {
-    return CYLINDER_FOV;
-  }
-
-  fov = 2 * Math.atan(height / (2 * 1000)) * 180 / Math.PI
-
-  return Math.min(Math.abs(fov), MAX_CALC_FOV);
+  console.warn("getCalculatedFieldOfView() is deprecated. " +
+               "The field of view should be set, otherwise" +
+               " the value will be " + DEFAULT_FOV)
+  return DEFAULT_FOV
 };
 
 }, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/pointer":30,"./controls/movement":31,"./controls/controller":32}],
@@ -45189,7 +45175,7 @@ module.exports = function (a, b) {
 11: [function(require, module, exports) {
 module.exports = {
   "name": "littlstar-axis",
-  "version": "1.21.4",
+  "version": "1.22.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "dist/axis.js",
   "scripts": {
@@ -45550,7 +45536,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 65;
+exports.DEFAULT_FOV = Math.PI / 3 * 180 / Math.PI
 
 /**
  * Cylinder field of view value in degrees.
@@ -45878,8 +45864,8 @@ var three = require('three.js')
  */
 
 module.exports = function sphere (axis) {
-  var heightSegments = 32;
-  var widthSegments = 32;
+  var heightSegments = 8 << 5;
+  var widthSegments = 8 << 5;
   var radius = axis.state.radius;
   var phi = Math.PI * 2;
 
