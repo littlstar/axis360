@@ -15,8 +15,8 @@ var three = require('three.js')
  */
 
 module.exports = function sphere (axis) {
-  var heightSegments = 32;
-  var widthSegments = 32;
+  var heightSegments = 8 << 5;
+  var widthSegments = 8 << 5;
   var radius = axis.state.radius;
   var phi = Math.PI * 2;
 

@@ -310,7 +310,7 @@ function Axis (parent, opts) {
     }
 
     if (!fov) {
-      fov = this.getCalculatedFieldOfView();
+      fov = DEFAULT_FOV
     }
 
     this.state.radius = getRadius();
@@ -329,7 +329,7 @@ function Axis (parent, opts) {
       var fov = opts.fov;
 
       if (!fov) {
-        fov = this.getCalculatedFieldOfView();
+        fov = DEFAULT_FOV;
       }
 
       this.state.radius = getRadius();
@@ -923,7 +923,7 @@ Axis.prototype.onmousewheel = function (e) {
     this.state.fov = max;
   }
 
-  this.camera.setLens(this.state.fov);
+  this.camera.setFocalLength(this.state.fov);
   this.emit('mousewheel', e);
 };
 
@@ -990,7 +990,7 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
     self.state.ready();
     self.emit('load');
     self.texture.needsUpdate = true;
-    self.fov(self.getCalculatedFieldOfView());
+    self.fov(DEFAULT_FOV);
     self.refreshScene();
   }
 
@@ -1187,7 +1187,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState >= video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 16) {
+      if (now - this.state.lastRefresh >= 32) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
@@ -2222,22 +2222,8 @@ Axis.prototype.rotate = function (coord, opts) {
  */
 
 Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
-  dimensions = dimensions || this.dimensions();
-  getCorrectGeometry(this);
-
-  var geometry = this.geometry();
-  var isImage = this.state.isImage;
-  var camera = this.camera;
-  var aspect = camera ? camera.aspect : 1;
-  var height = dimensions.height;
-  var far = (camera ? camera.far : 0) - (this.state.radius || 0)
-  var fov = 0;
-
-  if ('cylinder' == geometry) {
-    return CYLINDER_FOV;
-  }
-
-  fov = 2 * Math.atan(height / (2 * 1000)) * 180 / Math.PI
-
-  return Math.min(Math.abs(fov), MAX_CALC_FOV);
+  console.warn("getCalculatedFieldOfView() is deprecated. " +
+               "The field of view should be set, otherwise" +
+               " the value will be " + DEFAULT_FOV)
+  return DEFAULT_FOV
 };

@@ -43,7 +43,7 @@ void module.exports;
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = 65;
+exports.DEFAULT_FOV = Math.PI / 3 * 180 / Math.PI
 
 /**
  * Cylinder field of view value in degrees.
