@@ -1187,7 +1187,7 @@ Axis.prototype.refresh = function () {
 
   if (false == this.state.isImage) {
     if (video.readyState >= video.HAVE_ENOUGH_DATA) {
-      if (now - this.state.lastRefresh >= 32) {
+      if (now - this.state.lastRefresh >= 64) {
         this.state.lastRefresh = now;
         if (null != this.texture) {
           this.texture.needsUpdate = true;
