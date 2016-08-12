@@ -39,7 +39,7 @@ void module.exports;
  * @private
  */
 
-var three = require('three.js')
+var three = require('three')
   , inherits = require('inherits')
   , createCamera = require('../camera')
 

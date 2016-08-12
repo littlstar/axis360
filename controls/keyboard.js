@@ -39,7 +39,7 @@ void module.exports;
  * @private
  */
 
-var keycode = require('keycode')
+var keycode = require('yields-keycode')
   , inherits = require('inherits')
 
 /**

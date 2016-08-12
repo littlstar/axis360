@@ -38,7 +38,7 @@
  * @private
  */
 
-var three = require('three.js')
+var three = require('three')
   , path = require('path')
   , url = require('url')
 
@@ -127,4 +127,3 @@ function normalizeMovements (e, o) {
 
   return o;
 }
-

@@ -3,7 +3,7 @@
  * Module dependencies
  */
 
-var three = require('three.js')
+var three = require('three')
 
 /**
  * Creates and returns a `PlaneBufferGeometry'

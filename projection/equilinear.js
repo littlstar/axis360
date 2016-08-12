@@ -39,7 +39,7 @@
  */
 
 var raf = require('raf')
-  , three = require('three.js')
+  , three = require('three')
 
 /**
  * Local dependencies

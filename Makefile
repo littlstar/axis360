@@ -10,9 +10,14 @@ CWD := $(shell pwd)
 BIN := node_modules/.bin
 
 ##
-# Path to `duo' bin file
+# Path to `browserify' bin file
 #
-DUO := $(BIN)/duo
+BROWSERIFY := $(BIN)/browserify
+
+##
+# Path to `postcss`
+#
+POSTCSS := $(BIN)/postcss
 
 ##
 # CSS source files
@@ -20,18 +25,22 @@ DUO := $(BIN)/duo
 CSS := *.css
 
 ##
-# Module source (js, html, json)
+# Module source (js)
 #
 SRC := $(wildcard *.js)
 SRC += $(wildcard projection/*.js)
 SRC += $(wildcard geometry/*.js)
 SRC += $(wildcard controls/*.js)
-SRC += component.json
 
 ##
 # Main javascript entry
 #
 MAIN = index.js
+
+##
+# Main css entry
+#
+MAINCSS := index.css
 
 ##
 # Global namespace target
@@ -60,14 +69,14 @@ build: build/build.js build/build.css
 #
 build/build.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
-	$(DUO) -s $(GLOBAL_NAMESPACE) --type js --development < $(MAIN) > $@
+	$(BROWSERIFY) --standalone $(GLOBAL_NAMESPACE) $(MAIN) > $@
 
 ##
 # Builds CSS source files
 #
 build/build.css: node_modules $(CSS)
 	$(BUILD_PARENT_DIRECTORY)
-	cat $(CSS) | $(DUO) --type css > $@
+	$(POSTCSS) --use autoprefixer --output $@ $(MAINCSS)
 
 ##
 # Builds all dist files
@@ -79,14 +88,14 @@ dist: dist/axis.js dist/axis.css
 #
 dist/axis.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
-	$(DUO) -C --type js -s $(GLOBAL_NAMESPACE) < $(MAIN) > $@
+	$(BROWSERIFY) --standalone $(GLOBAL_NAMESPACE) $(MAIN) > $@
 
 ##
 # Builds CSS dist file
 #
 dist/axis.css: node_modules $(CSS)
 	$(BUILD_PARENT_DIRECTORY)
-	cat $(CSS) | $(DUO) -C --type css > $@
+	$(POSTCSS) --use autoprefixer --output $@ $(MAINCSS)
 
 ##
 # Builds node modules
@@ -107,5 +116,3 @@ doc: node_modules $(SRC)
 clean:
 	rm -rf build
 	rm -rf components
-	rm -rf node_modules
-

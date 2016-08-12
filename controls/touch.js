@@ -40,7 +40,7 @@ void module.exports;
  */
 
 var inherits = require('inherits')
-  , three = require('three.js')
+  , three = require('three')
 
 /**
  * Local dependencies.

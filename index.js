@@ -37,14 +37,14 @@
  * @private
  */
 
-var three = require('three.js')
+var three = require('three')
   , dom = require('domify')
-  , emitter = require('emitter')
-  , events = require('events')
+  , emitter = require('component-emitter')
+  , events = require('component-events')
   , raf = require('raf')
   , hasWebGL = require('has-webgl')
-  , fullscreen = require('fullscreen')
-  , keycode = require('keycode')
+  , fullscreen = require('@littlstar/fullscreen')
+  , keycode = require('yields-keycode')
   , merge = require('merge')
   , pkg = require('./package.json')
 
@@ -53,7 +53,7 @@ var three = require('three.js')
  * @private
  */
 
-var tpl = require('./template.html')
+var tpl = require('./template')
   , Projection = require('./projection')
   , createCamera = require('./camera')
   , geometries = require('./geometry')
@@ -63,8 +63,8 @@ var tpl = require('./template.html')
 
 // install THREE.js addons
 Axis.THREE = three;
-require('three-canvas-renderer')(three);
-require('three-vr-effect')(three);
+require('@littlstar/three-canvas-renderer')(three);
+require('@littlstar/three-vr-effect')(three);
 
 // uncomment to enable debugging
 //window.DEBUG = true;

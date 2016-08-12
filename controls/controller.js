@@ -39,9 +39,9 @@ void module.exports;
  * @private
  */
 
-var three = require('three.js')
-  , events = require('events')
-  , Emitter = require('emitter')
+var three = require('three')
+  , events = require('component-events')
+  , Emitter = require('component-emitter')
 
 /**
  * Tiny planet interpolation factor
