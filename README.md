@@ -14,7 +14,7 @@ Stable
 
 ## Installation
 
-Axis can be built and installed in variou ways.
+Axis can be built and installed in various ways.
 
 ### NPM
 
