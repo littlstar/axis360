@@ -21,7 +21,7 @@ Axis can be built and installed in various ways.
 Axis is available through *npm*
 
 ```sh
-$ npm install littlstar/axis --save
+$ npm install @littlstar/axis --save
 ```
 
 ### Distribution build
@@ -31,7 +31,7 @@ this repository.
 
 ### Source
 
-Axis uses [duo](https://github.com/duojs/duo) internally for installing and
+Axis uses [browserify](http://browserify.org/) internally for installing and
 building its dependency components.
 
 ```sh
@@ -46,7 +46,7 @@ Debug builds are now available in the `build/` directory.
 ## Example
 
 ```js
-const axis = requre('littlstar-axis')
+const axis = requre('@littlstar/axis')
 const domElement = document.querySelector('#video');
 const frame = axis(domElement, {
   src: '/path/to/video.mp4'
@@ -66,7 +66,6 @@ frame.once('ready', () => {
 ## TODO
 
 * [ ] - Rewrite in ES6
-* [ ] - Remove duo/component requirements
 * [ ] - Deprecate and start new project without THREE.js dependency.
 
 ## Screenshots

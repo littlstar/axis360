@@ -3,7 +3,7 @@
  * Module dependencies
  */
 
-var three = require('three.js')
+var three = require('three')
 
 // default field of view
 var DEFAULT_FOV = require('./constants').DEFAULT_FOV;

@@ -37,7 +37,7 @@
  */
 
 var raf = require('raf')
-  , three = require('three.js')
+  , three = require('three')
 
 var DEFAULT_PROJECTION = require('./constants').DEFAULT_PROJECTION
 

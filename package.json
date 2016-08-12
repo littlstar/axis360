@@ -1,8 +1,8 @@
 {
-  "name": "littlstar-axis",
+  "name": "@littlstar/axis",
   "version": "1.22.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
-  "main": "dist/axis.js",
+  "main": "index.js",
   "scripts": {
     "prepublish": "make dist"
   },
@@ -17,12 +17,29 @@
     "webgl"
   ],
   "devDependencies": {
-    "duo": "*",
-    "jsdoc": "^3.3.0"
+    "browserify": "^13.1.0",
+    "jsdoc": "^3.3.0",
+    "postcss-cli": "^2.5.2"
   },
-
   "bugs": {
-    "url" : "https://github.com/littlstar/axis/issues",
-    "email" : "axis@littlstar.com"
+    "url": "https://github.com/littlstar/axis/issues",
+    "email": "axis@littlstar.com"
+  },
+  "dependencies": {
+    "@littlstar/fullscreen": "^2.0.0",
+    "@littlstar/three-canvas-renderer": "^1.0.0",
+    "@littlstar/three-vr-effect": "^1.0.0",
+    "autoprefixer": "^6.4.0",
+    "component-emitter": "^1.2.1",
+    "component-events": "^1.0.10",
+    "domify": "^1.4.0",
+    "has-webgl": "0.0.1",
+    "inherits": "^2.0.1",
+    "merge": "^1.2.0",
+    "pointer-lock": "0.0.4",
+    "raf": "^3.2.0",
+    "three": "^0.79.0",
+    "three-projector-renderer": "^1.0.1",
+    "yields-keycode": "^1.1.0"
   }
 }

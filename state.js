@@ -39,12 +39,12 @@
  * @private
  */
 
-var EventEmitter = require('emitter')
-  , fullscreen = require('fullscreen')
-  , keycode = require('keycode')
+var EventEmitter = require('component-emitter')
+  , fullscreen = require('@littlstar/fullscreen')
+  , keycode = require('yields-keycode')
   , hasWebGL = require('has-webgl')
-  , events = require('events')
-  , three = require('three.js')
+  , events = require('component-events')
+  , three = require('three')
   , merge = require('merge')
   , path = require('path')
 

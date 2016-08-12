@@ -38,7 +38,7 @@
  * @private
  */
 
-var three = require('three.js')
+var three = require('three')
 
 /**
  * Local dependencies
