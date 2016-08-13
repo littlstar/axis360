@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -37,21 +37,8 @@
  */
 
 var raf = require('raf')
-  , three = require('three')
 
 var DEFAULT_PROJECTION = require('./constants').DEFAULT_PROJECTION
-
-/**
- * Predicate to determine whether `n' is
- * in fact `NaN'
- *
- * @private
- * @param {Mixed} n
- */
-
-function isNaN (n) {
-  return 'number' == typeof n && n !== n
-}
 
 /**
  * Projections constructor
@@ -61,37 +48,35 @@ function isNaN (n) {
  * @param {Object} [scope] - Scope object to apply state to.
  */
 
-module.exports = Projections;
+module.exports = Projections
 function Projections (scope) {
   // ensure instance
   if (!(this instanceof Projections)) {
-    return new Projections(scope);
+    return new Projections(scope)
   }
 
-  var self = this;
-
   // projection scope
-  this.scope = 'object' == typeof scope ? scope : {};
+  this.scope = typeof scope === 'object' ? scope : {}
 
   // install `.state' object if not defined
-  if ('object' != typeof this.scope.state) {
-    this.scope.state = {};
+  if (typeof this.scope.state !== 'object') {
+    this.scope.state = {}
   }
 
   /** Animation frame ID generated from `requestAnimationFrame()`. */
-  this.animationFrameID = NaN;
+  this.animationFrameID = NaN
 
   /** Installed projections. */
-  this.projections = {};
+  this.projections = {}
 
   /** Current requested projection. */
-  this.requested = null;
+  this.requested = null
 
   /** Current applied projection. */
-  this.current = DEFAULT_PROJECTION;
+  this.current = DEFAULT_PROJECTION
 
   /** Current projection constraints. */
-  this.constraints = null;
+  this.constraints = null
 }
 
 /**
@@ -101,12 +86,12 @@ function Projections (scope) {
  */
 
 Projections.prototype.cancel = function () {
-  if (false == isNaN(this.animationFrameID)) {
-    raf.cancel(this.animationFrameID);
-    this.scope.state.update('isAnimating', false);
+  if (!isNaN(this.animationFrameID)) {
+    raf.cancel(this.animationFrameID)
+    this.scope.state.update('isAnimating', false)
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Requests an animation frame for a given
@@ -118,22 +103,22 @@ Projections.prototype.cancel = function () {
  */
 
 Projections.prototype.animate = function (fn) {
-  var self = this;
-  if ('function' == typeof fn) {
-    this.scope.state.update('isAnimating', true);
+  var self = this
+  if (typeof fn === 'function') {
+    this.scope.state.update('isAnimating', true)
     this.animationFrameID = raf(function animate () {
-      if (false == self.scope.state.isAnimating) {
-        self.cancel();
+      if (!self.scope.state.isAnimating) {
+        self.cancel()
       } else {
-        fn.call(self);
+        fn.call(self)
         if (self.scope.state.isAnimating) {
-          self.animate(fn);
+          self.animate(fn)
         }
       }
-    });
+    })
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Installs a projection by name
@@ -144,11 +129,11 @@ Projections.prototype.animate = function (fn) {
  */
 
 Projections.prototype.set = function (name, projection) {
-  if ('string' == typeof name && 'function' == typeof projection) {
-    this.projections[name] = projection;
+  if (typeof name === 'string' && typeof projection === 'function') {
+    this.projections[name] = projection
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Removes a projection by name
@@ -158,11 +143,11 @@ Projections.prototype.set = function (name, projection) {
  */
 
 Projections.prototype.remove = function (name) {
-  if ('string' == typeof name && 'function' == typeof this.projections[name]) {
-    delete this.projections[name];
+  if (typeof name === 'string' && typeof this.projections[name] === 'function') {
+    delete this.projections[name]
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Gets a projection by name
@@ -172,11 +157,11 @@ Projections.prototype.remove = function (name) {
  */
 
 Projections.prototype.get = function (name) {
-  if ('string' == typeof name && 'function' == typeof this.projections[name]) {
-    return this.projections[name];
+  if (typeof name === 'string' && typeof this.projections[name] === 'function') {
+    return this.projections[name]
   }
-  return null;
-};
+  return null
+}
 
 /**
  * Applies a projection by name
@@ -187,51 +172,51 @@ Projections.prototype.get = function (name) {
 
 Projections.prototype.apply = function (name) {
   // set currently requested
-  this.requested = name;
-  this.cancel();
+  this.requested = name
+  this.cancel()
 
   raf(function () {
-    var projection = null;
-    var dimensions = null;
-    var texture = null;
-    var previous = this.current;
+    var projection = null
+    var dimensions = null
+    var texture = null
+    var previous = this.current
 
-    if (null == this.scope) { return; }
+    if (this.scope == null) { return }
 
-    projection = this.projections[name];
-    if (null == projection) { return; }
+    projection = this.projections[name]
+    if (projection == null) { return }
 
-    dimensions = this.scope.dimensions();
-    if (null == dimensions) { return; }
+    dimensions = this.scope.dimensions()
+    if (dimensions == null) { return }
 
-    texture = this.scope.texture;
+    texture = this.scope.texture
 
-    if (null != texture && 'string' == typeof name && 'function' == typeof projection) {
-      this.scope.refreshScene();
+    if (texture != null && typeof name === 'string' && typeof projection === 'function') {
+      this.scope.refreshScene()
 
       // apply constraints
-      if ('object' == typeof projection.constraints) {
-        this.constraints = projection.constraints;
+      if (typeof projection.constraints === 'object') {
+        this.constraints = projection.constraints
       } else {
-        this.constraints = {};
+        this.constraints = {}
       }
 
       // apply projection
-      if (false === projection.call(this, this.scope)) {
-        this.requested = this.current;
+      if (!projection.call(this, this.scope)) {
+        this.requested = this.current
       } else {
         this.scope.emit('projectionchange', {
           current: name,
           previous: previous
-        });
+        })
       }
 
       // set current projection
-      this.current = name;
+      this.current = name
     }
-  }.bind(this));
-  return this;
-};
+  }.bind(this))
+  return this
+}
 
 /**
  * Predicate to determine if a projection is defiend
@@ -241,8 +226,8 @@ Projections.prototype.apply = function (name) {
  */
 
 Projections.prototype.contains = function (name) {
-  return 'function' == typeof this.projections[name];
-};
+  return typeof this.projections[name] === 'function'
+}
 
 /**
  * Predicate to determine if axis content has
@@ -253,11 +238,11 @@ Projections.prototype.contains = function (name) {
  */
 
 Projections.prototype.contentHasCorrectSizing = function () {
-  var dimensions = this.scope.dimensions();
-  var width = dimensions.width;
-  var height = dimensions.height;
-  return 0 != width && 0 != height;
-};
+  var dimensions = this.scope.dimensions()
+  var width = dimensions.width
+  var height = dimensions.height
+  return width !== 0 && height !== 0
+}
 
 /**
  * Predicate to determine if axis is ready
@@ -267,8 +252,8 @@ Projections.prototype.contentHasCorrectSizing = function () {
 
 Projections.prototype.isReady = function () {
   var scope = this.scope
-  return Boolean(scope.camera && scope.texture && scope.scene);
-};
+  return Boolean(scope.camera && scope.texture && scope.scene)
+}
 
 /**
  * Refreshes current projection
@@ -277,5 +262,5 @@ Projections.prototype.isReady = function () {
  */
 
 Projections.prototype.refreshCurrent = function () {
-  return this.apply(this.current);
-};
+  return this.apply(this.current)
+}

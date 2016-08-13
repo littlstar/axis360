@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -38,9 +38,8 @@
  * @private
  */
 
-var three = require('three')
-  , path = require('path')
-  , url = require('url')
+var path = require('path')
+var url = require('url')
 
 /**
  * Detect if file path is an image
@@ -50,15 +49,15 @@ var three = require('three')
  * @param {String} file
  */
 
-exports.isImage = isImage;
+exports.isImage = isImage
 function isImage (file) {
-  var ext = path.extname(url.parse(file).pathname).toLowerCase();
+  var ext = path.extname(url.parse(file).pathname).toLowerCase()
   switch (ext) {
     case '.png':
     case '.jpg':
     case '.jpeg':
-      return true;
-    default: return false;
+      return true
+    default: return false
   }
 }
 
@@ -70,10 +69,10 @@ function isImage (file) {
  * @return {Boolean}
  */
 
-exports.isVRPossible = isVRPossible;
+exports.isVRPossible = isVRPossible
 function isVRPossible () {
-  var fn = navigator.getVRDevices || navigator.mozGetVRDevices;
-  return 'function' == typeof fn;
+  var fn = navigator.getVRDevices || navigator.mozGetVRDevices
+  return typeof fn === 'function'
 }
 
 /**
@@ -84,12 +83,12 @@ function isVRPossible () {
  * @return {Promise}
  */
 
-exports.getVRDevices = getVRDevices;
+exports.getVRDevices = getVRDevices
 function getVRDevices (fn) {
   if (isVRPossible()) {
     return (
       navigator.getVRDevices || navigator.mozGetVRDevices
-    ).call(navigator, fn);
+    ).call(navigator, fn)
   }
 }
 
@@ -103,7 +102,7 @@ function getVRDevices (fn) {
  * @return {Object}
  */
 
-exports.normalizeMovements = normalizeMovements;
+exports.normalizeMovements = normalizeMovements
 function normalizeMovements (e, o) {
   o.x = (
     e.movementX ||
@@ -113,7 +112,7 @@ function normalizeMovements (e, o) {
     e.webkitMovementX ||
     o.x ||
     0
-  );
+  )
 
   o.y = (
     e.movementY ||
@@ -123,7 +122,7 @@ function normalizeMovements (e, o) {
     e.webkitMovementY ||
     o.y ||
     0
-  );
+  )
 
-  return o;
+  return o
 }

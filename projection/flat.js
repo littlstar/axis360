@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -40,38 +40,37 @@
  * @param {Axis} axis
  */
 
-module.exports = flat;
+module.exports = flat
 function flat (axis) {
-
   // this projection requires an already initialized
   // camera on the `Axis' instance
-  var camera = axis.camera;
+  var camera = axis.camera
 
   // bail if camera not initialized
-  if (null == camera) { return false; }
+  if (camera == null) { return false }
 
   // bail if not ready
-  if (false == this.isReady()) { return false; }
+  if (!this.isReady()) { return false }
 
   // bail if geometry is a cylinder because a flat
   // projection is only supported in a spherical geometry
-  if ('cylinder' == axis.geometry()) { return false; }
+  if (axis.geometry() === 'cylinder') { return false }
 
   // apply equilinear projection
-  this.apply('equilinear');
+  this.apply('equilinear')
 
   this.constraints = {
     keys: {up: true, down: true, left: true, right: true},
     panoramic: true,
     x: true, y: true
-  };
+  }
 
   // update camera lens
-  camera.setLens(80);
+  camera.setLens(80)
 
   // update current fov
-  axis.fov(camera.fov);
+  axis.fov(camera.fov)
 
   // position in center (90) around equator (0)
-  axis.coords(90, 0);
+  axis.coords(90, 0)
 };

@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -32,15 +32,14 @@
  * @type {Function}
  */
 
-void module.exports;
+void module.exports
 
 /**
  * Module dependencies.
  * @private
  */
 
-var keycode = require('yields-keycode')
-  , inherits = require('inherits')
+var inherits = require('inherits')
 
 /**
  * Local dependencies.
@@ -48,7 +47,6 @@ var keycode = require('yields-keycode')
  */
 
 var AxisController = require('./controller')
-  , constants = require('../constants')
 
 /**
  * Converts degrees to radians
@@ -58,8 +56,9 @@ var AxisController = require('./controller')
  */
 
 function dtor (degrees) {
-  return 'number' == typeof degrees && degrees == degrees ?
-    (Math.PI / 180) * degrees : 0;
+  return typeof degrees === 'number' && !isNaN(degrees)
+    ? (Math.PI / 180) * degrees
+    : 0
 }
 
 /**
@@ -74,8 +73,8 @@ module.exports = function orientation (axis) {
   return OrientationController(axis)
   .target(axis.camera)
   .enable()
-  .update();
-};
+  .update()
+}
 
 /**
  * OrientationController constructor
@@ -88,26 +87,16 @@ module.exports = function orientation (axis) {
  * @param {Axis} scope - The axis instance
  */
 
-module.exports.OrientationController = OrientationController;
-inherits(OrientationController, AxisController);
+module.exports.OrientationController = OrientationController
+inherits(OrientationController, AxisController)
 function OrientationController (scope) {
-
   // ensure instance
   if (!(this instanceof OrientationController)) {
-    return new OrientationController(scope);
+    return new OrientationController(scope)
   }
 
   // inherit from `AxisController'
-  AxisController.call(this, scope, window);
-
-  /**
-   * Reference to this instance.
-   *
-   * @private
-   * @type {OrientationController}
-   */
-
-  var self = this;
+  AxisController.call(this, scope, window)
 
   /**
    * The current device orientation angle in
@@ -119,34 +108,33 @@ function OrientationController (scope) {
    */
 
   this.state.define('deviceOrientation', function () {
-    var angle = 0;
-    var type = null;
+    var angle = 0
+    var type = null
     var orientation = (
-      screen.ourOrientation || // our injected orientation
-      screen.orientation    || // webkit orientation
-      screen.mozOrientation || // firefox orientation
-      screen.msOrientation  || // internet explorer orientation
+      window.screen.ourOrientation || // our injected orientation
+      window.screen.orientation || // webkit orientation
+      window.screen.mozOrientation || // firefox orientation
+      window.screen.msOrientation || // internet explorer orientation
       null // unable to determine orientation object
-    );
-
+    )
 
     if (orientation && orientation.type) {
-      type = orientation.type;
+      type = orientation.type
     }
 
     if (orientation && orientation.angle) {
-      angle = orientation.angle;
+      angle = orientation.angle
     }
 
     // attempt to polyfil angle falling back to 0
     switch (type) {
-      case 'landscape-primary': return angle || 90;
-      case 'landscape-secondary': return angle || -90;
-      case 'portrait-secondary': return angle || 180;
-      case 'portrait-primary': return angle || 0;
-      default: return angle || window.orientation || 0;
+      case 'landscape-primary': return angle || 90
+      case 'landscape-secondary': return angle || -90
+      case 'portrait-secondary': return angle || 180
+      case 'portrait-primary': return angle || 0
+      default: return angle || window.orientation || 0
     }
-  });
+  })
 
   /**
    * The current alpha angle rotation
@@ -156,7 +144,7 @@ function OrientationController (scope) {
    * @type {Number}
    */
 
-  this.state.alpha = 0;
+  this.state.alpha = 0
 
   /**
    * The current beta angle rotation
@@ -166,7 +154,7 @@ function OrientationController (scope) {
    * @type {Number}
    */
 
-  this.state.beta = 0;
+  this.state.beta = 0
 
   /**
    * The current gamma angle rotation
@@ -176,10 +164,10 @@ function OrientationController (scope) {
    * @type {Number}
    */
 
-  this.state.gamma = 0;
+  this.state.gamma = 0
 
   // Initialize event delegation
-  this.events.bind('deviceorientation');
+  this.events.bind('deviceorientation')
 }
 
 /**
@@ -190,10 +178,10 @@ function OrientationController (scope) {
  */
 
 OrientationController.prototype.ondeviceorientation = function (e) {
-  this.state.alpha = e.alpha;
-  this.state.beta = e.beta;
-  this.state.gamma = e.gamma;
-};
+  this.state.alpha = e.alpha
+  this.state.beta = e.beta
+  this.state.gamma = e.gamma
+}
 
 /**
  * Update orientation controller state.
@@ -202,30 +190,27 @@ OrientationController.prototype.ondeviceorientation = function (e) {
  */
 
 OrientationController.prototype.update = function () {
-  var interpolationFactor = this.scope.state.interpolationFactor;
-  var orientation = dtor(this.state.deviceOrientation);
-  var alpha = dtor(this.state.alpha);
-  var beta = dtor(this.state.beta);
-  var gamma = dtor(this.state.gamma);
-  var angle = 0;
+  var interpolationFactor = this.scope.state.interpolationFactor
+  var alpha = dtor(this.state.alpha)
+  var beta = dtor(this.state.beta)
+  var gamma = dtor(this.state.gamma)
 
-  if (0 != alpha && 0 != beta && 0 != gamma) {
-    angle = - (this.state.deviceOrientation / 2);
-    this.state.eulers.device.set(beta, alpha, -gamma, 'YXZ');
+  if (alpha !== 0 && beta !== 0 && gamma !== 0) {
+    this.state.eulers.device.set(beta, alpha, -gamma, 'YXZ')
     this.state.quaternions.direction.setFromEuler(
       this.state.eulers.device
-    );
+    )
 
     if (this.scope.controls.touch) {
       this.state.quaternions.direction.multiply(
         this.scope.controls.touch.state.quaternions.touch
-      );
+      )
     }
-    //this.state.quaternions.direction.multiply(this.state.quaternions.device);
-    //this.state.quaternions.direction.multiply(this.state.quaternions.world);
-    //AxisController.prototype.update.call(this);
+    // this.state.quaternions.direction.multiply(this.state.quaternions.device);
+    // this.state.quaternions.direction.multiply(this.state.quaternions.world);
+    // AxisController.prototype.update.call(this);
     this.state.target.quaternion.slerp(this.state.quaternions.direction,
-                                       interpolationFactor);
+                                       interpolationFactor)
   }
-  return this;
-};
+  return this
+}

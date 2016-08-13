@@ -1,105 +1,3268 @@
-(function umd(require){
-  if (typeof exports === 'object') {
-    module.exports = require('1');
-  } else if (typeof define === 'function' && (define.amd || define.cmd)) {
-    define(function(){ return require('1'); });
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Axis = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+
+/**
+ * Module dependencies
+ */
+
+var three = require('three')
+
+// default field of view
+var DEFAULT_FOV = require('./constants').DEFAULT_FOV
+
+/**
+ * Creates an instance of THREE.PerspectiveCamera
+ * and assigns it to a scope object if not null.
+ *
+ * @public
+ * @name createCamera
+ * @param {Object} scope - Scope object to assign camera to.
+ * @param {Boolean} force - Force creation and assignment.
+ * @return {THREE.PerspectiveCamera}
+ */
+
+module.exports = function createCamera (scope, force) {
+  var height = scope.height()
+  var width = scope.width()
+  var ratio = width / height
+  var camera = scope.camera
+  var state = scope.state
+  var vector = null
+  var target = null
+  var fov = state.opts ? state.opts.fov || DEFAULT_FOV : DEFAULT_FOV
+  if (scope.camera == null || force) {
+    vector = new three.Vector3(0, 0, 0)
+    target = camera && camera.target ? camera.target : vector
+    scope.camera = new three.PerspectiveCamera(fov, ratio, 0.01, 1000)
+    scope.camera.target = target
+    scope.camera.rotation.reorder('YXZ')
+  }
+  return scope.camera
+}
+
+},{"./constants":2,"three":63}],2:[function(require,module,exports){
+
+'use strict'
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * Axis constants
+ * @public
+ * @module axis/constants
+ * @type {Object}
+ */
+
+void module.exports
+
+/**
+ * The default Axis field of view in degrees.
+ *
+ * @public
+ * @const
+ * @name DEFAULT_FOV
+ * @type {Number}
+ */
+
+exports.DEFAULT_FOV = Math.PI / 3 * 180 / Math.PI
+
+/**
+ * Cylinder field of view value in degrees.
+ *
+ * @public
+ * @const
+ * @name CYLINDER_FOV
+ * @type {Number}
+ */
+
+exports.CYLINDER_FOV = 60
+
+/**
+ * Max calculated field of view in degrees.
+ *
+ * @public
+ * @const
+ * @name MAX_CALC_FOV
+ * @type {Number}
+ */
+
+exports.MAX_CALC_FOV = 75
+
+/**
+ * Default interpolation factor.
+ *
+ * @public
+ * @const
+ * @name DEFAULT_INTERPOLATION_FACTOR
+ * @type {Number}
+ */
+
+exports.DEFAULT_INTERPOLATION_FACTOR = 0.1
+
+/**
+ * Default frame projection
+ *
+ * @public
+ * @const
+ * @name DEFAULT_PROJECTION
+ * @type {String}
+ */
+
+exports.DEFAULT_PROJECTION = 'equilinear'
+
+/**
+ * Default scroll velocity
+ *
+ * @public
+ * @const
+ * @name DEFAULT_SCROLL_VELOCITY
+ * @type {Number}
+ */
+
+exports.DEFAULT_SCROLL_VELOCITY = 0.09
+
+/**
+ * Default geometry radius
+ *
+ * @public
+ * @const
+ * @name DEFAULT_GEOMETRY_RADIUS
+ * @type {Number}
+ */
+
+exports.DEFAULT_GEOMETRY_RADIUS = 400
+
+/**
+ * Default friction to apply to x and y
+ * coordinates.
+ *
+ * @public
+ * @const
+ * @name DEFAULT_FRICTION
+ * @type {Number}
+ */
+
+exports.DEFAULT_FRICTION = 0.075
+
+/**
+ * Default key rotate speed
+ *
+ * @public
+ * @const
+ * @name DEFAULT_KEY_ROTATE_SPEED
+ * @type {Number}
+ */
+
+exports.DEFAULT_KEY_ROTATE_SPEED = 0.75
+
+/**
+ * Default controller update timeout.
+ *
+ * @public
+ * @const
+ * @name DEFAULT_CONTROLLER_UPDATE_TIMEOUT
+ * @type {Number}
+ */
+
+exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600
+
+/**
+ * Default mouse movement friction factor.
+ *
+ * @public
+ * @const
+ * @name DEFAULT_MOUSE_MOVEMENT_FRICTION
+ * @type {Number}
+ */
+
+exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.05
+
+/**
+ * Animation factor unit applied to changes in
+ * field of view and coordinates during projection
+ * animations.
+ *
+ * @public
+ * @const
+ * @name ANIMATION_FACTOR
+ * @type {Number}
+ */
+
+exports.ANIMATION_FACTOR = 24
+
+/**
+ * Max tiny planet projection camera lens value.
+ *
+ * @public
+ * @const
+ * @name TINY_PLANET_CAMERA_LENS_VALUE
+ * @type {Number}
+ */
+
+exports.TINY_PLANET_CAMERA_LENS_VALUE = 7.5
+
+/**
+ * Frame click threshold in milliseconds used
+ * to determine an intent to click on the frame
+ * or an intent to drag
+ *
+ * @public
+ * @const
+ * @name FRAME_CLICK_THRESHOLD
+ * @type {Number}
+ */
+
+exports.FRAME_CLICK_THRESHOLD = 50
+
+/**
+ * Minimum wheel distance used to fence scrolling
+ * with the intent to zoom
+ *
+ * @public
+ * @const
+ * @name MIN_WHEEL_DISTANCE
+ * @type {Number}
+ */
+
+exports.MIN_WHEEL_DISTANCE = 20
+
+/**
+ * Minimum wheel distance used to fence scrolling
+ * with the intent to zoom
+ *
+ * @public
+ * @const
+ * @name MAX_WHEEL_DISTANCE
+ * @type {Number}
+ */
+
+exports.MAX_WHEEL_DISTANCE = 150
+
+/**
+ * Minimum possible y coordinate
+ *
+ * @public
+ * @const
+ * @name MIN_Y_COORDINATE
+ * @type {Number}
+ */
+
+exports.MIN_Y_COORDINATE = -85
+
+/**
+ * Maximum possible y coordinate
+ *
+ * @public
+ * @const
+ * @name MAX_Y_COORDINATE
+ * @type {Number}
+ */
+
+exports.MAX_Y_COORDINATE = 85
+
+/**
+ * Minimum possible x coordinate
+ *
+ * @public
+ * @const
+ * @name MIN_X_COORDINATE
+ * @type {Number}
+ */
+
+exports.MIN_X_COORDINATE = 0
+
+/**
+ * Maximum possible x coordinate
+ *
+ * @public
+ * @const
+ * @name MAX_X_COORDINATE
+ * @type {Number}
+ */
+
+exports.MAX_X_COORDINATE = 360
+
+/**
+ * VR device poll timeout
+ *
+ * @public
+ * @const
+ * @name VR_POLL_TIMEOUT
+ * @type {Number}
+ */
+
+exports.VR_POLL_TIMEOUT = 3000
+
+},{}],3:[function(require,module,exports){
+
+'use strict'
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The axis controller module.
+ *
+ * @module axis/controls/controller
+ * @type {Function}
+ */
+
+void module.exports
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var three = require('three')
+var events = require('component-events')
+var Emitter = require('component-emitter')
+
+/**
+ * Tiny planet interpolation factor
+ *
+ * @private
+ * @type {Number}
+ */
+
+var TINY_PLANET_INTERPOLATION_FACTOR = 0.13
+
+/**
+ * AxisController constructor
+ *
+ * @public
+ * @constructor
+ * @class AxisController
+ * @param {Axis} scope - An Axis instance.
+ * @param {Element} [domElement] - Optional DOM Element to bind events to.
+ */
+
+module.exports = AxisController
+function AxisController (scope, domElement) {
+  // ensure instance
+  if (!(this instanceof AxisController)) {
+    return new AxisController(scope, domElement)
+  }
+
+  /**
+   * Reference to this instance.
+   *
+   * @private
+   * @type {AxisController}
+   */
+
+  var self = this
+
+  /**
+   * Axis scope instance.
+   *
+   * @public
+   * @type {Axis}
+   */
+
+  this.scope = scope
+
+  /**
+   * Current state of the controller.
+   *
+   * @public
+   * @type {Object}
+   */
+
+  this.state = {
+
+    /**
+     * Defines a getter for a state property.
+     *
+     * @public
+     * @name state.define
+     * @type {Function}
+     * @param {String} key - Property name.
+     * @param {Function} getter - Accessor function.
+     */
+
+    define: function (key, getter) {
+      this.__defineGetter__(key, getter)
+      return this
+    },
+
+    /**
+     * Predicate indicating if controller is enabled.
+     *
+     * @public
+     * @name state.isEnabled
+     * @type {Boolean}
+     */
+
+    isEnabled: false,
+
+    /**
+     * Predicate indicating if controller should force update.
+     *
+     * @public
+     * @name state.forceUpdate
+     * @type {Boolean}
+     */
+
+    forceUpdate: false,
+
+    /**
+     * Target quaternion to perform
+     * rotations on.
+     *
+     * @public
+     * @type {THREE.Object3D}
+     */
+
+    target: new three.Object3D(),
+
+    /**
+     * Theta value
+     *
+     * @public
+     * @type {Number}
+     */
+
+    get theta () {
+      var x = self.state.orientation.x
+      return x * (Math.PI / 180)
+    },
+
+    /**
+     * Phi value
+     *
+     * @public
+     * @type {Number}
+     */
+
+    get phi () {
+      var y = self.state.orientation.y
+      return (90 - y) * (Math.PI / 180)
+    },
+
+    /**
+     * Theta delta value
+     *
+     * @public
+     * @type {Number}
+     */
+
+    thetaDelta: 0,
+
+    /**
+     * Phi delta value
+     *
+     * @public
+     * @type {Number}
+     */
+
+    phiDelta: 0,
+
+    /**
+     * Scale value
+     *
+     * @public
+     * @type {Number}
+     */
+
+    scale: 1,
+
+    /**
+     * Minimum azimuth angle.
+     *
+     * @public
+     * @type {Number}
+     */
+
+    minAzimuthAngle: -Infinity,
+
+    /**
+     * Maximum azimuth angle.
+     *
+     * @public
+     * @type {Number}
+     */
+
+    maxAzimuthAngle: Infinity,
+
+    /**
+     * Minimum polar angle.
+     *
+     * @public
+     * @type {Number}
+     */
+
+    minPolarAngle: 0,
+
+    /**
+     * Maximum polar angle.
+     *
+     * @public
+     * @type {Number}
+     */
+
+    maxPolarAngle: Math.PI,
+
+    /**
+     * Minimum radius distance.
+     *
+     * @public
+     * @type {Number}
+     */
+
+    minDistance: 0,
+
+    /**
+     * Maximum radius distance.
+     *
+     * @public
+     * @type {Number}
+     */
+
+    maxDistance: Infinity,
+
+    /**
+     * Rotation vectors.
+     *
+     * @public
+     * @type {Object}
+     */
+
+    rotation: {
+
+      /**
+       * Start rotation vector.
+       *
+       * @public
+       * @type {THREE.Vector2}
+       */
+
+      start: new three.Vector2(0, 0),
+
+      /**
+       * End rotation vector.
+       *
+       * @public
+       * @type {THREE.Vector2}
+       */
+
+      end: new three.Vector2(0, 0),
+
+      /**
+       * Delta  rotation vector.
+       *
+       * @public
+       * @type {THREE.Vector2}
+       */
+
+      delta: new three.Vector2(0, 0)
+    },
+
+    /**
+     * Controller vectors
+     *
+     * @public
+     * @name state.vectors
+     * @type {Object}
+     */
+
+    vectors: {
+
+      /**
+       * X vector.
+       *
+       * @public
+       * @name state.vectors.x
+       * @type {THREE.Vector3}
+       */
+
+      x: new three.Vector3(1, 0, 0),
+
+      /**
+       * Y vector.
+       *
+       * @public
+       * @name state.vectors.y
+       * @type {THREE.Vector3}
+       */
+
+      y: new three.Vector3(0, 1, 0),
+
+      /**
+       * Z vector.
+       *
+       * @public
+       * @name state.vectors.z
+       * @type {THREE.Vector3}
+       */
+
+      z: new three.Vector3(0, 0, 1),
+
+      /**
+       * Target vector.
+       *
+       * @public
+       * @name state.vectors.target
+       * @type {THREE.Vector3}
+       */
+
+      target: new three.Vector3(0, 0, 0),
+
+      /**
+       * Current offset vector.
+       *
+       * @public
+       * @name state.vectors.offset
+       * @type {THREE.Vector3}
+       */
+
+      offset: new three.Vector3(0, 0, 0),
+
+      /**
+       * Position vector.
+       *
+       * @public
+       * @name state.vectors.position
+       * @type {THREE.Vector3}
+       */
+
+      position: new three.Vector3(0, 0, 0),
+
+      /**
+       * Last known position vector.
+       *
+       * @public
+       * @name state.vectors.lastPosition
+       * @type {THREE.Vector3}
+       */
+
+      lastPosition: new three.Vector3(0, 0, 0)
+    },
+
+    /**
+     * Controller quaternions.
+     *
+     * @public
+     * @name state.quaternions
+     * @type {Object}
+     */
+
+    quaternions: {
+
+      /**
+       * X quaternion.
+       *
+       * @public
+       * @name state.quaternions.x
+       * @type {THREE.Quaternion}
+       */
+
+      x: new three.Quaternion(),
+
+      /**
+       * Y quaternion.
+       *
+       * @public
+       * @name state.quaternions.y
+       * @type {THREE.Quaternion}
+       */
+
+      y: new three.Quaternion(),
+
+      /**
+       * Directional quaternion.
+       *
+       * @public
+       * @name state.quaternions.direction
+       * @type {THREE.Quaternion}
+       */
+
+      direction: new three.Quaternion(),
+
+      /**
+       * Last known quaternion state
+       *
+       * @public
+       * @name state.quaternions.last
+       */
+
+      last: new three.Quaternion()
+    },
+
+    /**
+     * Named Euler angles.
+     *
+     * @public
+     * @name state.eulers
+     * @type {Object}
+     */
+
+    eulers: {
+
+      /**
+       * Current device Euler angle.
+       *
+       * @public
+       * @name state.eulers.device
+       * @type {THREE.Euler}
+       */
+
+      device: new three.Euler()
+    }
+  }
+
+  /**
+   * Controller orientation.
+   *
+   * @public
+   * @name state.orientation
+   * @type {Object}
+   */
+
+  this.state.orientation = this.scope.orientation || {
+
+    /**
+     * X orientation coordinate.
+     *
+     * @public
+     * @name state.orientation.x
+     * @type {Number}
+     */
+
+    x: 0,
+
+    /**
+     * Y orientation coordinate.
+     *
+     * @public
+     * @name state.orientation.y
+     * @type {Number}
+     */
+
+    y: 0,
+
+    /**
+     * Z orientation coordinate.
+     *
+     * @public
+     * @name state.orientation.z
+     * @type {Number}
+     */
+
+    z: 0
+  }
+
+  /**
+   * Controllers DOM Element.
+   *
+   * @public
+   * @name domElement
+   * @type {Element}
+   */
+
+  this.domElement = domElement || scope.domElement
+
+  /**
+   * Event delegation for the controller. Event delegation.
+   *
+   * @public
+   * @name events
+   * @type {Object}
+   */
+
+  this.events = events(this.domElement, this)
+
+  // Update controller before rendering occurs on scope.
+  this.onbeforedraw = this.onbeforedraw.bind(this)
+  scope.on('beforedraw', this.onbeforedraw)
+}
+
+// Inherit `EventEmitter'
+Emitter(AxisController.prototype)
+
+/**
+ * Handles `before:render' event.
+ *
+ * @private
+ */
+
+AxisController.prototype.onbeforedraw = function () {
+  // update only if enabled.
+  if (!this.state.forceUpdate &&
+      !this.state.isEnabled) {
+    return this
+  }
+
+  this.update()
+}
+
+/**
+ * Enables this controller.
+ *
+ * @public
+ * @method
+ * @name enable
+ * @return {AxisController}
+ */
+
+AxisController.prototype.enable = function () {
+  this.scope.debug('enable %s', this.constructor.name)
+  this.state.isEnabled = true
+  return this
+}
+
+/**
+ * Disables this controller.
+ *
+ * @public
+ * @method
+ * @name disable
+ * @return {AxisController}
+ */
+
+AxisController.prototype.disable = function () {
+  this.scope.debug('disable %s', this.constructor.name)
+  this.state.isEnabled = false
+  return this
+}
+
+/**
+ * Updates controller state.
+ *
+ * @public
+ * @method
+ * @name update
+ * @return {AxisController}
+ */
+
+AxisController.prototype.update = function () {
+  var quaternions = this.state.quaternions
+  var orientation = this.state.orientation
+  var vectors = this.state.vectors
+  var target = this.state.target
+  var quat = new three.Quaternion().copy(target.quaternion)
+  var interpolationFactor = this.scope.state.interpolationFactor
+  var geo = this.scope.geometry()
+
+  // update only if enabled.
+  if (!this.state.forceUpdate &&
+      !this.state.isEnabled) {
+    return this
+  }
+
+  if (orientation.x !== orientation.x) {
+    orientation.x = 0
+  }
+
+  if (orientation.y !== orientation.y) {
+    orientation.y = 0
+  }
+
+  if (this.scope.projections.current === 'tinyplanet') {
+    interpolationFactor = TINY_PLANET_INTERPOLATION_FACTOR
+  }
+
+  if (geo === 'cylinder') {
+    orientation.x = 0
+  } else if (this.scope.state.lockPoles !== false) {
+    // normalize x orientation
+    orientation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, orientation.x))
   } else {
-    this['Axis'] = require('1');
-  }
-})((function outer(modules, cache, entries){
-
-  /**
-   * Global
-   */
-
-  var global = (function(){ return this; })();
-
-  /**
-   * Require `name`.
-   *
-   * @param {String} name
-   * @api public
-   */
-
-  function require(name){
-    if (cache[name]) return cache[name].exports;
-    if (modules[name]) return call(name, require);
-    throw new Error('cannot find module "' + name + '"');
+    interpolationFactor = 1
   }
 
-  /**
-   * Call module `id` and cache it.
-   *
-   * @param {Number} id
-   * @param {Function} require
-   * @return {Function}
-   * @api private
-   */
+  // update controller quaternions
+  quaternions.y.setFromAxisAngle(vectors.y, orientation.y)
+  quaternions.x.setFromAxisAngle(vectors.x, orientation.x * interpolationFactor)
 
-  function call(id, require){
-    var m = cache[id] = { exports: {} };
-    var mod = modules[id];
-    var name = mod[2];
-    var fn = mod[0];
-    var threw = true;
+  // update target quaternion
+  quat.slerp(quaternions.y, interpolationFactor)
 
-    try {
-      fn.call(m.exports, function(req){
-        var dep = modules[id][1][req];
-        return require(dep || req);
-      }, m, m.exports, outer, modules, cache, entries);
-      threw = false;
-    } finally {
-      if (threw) {
-        delete cache[id];
-      } else if (name) {
-        // expose as 'name'.
-        cache[name] = cache[id];
-      }
-    }
+  // avoid NaN
+  target.quaternion.set(quat.x || 0,
+                        quat.y || 0,
+                        quat.z || 0,
+                        quat.w || 0)
 
-    return cache[id].exports;
+  quat.multiply(quaternions.x)
+
+  // avoid NaN
+  target.quaternion.set(quat.x || 0,
+                        quat.y || 0,
+                        quat.z || 0,
+                        quat.w || 0)
+
+  return this
+}
+
+/**
+ * Resets controller state. By default this will set
+ * all properties on the state object to `null`
+ *
+ * @public
+ * @abstract
+ * @method
+ * @name reset
+ * @return {AxisController}
+ */
+
+AxisController.prototype.reset = function () {
+  this.state.quaternions.x.set(0, 0, 0, 0)
+  this.state.quaternions.y.set(0, 0, 0, 0)
+  this.state.vectors.x.set(1, 0, 0)
+  this.state.vectors.y.set(0, 1, 0)
+  this.state.forceUpdate = false
+  return this
+}
+
+/**
+ * Freezes state object from being modified. Only the
+ * properties that exist may have their values changed.
+ * Once state is frozen, it cannot be unfrozen.
+ *
+ * @public
+ * @method
+ * @name freeze
+ * @return {AxisController}
+ */
+
+AxisController.prototype.freeze = function () {
+  Object.freeze(this.state)
+  return this
+}
+
+/**
+ * Sets target quaternion on instance.
+ *
+ * @public
+ * @method
+ * @name target
+ * @param {THREE.Object3D} target
+ * @return {AxisController}
+ */
+
+AxisController.prototype.target = function (target) {
+  var up = target.up
+  var y = new three.Vector3(0, 1, 0)
+  this.state.target = target
+  // initialize direction quaternion from targets up vector
+  this.state.quaternions.direction.setFromUnitVectors(up, y)
+  this.state.quaternions.directionInverse = (
+    this.state.quaternions.direction.clone().inverse()
+  )
+  return this
+}
+
+/**
+ * Rotate controller target with x and y radian rotations.
+ *
+ * @public
+ * @method
+ * @name rotate
+ * @param {Object} delta - X and Y deltas in radians.
+ * @param {Number} delta.x - X delta value in radians.
+ * @param {Number} delta.y - Y delta value in radians.
+ * @throws TypeError
+ * @return {AxisController}
+ */
+
+AxisController.prototype.rotate = function (delta) {
+  if (!this.state.isEnabled) { return this }
+  if (typeof delta !== 'object') {
+    throw new TypeError('Expecting object.')
   }
 
-  /**
-   * Require all entries exposing them on global if needed.
-   */
+  var orientation = this.state.orientation
+  var friction = this.scope.state.friction
 
-  for (var id in entries) {
-    if (entries[id]) {
-      global[entries[id]] = require(id);
+  delta.x = Math.min(delta.x, 1)
+  delta.y = Math.min(delta.y, 1)
+
+  // update controller orientation
+  if (!this.scope.state.isConstrainedWith('x')) {
+    if (this.scope.state.isInverted) {
+      orientation.x -= delta.x * friction
     } else {
-      require(id);
+      orientation.x += delta.x * friction
     }
   }
 
+  if (!this.scope.state.isConstrainedWith('y')) {
+    if (this.scope.state.isInverted) {
+      orientation.y -= delta.y * friction
+    } else {
+      orientation.y += delta.y * friction
+    }
+  }
+
+  return this
+}
+
+/**
+ * Cleans up controller state, etc.
+ *
+ * @public
+ * @method
+ * @name destroy
+ * @return {AxisController}
+ */
+
+AxisController.prototype.destroy = function () {
+  this.reset()
+  this.events.unbind()
+  this.scope.off('beforedraw', this.onbeforedraw)
+  return this
+}
+
+/**
+ * Returns current camera aspect ratio. If not available
+ * 1 is returned.
+ *
+ * @public
+ * @method
+ * @name getAspectRatio
+ * @return {Number}
+ */
+
+AxisController.prototype.getAspectRatio = function () {
+  var scope = this.scope
+  var camera = scope.camera
+  var aspect = camera ? camera.aspect : 1
+  return aspect
+}
+
+},{"component-emitter":26,"component-events":28,"three":63}],4:[function(require,module,exports){
+
+'use strict'
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The keyboard controls module.
+ *
+ * @module axis/controls/keyboard
+ * @type {Function}
+ */
+
+void module.exports
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var keycode = require('yields-keycode')
+var inherits = require('inherits')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var AxisController = require('./controller')
+var constants = require('../constants')
+
+// default key rotatening speed in pixels
+var DEFAULT_KEY_ROTATE_SPEED = constants.DEFAULT_KEY_ROTATE_SPEED
+
+/**
+ * Initialize keyboard controls on Axis.
+ *
+ * @public
+ * @param {Axis} scope - The axis instance
+ * @return {KeyboardController}
+ */
+
+module.exports = function keyboard (axis) {
+  return KeyboardController(axis)
+  .target(axis.camera)
+  .enable()
+  .update()
+}
+
+/**
+ * Key code map
+ *
+ * @public
+ * @type {Object}
+ */
+
+var keycodes = module.exports.keycodes = {
+  'esc': 27,
+  'space': 32,
+  'left': 37,
+  'up': 38,
+  'right': 39,
+  'down': 40,
+  'k': keycode('k'), // up
+  'j': keycode('j'), // down
+  'h': keycode('h'), // left
+  'l': keycode('l'), // right
+
+  'w': keycode('w'), // up
+  's': keycode('s'), // down
+  'a': keycode('a'), // left
+  'd': keycode('d') // right
+}
+
+/**
+ * Derive keyname from keycode
+ *
+ * @private
+ * @param {Number} code
+ * @return {String}
+ */
+
+function keyname (code) {
+  for (var name in keycodes) {
+    if (code === keycodes[name]) { return name }
+  }
+  return null
+}
+
+/**
+ * KeyboardController constructor
+ *
+ * @public
+ * @constructor
+ * @class KeyboardController
+ * @extends AxisController
+ * @see {@link module:axis/controls/controller~AxisController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.KeyboardController = KeyboardController
+inherits(KeyboardController, AxisController)
+function KeyboardController (scope) {
+  // ensure instance
+  if (!(this instanceof KeyboardController)) {
+    return new KeyboardController(scope)
+  }
+
+  // inherit from `AxisController'
+  AxisController.call(this, scope, document)
+
   /**
-   * Duo flag.
+   * Reference to this instance.
+   *
+   * @private
+   * @type {KeyboardController}
    */
 
-  require.duo = true;
+  var self = this
 
   /**
-   * Expose cache.
+   * Function handles for key presses.
+   *
+   * @public
+   * @name state.handlers
+   * @type {Object}
    */
 
-  require.cache = cache;
+  this.state.handlers = {}
 
   /**
-   * Expose modules
+   * Supported keys names.
+   *
+   * @public
+   * @name state.keynames
+   * @type {Array}
    */
 
-  require.modules = modules;
+  this.state.keynames = Object.keys(module.exports.keycodes)
 
   /**
-   * Return newest require.
+   * Supported keys codes.
+   *
+   * @public
+   * @name state.supported
+   * @type {Array}
    */
 
-   return require;
-})({
-1: [function(require, module, exports) {
+  this.state.define('supported', function () {
+    return self.state.keynames.map(keycode)
+  })
 
-'use strict';
+  /**
+   * Key state.
+   *
+   * @public
+   * @name keycode
+   * @type {Array}
+   */
+
+  this.state.define('keycodes', function () {
+    return self.state.keynames.map(keycode)
+  })
+
+  /**
+   * Key state map
+   *
+   * @public
+   * @name keystate
+   * @type {Object}
+   */
+
+  this.state.keystate = {}
+
+  /**
+   * Predicate indicating if a key is down
+   *
+   * @public
+   * @name state.isKeydown
+   * @type {Boolean}
+   * @default false
+   */
+
+  this.state.define('isKeydown', function () {
+    return Object.keys(self.state.keystate).some(function (code) {
+      return self.state.keystate[code]
+    })
+  })
+
+  /**
+   * Key rotatening speed in pixels
+   *
+   * @public
+   * @name state.rotateSpeed
+   * @type {Number}
+   * @default DEFAULT_KEY_ROTATE_SPEED
+   */
+
+  this.state.rotateSpeed = DEFAULT_KEY_ROTATE_SPEED
+
+  // initialize event delegation
+  this.events.bind('mousedown')
+  this.events.bind('keydown')
+  this.events.bind('keyup')
+
+  // reset state
+  this.reset()
+
+  this.use('up', up)
+  this.use('down', down)
+  this.use('left', left)
+  this.use('right', right)
+
+  this.use('w', up)
+  this.use('s', down)
+  this.use('a', left)
+  this.use('d', right)
+
+  if (this.scope.state.vim) {
+    this.use('k', up)
+    this.use('j', down)
+    this.use('h', left)
+    this.use('l', right)
+  }
+
+  function up (data) {
+    this.rotate({x: self.state.rotateSpeed, y: 0})
+  }
+
+  function down (data) {
+    this.rotate({x: -self.state.rotateSpeed, y: 0})
+  }
+
+  function left (data) {
+    this.rotate({x: 0, y: self.state.rotateSpeed})
+  }
+
+  function right (data) {
+    this.rotate({x: 0, y: -self.state.rotateSpeed})
+  }
+}
+
+/**
+ * Resets controller state.
+ *
+ * @public
+ * @method
+ * @name reset
+ * @return {KeyboardController}
+ */
+
+KeyboardController.prototype.reset = function () {
+  clearTimeout(this.state.keyupTimeout)
+  AxisController.prototype.reset.call(this)
+  Object.keys(this.state.keystate).forEach(function (code) {
+    this.state.keystate[code] = false
+  }, this)
+  return this
+}
+
+/**
+ * Updates controller state.
+ *
+ * @public
+ * @method
+ * @name update
+ * @return {KeyboardController}
+ */
+
+KeyboardController.prototype.update = function () {
+  var isKeydown = this.state.isKeydown
+  var isFocused = this.scope.state.isFocused
+  var handlers = this.state.handlers
+
+  if (!isKeydown || !isFocused) { return this }
+  // call registered keycode handlers
+  this.state.keycodes.forEach(function (code) {
+    if (handlers[code] == null) { return }
+    handlers[code].forEach(function (handle) {
+      var name = keyname(code)
+      if (this.state.keystate[code]) {
+        if (typeof handle === 'function') {
+          handle.call(this, {name: name, code: code})
+        }
+      }
+    }, this)
+  }, this)
+
+  return AxisController.prototype.update.call(this)
+}
+
+/**
+ * Installs a key handle by name.
+ *
+ * @public
+ * @method
+ * @name use
+ * @param {String|Number} key - Key by name or key code
+ * @param {Function} fn - Function handler
+ * @throws TypeError
+ * @return {KeyboardController}
+ */
+
+KeyboardController.prototype.use = function (key, fn) {
+  var handlers = this.state.handlers
+  key = typeof key === 'string' ? keycode(key) : key
+  if (typeof key !== 'number') {
+    throw new TypeError('Expecting string or number.')
+  }
+  if (handlers[key] == null) { handlers[key] = [] }
+  handlers[key].push(fn)
+  return this
+}
+
+/**
+ * Detects if key name or key code is supported and
+ * not constrained.
+ *
+ * @public
+ * @method
+ * @name isKeySupported
+ * @param {String|Number} key - Key name or key code.
+ * @return {Boolean}
+ */
+
+KeyboardController.prototype.isKeySupported = function (key) {
+  var constraints = this.scope.projections.constraints
+
+  // normalize key into keycode
+  key = typeof key === 'string' ? keycode(key) : key
+
+  // only keycode numbers are supported
+  if (typeof key !== 'number') { return false }
+
+  // false if there are any implicit constraints
+  // despite explicit support
+  if (constraints && constraints.keys) {
+    if (constraints.keys[key]) {
+      return false
+    }
+  }
+
+  // check if key is in supported array
+  if (this.state.supported.indexOf(key) === -1) {
+    return false
+  }
+
+  return true
+}
+
+/**
+ * Handle 'onkeydown' events.
+ *
+ * @private
+ * @name onkeydown
+ * @param {Event} - Event object.
+ */
+
+KeyboardController.prototype.onkeydown = function (e) {
+  var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused
+  var ctrlKey = e.ctrlKey
+  var metaKey = e.metaKey
+  var altKey = e.altKey
+  var code = e.which
+
+  /**
+   * Key down event.
+   *
+   * @public
+   * @event module:axis~Axis#keydown
+   * @type {Event}
+   */
+
+  this.scope.emit('keydown', e)
+
+  // ignore control keys
+  if (ctrlKey || metaKey || altKey) { return }
+
+  if (!this.state.isEnabled) {
+    return
+  }
+
+  if (isFocused) {
+    // only supported keys
+    if (!this.isKeySupported(code)) {
+      return
+    }
+
+    this.state.keystate[code] = true
+
+    // prevent default actions
+    e.preventDefault()
+  }
+}
+
+/**
+ * Handle 'onkeyup' events.
+ *
+ * @private
+ * @name onkeyup
+ * @param {Event} - Event object.
+ */
+
+KeyboardController.prototype.onkeyup = function (e) {
+  var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused
+  var code = e.which
+  this.state.keystate[code] = false
+  this.scope.emit('keyup', e)
+  if (isFocused) {
+    e.preventDefault()
+    this.state.forceUpdate = true
+    clearTimeout(this.state.keyupTimeout)
+    this.state.keyupTimeout = setTimeout(function () {
+      this.state.forceUpdate = false
+    }.bind(this), this.scope.state.controllerUpdateTimeout)
+  }
+}
+
+/**
+ * Handle `onmousedown' events.
+ *
+ * @private
+ * @name onmousedown
+ * @param {Event} - Event object.
+ */
+
+KeyboardController.prototype.onmousedown = function (e) {
+  if (e.target === this.scope.domElement ||
+      this.scope.domElement.contains(e.target)) {
+    this.scope.state.update('isFocused', true)
+  } else {
+    this.scope.state.update('isFocused', false)
+  }
+}
+
+},{"../constants":2,"./controller":3,"inherits":36,"yields-keycode":67}],5:[function(require,module,exports){
+
+'use strict'
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The mouse controls module.
+ *
+ * @module axis/controls/mouse
+ * @type {Function}
+ */
+
+void module.exports
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var inherits = require('inherits')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var AxisController = require('./controller')
+var constants = require('../constants')
+var util = require('../util')
+
+// default mouse friction value
+var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION
+
+/**
+ * Initializes mouse controls on Axis.
+ *
+ * @public
+ * @param {Axis} axis - The Axis instance.
+ * @return {MouseController}
+ */
+
+module.exports = function mouse (axis) {
+  return MouseController(axis)
+  .target(axis.camera)
+  .enable()
+}
+
+/**
+ * MouseController constructor
+ *
+ * @public
+ * @constructor
+ * @class MouseController
+ * @extends AxisController
+ * @see {@link module:axis/controls/controller~AxisController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.MouseController = MouseController
+inherits(MouseController, AxisController)
+function MouseController (scope) {
+  if (!(this instanceof MouseController)) {
+    return new MouseController(scope)
+  }
+
+  // inherit from `AxisController'
+  AxisController.call(this, scope)
+
+  /**
+   * Mouse controller movements.
+   *
+   * @public
+   * @name state.movements
+   * @type {Object}
+   */
+
+  this.state.movements = {
+
+    /**
+     * X movement coordinate value.
+     *
+     * @public
+     * @name state.movement.x
+     * @type {Number}
+     */
+
+    x: 0,
+
+    /**
+     * Y movement coordinate value.
+     *
+     * @public
+     * @name state.movement.y
+     * @type {Number}
+     */
+
+    y: 0
+  }
+
+  /**
+   * Initial mouse controller movement.
+   *
+   * @public
+   * @name state.movementsStart
+   * @type {Object}
+   */
+
+  this.state.movementsStart = {
+
+    /**
+     * X movement start value.
+     *
+     * @public
+     * @name state.movementsStart.x
+     * @type {Object}
+     */
+
+    x: 0,
+
+    /**
+     * Y movement start value.
+     *
+     * @public
+     * @name state.movementsStart.y
+     * @type {Object}
+     */
+
+    y: 0
+  }
+
+  /**
+   * Is mousedown predicate.
+   *
+   * @public
+   * @name state.isMousedown
+   * @type {Boolean}
+   */
+
+  this.state.isMousedown = false
+
+  /**
+   * Mouseup timeout ID
+   *
+   * @public
+   * @name state.mouseupTimeout
+   * @type {Number}
+   */
+
+  this.state.mouseupTimeout = 0
+
+  // initialize event delegation.
+  this.events.bind('mouseleave')
+  this.events.bind('mousedown')
+  this.events.bind('mousemove')
+  this.events.bind('mouseup')
+}
+
+/**
+ * Handles 'onmousedown' events.
+ *
+ * @private
+ * @name onmousedown
+ * @param {Event} e - Event object.
+ */
+
+MouseController.prototype.onmousedown = function (e) {
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION
+  clearTimeout(this.state.mouseupTimeout)
+  this.state.forceUpdate = false
+  this.state.isMousedown = true
+  this.state.movementsStart.x = e.screenX * friction
+  this.state.movementsStart.y = e.screenY * friction
+}
+
+/**
+ * Handles 'onmouseup' events.
+ *
+ * @private
+ * @name onmouseup
+ * @param {Event} e - Event object.
+ */
+
+MouseController.prototype.onmouseup = function (e) {
+  this.state.forceUpdate = true
+  this.state.isMousedown = false
+  clearTimeout(this.state.mouseupTimeout)
+  this.state.mouseupTimeout = setTimeout(function () {
+    this.state.forceUpdate = false
+    this.state.movementsStart.x = 0
+    this.state.movementsStart.y = 0
+  }.bind(this), this.scope.state.controllerUpdateTimeout)
+}
+
+/**
+ * Handles 'onmousemove' events.
+ *
+ * @private
+ * @name onmousemove
+ * @param {Event} e - Event object.
+ */
+
+MouseController.prototype.onmousemove = function (e) {
+  var movements = this.state.movements
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION
+  var tmp = 0
+
+  // handle mouse movements only if the mouse controller is enabled
+  if (!this.state.isEnabled || !this.state.isMousedown) {
+    return
+  }
+
+  movements.x = (e.screenX * friction) - this.state.movementsStart.x
+  movements.y = (e.screenY * friction) - this.state.movementsStart.y
+
+  // normalized movements from event
+  util.normalizeMovements(e, movements)
+
+  // apply friction
+  movements.y *= friction / 2
+  movements.x *= friction
+
+  // swap for rotation
+  tmp = movements.y
+  movements.y = movements.x
+  movements.x = tmp
+
+  this.rotate(movements)
+  this.state.movementsStart.x = e.screenX * friction
+  this.state.movementsStart.y = e.screenY * friction
+}
+
+/**
+ * Handles 'onmousemove' events.
+ *
+ * @private
+ * @name onmousemove
+ * @param {Event} e - Event object.
+ */
+
+MouseController.prototype.onmouseleave = function () {
+  this.onmouseup()
+}
+
+/**
+ * Resets mouse controller state.
+ *
+ * @public
+ * @method
+ * @name reset
+ * @return {MouseController}
+ */
+
+MouseController.prototype.reset = function () {
+  clearTimeout(this.state.mouseupTimeout)
+  AxisController.prototype.reset.call(this)
+  this.state.isMousedown = false
+  this.state.mouseupTimeout = 0
+  this.state.movementsStart.x = 0
+  this.state.movementsStart.y = 0
+  this.state.movements.x = 0
+  this.state.movements.y = 0
+  return this
+}
+
+/**
+ * Implements AxisController#update() method.
+ *
+ * @public
+ * @method
+ * @name update
+ * @return {MouseController}
+ */
+
+MouseController.prototype.update = function () {
+  if (!this.state.isMousedown) { return this }
+  AxisController.prototype.update.call(this)
+  return this
+}
+
+},{"../constants":2,"../util":76,"./controller":3,"inherits":36}],6:[function(require,module,exports){
+
+'use strict'
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The movement controls module.
+ *
+ * @module axis/controls/movement
+ * @type {Function}
+ */
+
+void module.exports
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var inherits = require('inherits')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var MouseController = require('./mouse').MouseController
+var AxisController = require('./controller')
+var constants = require('../constants')
+
+/**
+ * Initializes movement controls on Axis.
+ *
+ * @public
+ * @param {Axis} scope - The axis instance
+ * @return {MovementController}
+ */
+
+module.exports = function movement (axis) {
+  return MovementController(axis).target(axis.camera)
+}
+
+/**
+ * MovementController constructor
+ *
+ * @public
+ * @constructor
+ * @class MovementController
+ * @extends MouseController
+ * @see {@link module:axis/controls/controller~MouseController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.MovementController = MovementController
+inherits(MovementController, MouseController)
+function MovementController (scope) {
+  // ensure instance
+  if (!(this instanceof MovementController)) {
+    return new MovementController(scope)
+  }
+
+  // inherit from `MouseController'
+  MouseController.call(this, scope)
+}
+
+/**
+ * Overloads MouseController#update() method.
+ *
+ * @public
+ * @method
+ * @name update
+ * @return {PointerController}
+ */
+
+MovementController.prototype.update = function () {
+  if (!this.state.isMousedown) { return this }
+  var movements = this.state.movements
+  this.rotate(movements)
+  AxisController.prototype.update.call(this)
+  return this
+}
+
+/**
+ * Overloads MouseController#onmousedown
+ *
+ * @private
+ * @name onmousedown
+ * @param {Event} e - Event object.
+ */
+
+MovementController.prototype.onmousedown = function (e) {
+  this.state.movements.x = 0
+  this.state.movements.y = 0
+  this.state.movementsStart.x = 0
+  this.state.movementsStart.y = 0
+  MouseController.prototype.onmousedown.call(this, e)
+}
+
+/**
+ * Overloads MouseController#onmousemove
+ *
+ * @private
+ * @name onmousemove
+ * @param {Event} e - Event object.
+ */
+
+MovementController.prototype.onmousemove = function (e) {
+  var movements = this.state.movements
+  var friction = this.scope.state.mouseFriction || constants.DEFAULT_MOUSE_MOVEMENT_FRICTION
+  var tmp = 0
+
+  // handle mouse movements only if the mouse controller is enabled
+  if (!this.state.isEnabled || !this.state.isMousedown) {
+    return
+  }
+
+  movements.x = (e.screenX * friction) - this.state.movementsStart.x
+  movements.y = (e.screenY * friction) - this.state.movementsStart.y
+
+  // apply friction
+  movements.y *= (friction)
+  movements.x *= (friction)
+
+  // swap for rotation
+  tmp = movements.y
+  movements.y = movements.x
+  movements.x = tmp
+
+  // invert for true directional movement
+  movements.x *= -1
+  movements.y *= -1
+}
+
+/**
+ * Overloads MouseController#onmousemove
+ *
+ * @private
+ * @name onmousemove
+ * @param {Event} e - Event object.
+ */
+
+MovementController.prototype.onmouseup = function (e) {
+  clearTimeout(this.state.mouseupTimeout)
+  this.state.isMousedown = false
+  this.state.movementsStart.x = 0
+  this.state.movementsStart.y = 0
+}
+
+},{"../constants":2,"./controller":3,"./mouse":5,"inherits":36}],7:[function(require,module,exports){
+
+'use strict'
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The orientation controls module.
+ *
+ * @module axis/controls/orientation
+ * @type {Function}
+ */
+
+void module.exports
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var inherits = require('inherits')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var AxisController = require('./controller')
+
+/**
+ * Converts degrees to radians
+ *
+ * @private
+ * @param {Number} degrees
+ */
+
+function dtor (degrees) {
+  return typeof degrees === 'number' && !isNaN(degrees)
+    ? (Math.PI / 180) * degrees
+    : 0
+}
+
+/**
+ * Initialize orientation controls on Axis.
+ *
+ * @public
+ * @param {Axis} scope - The axis instance
+ * @return {OrientationController}
+ */
+
+module.exports = function orientation (axis) {
+  return OrientationController(axis)
+  .target(axis.camera)
+  .enable()
+  .update()
+}
+
+/**
+ * OrientationController constructor
+ *
+ * @public
+ * @constructor
+ * @class OrientationController
+ * @extends AxisController
+ * @see {@link module:axis/controls/controller~AxisController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.OrientationController = OrientationController
+inherits(OrientationController, AxisController)
+function OrientationController (scope) {
+  // ensure instance
+  if (!(this instanceof OrientationController)) {
+    return new OrientationController(scope)
+  }
+
+  // inherit from `AxisController'
+  AxisController.call(this, scope, window)
+
+  /**
+   * The current device orientation angle in
+   * degrees.
+   *
+   * @public
+   * @name state.deviceOrientation
+   * @type {Number}
+   */
+
+  this.state.define('deviceOrientation', function () {
+    var angle = 0
+    var type = null
+    var orientation = (
+      window.screen.ourOrientation || // our injected orientation
+      window.screen.orientation || // webkit orientation
+      window.screen.mozOrientation || // firefox orientation
+      window.screen.msOrientation || // internet explorer orientation
+      null // unable to determine orientation object
+    )
+
+    if (orientation && orientation.type) {
+      type = orientation.type
+    }
+
+    if (orientation && orientation.angle) {
+      angle = orientation.angle
+    }
+
+    // attempt to polyfil angle falling back to 0
+    switch (type) {
+      case 'landscape-primary': return angle || 90
+      case 'landscape-secondary': return angle || -90
+      case 'portrait-secondary': return angle || 180
+      case 'portrait-primary': return angle || 0
+      default: return angle || window.orientation || 0
+    }
+  })
+
+  /**
+   * The current alpha angle rotation
+   *
+   * @public
+   * @name state.alpha
+   * @type {Number}
+   */
+
+  this.state.alpha = 0
+
+  /**
+   * The current beta angle rotation
+   *
+   * @public
+   * @name state.beta
+   * @type {Number}
+   */
+
+  this.state.beta = 0
+
+  /**
+   * The current gamma angle rotation
+   *
+   * @public
+   * @name state.gamma
+   * @type {Number}
+   */
+
+  this.state.gamma = 0
+
+  // Initialize event delegation
+  this.events.bind('deviceorientation')
+}
+
+/**
+ * Handle 'ondeviceorientation' event.
+ *
+ * @private
+ * @param {Event} e
+ */
+
+OrientationController.prototype.ondeviceorientation = function (e) {
+  this.state.alpha = e.alpha
+  this.state.beta = e.beta
+  this.state.gamma = e.gamma
+}
+
+/**
+ * Update orientation controller state.
+ *
+ * @public
+ */
+
+OrientationController.prototype.update = function () {
+  var interpolationFactor = this.scope.state.interpolationFactor
+  var alpha = dtor(this.state.alpha)
+  var beta = dtor(this.state.beta)
+  var gamma = dtor(this.state.gamma)
+
+  if (alpha !== 0 && beta !== 0 && gamma !== 0) {
+    this.state.eulers.device.set(beta, alpha, -gamma, 'YXZ')
+    this.state.quaternions.direction.setFromEuler(
+      this.state.eulers.device
+    )
+
+    if (this.scope.controls.touch) {
+      this.state.quaternions.direction.multiply(
+        this.scope.controls.touch.state.quaternions.touch
+      )
+    }
+    // this.state.quaternions.direction.multiply(this.state.quaternions.device);
+    // this.state.quaternions.direction.multiply(this.state.quaternions.world);
+    // AxisController.prototype.update.call(this);
+    this.state.target.quaternion.slerp(this.state.quaternions.direction,
+                                       interpolationFactor)
+  }
+  return this
+}
+
+},{"./controller":3,"inherits":36}],8:[function(require,module,exports){
+
+'use strict'
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The pointer controls module.
+ *
+ * @module axis/controls/pointer
+ * @type {Function}
+ */
+
+void module.exports
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var inherits = require('inherits')
+var lock = require('pointer-lock')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var MouseController = require('./mouse').MouseController
+var AxisController = require('./controller')
+var constants = require('../constants')
+
+/**
+ * Initializes pointer controls on Axis.
+ *
+ * @public
+ * @param {Axis} scope - The axis instance
+ * @return {PointerController}
+ */
+
+module.exports = function pointer (axis) {
+  return PointerController(axis).target(axis.camera)
+}
+
+/**
+ * PointerController constructor
+ *
+ * @public
+ * @constructor
+ * @class PointerController
+ * @extends MouseController
+ * @see {@link module:axis/controls/controller~MouseController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.PointerController = PointerController
+inherits(PointerController, MouseController)
+function PointerController (scope) {
+  // ensure instance
+  if (!(this instanceof PointerController)) {
+    return new PointerController(scope)
+  }
+
+  // inherit from `MouseController'
+  MouseController.call(this, scope)
+
+  /**
+   * Pointer lock on scopes DOM Element
+   *
+   * @public
+   * @name state.lock
+   * @type {EventEmitter}
+   */
+
+  this.state.lock = null
+}
+
+/**
+ * Enables mouse pointer lock
+ *
+ * @public
+ * @method
+ * @name enable
+ * @return {PointerController}
+ */
+
+PointerController.prototype.enable = function () {
+  // init lock if not created
+  if (this.state.lock == null) {
+    this.state.lock = lock(this.scope.domElement)
+  }
+
+  return MouseController.prototype.enable.call(this)
+}
+
+/**
+ * Disables mouse pointer lock
+ *
+ * @public
+ * @method
+ * @name disable
+ * @return {PointerController}
+ */
+
+PointerController.prototype.disable = function () {
+  // init lock if not created
+  if (this.state.lock != null) {
+    this.state.isMousedown = false
+    this.state.lock.destroy()
+  }
+  return MouseController.prototype.disable.call(this)
+}
+
+/**
+ * Request mouse pointer lock.
+ *
+ * @private
+ * @method
+ * @name request
+ * @return {PointerController}
+ */
+
+PointerController.prototype.request = function () {
+  var friction = this.scope.state.mouseFriction || constants.DEFAULT_MOUSE_MOVEMENT_FRICTION
+  var self = this
+
+  // request lock from user
+  this.state.lock.request()
+
+  // handle updates when attained
+  this.state.lock.on('attain', function () {
+    var movements = self.state.movements
+    self.state.isMousedown = true
+    // update movements when lock has been attained
+    self.state.lock.on('data', function (e) {
+      self.state.isMousedown = true
+      movements.x += e.x
+      movements.y += e.y
+      // apply friction
+      movements.y *= (friction / 4)
+      movements.x *= (friction / 4)
+    })
+
+    // reset state when released
+    self.state.lock.on('release', function () {
+      self.state.isMousedown = false
+      if (self.state.lock) {
+        self.state.lock.destroy()
+      }
+    })
+  })
+
+  return this
+}
+
+/**
+ * Overloads MouseController#update() method.
+ *
+ * @public
+ * @method
+ * @name update
+ * @return {PointerController}
+ */
+
+PointerController.prototype.update = function () {
+  AxisController.prototype.update.call(this)
+  return this
+}
+
+/**
+ * Overloads MouseController#disable() method.
+ *
+ * @public
+ * @method
+ * @name disable
+ * @return {PointerController}
+ */
+
+PointerController.prototype.disable = function () {
+  MouseController.prototype.disable.call(this)
+  if (this.state.lock != null) {
+    this.state.lock.release()
+    this.state.lock.destroy()
+  }
+  this.state.lock = null
+  return this
+}
+
+},{"../constants":2,"./controller":3,"./mouse":5,"inherits":36,"pointer-lock":42}],9:[function(require,module,exports){
+
+'use strict'
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The touch controls module.
+ *
+ * @module axis/controls/touch
+ * @type {Function}
+ */
+
+void module.exports
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var inherits = require('inherits')
+var three = require('three')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var AxisController = require('./controller')
+
+/**
+ * Initializes touch controls on Axis.
+ *
+ * @public
+ * @param {Axis} scope - The axis instance
+ * @return {TouchController}
+ */
+
+module.exports = function touch (axis) {
+  return TouchController(axis)
+  .target(axis.camera)
+  .enable()
+  .update()
+}
+
+/**
+ * TouchController constructor
+ *
+ * @public
+ * @constructor
+ * @class TouchController
+ * @extends AxisController
+ * @see {@link module:axis/controls/controller~AxisController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.TouchController = TouchController
+inherits(TouchController, AxisController)
+function TouchController (scope) {
+  // ensure instance
+  if (!(this instanceof TouchController)) {
+    return new TouchController(scope)
+  }
+
+  // inherit from `AxisController'
+  AxisController.call(this, scope, document)
+
+  /**
+   * Predicate indicating if touching.
+   *
+   * @public
+   * @name state.isTouching
+   * @type {Boolean}
+   */
+
+  this.state.isTouching = false
+
+  /**
+   * Drag state
+   *
+   * @public
+   * @name state.drag
+   * @type {Object}
+   */
+
+  this.state.drag = {
+
+    /**
+     * X coordinate drag state
+     *
+     * @public
+     * @name state.drag.x
+     * @type {Number}
+     */
+
+    x: 0,
+
+    /**
+     * Y coordinate drag state
+     *
+     * @public
+     * @name state.drag.y
+     * @type {Number}
+     */
+
+    y: 0
+  }
+
+  /**
+   * Current touchs
+   *
+   * @public
+   * @name state.touches
+   * @type {Array}
+   */
+
+  this.state.touches = []
+
+  /**
+   * Current touch quaternion
+   *
+   * @public
+   * @name state.quaternions.touch
+   * @type {THREE.Quaternion}
+   */
+
+  this.state.quaternions.touch = new three.Quaternion()
+
+  // initialize event delegation
+  this.events.bind('touchstart')
+  this.events.bind('touchmove')
+  this.events.bind('touchend')
+  this.events.bind('touch')
+}
+
+/**
+ * Handle 'ontouchstart' event.
+ *
+ * @private
+ * @param {Event} e
+ */
+
+TouchController.prototype.ontouchstart = function (e) {
+  var touch = e.touches[0]
+  this.state.isTouching = true
+  this.state.touches = e.touches
+  this.state.drag.x = touch.pageX
+  this.state.drag.y = touch.pageY
+}
+
+/**
+ * Handle 'ontouchmove' event.
+ *
+ * @private
+ * @param {Event} e
+ */
+
+TouchController.prototype.ontouchmove = function (e) {
+  var touch = e.touches[0]
+  var x = touch.pageX - this.state.drag.x
+  var y = touch.pageY - this.state.drag.y
+  if (this.scope.domElement.contains(e.target)) {
+    this.state.drag.x = touch.pageX
+    this.state.drag.y = touch.pageY
+    this.rotate({x: x, y: y})
+  }
+}
+
+/**
+ * Handle 'ontouchend' event.
+ *
+ * @private
+ * @param {Event} e
+ */
+
+TouchController.prototype.ontouchend = function (e) {
+  this.state.isTouching = false
+}
+
+/**
+ * Update touch controller state.
+ *
+ * @public
+ */
+
+TouchController.prototype.update = function () {
+  if (!this.state.isTouching) { return this }
+  AxisController.prototype.update.call(this)
+  this.state.quaternions.touch.copy(this.state.target.quaternion)
+  return this
+}
+
+},{"./controller":3,"inherits":36,"three":63}],10:[function(require,module,exports){
+
+'use strict'
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The vr controls module.
+ *
+ * @module axis/controls/vr
+ * @type {Function}
+ */
+
+void module.exports
+
+/**
+ * Module dependencies.
+ * @private
+ */
+
+var three = require('three')
+var inherits = require('inherits')
+var createCamera = require('../camera')
+
+/**
+ * Local dependencies.
+ * @private
+ */
+
+var AxisController = require('./controller')
+
+/**
+ * Converts a field of view tangent object with
+ * up, down, left, and right values in degrees
+ * to X and Y scales and offsets.
+ *
+ * @private
+ * @param {Object} tangent - Field of view tangent object.
+ * @param {Number} tangent.up - Field of view up tangent.
+ * @param {Number} tangent.right - Field of view right tangent.
+ * @param {Number} tangent.down - Field of view down tangent.
+ * @param {Number} tangent.left - Field of view left tangent.
+ * @return {Object}
+ */
+
+function fieldOfViewTangentToScaleAndOffset (tangent) {
+  var scale = {x: 0, y: 0}
+  var offset = {x: 0, y: 0}
+
+  // build scale
+  scale.x = 2 / (tangent.left + tangent.right)
+  scale.y = 2 / (tangent.up + tangent.down)
+
+  // build offset
+  offset.x = (tangent.left - tangent.right) * scale.x * 0.5
+  offset.y = (tangent.up - tangent.down) * scale.y * 0.5
+
+  return {scale: scale, offset: offset}
+}
+
+/**
+ * Creates a projection matrix from an eye translation
+ * object containing directional values in degrees.
+ *
+ * @private
+ * @param {EyeTranslation} eye - Eye translation
+ * @param {Number} near - Current camera near frustum plane value.
+ * @param {Number} far - Current camera far frustum plane value.
+ * @return {THREE.Matrix4}
+ */
+
+function eyeTranslationToProjection (eye, near, far) {
+  var dtor = Math.PI / 180.0
+  var scale = -1
+  var matrix = new three.Matrix4()
+  var m = matrix.elements
+  var tangent = {}
+  var scaleAndOffset = null
+
+  tangent.up = Math.tan(eye.upDegrees * dtor)
+  tangent.down = Math.tan(eye.downDegrees * dtor)
+  tangent.left = Math.tan(eye.leftDegrees * dtor)
+  tangent.right = Math.tan(eye.rightDegrees * dtor)
+
+  scaleAndOffset = fieldOfViewTangentToScaleAndOffset(tangent)
+
+  near = near == null ? 0.01 : near
+  far = far == null ? 10000 : far
+
+  // X result, map clip edges to [-w,+w]
+  m[0 * 4 + 0] = scaleAndOffset.scale.x
+  m[0 * 4 + 1] = 0
+  m[0 * 4 + 2] = scaleAndOffset.offset.x * scale
+  m[0 * 4 + 3] = 0
+
+  // Y result, map clip edges to [-w,+w]
+  // Y offset is negated because this proj matrix transforms from world coords with Y=up,
+  // but the NDC scaling has Y=down (thanks D3D?)
+  m[1 * 4 + 0] = 0
+  m[1 * 4 + 1] = scaleAndOffset.scale.y
+  m[1 * 4 + 2] = -scaleAndOffset.offset.y * scale
+  m[1 * 4 + 3] = 0
+
+  // Z result (up to the app)
+  m[2 * 4 + 0] = 0
+  m[2 * 4 + 1] = 0
+  m[2 * 4 + 2] = far / (near - far) * -scale
+  m[2 * 4 + 3] = (far * near) / (near - far)
+
+  // W result (= Z in)
+  m[3 * 4 + 0] = 0
+  m[3 * 4 + 1] = 0
+  m[3 * 4 + 2] = scale
+  m[3 * 4 + 3] = 0
+
+  matrix.transpose()
+
+  return matrix
+}
+
+/**
+ * EyeFieldOfView constructor
+ *
+ * @private
+ * @class EyeFieldOfView
+ * @constructor
+ * @param {Number} up - Up degrees offset.
+ * @param {Number} right - Right degrees offset.
+ * @param {Number} down - Down degrees offset.
+ * @param {Number} left - Left degrees offset.
+ */
+
+function EyeFieldOfView (up, right, down, left) {
+  if (!(this instanceof EyeFieldOfView)) {
+    return new EyeFieldOfView(up, right, down, left)
+  }
+  this.set(up, right, down, left)
+}
+
+/**
+ * Set degrees for eye field of view.
+ *
+ * @public
+ * @param {Number} up - Up degrees offset.
+ * @param {Number} right - Right degrees offset.
+ * @param {Number} down - Down degrees offset.
+ * @param {Number} left - Left degrees offset.
+ */
+
+EyeFieldOfView.prototype.set = function (up, right, down, left) {
+  this.upDegrees = up || 0
+  this.rightDegrees = right || 0
+  this.downDegrees = down || 0
+  this.leftDegrees = left || 0
+  return this
+}
+
+/**
+ * EyeTranslation constructor
+ *
+ * @private
+ * @class EyeTranslation
+ * @constructor
+ * @extends THREE.Quaternion
+ * @param {Number} x - X coordinate.
+ * @param {Number} y - Y coordinate.
+ * @param {Number} z - Z coordinate.
+ * @param {Number} w - W coordinate.
+ */
+
+inherits(EyeTranslation, three.Quaternion)
+function EyeTranslation (x, y, z, w) {
+  if (!(this instanceof EyeTranslation)) {
+    return new EyeTranslation(x, y, z, w)
+  }
+  three.Quaternion.call(this, x, y, z, w)
+}
+
+/**
+ * Initialize vr controls on Axis.
+ *
+ * @public
+ * @param {Axis} scope - The axis instance
+ * @return {VRController}
+ */
+
+module.exports = function vr (axis) {
+  return VRController(axis)
+  .target(axis.camera)
+  .enable()
+  .update()
+}
+
+/**
+ * VRController constructor
+ *
+ * @public
+ * @constructor
+ * @class VRController
+ * @extends AxisController
+ * @see {@link module:axis/controls/controller~AxisController}
+ * @param {Axis} scope - The axis instance
+ */
+
+module.exports.VRController = VRController
+inherits(VRController, AxisController)
+function VRController (scope) {
+  // ensure instance
+  if (!(this instanceof VRController)) {
+    return new VRController(scope)
+  }
+
+  // inherit from `AxisController'
+  AxisController.call(this, scope)
+
+  /**
+   * Reference to this instance.
+   *
+   * @private
+   * @type {VRController}
+   */
+
+  var self = this
+
+  /**
+   * Current connected HMD.
+   *
+   * @public
+   * @type {HMDVRDevice}
+   * @name state.hmd
+   */
+
+  this.state.hmd = null
+
+  /**
+   * Current connected HMD position sensor.
+   *
+   * @public
+   * @type {PositionSensorVRDevice}
+   * @name state.sensor
+   */
+
+  this.state.sensor = null
+
+  /**
+   * Translation scale factor
+   *
+   * @public
+   * @type {Number}
+   * @name state.scale
+   */
+
+  this.state.scale = 1
+
+  /**
+   * VR cameras.
+   *
+   * @public
+   * @type {Object}
+   * @name state.cameras
+   */
+  this.state.cameras = {
+    left: new three.PerspectiveCamera(),
+    right: new three.PerspectiveCamera()
+  }
+
+  /**
+   * VR Scenes.
+   *
+   * @public
+   * @type {Object}
+   * @name state.scenes
+   */
+
+  this.state.scenes = {
+
+    /**
+     * Left VR scene.
+     *
+     * @public
+     * @type {THREE.Scene}
+     * @name state.scenes.left
+     */
+
+    left_: null,
+    get left () { return this.left_ || self.scope.scene },
+    set left (scene) { this.left_ = scene },
+
+    /**
+     * Right VR scene.
+     *
+     * @public
+     * @type {THREE.Scene}
+     * @name state.scenes.right
+     */
+
+    right_: null,
+    get right () { return this.right_ || self.scope.scene },
+    set right (scene) { this.right_ = scene }
+  }
+
+  /**
+   * Eye states.
+   *
+   * @public
+   * @type {Object}
+   * @name state.eyes
+   */
+
+  this.state.eyes = {
+
+    /**
+     * Eye field of view states.
+     *
+     * @public
+     * @type {Object}
+     * @name state.eyes.fov
+     */
+
+    fov: {
+
+      /**
+       * Right field of view state.
+       *
+       * @public
+       * @type {EyeFieldOfView}
+       * @name state.eyes.fov.right
+       */
+
+      right: new EyeFieldOfView(),
+
+      /**
+       * Leftfield of view state.
+       *
+       * @public
+       * @type {EyeFieldOfView}
+       * @name state.eyes.fov.left
+       */
+
+      left: new EyeFieldOfView()
+    },
+
+    /**
+     * Current eye translation states.
+     *
+     * @public
+     * @type {Object}
+     * @name state.eyes.translations
+     */
+
+    translation: {
+
+      /**
+       * Left eye translation state.
+       *
+       * @public
+       * @type {EyeTranslation}
+       * @name state.eyes.translation.left
+       */
+
+      left: new EyeTranslation(),
+
+      /**
+       * Right eye translation state.
+       *
+       * @public
+       * @type {EyeTranslation}
+       * @name state.eyes.translation.right
+       */
+
+      right: new EyeTranslation()
+    }
+  }
+}
+
+/**
+ * Update vr controller state.
+ *
+ * @public
+ */
+
+VRController.prototype.update = function () {
+  var renderer = this.scope.renderer
+  var camera = this.scope.camera
+  var sensor = this.scope.state.vrPositionSensor
+  var height = renderer.domElement.height
+  var width = renderer.domElement.width / 2
+  var right = this.state.scenes.right
+  var left = this.state.scenes.left
+  var eyes = this.state.eyes
+  var near = camera.near
+  var far = camera.far
+  var hmd = this.scope.state.vrHMD
+
+  if (!this.scope.state.isVREnabled) {
+    this.target(createCamera(this.scope))
+    return this
+  }
+
+  renderer.enableScissorTest(true)
+  renderer.clear()
+
+  if (camera.parent == null) {
+    camera.updateMatrixWorld()
+  }
+
+  function setHMDEyeParamaters (which) {
+    var eyeParams = null
+    var eyeTranslation = null
+    var eyeFov = null
+
+    if (typeof hmd.getEyeParameters === 'function') {
+      eyeParams = hmd.getEyeParameters(which)
+      eyeTranslation = eyeParams.eyeTranslation
+      eyeFov = eyeParams.recommendedFieldOfView
+    } else {
+      eyeTranslation = hmd.getEyeTranslation(which)
+      eyeFov = hmd.getRecommendedEyeFieldOfView(which)
+    }
+
+    eyes.translation[which].set(eyeTranslation.x,
+                                eyeTranslation.y,
+                                eyeTranslation.z,
+                                eyeTranslation.w)
+
+    eyes.fov[which].set(eyeFov.upDegrees,
+                        eyeFov.rightDegrees,
+                        eyeFov.downDegrees,
+                        eyeFov.leftDegrees)
+  }
+
+  if (hmd != null && sensor != null) {
+    // set eye translations and field of views
+    setHMDEyeParamaters('left')
+    setHMDEyeParamaters('right')
+
+    this.state.cameras.left.projectionMatrix = (
+      eyeTranslationToProjection(eyes.fov.left, near, far)
+    )
+
+    this.state.cameras.right.projectionMatrix = (
+      eyeTranslationToProjection(eyes.fov.right, near, far)
+    )
+
+    this.state.cameras.left.translateX(
+      eyes.translation.left.x * this.state.scale)
+
+    this.state.cameras.right.translateX(
+      eyes.translation.right.x * this.state.scale)
+  }
+
+  // decompose left camera into current camera matrix
+  camera.matrixWorld.decompose(this.state.cameras.left.position,
+                               this.state.cameras.left.quaternion,
+                               this.state.cameras.left.scale)
+
+  // decompose right camera into current camera matrix
+  camera.matrixWorld.decompose(this.state.cameras.right.position,
+                               this.state.cameras.right.quaternion,
+                               this.state.cameras.right.scale)
+
+  // left eye
+  renderer.setViewport(0, 0, width, height)
+  renderer.setScissor(0, 0, width, height)
+  renderer.render(left, this.state.cameras.left)
+
+  // right eye
+  renderer.setViewport(width, 0, width, height)
+  renderer.setScissor(width, 0, width, height)
+  renderer.render(right, this.state.cameras.right)
+
+  renderer.enableScissorTest(false)
+
+  return this
+}
+
+},{"../camera":1,"./controller":3,"inherits":36,"three":63}],11:[function(require,module,exports){
+'use strict'
+
+/**
+ * Module dependencies
+ */
+
+var three = require('three')
+
+/**
+ * Creates and returns a `BoxGeometry'
+ * geometry instance.
+ *
+ * @api public
+ * @param {Axis} axis
+ */
+
+module.exports = function box (axis) {
+  return new three.BoxGeometry(400, 400, 400)
+}
+
+},{"three":63}],12:[function(require,module,exports){
+
+/**
+ * Module dependencies
+ */
+
+var three = require('three')
+
+/**
+ * Creates and returns a `CylinderGeometry'
+ * geometry instance.
+ *
+ * @api public
+ * @param {Axis} axis
+ */
+
+module.exports = function (axis) {
+  var radiusSegments = 64
+  var heightSegments = 4
+  var openEnded = true
+  var radius = axis.state.radius
+  var height = axis.dimensions().height
+  return new three.CylinderGeometry(radius,
+                                    radius,
+                                    height,
+                                    radiusSegments,
+                                    heightSegments,
+                                    openEnded)
+}
+
+},{"three":63}],13:[function(require,module,exports){
+exports.cylinder = require('./cylinder')
+exports.sphere = require('./sphere')
+exports.plane = require('./plane')
+exports.box = require('./box')
+
+},{"./box":11,"./cylinder":12,"./plane":14,"./sphere":15}],14:[function(require,module,exports){
+
+/**
+ * Module dependencies
+ */
+
+var three = require('three')
+
+/**
+ * Creates and returns a `PlaneBufferGeometry'
+ * geometry instance.
+ *
+ * @api public
+ * @param {Axis} axis
+ */
+
+module.exports = function plane (axis) {
+  var width = axis.width()
+  var height = axis.height()
+  var segments = 4
+  return new three.PlaneBufferGeometry(width,
+                                       height,
+                                       segments)
+}
+
+},{"three":63}],15:[function(require,module,exports){
+'use strict'
+
+/**
+ * Module dependencies
+ */
+
+var three = require('three')
+
+/**
+ * Creates and returns a `SphereGeometry'
+ * geometry instance.
+ *
+ * @api public
+ * @param {Axis} axis
+ */
+
+module.exports = function sphere (axis) {
+  var heightSegments = 8 << 5
+  var widthSegments = 8 << 5
+  var radius = axis.state.radius
+  var phi = Math.PI * 2
+
+  if (radius < 400) {
+    radius = 200
+  } else if (radius > 600) {
+    radius = 400
+  }
+
+  return new three.SphereGeometry(radius,
+                                  widthSegments,
+                                  heightSegments,
+                                  phi)
+}
+
+},{"three":63}],16:[function(require,module,exports){
+
+'use strict'
 
 /**
  * @license
@@ -137,67 +3300,63 @@
  * @private
  */
 
-var three = require('three.js')
-  , dom = require('domify')
-  , emitter = require('emitter')
-  , events = require('events')
-  , raf = require('raf')
-  , hasWebGL = require('has-webgl')
-  , fullscreen = require('fullscreen')
-  , keycode = require('keycode')
-  , merge = require('merge')
-  , pkg = require('./package.json')
+var three = require('three')
+var dom = require('domify')
+var emitter = require('component-emitter')
+var events = require('component-events')
+var raf = require('raf')
+var hasWebGL = require('has-webgl')
+var fullscreen = require('@littlstar/fullscreen')
+var merge = require('merge')
+var pkg = require('./package.json')
 
 /**
  * Local dependencies
  * @private
  */
 
-var tpl = require('./template.html')
-  , Projection = require('./projection')
-  , createCamera = require('./camera')
-  , geometries = require('./geometry')
-  , State = require('./state')
-  , isImage = require('./util').isImage
-  , constants = require('./constants')
+var tpl = require('./template')
+var Projection = require('./projection')
+var createCamera = require('./camera')
+var geometries = require('./geometry')
+var State = require('./state')
+var isImage = require('./util').isImage
+var constants = require('./constants')
 
 // install THREE.js addons
-Axis.THREE = three;
-require('three-canvas-renderer')(three);
-require('three-vr-effect')(three);
+Axis.THREE = three
+require('@littlstar/three-canvas-renderer')(three)
+require('@littlstar/three-vr-effect')(three)
 
 // uncomment to enable debugging
-//window.DEBUG = true;
+// window.DEBUG = true;
 
-var COMPANY = "LITTLSTAR - (www.Littlstar.com) [Little Star Media, Inc] ";
-var YEAR = (new Date).getUTCFullYear();
-console.info("Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %d %s",
+var COMPANY = 'LITTLSTAR - (www.Littlstar.com) [Little Star Media, Inc] '
+var YEAR = new Date().getUTCFullYear()
+console.info('Axis@v%s\n\tReport bugs to %s (%s)\n\tCopyright %d %s',
             pkg.version,
             pkg.bugs.url,
             pkg.bugs.email,
-            YEAR, COMPANY);
+            YEAR, COMPANY)
 
 // frame click threshold
-var FRAME_CLICK_THRESHOLD = constants.FRAME_CLICK_THRESHOLD;
+var FRAME_CLICK_THRESHOLD = constants.FRAME_CLICK_THRESHOLD
 
 // min/max wheel distances
-var MIN_WHEEL_DISTANCE = constants.MIN_WHEEL_DISTANCE;
-var MAX_WHEEL_DISTANCE = constants.MAX_WHEEL_DISTANCE;
+var MIN_WHEEL_DISTANCE = constants.MIN_WHEEL_DISTANCE
+var MAX_WHEEL_DISTANCE = constants.MAX_WHEEL_DISTANCE
 
 // min/max x/y coordinates
-var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE;
-var MAX_Y_COORDINATE = constants.MAX_Y_COORDINATE;
-var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
-var MAX_X_COORDINATE = constants.MAX_X_COORDINATE;
+var MIN_Y_COORDINATE = constants.MIN_Y_COORDINATE
+var MAX_Y_COORDINATE = constants.MAX_Y_COORDINATE
+var MIN_X_COORDINATE = constants.MIN_X_COORDINATE
+var MAX_X_COORDINATE = constants.MAX_X_COORDINATE
 
 // defaults
-var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
-var CYLINDER_FOV = constants.CYLINDER_FOV;
-var MAX_CALC_FOV = constants.MAX_CALC_FOV;
-var DEFAULT_FOV = constants.DEFAULT_FOV;
+var DEFAULT_FOV = constants.DEFAULT_FOV
 
 // expose util
-Axis.util = require('./util');
+Axis.util = require('./util')
 
 /**
  * Creates the correct geometry for
@@ -209,26 +3368,25 @@ Axis.util = require('./util');
  */
 
 function getCorrectGeometry (axis, override) {
-  var dimensions = axis.dimensions();
-  var ratio = dimensions.ratio;
-  var geo = null;
-  var m = Math.sqrt(ratio);
+  var dimensions = axis.dimensions()
+  var ratio = dimensions.ratio
+  var geo = null
+  var m = Math.sqrt(ratio)
 
   if (override) {
-    geo = axis.geometry(override);
+    geo = axis.geometry(override)
   } else if (axis.state.options.box) {
-    geo = axis.geometry('box');
-  } else if ('flat' == axis.state.projectionrequested) {
+    geo = axis.geometry('box')
+  } else if (axis.state.projectionrequested === 'flat') {
     geo = axis.geometry('plane')
   } else if (m <= 2) {
-    geo = axis.geometry('sphere');
-  } else if (ratio == ratio) {
-    geo = axis.geometry('cylinder');
+    geo = axis.geometry('sphere')
+  } else if (!isNaN(ratio)) {
+    geo = axis.geometry('cylinder')
   }
 
-  return geo;
+  return geo
 }
-
 
 /**
  * Creates a renderer based on options
@@ -239,19 +3397,19 @@ function getCorrectGeometry (axis, override) {
  */
 
 function createRenderer (opts) {
-  opts = opts || {};
-  var useWebgl = false != opts.webgl && hasWebGL;
+  opts = opts || {}
+  var useWebgl = !opts.webgl && hasWebGL
 
-  if ('object' == typeof opts.renderer) {
-    return opts.renderer;
+  if (typeof opts.renderer === 'object') {
+    return opts.renderer
   }
 
   if (useWebgl) {
     return new three.WebGLRenderer({
-      //antialias: true,
-    });
+      // antialias: true,
+    })
   } else {
-    return new three.CanvasRenderer();
+    return new three.CanvasRenderer()
   }
 }
 
@@ -264,18 +3422,18 @@ function createRenderer (opts) {
  */
 
 function createVideoTexture (video) {
-  var texture = null;
-  video.width = video.videoWidth;
-  video.height = video.videoHeight;
-  texture = new three.Texture(video);
+  var texture = null
+  video.width = video.videoWidth
+  video.height = video.videoHeight
+  texture = new three.Texture(video)
 
-  texture.format = three.RGBFormat;
-  texture.minFilter = three.LinearFilter;
-  texture.magFilter = three.LinearFilter;
-  texture.image.width = video.videoWidth;
-  texture.image.height = video.videoHeight;
+  texture.format = three.RGBFormat
+  texture.minFilter = three.LinearFilter
+  texture.magFilter = three.LinearFilter
+  texture.image.width = video.videoWidth
+  texture.image.height = video.videoHeight
 
-  return texture;
+  return texture
 }
 
 /**
@@ -291,152 +3449,147 @@ function createVideoTexture (video) {
  * @see {@link module:axis/state~State}
  */
 
-module.exports = Axis;
+module.exports = Axis
 function Axis (parent, opts) {
-
   // normalize options
-  opts = (opts = opts || {});
+  opts = (opts = opts || {})
 
   // disable vr if `navigator.getVRDevices' isn't defined
-  if ('function' != typeof navigator.getVRDevices) {
-    opts.vr = false;
+  if (typeof navigator.getVRDevices !== 'function') {
+    opts.vr = false
   }
 
   // ensure instance
   if (!(this instanceof Axis)) {
-    return new Axis(parent, opts);
-  } else if (!(parent instanceof Element)) {
-    throw new TypeError("Expecting DOM Element");
+    return new Axis(parent, opts)
+  } else if (!(parent instanceof window.Element)) {
+    throw new TypeError('Expecting DOM Element')
   }
 
-  var self = this;
+  var self = this
 
   /** Parent DOM node element. */
-  this.parent = parent;
+  this.parent = parent
 
   /** Instance constainer DOM element. */
-  this.domElement = dom(tpl);
+  this.domElement = dom(tpl)
 
   /** Current axis orientation. */
-  this.orientation = {x: 0, y: 0};
+  this.orientation = {x: 0, y: 0}
 
   /** Instance video DOM element. */
-  this.video = this.domElement.querySelector('video');
-  this.video.onerror = console.warn.bind(console);
-  this.video.parentElement.removeChild(this.video);
+  this.video = this.domElement.querySelector('video')
+  this.video.onerror = console.warn.bind(console)
+  this.video.parentElement.removeChild(this.video)
 
   /** Axis' scene instance. */
-  this.scene = null;
+  this.scene = null
 
   /** Axis' renderer instance.*/
-  this.renderer = createRenderer(opts);
+  this.renderer = createRenderer(opts)
 
-  if (true == opts.allowPreviewFrame && !isImage(opts.src)) {
-    delete opts.allowPreviewFrame;
-    opts.isPreviewFrame = true;
-    this.previewDomElement = document.createElement('div');
-    this.previewFrame = new Axis(this.previewDomElement, opts);
+  if (opts.allowPreviewFrame && !isImage(opts.src)) {
+    delete opts.allowPreviewFrame
+    opts.isPreviewFrame = true
+    this.previewDomElement = document.createElement('div')
+    this.previewFrame = new Axis(this.previewDomElement, opts)
     this.previewFrame.once('ready', function () {
-      self.previewFrame.video.volume = 0;
-      self.previewFrame.video.muted = true;
-      self.previewFrame.video.currentTime = 0;
-      self.previewFrame.video.pause();
-    });
-    delete opts.isPreviewFrame;
+      self.previewFrame.video.volume = 0
+      self.previewFrame.video.muted = true
+      self.previewFrame.video.currentTime = 0
+      self.previewFrame.video.pause()
+    })
+    delete opts.isPreviewFrame
     this.once('render', function () {
-      this.previewFrame.render();
-    });
+      this.previewFrame.render()
+    })
   }
 
   /** Axis' texture instance. */
-  this.texture = null;
+  this.texture = null
 
   /** Axis' controllers. */
-  this.controls = {};
+  this.controls = {}
 
   /** Axis' state instance. */
-  this.state = new State(this, opts);
+  this.state = new State(this, opts)
 
   /** Axis' projections instance. */
-  this.projections = new Projection(this);
+  this.projections = new Projection(this)
 
   // install viewport projections
-  this.projection('flat', require('./projection/flat'));
-  this.projection('fisheye', require('./projection/fisheye'));
-  this.projection('equilinear', require('./projection/equilinear'));
-  this.projection('tinyplanet', require('./projection/tinyplanet'));
+  this.projection('flat', require('./projection/flat'))
+  this.projection('fisheye', require('./projection/fisheye'))
+  this.projection('equilinear', require('./projection/equilinear'))
+  this.projection('tinyplanet', require('./projection/tinyplanet'))
 
   /** Axis' camera instance. */
-  this.camera = createCamera(this);
+  this.camera = createCamera(this)
 
   function getRadius () {
-    var dimensions = self.dimensions();
-    var radius = 0;
-    if ('cylinder' == self.geometry() ||
+    var dimensions = self.dimensions()
+    var radius = 0
+    if (self.geometry() === 'cylinder' ||
         Math.sqrt(dimensions.ratio) <= 2) {
-      radius = dimensions.width / 4;
-      radius = radius / 2;
+      radius = dimensions.width / 4
+      radius = radius / 2
     } else {
-      radius = dimensions.width / 6;
+      radius = dimensions.width / 6
     }
-    return radius | 0;
+    return radius | 0
   }
 
   // setup default state when ready
   this.once('ready', function () {
-    this.debug('ready');
+    this.debug('ready')
 
     if (opts.time || opts.t) {
-      self.video.currentTime = parseFloat(opts.time) || parseFloat(opts.t) || 0;
+      self.video.currentTime = parseFloat(opts.time) || parseFloat(opts.t) || 0
     }
 
-    var radius = 0;
-    var aspect = this.camera.aspect || 1;
-    var far = this.camera.far;
-    var fov = opts.fov;
-    var x = opts && opts.orientation ? opts.orientation.x : 0;
-    var y = opts && opts.orientation ? opts.orientation.y : Math.PI/2
+    var fov = opts.fov
+    var x = opts && opts.orientation ? opts.orientation.x : 0
+    var y = opts && opts.orientation ? opts.orientation.y : Math.PI / 2
 
-    if ('number' == typeof x && x == x) {
-      this.orientation.x = x;
+    if (typeof x === 'number' && !isNaN(x)) {
+      this.orientation.x = x
     } else {
-      this.orientation.x = 0;
+      this.orientation.x = 0
     }
 
-    if ('number' == typeof y && y == y) {
-      this.orientation.y = y;
+    if (typeof y === 'number' && !isNaN(y)) {
+      this.orientation.y = y
     } else {
-      this.orientation.y = 0;
+      this.orientation.y = 0
     }
 
     if (!fov) {
       fov = DEFAULT_FOV
     }
 
-    this.state.radius = getRadius();
-    this.fov(fov);
-    this.refreshScene();
+    this.state.radius = getRadius()
+    this.fov(fov)
+    this.refreshScene()
 
     // initialize projection orientation if opts x and y are 0
     if (opts.projection) {
-      this.projection(opts.projection);
+      this.projection(opts.projection)
     }
-  });
+  })
 
   this.on('source', function () {
     this.once('load', function () {
-      var radius = 0;
-      var fov = opts.fov;
+      var fov = opts.fov
 
       if (!fov) {
-        fov = DEFAULT_FOV;
+        fov = DEFAULT_FOV
       }
 
-      this.state.radius = getRadius();
-      this.fov(fov);
-      this.refreshScene();
-    });
-  });
+      this.state.radius = getRadius()
+      this.fov(fov)
+      this.refreshScene()
+    })
+  })
 
   /**
    * Sets an attribute on the instance's
@@ -449,117 +3602,117 @@ function Axis (parent, opts) {
 
   function setVideoAttribute (property) {
     if (opts[property]) {
-      self.video.setAttribute(property, opts[property]);
+      self.video.setAttribute(property, opts[property])
     }
   }
 
   // set video options
-  setVideoAttribute('preload');
-  setVideoAttribute('autoplay');
-  setVideoAttribute('crossorigin');
-  setVideoAttribute('loop');
-  setVideoAttribute('muted');
+  setVideoAttribute('preload')
+  setVideoAttribute('autoplay')
+  setVideoAttribute('crossorigin')
+  setVideoAttribute('loop')
+  setVideoAttribute('muted')
 
   // event delegation manager
-  var eventDelegation = {};
+  var eventDelegation = {}
 
   // init window events
-  eventDelegation.window = events(window, this);
-  eventDelegation.window.bind('resize');
-  eventDelegation.window.bind('blur');
+  eventDelegation.window = events(window, this)
+  eventDelegation.window.bind('resize')
+  eventDelegation.window.bind('blur')
 
   // init video events
-  eventDelegation.video = events(this.video, this);
-  eventDelegation.video.bind('canplaythrough');
-  eventDelegation.video.bind('loadeddata');
-  eventDelegation.video.bind('play');
-  eventDelegation.video.bind('pause');
-  eventDelegation.video.bind('playing');
-  eventDelegation.video.bind('progress');
-  eventDelegation.video.bind('timeupdate');
-  eventDelegation.video.bind('loadstart');
-  eventDelegation.video.bind('waiting');
-  eventDelegation.video.bind('ended');
+  eventDelegation.video = events(this.video, this)
+  eventDelegation.video.bind('canplaythrough')
+  eventDelegation.video.bind('loadeddata')
+  eventDelegation.video.bind('play')
+  eventDelegation.video.bind('pause')
+  eventDelegation.video.bind('playing')
+  eventDelegation.video.bind('progress')
+  eventDelegation.video.bind('timeupdate')
+  eventDelegation.video.bind('loadstart')
+  eventDelegation.video.bind('waiting')
+  eventDelegation.video.bind('ended')
 
   // init dom element events
-  eventDelegation.element = events(this.domElement, this);
-  eventDelegation.element.bind('click');
-  eventDelegation.element.bind('touch', 'onclick');
-  eventDelegation.element.bind('mousemove');
-  eventDelegation.element.bind('mousewheel');
-  eventDelegation.element.bind('mousedown');
-  eventDelegation.element.bind('mouseleave');
-  eventDelegation.element.bind('mouseup');
-  eventDelegation.element.bind('touchstart');
-  eventDelegation.element.bind('touchend');
-  eventDelegation.element.bind('touchmove');
+  eventDelegation.element = events(this.domElement, this)
+  eventDelegation.element.bind('click')
+  eventDelegation.element.bind('touch', 'onclick')
+  eventDelegation.element.bind('mousemove')
+  eventDelegation.element.bind('mousewheel')
+  eventDelegation.element.bind('mousedown')
+  eventDelegation.element.bind('mouseleave')
+  eventDelegation.element.bind('mouseup')
+  eventDelegation.element.bind('touchstart')
+  eventDelegation.element.bind('touchend')
+  eventDelegation.element.bind('touchmove')
 
   // renderer options
   try {
-    this.renderer.autoClear = null != opts.autoClear ? opts.autoClear : true;
-    this.renderer.setPixelRatio(opts.devicePixelRatio || window.devicePixelRatio);
-    this.renderer.setClearColor(opts.clearColor || 0xfff, 0.5);
+    this.renderer.autoClear = opts.autoClear != null ? opts.autoClear : true
+    this.renderer.setPixelRatio(opts.devicePixelRatio || window.devicePixelRatio)
+    this.renderer.setClearColor(opts.clearColor || 0xfff, 0.5)
   } catch (e) {
-    console.warn(e);
+    console.warn(e)
   }
 
   // attach renderer to instance node container
-  this.domElement.querySelector('.container').appendChild(this.renderer.domElement);
+  this.domElement.querySelector('.container').appendChild(this.renderer.domElement)
 
   // mute if explicitly set
   if (opts.muted) {
-    this.mute(true);
+    this.mute(true)
   }
 
-  if (true != opts.isPreviewFrame) {
+  if (!opts.isPreviewFrame) {
     // Initializes controllers
     this.initializeControllers(merge({
       keyboard: true, mouse: true
-    }, opts.controls));
+    }, opts.controls))
   }
 
   // initial volume
-  this.volume(opts.volume || 1);
-
+  this.volume(opts.volume || 1)
 
   // initialize frame source
-  this.src(opts.src);
+  this.src(opts.src)
 
   // handle fullscreen changing
   this.on('fullscreenchange', function () {
-    this.debug('fullscreenchange');
-    this.state.update('isFocused', true);
-    this.state.update('isAnimating', false);
+    this.debug('fullscreenchange')
+    this.state.update('isFocused', true)
+    this.state.update('isAnimating', false)
 
     if (this.state.isFullscreen) {
       // temporary set this;
-      this.state.tmp.forceFocus = this.state.forceFocus;
-      this.state.forceFocus = true;
+      this.state.tmp.forceFocus = this.state.forceFocus
+      this.state.forceFocus = true
       if (this.state.isVREnabled) {
-        raf(function () { this.size(screen.width, screen.height); }.bind(this));
+        raf(function () {
+          this.size(window.screen.width, window.screen.height)
+        }.bind(this))
       }
-      this.emit('enterfullscreen');
+      this.emit('enterfullscreen')
     } else {
-      this.state.forceFocus = (
-        null != this.state.tmp.forceFocus ?
-        this.state.tmp.forceFocus : false
-      );
+      this.state.forceFocus = this.state.tmp.forceFocus != null
+        ? this.state.tmp.forceFocus
+        : false
 
       if (this.state.isVREnabled) {
         // @TODO(werle) - not sure how to fix this bug but the scene
         // needs to be re-rendered
-        raf(function () { this.render(); }.bind(this));
+        raf(function () { this.render() }.bind(this))
       }
 
-      this.size(this.state.lastSize.width, this.state.lastSize.height);
-      this.state.update('lastSize', {width: null, height: null});
-      this.emit('exitfullscreen');
+      this.size(this.state.lastSize.width, this.state.lastSize.height)
+      this.state.update('lastSize', {width: null, height: null})
+      this.emit('exitfullscreen')
     }
-  });
+  })
 }
 
 // mixin `Emitter'
-emitter(Axis.prototype);
+emitter(Axis.prototype)
 
 /**
  * Handle `onclick' event
@@ -569,25 +3722,25 @@ emitter(Axis.prototype);
  */
 
 Axis.prototype.onclick = function (e) {
-  this.debug('onclick');
-  var now = Date.now();
-  var timestamp = this.state.mousedownTimestamp;
-  var isClickable = this.state.isClickable;
-  var isImage = this.state.isImage;
-  var isPlaying = this.state.isPlaying;
-  var delta = (now - timestamp);
+  this.debug('onclick')
+  var now = Date.now()
+  var timestamp = this.state.mousedownTimestamp
+  var isClickable = this.state.isClickable
+  var isImage = this.state.isImage
+  var isPlaying = this.state.isPlaying
+  var delta = (now - timestamp)
 
-  if (false == isClickable || delta > FRAME_CLICK_THRESHOLD) {
-    return false;
+  if (!isClickable || delta > FRAME_CLICK_THRESHOLD) {
+    return false
   }
 
-  e.preventDefault();
+  e.preventDefault()
 
-  if (false == isImage) {
+  if (!isImage) {
     if (isPlaying) {
-      this.pause();
+      this.pause()
     } else {
-      this.play();
+      this.play()
     }
   }
 
@@ -599,8 +3752,8 @@ Axis.prototype.onclick = function (e) {
    * @type {Object}
    */
 
-  this.emit('click', e);
-};
+  this.emit('click', e)
+}
 
 /**
  * Handle `oncanplaythrough' event
@@ -610,35 +3763,35 @@ Axis.prototype.onclick = function (e) {
  */
 
 Axis.prototype.oncanplaythrough = function (e) {
-  var ratio = this.dimensions().ratio;
-  var r2 = Math.sqrt(ratio);
-  this.debug('oncanplaythrough');
-  this.state.duration = this.video.duration;
-  this.emit('canplaythrough', e);
-  this.emit('load');
-  if (null == this.texture ||
-      (this.texture && this.texture.image && 'VIDEO' != this.texture.image.tagName)) {
+  var ratio = this.dimensions().ratio
+  var r2 = Math.sqrt(ratio)
+  this.debug('oncanplaythrough')
+  this.state.duration = this.video.duration
+  this.emit('canplaythrough', e)
+  this.emit('load')
+  if (this.texture == null ||
+      (this.texture && this.texture.image && this.texture.image.tagName !== 'VIDEO')) {
     if (this.texture && this.texture.dispose) {
-      this.texture.dispose();
+      this.texture.dispose()
     }
 
-    this.texture = createVideoTexture(this.video);
+    this.texture = createVideoTexture(this.video)
     if (this.state.options.box) {
-      this.texture.mapping = three.SphericalReflectionMapping;
-      this.texture.needsUpdate = true;
-      this.texture.repeat.set(1, 1);
+      this.texture.mapping = three.SphericalReflectionMapping
+      this.texture.needsUpdate = true
+      this.texture.repeat.set(1, 1)
     } else if (r2 <= 2) {
       this.texture.mapping = three.SphericalReflectionMapping
     }
   }
-  this.state.ready();
-  if (false == this.state.shouldAutoplay && false == this.state.isPlaying) {
-    this.state.update('isPaused', true);
-    this.video.pause();
-  } else if (false == this.state.isStopped) {
-    this.video.play();
+  this.state.ready()
+  if (!this.state.shouldAutoplay && !this.state.isPlaying) {
+    this.state.update('isPaused', true)
+    this.video.pause()
+  } else if (!this.state.isStopped) {
+    this.video.play()
   }
-};
+}
 
 /**
  * Handle `onloadeddata' event
@@ -648,10 +3801,8 @@ Axis.prototype.oncanplaythrough = function (e) {
  */
 
 Axis.prototype.onloadeddata = function (e) {
-  var percent = 0;
-  var video = this.video;
-  this.debug('loadeddata');
-};
+  this.debug('loadeddata')
+}
 
 /**
  * Handle `onplay' event
@@ -661,13 +3812,13 @@ Axis.prototype.onloadeddata = function (e) {
  */
 
 Axis.prototype.onplay = function (e) {
-  this.debug('onplay');
-  this.state.update('isPaused', false);
-  this.state.update('isStopped', false);
-  this.state.update('isEnded', false);
-  this.state.update('isPlaying', true);
-  this.emit('play', e);
-};
+  this.debug('onplay')
+  this.state.update('isPaused', false)
+  this.state.update('isStopped', false)
+  this.state.update('isEnded', false)
+  this.state.update('isPlaying', true)
+  this.emit('play', e)
+}
 
 /**
  * Handle `onpause' event
@@ -677,11 +3828,11 @@ Axis.prototype.onplay = function (e) {
  */
 
 Axis.prototype.onpause = function (e) {
-  this.debug('onpause');
-  this.state.update('isPaused', true);
-  this.state.update('isPlaying', false);
-  this.emit('pause', e);
-};
+  this.debug('onpause')
+  this.state.update('isPaused', true)
+  this.state.update('isPlaying', false)
+  this.emit('pause', e)
+}
 
 /**
  * Handle `onplaying' event
@@ -691,11 +3842,11 @@ Axis.prototype.onpause = function (e) {
  */
 
 Axis.prototype.onplaying = function (e) {
-  this.debug('onplaying');
-  this.state.update('isPaused', false);
-  this.state.update('isPlaying', true);
-  this.emit('playing', e);
-};
+  this.debug('onplaying')
+  this.state.update('isPaused', false)
+  this.state.update('isPlaying', true)
+  this.emit('playing', e)
+}
 
 /**
  * Handle `onwaiting' event
@@ -705,9 +3856,9 @@ Axis.prototype.onplaying = function (e) {
  */
 
 Axis.prototype.onwaiting = function (e) {
-  this.debug('onwaiting');
-  this.emit('wait', e);
-};
+  this.debug('onwaiting')
+  this.emit('wait', e)
+}
 
 /**
  * Handle `onloadstart' event
@@ -717,9 +3868,9 @@ Axis.prototype.onwaiting = function (e) {
  */
 
 Axis.prototype.onloadstart = function (e) {
-  this.debug('onloadstart');
-  this.emit('loadstart', e);
-};
+  this.debug('onloadstart')
+  this.emit('loadstart', e)
+}
 
 /**
  * Handle `onprogress' event
@@ -729,13 +3880,12 @@ Axis.prototype.onloadstart = function (e) {
  */
 
 Axis.prototype.onprogress = function (e) {
-  var video = this.video;
-  var percent = this.getPercentLoaded();
-  e.percent = percent;
-  this.state.update('percentloaded', percent);
-  this.debug('onprogress');
-  this.emit('progress', e);
-};
+  var percent = this.getPercentLoaded()
+  e.percent = percent
+  this.state.update('percentloaded', percent)
+  this.debug('onprogress')
+  this.emit('progress', e)
+}
 
 /**
  * Handle `ontimeupdate' event
@@ -745,12 +3895,12 @@ Axis.prototype.onprogress = function (e) {
  */
 
 Axis.prototype.ontimeupdate = function (e) {
-  this.debug('ontimeupdate');
-  e.percent = this.video.currentTime / this.video.duration * 100;
-  this.state.update('duration', this.video.duration);
-  this.state.update('currentTime', this.video.currentTime);
-  this.emit('timeupdate', e);
-};
+  this.debug('ontimeupdate')
+  e.percent = this.video.currentTime / this.video.duration * 100
+  this.state.update('duration', this.video.duration)
+  this.state.update('currentTime', this.video.currentTime)
+  this.emit('timeupdate', e)
+}
 
 /**
  * Handle `onended' event
@@ -760,14 +3910,14 @@ Axis.prototype.ontimeupdate = function (e) {
  */
 
 Axis.prototype.onended = function (e) {
-  this.debug('onended');
-  this.state.update('isEnded', true);
-  this.state.update('isPlaying', false);
-  this.state.update('isPlaying', false);
-  this.state.update('isStopped', true);
-  this.emit('end');
-  this.emit('ended');
-};
+  this.debug('onended')
+  this.state.update('isEnded', true)
+  this.state.update('isPlaying', false)
+  this.state.update('isPlaying', false)
+  this.state.update('isStopped', true)
+  this.emit('end')
+  this.emit('ended')
+}
 
 /**
  * Handle `onmousedown' event
@@ -777,13 +3927,13 @@ Axis.prototype.onended = function (e) {
  */
 
 Axis.prototype.onmousedown = function (e) {
-  this.debug('onmousedown');
-  this.state.update('mousedownTimestamp', Date.now());
-  this.state.update('isAnimating', false);
-  this.state.update('dragstart', {x: e.pageX, y: e.pageY});
-  this.state.update('isMousedown', true);
-  this.emit('mousedown', e);
-};
+  this.debug('onmousedown')
+  this.state.update('mousedownTimestamp', Date.now())
+  this.state.update('isAnimating', false)
+  this.state.update('dragstart', {x: e.pageX, y: e.pageY})
+  this.state.update('isMousedown', true)
+  this.emit('mousedown', e)
+}
 
 /**
  * Handle `onmouseup' event
@@ -793,10 +3943,10 @@ Axis.prototype.onmousedown = function (e) {
  */
 
 Axis.prototype.onmouseup = function (e) {
-  this.debug('onmouseup');
-  this.state.update('isMousedown', false);
-  this.emit('mouseup', e);
-};
+  this.debug('onmouseup')
+  this.state.update('isMousedown', false)
+  this.emit('mouseup', e)
+}
 
 /**
  * Handle `onmouseleave' event
@@ -806,10 +3956,10 @@ Axis.prototype.onmouseup = function (e) {
  */
 
 Axis.prototype.onmouseleave = function (e) {
-  this.debug('onmouseleave');
-  this.state.update('isMousedown', false);
-  this.emit('mouseleave', e);
-};
+  this.debug('onmouseleave')
+  this.state.update('isMousedown', false)
+  this.emit('mouseleave', e)
+}
 
 /**
  * Handle `ontouchstart' event
@@ -819,14 +3969,14 @@ Axis.prototype.onmouseleave = function (e) {
  */
 
 Axis.prototype.ontouchstart = function (e) {
-  var touch = e.touches[0];
-  this.debug('ontouchstart');
-  this.state.update('mousedownTimestamp', Date.now());
-  this.state.update('isAnimating', false);
-  this.state.update('dragstart', {x: touch.pageX, y: touch.pageY});
-  this.state.update('isTouching', true);
-  this.emit('touchstart', e);
-};
+  var touch = e.touches[0]
+  this.debug('ontouchstart')
+  this.state.update('mousedownTimestamp', Date.now())
+  this.state.update('isAnimating', false)
+  this.state.update('dragstart', {x: touch.pageX, y: touch.pageY})
+  this.state.update('isTouching', true)
+  this.emit('touchstart', e)
+}
 
 /**
  * Handle `ontouchend' event
@@ -835,11 +3985,11 @@ Axis.prototype.ontouchstart = function (e) {
  * @param {Event} e
  */
 
-Axis.prototype.ontouchend = function(e) {
-  this.debug('ontouchend');
-  this.state.update('isTouching', false);
-  this.emit('touchend', e);
-};
+Axis.prototype.ontouchend = function (e) {
+  this.debug('ontouchend')
+  this.state.update('isTouching', false)
+  this.emit('touchend', e)
+}
 
 /**
  * Handle `onresize' event
@@ -849,47 +3999,47 @@ Axis.prototype.ontouchend = function(e) {
  */
 
 Axis.prototype.onresize = function (e) {
-  this.debug('onresize');
-  var isResizable = this.state.isResizable;
-  var isFullscreen = this.state.isFullscreen;
-  var containerStyle = getComputedStyle(this.domElement);
-  var canvasStyle = getComputedStyle(this.renderer.domElement);
-  var containerWidth = parseFloat(containerStyle.width);
-  var containerHeight = parseFloat(containerStyle.width);
-  var canvasWidth = parseFloat(canvasStyle.width);
-  var canvasHeight = parseFloat(canvasStyle.height);
-  var aspectRatio = canvasWidth / canvasHeight;
-  var resized = false;
-  var newWidth = 0;
-  var newHeight = 0;
+  this.debug('onresize')
+  var isResizable = this.state.isResizable
+  var isFullscreen = this.state.isFullscreen
+  var containerStyle = window.getComputedStyle(this.domElement)
+  var canvasStyle = window.getComputedStyle(this.renderer.domElement)
+  var containerWidth = parseFloat(containerStyle.width)
+  var containerHeight = parseFloat(containerStyle.width)
+  var canvasWidth = parseFloat(canvasStyle.width)
+  var canvasHeight = parseFloat(canvasStyle.height)
+  var aspectRatio = canvasWidth / canvasHeight
+  var resized = false
+  var newWidth = 0
+  var newHeight = 0
 
-  if (isResizable && ! isFullscreen) {
+  if (isResizable && !isFullscreen) {
     // adjust for width while accounting for height
     if (canvasWidth > containerWidth ||
         canvasWidth < containerWidth &&
         canvasWidth < this.state.originalsize.width) {
-      newWidth = containerWidth;
-      newHeight = containerWidth / aspectRatio;
-      resized = true;
+      newWidth = containerWidth
+      newHeight = containerWidth / aspectRatio
+      resized = true
     } else if (canvasHeight > containerHeight ||
                (canvasHeight > containerHeight &&
                 canvasHeight < this.state.originalsize.height)) {
-      newHeight = containerHeight;
-      newWidth = containerHeight * aspectRatio;
-      resized = true;
+      newHeight = containerHeight
+      newWidth = containerHeight * aspectRatio
+      resized = true
     } else {
-      this.fov(this.state.originalfov);
+      this.fov(this.state.originalfov)
     }
 
     if (resized) {
-      this.size(newWidth, newHeight);
+      this.size(newWidth, newHeight)
       this.emit('resize', {
         width: this.state.width,
         height: this.state.height
-      });
+      })
     }
   }
-};
+}
 
 /**
  * Handle `window.onblur' event
@@ -899,16 +4049,16 @@ Axis.prototype.onresize = function (e) {
  */
 
 Axis.prototype.onblur = function () {
-  this.state.isMousedown = false;
-  this.state.isTouching = false;
+  this.state.isMousedown = false
+  this.state.isTouching = false
   if (this.controls.mouse) {
-    this.controls.mouse.state.isMousedown = false;
+    this.controls.mouse.state.isMousedown = false
   }
 
   if (this.controls.keyboard) {
-    this.controls.keyboard.reset();
+    this.controls.keyboard.reset()
   }
-};
+}
 
 /**
  * Handle `onmousemove' event
@@ -918,37 +4068,36 @@ Axis.prototype.onblur = function () {
  */
 
 Axis.prototype.onmousemove = function (e) {
-  this.debug('onmousemove');
-  var constraints = this.projections.constraints;
-  var xOffset = 0;
-  var yOffset = 0;
-  var x = this.state.pointerX;
-  var y = this.state.pointerY;
+  this.debug('onmousemove')
+  var xOffset = 0
+  var yOffset = 0
+  var x = this.state.pointerX
+  var y = this.state.pointerY
 
-  if (true == this.state.isMousedown) {
-    xOffset = e.pageX - this.state.dragstart.x;
-    yOffset = e.pageY - this.state.dragstart.y;
+  if (this.state.isMousedown) {
+    xOffset = e.pageX - this.state.dragstart.x
+    yOffset = e.pageY - this.state.dragstart.y
 
     this.state.update('dragstart', {
       x: e.pageX,
       y: e.pageY
-    });
+    })
 
     if (this.state.isInverted) {
       x -= xOffset
-      y += yOffset;
+      y += yOffset
     } else {
       x += xOffset
-      y -= yOffset;
+      y -= yOffset
     }
 
-    this.state.update('pointerX', x);
-    this.state.update('pointerY', y);
-    this.cache({pointerX: x, pointerY: y});
+    this.state.update('pointerX', x)
+    this.state.update('pointerY', y)
+    this.cache({pointerX: x, pointerY: y})
   }
 
-  this.emit('mousemove', e);
-};
+  this.emit('mousemove', e)
+}
 
 /**
  * Handle `ontouchmove' event
@@ -957,38 +4106,37 @@ Axis.prototype.onmousemove = function (e) {
  * @param {Event} e
  */
 
-Axis.prototype.ontouchmove = function(e) {
-  this.debug('ontouchmove');
-  var constraints = this.projections.constraints;
-  var xOffset = 0;
-  var yOffset = 0;
-  var touch = e.touches[0];
-  var x = this.state.pointerX;
-  var y = this.state.pointerY;
+Axis.prototype.ontouchmove = function (e) {
+  this.debug('ontouchmove')
+  var xOffset = 0
+  var yOffset = 0
+  var touch = e.touches[0]
+  var x = this.state.pointerX
+  var y = this.state.pointerY
 
-  if (false == this.state.isTouching) { return; }
-  if (1 == e.touches.length) {
-    e.preventDefault();
+  if (!this.state.isTouching) { return }
+  if (e.touches.length === 1) {
+    e.preventDefault()
 
-    xOffset = touch.pageX - this.state.dragstart.x;
-    yOffset = touch.pageY - this.state.dragstart.y;
+    xOffset = touch.pageX - this.state.dragstart.x
+    yOffset = touch.pageY - this.state.dragstart.y
 
-    this.state.update('dragstart', {x: touch.pageX, y: touch.pageY});
+    this.state.update('dragstart', {x: touch.pageX, y: touch.pageY})
 
     if (this.state.isInverted) {
       x -= xOffset
-      y += yOffset;
+      y += yOffset
     } else {
       x += xOffset
-      y -= yOffset;
+      y -= yOffset
     }
 
-    this.state.update('pointerX', x);
-    this.state.update('pointerY', y);
-    this.cache({pointerX: x, pointerY: y});
-    this.emit('touchmove', e);
+    this.state.update('pointerX', x)
+    this.state.update('pointerY', y)
+    this.cache({pointerX: x, pointerY: y})
+    this.emit('touchmove', e)
   }
-};
+}
 
 /**
  * Handle `onmousewheel' event
@@ -998,34 +4146,34 @@ Axis.prototype.ontouchmove = function(e) {
  */
 
 Axis.prototype.onmousewheel = function (e) {
-  this.debug('onmousewheel');
-  var velocity = this.state.scrollVelocity;
-  var min = MIN_WHEEL_DISTANCE;
-  var max = MAX_WHEEL_DISTANCE;
+  this.debug('onmousewheel')
+  var velocity = this.state.scrollVelocity
+  var min = MIN_WHEEL_DISTANCE
+  var max = MAX_WHEEL_DISTANCE
 
-  if ('number' != typeof velocity || false == this.state.allowWheel) {
-    return false;
+  if (typeof velocity !== 'number' || !this.state.allowWheel) {
+    return false
   }
 
-  e.preventDefault();
+  e.preventDefault()
 
-  if (null != e.wheelDeltaY) { // chrome
-    this.state.fov -= e.wheelDeltaY * velocity;
-  } else if (null != e.wheelDelta ) { // ie
-    this.state.fov -= event.wheelDelta * velocity;
-  } else if (null != e.detail) { // firefox
-    this.state.fov += e.detail * velocity;
+  if (e.wheelDeltaY != null) { // chrome
+    this.state.fov -= e.wheelDeltaY * velocity
+  } else if (e.wheelDelta != null) { // ie
+    this.state.fov -= window.event.wheelDelta * velocity
+  } else if (e.detail != null) { // firefox
+    this.state.fov += e.detail * velocity
   }
 
   if (this.state.fov < min) {
-    this.state.fov = min;
+    this.state.fov = min
   } else if (this.state.fov > max) {
-    this.state.fov = max;
+    this.state.fov = max
   }
 
-  this.camera.setFocalLength(this.state.fov);
-  this.emit('mousewheel', e);
-};
+  this.camera.setFocalLength(this.state.fov)
+  this.emit('mousewheel', e)
+}
 
 /**
  * Sets frame size
@@ -1036,43 +4184,43 @@ Axis.prototype.onmousewheel = function (e) {
  */
 
 Axis.prototype.size = function (width, height) {
-  this.debug('size', width, height);
+  this.debug('size', width, height)
 
-  if (null == width) width = this.state.width
-  if (null == height) height = this.state.height
+  if (width == null) width = this.state.width
+  if (height == null) height = this.state.height
 
   var container = this.domElement.querySelector('.container')
-  this.state.width = width;
-  this.state.height = height;
+  this.state.width = width
+  this.state.height = height
 
   if (this.camera) {
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    this.camera.aspect = width / height
+    this.camera.updateProjectionMatrix()
   }
 
   if (this.renderer) {
-    this.renderer.setSize(width, height);
+    this.renderer.setSize(width, height)
   }
 
   if (this.state.originalsize.width == null) {
-    this.state.originalsize.width = width;
+    this.state.originalsize.width = width
   }
 
   if (this.state.originalsize.height == null) {
-    this.state.originalsize.height = height;
+    this.state.originalsize.height = height
   }
 
   if (this.previewFrame) {
-    this.previewFrame.size(width, height);
+    this.previewFrame.size(width, height)
   }
 
   if (container) {
     container.style.width = width + 'px'
     container.style.height = height + 'px'
   }
-  this.emit('size', width, height);
-  return this;
-};
+  this.emit('size', width, height)
+  return this
+}
 
 /**
  * Sets or gets video src
@@ -1084,69 +4232,68 @@ Axis.prototype.size = function (width, height) {
  */
 
 Axis.prototype.src = function (src, preservePreviewFrame) {
-  var self = this;
+  var self = this
   function onImageLoaded () {
-    self.texture.image.onload = null;
-    self.state.ready();
-    self.emit('load');
-    self.texture.needsUpdate = true;
-    self.fov(DEFAULT_FOV);
-    self.refreshScene();
+    self.texture.image.onload = null
+    self.state.ready()
+    self.emit('load')
+    self.texture.needsUpdate = true
+    self.fov(DEFAULT_FOV)
+    self.refreshScene()
   }
 
   if (src) {
-    this.debug('src', src);
-    this.state.update('src', src);
-    this.state.update('isReady', false);
-    this.state.update('lastDimensions', this.dimensions());
+    this.debug('src', src)
+    this.state.update('src', src)
+    this.state.update('isReady', false)
+    this.state.update('lastDimensions', this.dimensions())
 
-    if (!isImage(src) || this.state.forceVideo && src != this.video.src) {
-      this.state.update('isImage', false);
+    if (!isImage(src) || this.state.forceVideo && src !== this.video.src) {
+      this.state.update('isImage', false)
 
-      var hls = null
-      if ('function' == typeof this.state.options.loader) {
+      if (typeof this.state.options.loader === 'function') {
         this.state.options.loader(this, src, this.video)
       } else {
-        this.video.src = src;
-        this.video.load();
+        this.video.src = src
+        this.video.load()
         this.video.onload = function () {
-          this.onload = null;
+          this.onload = null
           if (self.texture) {
-            self.texture.needsUpdate = true;
+            self.texture.needsUpdate = true
           }
         }
       }
     } else {
-      this.state.update('isImage', true);
+      this.state.update('isImage', true)
       // initialize texture
       if (this.state.isCrossOrigin) {
-        three.ImageUtils.crossOrigin = 'anonymous';
+        three.ImageUtils.crossOrigin = 'anonymous'
       }
 
-      var loader = new three.TextureLoader();
+      var loader = new three.TextureLoader()
       var crossOrigin = (
         this.state.options.crossOrigin ||
         this.state.options.crossorigin ||
         false
-      );
+      )
 
-      loader.setCrossOrigin(crossOrigin);
-      this.texture = loader.load(src, onImageLoaded);
-      this.texture.minFilter = three.LinearFilter;
-      this.texture.magFilter = three.LinearFilter;
-      this.texture.generateMipmaps = false;
+      loader.setCrossOrigin(crossOrigin)
+      this.texture = loader.load(src, onImageLoaded)
+      this.texture.minFilter = three.LinearFilter
+      this.texture.magFilter = three.LinearFilter
+      this.texture.generateMipmaps = false
     }
 
-    if (true != preservePreviewFrame && this.previewFrame) {
-      this.previewFrame.src(src);
+    if (!preservePreviewFrame && this.previewFrame) {
+      this.previewFrame.src(src)
     }
 
-    this.emit('source', src);
-    return this;
+    this.emit('source', src)
+    return this
   } else {
-    return this.state.src;
+    return this.state.src
   }
-};
+}
 
 /**
  * Plays video frame
@@ -1155,16 +4302,16 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
  */
 
 Axis.prototype.play = function () {
-  var video = this.video;
-  if (false == this.state.isImage) {
-    if (true == this.state.isEnded) {
-      video.currentTime = 0;
+  var video = this.video
+  if (!this.state.isImage) {
+    if (this.state.isEnded) {
+      video.currentTime = 0
     }
-    this.debug('play');
-    video.play();
+    this.debug('play')
+    video.play()
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Pauses video frame
@@ -1173,14 +4320,14 @@ Axis.prototype.play = function () {
  */
 
 Axis.prototype.pause = function () {
-  if (false == this.state.isImage) {
-    this.debug('pause');
-    this.state.update('isPlaying', false);
-    this.state.update('isPaused', true);
-    this.video.pause();
+  if (!this.state.isImage) {
+    this.debug('pause')
+    this.state.update('isPlaying', false)
+    this.state.update('isPaused', true)
+    this.video.pause()
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Takes video to fullscreen
@@ -1190,28 +4337,28 @@ Axis.prototype.pause = function () {
  */
 
 Axis.prototype.fullscreen = function (el) {
-  var opts = null;
-  if (! fullscreen.supported) {
-    return;
-  } else if (typeof el == 'boolean' && el == false) {
-    fullscreen.exit();
-    return;
+  var opts = null
+  if (!fullscreen.supported) {
+    return
+  } else if (typeof el === 'boolean' && el === false) {
+    fullscreen.exit()
+    return
   } else if (this.state.isVREnabled) {
-    opts = {vrDisplay: this.state.vrHMD};
-  } else if (! this.state.isFullscreen) {
-    var canvasStyle = getComputedStyle(this.renderer.domElement);
+    opts = {vrDisplay: this.state.vrHMD}
+  } else if (!this.state.isFullscreen) {
+    var canvasStyle = window.getComputedStyle(this.renderer.domElement)
     this.state.update('lastSize', {
       width: parseFloat(canvasStyle.width),
       height: parseFloat(canvasStyle.height)
-    });
+    })
 
-    this.size(window.screen.width, window.screen.height);
+    this.size(window.screen.width, window.screen.height)
   }
 
-  this.debug('fullscreen');
-  this.state.update('isFullscreen', true);
-  fullscreen(el || this.domElement, opts);
-};
+  this.debug('fullscreen')
+  this.state.update('isFullscreen', true)
+  fullscreen(el || this.domElement, opts)
+}
 
 /**
  * Set or get volume on frame
@@ -1221,17 +4368,17 @@ Axis.prototype.fullscreen = function (el) {
  */
 
 Axis.prototype.volume = function (volume) {
-  if (false == this.state.isImage) {
-    if (null == volume) {
-      return this.video.volume;
+  if (!this.state.isImage) {
+    if (volume == null) {
+      return this.video.volume
     }
-    this.debug('volume', volume);
-    this.state.update('lastVolume', this.video.volume);
+    this.debug('volume', volume)
+    this.state.update('lastVolume', this.video.volume)
     this.video.volume = volume
-    this.emit('volume', volume);
+    this.emit('volume', volume)
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Mutes volume
@@ -1241,19 +4388,19 @@ Axis.prototype.volume = function (volume) {
  */
 
 Axis.prototype.mute = function (mute) {
-  this.debug('mute', mute);
-  if (false == mute) {
-    this.video.muted = false;
-    this.state.update('isMuted', false);
-    this.volume(this.state.lastVolume);
+  this.debug('mute', mute)
+  if (!mute) {
+    this.video.muted = false
+    this.state.update('isMuted', false)
+    this.volume(this.state.lastVolume)
   } else {
-    this.state.update('isMuted', true);
-    this.video.muted = true;
-    this.volume(0);
-    this.emit('mute');
+    this.state.update('isMuted', true)
+    this.video.muted = true
+    this.volume(0)
+    this.emit('mute')
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Unmute volume
@@ -1263,12 +4410,12 @@ Axis.prototype.mute = function (mute) {
  */
 
 Axis.prototype.unmute = function (mute) {
-  if (false == this.state.isImage) {
-    this.mute(false);
-    this.emit('unmute');
+  if (!this.state.isImage) {
+    this.mute(false)
+    this.emit('unmute')
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Refreshes frame
@@ -1277,60 +4424,60 @@ Axis.prototype.unmute = function (mute) {
  */
 
 Axis.prototype.refresh = function () {
-  var constraints = this.projections.constraints;
-  var video = this.video;
-  var now = Date.now();
-  var x = this.state.pointerX;
-  var y = this.state.pointerY;
+  var constraints = this.projections.constraints || {}
+  var video = this.video
+  var now = Date.now()
+  var x = this.state.pointerX
+  var y = this.state.pointerY
 
-  this.debug('refresh');
+  this.debug('refresh')
 
-  if (false == this.state.isImage) {
+  if (!this.state.isImage) {
     if (video.readyState >= video.HAVE_ENOUGH_DATA) {
       if (now - this.state.lastRefresh >= 64) {
-        this.state.lastRefresh = now;
-        if (null != this.texture) {
-          this.texture.needsUpdate = true;
+        this.state.lastRefresh = now
+        if (this.texture != null) {
+          this.texture.needsUpdate = true
         }
       }
     }
   }
 
-  if (null == constraints || false != constraints.panoramic) {
+  if (constraints.panoramic) {
     if (this.camera) {
-      this.camera.fov = this.state.fov;
-      this.camera.updateProjectionMatrix();
+      this.camera.fov = this.state.fov
+      this.camera.updateProjectionMatrix()
     }
 
     // normalize y coordinate
-    y = Math.max(MIN_Y_COORDINATE, Math.min(MAX_Y_COORDINATE, y));
+    y = Math.max(MIN_Y_COORDINATE, Math.min(MAX_Y_COORDINATE, y))
 
     // normalize x coordinate
     if (x > MAX_X_COORDINATE) {
-      x = x - MAX_X_COORDINATE;
+      x = x - MAX_X_COORDINATE
     } else if (x < MIN_X_COORDINATE) {
-      x = x + MAX_X_COORDINATE;
+      x = x + MAX_X_COORDINATE
     }
 
-    this.state.update('pointerX', x);
-    this.state.update('pointerY', y);
-    this.cache(this.coords());
+    this.state.update('pointerX', x)
+    this.state.update('pointerY', y)
+    this.cache(this.coords())
   } else {
-    this.state.update('pointerX', 90);
-    this.state.update('pointerY', 0);
+    this.state.update('pointerX', 90)
+    this.state.update('pointerY', 0)
   }
 
   if (this.state.isFullscreen) {
-    if (this.state.lastDevicePixelRatio != window.devicePixelRatio) {
-      this.state.lastDevicePixelRatio = window.devicePixelRatio;
-      this.size(window.screen.width/window.devicePixelRatio,
-                window.screen.height/window.devicePixelRatio);
+    if (this.state.lastDevicePixelRatio !== window.devicePixelRatio) {
+      this.state.lastDevicePixelRatio = window.devicePixelRatio
+      this.size(window.screen.width / window.devicePixelRatio,
+                window.screen.height / window.devicePixelRatio)
     }
   }
 
-  this.emit('refresh');
-  return this;
-};
+  this.emit('refresh')
+  return this
+}
 
 /**
  * Refresh frame
@@ -1339,10 +4486,10 @@ Axis.prototype.refresh = function () {
  */
 
 Axis.prototype.resizable = function (resizable) {
-  if (typeof resizable == 'undefined') return this.state.isResizable;
-  this.state.update('isResizable', resizable);
-  return this;
-};
+  if (typeof resizable === 'undefined') return this.state.isResizable
+  this.state.update('isResizable', resizable)
+  return this
+}
 
 /**
  * Seek to time in seconds
@@ -1353,62 +4500,61 @@ Axis.prototype.resizable = function (resizable) {
  */
 
 Axis.prototype.seek = function (seconds, emit) {
-  if (this.state.isImage) { return this; }
-  var isReady = this.state.isReady;
-  var self = this;
-  var ua = navigator.userAgent.toLowerCase();
+  if (this.state.isImage) { return this }
+  var isReady = this.state.isReady
+  var self = this
+  var ua = navigator.userAgent.toLowerCase()
   function afterseek () {
-    var currentTime = self.video.currentTime;
-    var isPlaying = self.state.isPlaying;
-    var video = self.video;
-    seconds = seconds || 0;
-    video.currentTime = seconds;
+    var isPlaying = self.state.isPlaying
+    var video = self.video
+    seconds = seconds || 0
+    video.currentTime = seconds
 
-    if (0 == seconds) {
-      self.state.update('isStopped', true);
+    if (seconds === 0) {
+      self.state.update('isStopped', true)
     } else {
-      self.state.update('isStopped', false);
+      self.state.update('isStopped', false)
     }
 
     if (isPlaying) {
-      self.play();
+      self.play()
     }
 
-    if (false != emit) self.emit('seek', seconds);
+    if (emit) self.emit('seek', seconds)
 
     setTimeout(function () {
-      self.debug('Attempting seeking correction');
+      self.debug('Attempting seeking correction')
       if (video.readyState < video.HAVE_ENOUGH_DATA) {
-        self.debug('Video state does not have enough data.');
-        self.debug('Reloading video...');
-        video.load();
-        self.debug('Seeking video to %d...', seconds);
-        video.currentTime = seconds;
+        self.debug('Video state does not have enough data.')
+        self.debug('Reloading video...')
+        video.load()
+        self.debug('Seeking video to %d...', seconds)
+        video.currentTime = seconds
         if (isPlaying) {
-          self.debug('Playing video at %d...', seconds);
-          video.play();
+          self.debug('Playing video at %d...', seconds)
+          video.play()
         }
       }
-    }, 1000);
+    }, 1000)
   }
-  if (false == this.state.isImage) {
+  if (!this.state.isImage) {
     // firefox emits `oncanplaythrough' when changing the
     // `.currentTime' property on a video tag so we need
     // to listen one time for that event and then seek to
     // prevent errors from occuring.
     if (/firefox/.test(ua) && !isReady) {
       this.video.oncanplaythrough = function () {
-        this.oncanplaythrough = function () {};
-        afterseek();
-      };
+        this.oncanplaythrough = function () {}
+        afterseek()
+      }
     } else if (isReady) {
-      afterseek();
+      afterseek()
     } else {
-      this.once('ready', afterseek);
+      this.once('ready', afterseek)
     }
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Fast forward `n' amount of seconds
@@ -1418,12 +4564,12 @@ Axis.prototype.seek = function (seconds, emit) {
  */
 
 Axis.prototype.foward = function (seconds) {
-  if (false == this.state.isImage) {
-    this.seek(this.video.currentTime + seconds);
-    this.emit('forward', seconds);
+  if (!this.state.isImage) {
+    this.seek(this.video.currentTime + seconds)
+    this.emit('forward', seconds)
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Rewind `n' amount of seconds
@@ -1433,12 +4579,12 @@ Axis.prototype.foward = function (seconds) {
  */
 
 Axis.prototype.rewind = function (seconds) {
-  if (false == this.state.isImage) {
-    this.seek(this.video.currentTime - seconds);
-    this.emit('rewind', seconds);
+  if (!this.state.isImage) {
+    this.seek(this.video.currentTime - seconds)
+    this.emit('rewind', seconds)
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Use plugin with frame
@@ -1448,9 +4594,9 @@ Axis.prototype.rewind = function (seconds) {
  */
 
 Axis.prototype.use = function (fn) {
-  fn(this);
-  return this;
-};
+  fn(this)
+  return this
+}
 
 /**
  * Draws frame
@@ -1459,21 +4605,16 @@ Axis.prototype.use = function (fn) {
  */
 
 Axis.prototype.draw = function () {
-  var renderer = this.renderer;
-  var radius = this.state.radius;
-  var camera = this.camera;
-  var scene = this.scene;
-
   if (this.renderer && this.scene && this.camera) {
-    this.emit('beforedraw');
-    if (false == this.state.isVREnabled) {
-      this.renderer.render(this.scene, this.camera);
+    this.emit('beforedraw')
+    if (!this.state.isVREnabled) {
+      this.renderer.render(this.scene, this.camera)
     }
-    this.emit('draw');
+    this.emit('draw')
   }
 
-  return this;
-};
+  return this
+}
 
 /**
  * Look at a position in a [x, y, z] vector
@@ -1486,16 +4627,16 @@ Axis.prototype.draw = function () {
 
 Axis.prototype.lookAt = function (x, y, z) {
   if (this.camera) {
-    x = this.camera.target.x = x;
-    y = this.camera.target.y = y;
-    z = this.camera.target.z = z;
-    this.camera.lookAt(this.camera.target);
-    this.camera.position.copy(this.camera.target).negate();
-    this.emit('lookat', {x: x, y: y, z: z});
+    x = this.camera.target.x = x
+    y = this.camera.target.y = y
+    z = this.camera.target.z = z
+    this.camera.lookAt(this.camera.target)
+    this.camera.position.copy(this.camera.target).negate()
+    this.emit('lookat', {x: x, y: y, z: z})
   }
 
-  return this;
-};
+  return this
+}
 
 /**
  * Renders the frame
@@ -1505,51 +4646,50 @@ Axis.prototype.lookAt = function (x, y, z) {
  */
 
 Axis.prototype.render = function (shoudLoop) {
-  var domElement = this.domElement;
-  var self = this;
-  var style = getComputedStyle(this.parent);
-  var fov = this.state.fov;
-  var width = this.state.width || parseFloat(style.width);
-  var height = this.state.height || parseFloat(style.height);
-  var aspectRatio = 0;
+  var domElement = this.domElement
+  var self = this
+  var style = window.getComputedStyle(this.parent)
+  var width = this.state.width || parseFloat(style.width)
+  var height = this.state.height || parseFloat(style.height)
+  var aspectRatio = 0
 
   if (this.state.isPreviewFrame) {
-    if (null == shoudLoop) {
-      shoudLoop = false;
+    if (shoudLoop == null) {
+      shoudLoop = false
     }
   }
 
   // attach dom node to parent
-  if (false == this.parent.contains(this.domElement)) {
-    this.parent.appendChild(this.domElement);
+  if (!this.parent.contains(this.domElement)) {
+    this.parent.appendChild(this.domElement)
   }
 
-  if (0 == height) {
-    height = Math.min(width, window.innerHeight);
-    aspectRatio = width / height;
-    height = height / aspectRatio;
+  if (height === 0) {
+    height = Math.min(width, window.innerHeight)
+    aspectRatio = width / height
+    height = height / aspectRatio
   }
 
   // initialize size
-  this.size(width, height);
+  this.size(width, height)
 
   // start animation loop
-  if (false !== shoudLoop) {
-    raf.cancel(this.state.animationFrameID);
-    if (!this.state.animationFrameID || 0 == this.state.animationFrameID) {
-      this.state.animationFrameID  = raf(function loop () {
-        var parentElement = domElement.parentElement;
+  if (shoudLoop !== false) {
+    raf.cancel(this.state.animationFrameID)
+    if (!this.state.animationFrameID || this.state.animationFrameID === 0) {
+      this.state.animationFrameID = raf(function loop () {
+        var parentElement = domElement.parentElement
         if (parentElement && parentElement.contains(domElement)) {
-          self.state.animationFrameID = raf(loop);
-          self.update();
+          self.state.animationFrameID = raf(loop)
+          self.update()
         }
-      });
+      })
     }
   }
 
-  this.emit('render');
-  return this;
-};
+  this.emit('render')
+  return this
+}
 
 /**
  * Sets view offset
@@ -1559,9 +4699,9 @@ Axis.prototype.render = function (shoudLoop) {
  */
 
 Axis.prototype.offset = function () {
-  this.camera.setViewOffset.apply(this.camera, arguments);
-  return this;
-};
+  this.camera.setViewOffset.apply(this.camera, arguments)
+  return this
+}
 
 /**
  * Set or get height
@@ -1571,14 +4711,14 @@ Axis.prototype.offset = function () {
  */
 
 Axis.prototype.height = function (height) {
-  if (null == height) {
-    return this.state.height;
+  if (height == null) {
+    return this.state.height
   }
 
-  this.size(this.state.width, height);
-  this.emit('height', height);
-  return this;
-};
+  this.size(this.state.width, height)
+  this.emit('height', height)
+  return this
+}
 
 /**
  * Set or get width
@@ -1588,14 +4728,14 @@ Axis.prototype.height = function (height) {
  */
 
 Axis.prototype.width = function (width) {
-  if (null == width) {
-    return this.state.width;
+  if (width == null) {
+    return this.state.width
   }
 
-  this.size(width, this.state.height);
-  this.emit('width', width);
-  return this;
-};
+  this.size(width, this.state.height)
+  this.emit('width', width)
+  return this
+}
 
 /**
  * Set or get projection
@@ -1607,37 +4747,35 @@ Axis.prototype.width = function (width) {
 
 Axis.prototype.projection = function (type, fn) {
   // normalize type string
-  type = (
-    'string' == typeof type ?
-    type.toLowerCase().replace(/\s+/g, '') :
-    null
-  );
+  type = typeof type === 'string'
+    ? type.toLowerCase().replace(/\s+/g, '')
+    : null
 
   // define
-  if (type && 'function' == typeof fn) {
-    this.projections.set(type, fn);
-    return this;
+  if (type && typeof fn === 'function') {
+    this.projections.set(type, fn)
+    return this
   }
 
   // apply
   if (type) {
     if (this.state.isReady) {
-      if (type != this.projections.current &&
+      if (type !== this.projections.current &&
           this.projections.contains(type)) {
-        this.projections.apply(type);
+        this.projections.apply(type)
       }
     } else {
       this.once('ready', function () {
-        this.projection(type);
-      });
+        this.projection(type)
+      })
     }
 
-    return this;
+    return this
   }
 
   // get
-  return this.projections.current;
-};
+  return this.projections.current
+}
 
 /**
  * Destroys frame
@@ -1647,23 +4785,24 @@ Axis.prototype.projection = function (type, fn) {
 
 Axis.prototype.destroy = function () {
   try {
-    this.scene = null;
-    this.texture = null;
-    this.camera = null;
-    this.stop();
-    raf.cancel(this.state.animationFrameID);
-    this.state.animationFrameID = 0;
-    this.state.reset();
-    this.renderer.resetGLState();
-    empty(this.domElement);
-    this.domElement.parentElement.removeChild(this.domElement);
-  } catch (e) { console.warn(e); }
+    this.scene = null
+    this.texture = null
+    this.camera = null
+    this.stop()
+    raf.cancel(this.state.animationFrameID)
+    this.state.animationFrameID = 0
+    this.state.reset()
+    this.renderer.resetGLState()
+    empty(this.domElement)
+    this.domElement.parentElement.removeChild(this.domElement)
+  } catch (e) { console.warn(e) }
   function empty (el) {
-    try { while (el.lastChild) el.removeChild(el); }
-    catch (e) {}
+    try {
+      while (el.lastChild) el.removeChild(el)
+    } catch (e) {}
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Stops playback if applicable
@@ -1672,15 +4811,15 @@ Axis.prototype.destroy = function () {
  */
 
 Axis.prototype.stop = function () {
-  if (true == this.state.isImage) { return; }
-  this.video.pause();
-  this.video.currentTime = 0;
-  this.state.update('isStopped', true);
-  this.state.update('isPlaying', false);
-  this.state.update('isPaused', false);
-  this.state.update('isAnimating', false);
-  return this;
-};
+  if (this.state.isImage) { return }
+  this.video.pause()
+  this.video.currentTime = 0
+  this.state.update('isStopped', true)
+  this.state.update('isPlaying', false)
+  this.state.update('isPaused', false)
+  this.state.update('isAnimating', false)
+  return this
+}
 
 /**
  * Sets or gets y coordinate
@@ -1690,12 +4829,12 @@ Axis.prototype.stop = function () {
  */
 
 Axis.prototype.y = function (y) {
-  if (null == y) {
-    return this.state.pointerY;
+  if (y == null) {
+    return this.state.pointerY
   }
-  this.state.update('pointerY', y);
-  return this;
-};
+  this.state.update('pointerY', y)
+  return this
+}
 
 /**
  * Sets or gets x coordinate
@@ -1705,12 +4844,12 @@ Axis.prototype.y = function (y) {
  */
 
 Axis.prototype.x = function (x) {
-  if (null == x) {
-    return this.state.pointerX;
+  if (x == null) {
+    return this.state.pointerX
   }
-  this.state.update('pointerX', x);
-  return this;
-};
+  this.state.update('pointerX', x)
+  return this
+}
 
 /**
  * Sets or gets x/y coordinates
@@ -1721,23 +4860,23 @@ Axis.prototype.x = function (x) {
  */
 
 Axis.prototype.coords = function (x, y) {
-  if (null == y && null == x) {
+  if (y == null && x == null) {
     return {
       pointerY: this.state.pointerY,
       pointerX: this.state.pointerX
-    };
+    }
   }
 
-  if (null != y) {
-    this.state.update('pointerY', y);
+  if (y != null) {
+    this.state.update('pointerY', y)
   }
 
-  if (null != x) {
-    this.state.update('pointerX', x);
+  if (x != null) {
+    this.state.update('pointerX', x)
   }
 
-  return this;
-};
+  return this
+}
 
 /**
  * Refreshes and redraws current frame
@@ -1746,11 +4885,11 @@ Axis.prototype.coords = function (x, y) {
  */
 
 Axis.prototype.update = function () {
-  if (false == this.state.shouldUpdate) return this
+  if (!this.state.shouldUpdate) return this
   this.once('refresh', function () { this.draw() })
   this.once('draw', function () { this.emit('update') })
   return this.refresh()
-};
+}
 
 /**
  * Sets or updates state cache
@@ -1761,16 +4900,16 @@ Axis.prototype.update = function () {
 
 Axis.prototype.cache = function (o) {
   if (this.state.isConstrainedWith('cache')) {
-    return this;
+    return this
   }
 
-  if ('object' == typeof o) {
-    merge(this.state.cache, o);
-    return this;
+  if (typeof o === 'object') {
+    merge(this.state.cache, o)
+    return this
   } else {
-    return this.state.cache;
+    return this.state.cache
   }
-};
+}
 
 /**
  * Outputs debug info if `window.DEBUG' is
@@ -1782,9 +4921,9 @@ Axis.prototype.cache = function (o) {
 
 Axis.prototype.debug = function debug () {
   if (window.DEBUG) {
-    console.debug.apply(console, arguments);
+    console.debug.apply(console, arguments)
   }
-  return this;
+  return this
 }
 
 /**
@@ -1797,16 +4936,17 @@ Axis.prototype.debug = function debug () {
  */
 
 Axis.prototype.geometry = function (type) {
-  if (null == type) {
-    return this.state.geometry;
-  } else try {
-    var geo = geometries[type](this);
-    this.state.update('geometry', type);
-    return geo;
-  } catch (e) {
-    return null;
+  if (type == null) {
+    return this.state.geometry
   }
-};
+  try {
+    var geo = geometries[type](this)
+    this.state.update('geometry', type)
+    return geo
+  } catch (e) {
+    return null
+  }
+}
 
 /**
  * Returns the dimensions of the current
@@ -1816,22 +4956,21 @@ Axis.prototype.geometry = function (type) {
  */
 
 Axis.prototype.dimensions = function () {
-  var width = 0;
-  var height = 0;
-  var ratio = 0;
+  var width = 0
+  var height = 0
 
   if (this.state.isImage) {
     if (this.texture && this.texture.image) {
-      height = this.texture.image.height;
-      width = this.texture.image.width;
+      height = this.texture.image.height
+      width = this.texture.image.width
     }
   } else {
-    height = this.video.videoHeight;
-    width = this.video.videoWidth;
+    height = this.video.videoHeight
+    width = this.video.videoWidth
   }
 
-  return {height: height, width: width, ratio: (width / height) || 0};
-};
+  return {height: height, width: width, ratio: (width / height) || 0}
+}
 
 /**
  * Sets or gets the current field of view
@@ -1841,16 +4980,16 @@ Axis.prototype.dimensions = function () {
  */
 
 Axis.prototype.fov = function (fov) {
-  if (null == fov) {
-    return this.state.fov;
+  if (fov == null) {
+    return this.state.fov
   } else {
     if (!this.state.fov) {
-      this.state.update('originalfov', fov);
+      this.state.update('originalfov', fov)
     }
-    this.state.update('fov', fov);
+    this.state.update('fov', fov)
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Enables VR mode.
@@ -1859,11 +4998,11 @@ Axis.prototype.fov = function (fov) {
  */
 
 Axis.prototype.enableVRMode = function () {
-  this.initializeControllers({vr: true});
-  this.state.isVREnabled = true;
-  this.controls.vr.enable();
-  return this;
-};
+  this.initializeControllers({vr: true})
+  this.state.isVREnabled = true
+  this.controls.vr.enable()
+  return this
+}
 
 /**
  * Disables VR mode.
@@ -1872,11 +5011,11 @@ Axis.prototype.enableVRMode = function () {
  */
 
 Axis.prototype.disableVRMode = function () {
-  this.initializeControllers({vr: false});
-  this.state.isVREnabled = false;
-  this.controls.vr.disable();
-  return this.render();
-};
+  this.initializeControllers({vr: false})
+  this.state.isVREnabled = false
+  this.controls.vr.disable()
+  return this.render()
+}
 
 /**
  * Returns percent of media loaded.
@@ -1886,29 +5025,29 @@ Axis.prototype.disableVRMode = function () {
  */
 
 Axis.prototype.getPercentLoaded = function (trackIndex) {
-  var video = this.video;
-  var percent = 0;
+  var video = this.video
+  var percent = 0
 
   if (this.state.isImage) {
-    percent = 100;
+    percent = 100
   } else {
     try {
-      percent = video.buffered.end(trackIndex || 0) / video.duration;
+      percent = video.buffered.end(trackIndex || 0) / video.duration
     } catch (e) {
-      this.debug('error', e);
+      this.debug('error', e)
       try {
-        percent = video.bufferedBytes / video.bytesTotal;
+        percent = video.bufferedBytes / video.bytesTotal
       } catch (e) {
-        this.debug('error', e);
+        this.debug('error', e)
       }
     }
 
-    percent = percent || 0;
-    percent *= 100;
+    percent = percent || 0
+    percent *= 100
   }
 
-  return Math.max(0, Math.min(percent, 100));
-};
+  return Math.max(0, Math.min(percent, 100))
+}
 
 /**
  * Returns percent of media played if applicable.
@@ -1918,8 +5057,8 @@ Axis.prototype.getPercentLoaded = function (trackIndex) {
  */
 
 Axis.prototype.getPercentPlayed = function () {
-  return (this.video.currentTime / this.video.duration * 100) || 0;
-};
+  return (this.video.currentTime / this.video.duration * 100) || 0
+}
 
 /**
  * Initializes axis controllers if not created. An
@@ -1932,53 +5071,53 @@ Axis.prototype.getPercentPlayed = function () {
  */
 
 Axis.prototype.initializeControllers = function (map, force) {
-  var controls = (this.controls = this.controls || {});
-  map = null != map && 'object' == typeof map ? map : {};
+  var controls = (this.controls = this.controls || {})
+  map = map != null && typeof map === 'object' ? map : {}
 
-  if (true == map.vr || true == force) {
-    if (controls.vr) { controls.vr.destroy(); }
-    controls.vr = require('./controls/vr')(this);
+  if (map.vr || force) {
+    if (controls.vr) { controls.vr.destroy() }
+    controls.vr = require('./controls/vr')(this)
   }
 
-  if (true == map.mouse || true == force) {
-    if (controls.mouse) { controls.mouse.destroy(); }
-    controls.mouse = require('./controls/mouse')(this);
+  if (map.mouse || force) {
+    if (controls.mouse) { controls.mouse.destroy() }
+    controls.mouse = require('./controls/mouse')(this)
   }
 
-  if (true == map.touch || true == force) {
-    if (controls.touch) { controls.touch.destroy(); }
-    controls.touch = require('./controls/touch')(this);
+  if (map.touch || force) {
+    if (controls.touch) { controls.touch.destroy() }
+    controls.touch = require('./controls/touch')(this)
   }
 
-  if (true == map.keyboard || true == force) {
-    if (controls.keyboard) { controls.keyboard.destroy(); }
-    controls.keyboard = require('./controls/keyboard')(this);
+  if (map.keyboard || force) {
+    if (controls.keyboard) { controls.keyboard.destroy() }
+    controls.keyboard = require('./controls/keyboard')(this)
   }
 
-  if (true == map.orientation || true == force) {
-    if (controls.orientation) { controls.orientation.destroy(); }
-    controls.orientation = require('./controls/orientation')(this);
+  if (map.orientation || force) {
+    if (controls.orientation) { controls.orientation.destroy() }
+    controls.orientation = require('./controls/orientation')(this)
   }
 
-  if (true == map.pointer || true == force) {
-    if (controls.pointer) { controls.pointer.destroy(); }
-    controls.pointer = require('./controls/pointer')(this);
+  if (map.pointer || force) {
+    if (controls.pointer) { controls.pointer.destroy() }
+    controls.pointer = require('./controls/pointer')(this)
   }
 
-  if (null == controls.movement || true == map.movement || true == force) {
-    if (controls.movement) { controls.movement.destroy(); }
-    controls.movement = require('./controls/movement')(this);
+  if (controls.movement == null || map.movement || force) {
+    if (controls.movement) { controls.movement.destroy() }
+    controls.movement = require('./controls/movement')(this)
   }
 
-  if (null == controls.default || true == map.default || true == force) {
-    if (controls.default) { controls.default.destroy(); }
+  if (controls.default == null || map.default || force) {
+    if (controls.default) { controls.default.destroy() }
     controls.default = (
       require('./controls/controller')(this).enable().target(this.camera)
-    );
+    )
   }
 
-  return this;
-};
+  return this
+}
 
 /**
  * Returns a captured image at a specific moment in
@@ -2001,87 +5140,86 @@ Axis.prototype.initializeControllers = function (map, force) {
  */
 
 Axis.prototype.getCaptureImageAt = function (time, out, cb) {
-  var preview = this.previewFrame;
-  var image = null;
-  var timer = null;
-  var mime = 'image/jpeg';
-  var self = this;
+  var preview = this.previewFrame
+  var image = null
+  var mime = 'image/jpeg'
+  var self = this
 
   function setCapture () {
-    preview.orientation.x = self.orientation.x;
-    preview.orientation.y = self.orientation.y;
-    preview.refreshScene();
-    preview.fov(self.fov());
-    preview.projection(self.projection());
+    preview.orientation.x = self.orientation.x
+    preview.orientation.y = self.orientation.y
+    preview.refreshScene()
+    preview.fov(self.fov())
+    preview.projection(self.projection())
     raf(function check () {
-      preview.camera.target.copy(self.camera.target);
-      preview.camera.quaternion.copy(self.camera.quaternion);
+      preview.camera.target.copy(self.camera.target)
+      preview.camera.quaternion.copy(self.camera.quaternion)
       if (preview.state.isAnimating) {
-        raf(check);
+        raf(check)
       } else {
-        image.src = preview.renderer.domElement.toDataURL(mime);
+        image.src = preview.renderer.domElement.toDataURL(mime)
       }
-    });
+    })
   }
 
   function updatePreviewFrameVideo () {
-    preview.update();
-    preview.video.currentTime = time;
-    preview.pause();
+    preview.update()
+    preview.video.currentTime = time
+    preview.pause()
   }
 
-  if (0 == arguments.length) {
-    time = null;
-    out = null;
-  } else if (1 == arguments.length) {
-    if ('object' == typeof time) {
-      out = time;
-      time = null;
+  if (arguments.length === 0) {
+    time = null
+    out = null
+  } else if (arguments.length === 1) {
+    if (typeof time === 'object') {
+      out = time
+      time = null
     }
-  } else if (2 == arguments.length) {
-    if ('function' == typeof out) {
-      cb = out;
-      out = null;
+  } else if (arguments.length === 2) {
+    if (typeof out === 'function') {
+      cb = out
+      out = null
     }
 
-    if ('object' == typeof time) {
-      out = time;
-      time = null;
+    if (typeof time === 'object') {
+      out = time
+      time = null
     }
   }
 
-  cb = 'function' == typeof cb ? cb : function () {}
-  image = out || new Image();
+  cb = typeof cb === 'function' ? cb : function () {}
+  image = out || new window.Image()
   image.onload = function () {
-    this.onload = null;
-    cb(null, this);
-  };
+    this.onload = null
+    cb(null, this)
+  }
 
   image.onerror = function (e) {
-    this.onerror = null;
-    cb(e, this);
-  };
+    this.onerror = null
+    cb(e, this)
+  }
 
-  if (null != preview && false == this.state.isImage) {
-    raf(function () { preview.update(); });
-    preview.once('update', setCapture);
+  if (preview && !this.state.isImage) {
+    raf(function () { preview.update() })
+    preview.once('update', setCapture)
     if (preview.video.readyState < 4) {
       preview.video.onload = function () {
-        preview.video.onload = null;
-        updatePreviewFrameVideo();
-      };
-      preview.video.load();
+        preview.video.onload = null
+        updatePreviewFrameVideo()
+      }
+      preview.video.load()
     } else {
-      updatePreviewFrameVideo();
+      updatePreviewFrameVideo()
     }
   } else if (this.renderer.domElement) {
     raf(function () {
-      image.src = self.renderer.domElement.toDataURL(mime);
-    });
+      image.src = self.renderer.domElement.toDataURL(mime)
+    })
   }
 
-  return image;
-};
+  return image
+}
 
 /**
  * Returns a screenshot of the current rendered frame
@@ -2093,9 +5231,9 @@ Axis.prototype.getCaptureImageAt = function (time, out, cb) {
  */
 
 Axis.prototype.toImage = function (out, cb) {
-  out = out || new Image();
-  return this.getCaptureImageAt(out, cb);
-};
+  out = out || new window.Image()
+  return this.getCaptureImageAt(out, cb)
+}
 
 /**
  * Initializes or refreshes current scene
@@ -2106,37 +5244,36 @@ Axis.prototype.toImage = function (out, cb) {
  */
 
 Axis.prototype.refreshScene = function () {
-  var material = null;
-  var isReady = this.state.isReady;
-  var texture = this.texture;
-  var scene = this.scene;
-  var mesh = null;
-  var faces = null;
-  var geo = null;
+  var material = null
+  var isReady = this.state.isReady
+  var texture = this.texture
+  var scene = this.scene
+  var mesh = null
+  var faces = null
+  var geo = null
 
-  if (null == texture || !isReady) { return this; }
+  if (!texture || !isReady) { return this }
 
-  if (null == scene) {
-    this.scene = new three.Scene();
+  if (!scene) {
+    this.scene = new three.Scene()
   }
 
   // get geometry for content
-  geo = getCorrectGeometry(this);
-  faces = [];
+  geo = getCorrectGeometry(this)
+  faces = []
 
   // skip if geometry is unable to be determined
-  if (null == geo) { return this; }
+  if (!geo) { return this }
 
   if (scene && scene.children.length >= 1) {
-    mesh = scene.children[0];
-    material = mesh.material;
-    if (material.map != texture) {
-      material.map = texture;
+    mesh = scene.children[0]
+    material = mesh.material
+    if (material.map !== texture) {
+      material.map = texture
     }
   } else {
-
     // create material and mesh
-    material = new three.MeshBasicMaterial({map: texture});
+    material = new three.MeshBasicMaterial({map: texture})
 
     // build mesh
     // uv cube mapping faces
@@ -2153,77 +5290,77 @@ Axis.prototype.refreshScene = function () {
     if (this.state.options.box) {
       var f1 = [
         new three.Vector2(0, 1),
-        new three.Vector2(0, .5),
-        new three.Vector2(1/3, .5),
-        new three.Vector2(1/3, 1),
-      ];
+        new three.Vector2(0, 0.5),
+        new three.Vector2(1 / 3, 0.5),
+        new three.Vector2(1 / 3, 1)
+      ]
 
       var f2 = [
-        new three.Vector2(1/3, 1),
-        new three.Vector2(1/3, .5),
-        new three.Vector2(2/3, .5),
-        new three.Vector2(2/3, 1),
-      ];
+        new three.Vector2(1 / 3, 1),
+        new three.Vector2(1 / 3, 0.5),
+        new three.Vector2(2 / 3, 0.5),
+        new three.Vector2(2 / 3, 1)
+      ]
 
       var f3 = [
-        new three.Vector2(2/3, 1),
-        new three.Vector2(2/3, .5),
-        new three.Vector2(1, .5),
-        new three.Vector2(1, 1),
-      ];
+        new three.Vector2(2 / 3, 1),
+        new three.Vector2(2 / 3, 0.5),
+        new three.Vector2(1, 0.5),
+        new three.Vector2(1, 1)
+      ]
 
       var f4 = [
-        new three.Vector2(0, .5),
+        new three.Vector2(0, 0.5),
         new three.Vector2(0, 0),
-        new three.Vector2(1/3, 0),
-        new three.Vector2(1/3, .5),
-      ];
+        new three.Vector2(1 / 3, 0),
+        new three.Vector2(1 / 3, 0.5)
+      ]
 
       var f5 = [
-        new three.Vector2(1/3, .5),
-        new three.Vector2(1/3, 0),
-        new three.Vector2(2/3, .0),
-        new three.Vector2(2/3, .5),
-      ];
+        new three.Vector2(1 / 3, 0.5),
+        new three.Vector2(1 / 3, 0),
+        new three.Vector2(2 / 3, 0.0),
+        new three.Vector2(2 / 3, 0.5)
+      ]
 
       var f6 = [
-        new three.Vector2(2/3, .5),
-        new three.Vector2(2/3, 0),
+        new three.Vector2(2 / 3, 0.5),
+        new three.Vector2(2 / 3, 0),
         new three.Vector2(1, 0),
-        new three.Vector2(1, .5),
-      ];
+        new three.Vector2(1, 0.5)
+      ]
 
-      faces[0] = [f1[0], f1[1], f1[3]];
-      faces[1] = [f1[1], f1[2], f1[3]];
+      faces[0] = [f1[0], f1[1], f1[3]]
+      faces[1] = [f1[1], f1[2], f1[3]]
 
-      faces[2] = [f2[0], f2[1], f2[3]];
-      faces[3] = [f2[1], f2[2], f2[3]];
+      faces[2] = [f2[0], f2[1], f2[3]]
+      faces[3] = [f2[1], f2[2], f2[3]]
 
-      faces[4] = [f3[0], f3[1], f3[3]];
-      faces[5] = [f3[1], f3[2], f3[3]];
+      faces[4] = [f3[0], f3[1], f3[3]]
+      faces[5] = [f3[1], f3[2], f3[3]]
 
-      faces[6] = [f4[0], f4[1], f4[3]];
-      faces[7] = [f4[1], f4[2], f4[3]];
+      faces[6] = [f4[0], f4[1], f4[3]]
+      faces[7] = [f4[1], f4[2], f4[3]]
 
-      faces[8] = [f5[0], f5[1], f5[3]];
-      faces[9] = [f5[1], f5[2], f5[3]];
+      faces[8] = [f5[0], f5[1], f5[3]]
+      faces[9] = [f5[1], f5[2], f5[3]]
 
-      faces[10] = [f6[0], f6[1], f6[3]];
-      faces[11] = [f6[1], f6[2], f6[3]];
+      faces[10] = [f6[0], f6[1], f6[3]]
+      faces[11] = [f6[1], f6[2], f6[3]]
 
-      geo.faceVertexUvs[0] = faces;
+      geo.faceVertexUvs[0] = faces
     }
 
-    mesh = new three.Mesh(geo, material);
+    mesh = new three.Mesh(geo, material)
     // set mesh scale
-    material.overdraw = 1;
-    mesh.scale.x = -1;
+    material.overdraw = 1
+    mesh.scale.x = -1
     // add mesh to scene
-    this.scene.add(mesh);
+    this.scene.add(mesh)
   }
 
-  return this;
-};
+  return this
+}
 
 /**
  * Focuses frame
@@ -2233,9 +5370,9 @@ Axis.prototype.refreshScene = function () {
  */
 
 Axis.prototype.focus = function () {
-  this.state.update('isFocused', true);
-  return this;
-};
+  this.state.update('isFocused', true)
+  return this
+}
 
 /**
  * Unfocuses frame
@@ -2245,9 +5382,9 @@ Axis.prototype.focus = function () {
  */
 
 Axis.prototype.unfocus = function () {
-  this.state.update('isFocused', false);
-  return this;
-};
+  this.state.update('isFocused', false)
+  return this
+}
 
 /**
  * Rotate around an axis with timing and
@@ -2264,50 +5401,50 @@ Axis.prototype.unfocus = function () {
  */
 
 Axis.prototype.rotate = function (coord, opts) {
-  var intervalRotations = this.state.intervalRotations;
-  var rotation = null;
-  var self = this;
+  var intervalRotations = this.state.intervalRotations
+  var rotation = null
+  var self = this
 
-  if ('string' != typeof coord) {
-    throw new TypeError("Expecting coordinate to be a string.");
+  if (typeof coord !== 'string') {
+    throw new TypeError('Expecting coordinate to be a string.')
   }
 
-  rotation = intervalRotations[coord];
+  rotation = intervalRotations[coord]
 
-  if ('object' == typeof opts && null != opts) {
-    if ('number' == typeof opts.value) {
-      rotation.value = opts.value;
+  if (typeof opts === 'object' && opts) {
+    if (typeof opts.value === 'number') {
+      rotation.value = opts.value
     } else {
-      throw new TypeError("Expecting .value to be a number");
+      throw new TypeError('Expecting .value to be a number')
     }
 
-    if ('number' == typeof opts.every) {
-      rotation.every = opts.every;
+    if (typeof opts.every === 'number') {
+      rotation.every = opts.every
     }
 
-    clearTimeout(rotation.interval);
+    clearTimeout(rotation.interval)
     rotation.interval = setTimeout(function interval () {
-      var isMousedown = self.controls.mouse && self.controls.mouse.state.isMousedown;
-      var isTouching = self.controls.touch && self.controls.touch.state.isTouching;
-      var isKeydown = self.controls.keyboard && self.controls.keyboard.state.isKeydown;
-      clearTimeout(rotation.interval);
-      if (0 != rotation.every && 0 != rotation.value) {
-        setTimeout(interval, rotation.every);
+      var isMousedown = self.controls.mouse && self.controls.mouse.state.isMousedown
+      var isTouching = self.controls.touch && self.controls.touch.state.isTouching
+      var isKeydown = self.controls.keyboard && self.controls.keyboard.state.isKeydown
+      clearTimeout(rotation.interval)
+      if (rotation.every !== 0 && rotation.value !== 0) {
+        setTimeout(interval, rotation.every)
       }
 
       if (!(isMousedown || isTouching || isKeydown)) {
-        self.orientation[coord] += rotation.value;
+        self.orientation[coord] += rotation.value
       }
-    }, rotation.every);
-  } else if (false === opts) {
-    rotation.value = 0;
-    rotation.every = 0;
-    clearTimeout(rotation.interval);
-    return this;
+    }, rotation.every)
+  } else if (!opts) {
+    rotation.value = 0
+    rotation.every = 0
+    clearTimeout(rotation.interval)
+    return this
   }
 
-  return this;
-};
+  return this
+}
 
 /**
  * Calculates and returns a vertical field of view
@@ -2322,14 +5459,9371 @@ Axis.prototype.rotate = function (coord, opts) {
  */
 
 Axis.prototype.getCalculatedFieldOfView = function (dimensions) {
-  console.warn("getCalculatedFieldOfView() is deprecated. " +
-               "The field of view should be set, otherwise" +
-               " the value will be " + DEFAULT_FOV)
+  console.warn('getCalculatedFieldOfView() is deprecated. ' +
+               'The field of view should be set, otherwise' +
+               ' the value will be ' + DEFAULT_FOV)
   return DEFAULT_FOV
+}
+
+},{"./camera":1,"./constants":2,"./controls/controller":3,"./controls/keyboard":4,"./controls/mouse":5,"./controls/movement":6,"./controls/orientation":7,"./controls/pointer":8,"./controls/touch":9,"./controls/vr":10,"./geometry":13,"./package.json":68,"./projection":69,"./projection/equilinear":70,"./projection/fisheye":71,"./projection/flat":72,"./projection/tinyplanet":73,"./state":74,"./template":75,"./util":76,"@littlstar/fullscreen":17,"@littlstar/three-canvas-renderer":18,"@littlstar/three-vr-effect":19,"component-emitter":26,"component-events":28,"domify":32,"has-webgl":34,"merge":39,"raf":49,"three":63}],17:[function(require,module,exports){
+
+/**
+ * Module dependencies.
+ */
+
+var Emitter = require('component-emitter');
+
+/**
+ * Expose `fullscreen()`.
+ */
+
+exports = module.exports = fullscreen;
+
+/**
+ * Mixin emitter.
+ */
+
+Emitter(exports);
+
+/**
+ * document element.
+ */
+
+var element = document.documentElement;
+
+/**
+ * fullscreen supported flag.
+ */
+
+exports.supported = !!(element.requestFullscreen
+  || element.webkitRequestFullscreen
+  || element.mozRequestFullScreen
+  || element.msRequestFullscreen);
+
+/**
+ * Enter fullscreen mode for `el`.
+ *
+ * @param {Element} [el]
+ * @param {Object} opts - optional
+ * @api public
+ */
+
+function fullscreen(el, opts){
+  el = el || element;
+  if (el.requestFullscreen) return el.requestFullscreen(opts);
+  if (el.mozRequestFullScreen) return el.mozRequestFullScreen(opts);
+  if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen(opts);
+  if (el.msRequestFullscreen) return el.msRequestFullscreen(opts);
+}
+
+/**
+ * Exit fullscreen.
+ *
+ * @api public
+ */
+
+exports.exit = function(){
+  var doc = document;
+  if (doc.exitFullscreen) return doc.exitFullscreen();
+  if (doc.mozCancelFullScreen) return doc.mozCancelFullScreen();
+  if (doc.webkitCancelFullScreen) return doc.webkitCancelFullScreen();
+  if (doc.msExitFullscreen) return doc.msExitFullscreen();
 };
 
-}, {"three.js":2,"domify":3,"emitter":4,"events":5,"raf":6,"has-webgl":7,"fullscreen":8,"keycode":9,"merge":10,"./package.json":11,"./template.html":12,"./projection":13,"./camera":14,"./geometry":15,"./state":16,"./util":17,"./constants":18,"three-canvas-renderer":19,"three-vr-effect":20,"./projection/flat":21,"./projection/fisheye":22,"./projection/equilinear":23,"./projection/tinyplanet":24,"./controls/vr":25,"./controls/mouse":26,"./controls/touch":27,"./controls/keyboard":28,"./controls/orientation":29,"./controls/pointer":30,"./controls/movement":31,"./controls/controller":32}],
-2: [function(require, module, exports) {
+/**
+ * Change handler function.
+ */
+
+function change(prop) {
+  return function(){
+    if (null == document[prop]) {
+      document[prop] = true;
+    } else {
+      document[prop] = !document[prop];
+    }
+
+    val = document[prop];
+    exports.emit('change', val);
+  }
+}
+
+/**
+ * Handle events.
+ */
+
+if (document.addEventListener) {
+  document.addEventListener('fullscreenchange', change('fullscreen'));
+  document.addEventListener('mozfullscreenchange', change('mozFullScreen'));
+  document.addEventListener('webkitfullscreenchange', change('webkitIsFullScreen'));
+  document.addEventListener('MSFullscreenChange', change('msFullScreen'));
+  document.addEventListener('fullscreenChange', change('msFullScreen'));
+}
+
+},{"component-emitter":26}],18:[function(require,module,exports){
+
+/**
+ * Add CanvasRenderer stuff to the given `THREE` instance.
+ *
+ * @param {Object} THREE
+ * @api public
+ */
+
+module.exports = function(THREE){
+  require('three-projector-renderer')(THREE);
+  /**
+   * @author mrdoob / http://mrdoob.com/
+   */
+
+  THREE.SpriteCanvasMaterial = function ( parameters ) {
+
+    THREE.Material.call( this );
+
+    this.type = 'SpriteCanvasMaterial';
+
+    this.color = new THREE.Color( 0xffffff );
+    this.program = function ( context, color ) {};
+
+    this.setValues( parameters );
+
+  };
+
+  THREE.SpriteCanvasMaterial.prototype = Object.create( THREE.Material.prototype );
+  THREE.SpriteCanvasMaterial.prototype.constructor = THREE.SpriteCanvasMaterial;
+
+  THREE.SpriteCanvasMaterial.prototype.clone = function () {
+
+    var material = new THREE.SpriteCanvasMaterial();
+
+    material.copy( this );
+    material.color.copy( this.color );
+    material.program = this.program;
+
+    return material;
+
+  };
+
+  //
+
+  THREE.CanvasRenderer = function ( parameters ) {
+
+    console.log( 'THREE.CanvasRenderer', THREE.REVISION );
+
+    parameters = parameters || {};
+
+    var _this = this,
+    _renderData, _elements, _lights,
+    _projector = new THREE.Projector(),
+
+    _canvas = parameters.canvas !== undefined
+      ? parameters.canvas
+      : document.createElement( 'canvas' ),
+
+      _canvasWidth = _canvas.width,
+      _canvasHeight = _canvas.height,
+      _canvasWidthHalf = Math.floor( _canvasWidth / 2 ),
+      _canvasHeightHalf = Math.floor( _canvasHeight / 2 ),
+
+      _viewportX = 0,
+      _viewportY = 0,
+      _viewportWidth = _canvasWidth,
+      _viewportHeight = _canvasHeight,
+
+      _pixelRatio = 1,
+
+      _context = _canvas.getContext( '2d', {
+        alpha: parameters.alpha === true
+      } ),
+
+      _clearColor = new THREE.Color( 0x000000 ),
+      _clearAlpha = parameters.alpha === true ? 0 : 1,
+
+      _contextGlobalAlpha = 1,
+      _contextGlobalCompositeOperation = 0,
+      _contextStrokeStyle = null,
+      _contextFillStyle = null,
+      _contextLineWidth = null,
+      _contextLineCap = null,
+      _contextLineJoin = null,
+      _contextLineDash = [],
+
+      _camera,
+
+      _v1, _v2, _v3, _v4,
+      _v5 = new THREE.RenderableVertex(),
+      _v6 = new THREE.RenderableVertex(),
+
+      _v1x, _v1y, _v2x, _v2y, _v3x, _v3y,
+      _v4x, _v4y, _v5x, _v5y, _v6x, _v6y,
+
+      _color = new THREE.Color(),
+      _color1 = new THREE.Color(),
+      _color2 = new THREE.Color(),
+      _color3 = new THREE.Color(),
+      _color4 = new THREE.Color(),
+
+      _diffuseColor = new THREE.Color(),
+      _emissiveColor = new THREE.Color(),
+
+      _lightColor = new THREE.Color(),
+
+      _patterns = {},
+
+      _image, _uvs,
+      _uv1x, _uv1y, _uv2x, _uv2y, _uv3x, _uv3y,
+
+      _clipBox = new THREE.Box2(),
+      _clearBox = new THREE.Box2(),
+      _elemBox = new THREE.Box2(),
+
+      _ambientLight = new THREE.Color(),
+      _directionalLights = new THREE.Color(),
+      _pointLights = new THREE.Color(),
+
+      _vector3 = new THREE.Vector3(), // Needed for PointLight
+      _centroid = new THREE.Vector3(),
+      _normal = new THREE.Vector3(),
+      _normalViewMatrix = new THREE.Matrix3();
+
+      /* TODO
+         _canvas.mozImageSmoothingEnabled = false;
+         _canvas.webkitImageSmoothingEnabled = false;
+         _canvas.msImageSmoothingEnabled = false;
+         _canvas.imageSmoothingEnabled = false;
+         */
+
+      // dash+gap fallbacks for Firefox and everything else
+
+      if ( _context.setLineDash === undefined ) {
+
+        _context.setLineDash = function () {};
+
+      }
+
+      this.domElement = _canvas;
+
+      this.autoClear = true;
+      this.sortObjects = true;
+      this.sortElements = true;
+
+      this.info = {
+
+        render: {
+
+          vertices: 0,
+          faces: 0
+
+        }
+
+      };
+
+      // WebGLRenderer compatibility
+
+      this.supportsVertexTextures = function () {};
+      this.setFaceCulling = function () {};
+
+      // API
+
+      this.getContext = function () {
+
+        return _context;
+
+      };
+
+      this.getContextAttributes = function () {
+
+        return _context.getContextAttributes();
+
+      };
+
+      this.getPixelRatio = function () {
+
+        return _pixelRatio;
+
+      };
+
+      this.setPixelRatio = function ( value ) {
+
+        if ( value !== undefined ) _pixelRatio = value;
+
+      };
+
+      this.setSize = function ( width, height, updateStyle ) {
+
+        _canvasWidth = width * _pixelRatio;
+        _canvasHeight = height * _pixelRatio;
+
+        _canvas.width = _canvasWidth;
+        _canvas.height = _canvasHeight;
+
+        _canvasWidthHalf = Math.floor( _canvasWidth / 2 );
+        _canvasHeightHalf = Math.floor( _canvasHeight / 2 );
+
+        if ( updateStyle !== false ) {
+
+          _canvas.style.width = width + 'px';
+          _canvas.style.height = height + 'px';
+
+        }
+
+        _clipBox.min.set( - _canvasWidthHalf, - _canvasHeightHalf );
+        _clipBox.max.set(   _canvasWidthHalf,   _canvasHeightHalf );
+
+        _clearBox.min.set( - _canvasWidthHalf, - _canvasHeightHalf );
+        _clearBox.max.set(   _canvasWidthHalf,   _canvasHeightHalf );
+
+        _contextGlobalAlpha = 1;
+        _contextGlobalCompositeOperation = 0;
+        _contextStrokeStyle = null;
+        _contextFillStyle = null;
+        _contextLineWidth = null;
+        _contextLineCap = null;
+        _contextLineJoin = null;
+
+        this.setViewport( 0, 0, width, height );
+
+      };
+
+      this.setViewport = function ( x, y, width, height ) {
+
+        _viewportX = x * _pixelRatio;
+        _viewportY = y * _pixelRatio;
+
+        _viewportWidth = width * _pixelRatio;
+        _viewportHeight = height * _pixelRatio;
+
+      };
+
+      this.setScissor = function () {};
+      this.setScissorTest = function () {};
+
+      this.setClearColor = function ( color, alpha ) {
+
+        _clearColor.set( color );
+        _clearAlpha = alpha !== undefined ? alpha : 1;
+
+        _clearBox.min.set( - _canvasWidthHalf, - _canvasHeightHalf );
+        _clearBox.max.set(   _canvasWidthHalf,   _canvasHeightHalf );
+
+      };
+
+      this.setClearColorHex = function ( hex, alpha ) {
+
+        console.warn( 'THREE.CanvasRenderer: .setClearColorHex() is being removed. Use .setClearColor() instead.' );
+        this.setClearColor( hex, alpha );
+
+      };
+
+      this.getClearColor = function () {
+
+        return _clearColor;
+
+      };
+
+      this.getClearAlpha = function () {
+
+        return _clearAlpha;
+
+      };
+
+      this.getMaxAnisotropy = function () {
+
+        return 0;
+
+      };
+
+      this.clear = function () {
+
+        if ( _clearBox.isEmpty() === false ) {
+
+          _clearBox.intersect( _clipBox );
+          _clearBox.expandByScalar( 2 );
+
+          _clearBox.min.x = _clearBox.min.x + _canvasWidthHalf;
+          _clearBox.min.y =  - _clearBox.min.y + _canvasHeightHalf;   // higher y value !
+          _clearBox.max.x = _clearBox.max.x + _canvasWidthHalf;
+          _clearBox.max.y =  - _clearBox.max.y + _canvasHeightHalf;   // lower y value !
+
+          if ( _clearAlpha < 1 ) {
+
+            _context.clearRect(
+              _clearBox.min.x | 0,
+              _clearBox.max.y | 0,
+              ( _clearBox.max.x - _clearBox.min.x ) | 0,
+              ( _clearBox.min.y - _clearBox.max.y ) | 0
+            );
+
+          }
+
+          if ( _clearAlpha > 0 ) {
+
+            setBlending( THREE.NormalBlending );
+            setOpacity( 1 );
+
+            setFillStyle( 'rgba(' + Math.floor( _clearColor.r * 255 ) + ',' + Math.floor( _clearColor.g * 255 ) + ',' + Math.floor( _clearColor.b * 255 ) + ',' + _clearAlpha + ')' );
+
+            _context.fillRect(
+              _clearBox.min.x | 0,
+              _clearBox.max.y | 0,
+              ( _clearBox.max.x - _clearBox.min.x ) | 0,
+              ( _clearBox.min.y - _clearBox.max.y ) | 0
+            );
+
+          }
+
+          _clearBox.makeEmpty();
+
+        }
+
+      };
+
+      // compatibility
+
+      this.clearColor = function () {};
+      this.clearDepth = function () {};
+      this.clearStencil = function () {};
+
+      this.render = function ( scene, camera ) {
+
+        if ( camera instanceof THREE.Camera === false ) {
+
+          console.error( 'THREE.CanvasRenderer.render: camera is not an instance of THREE.Camera.' );
+          return;
+
+        }
+
+        if ( this.autoClear === true ) this.clear();
+
+        _this.info.render.vertices = 0;
+        _this.info.render.faces = 0;
+
+        _context.setTransform( _viewportWidth / _canvasWidth, 0, 0, - _viewportHeight / _canvasHeight, _viewportX, _canvasHeight - _viewportY );
+        _context.translate( _canvasWidthHalf, _canvasHeightHalf );
+
+        _renderData = _projector.projectScene( scene, camera, this.sortObjects, this.sortElements );
+        _elements = _renderData.elements;
+        _lights = _renderData.lights;
+        _camera = camera;
+
+        _normalViewMatrix.getNormalMatrix( camera.matrixWorldInverse );
+
+        /* DEBUG
+           setFillStyle( 'rgba( 0, 255, 255, 0.5 )' );
+           _context.fillRect( _clipBox.min.x, _clipBox.min.y, _clipBox.max.x - _clipBox.min.x, _clipBox.max.y - _clipBox.min.y );
+           */
+
+        calculateLights();
+
+        for ( var e = 0, el = _elements.length; e < el; e ++ ) {
+
+          var element = _elements[ e ];
+
+          var material = element.material;
+
+          if ( material === undefined || material.opacity === 0 ) continue;
+
+          _elemBox.makeEmpty();
+
+          if ( element instanceof THREE.RenderableSprite ) {
+
+            _v1 = element;
+            _v1.x *= _canvasWidthHalf; _v1.y *= _canvasHeightHalf;
+
+            renderSprite( _v1, element, material );
+
+          } else if ( element instanceof THREE.RenderableLine ) {
+
+            _v1 = element.v1; _v2 = element.v2;
+
+            _v1.positionScreen.x *= _canvasWidthHalf; _v1.positionScreen.y *= _canvasHeightHalf;
+            _v2.positionScreen.x *= _canvasWidthHalf; _v2.positionScreen.y *= _canvasHeightHalf;
+
+            _elemBox.setFromPoints( [
+              _v1.positionScreen,
+              _v2.positionScreen
+            ] );
+
+            if ( _clipBox.intersectsBox( _elemBox ) === true ) {
+
+              renderLine( _v1, _v2, element, material );
+
+            }
+
+          } else if ( element instanceof THREE.RenderableFace ) {
+
+            _v1 = element.v1; _v2 = element.v2; _v3 = element.v3;
+
+            if ( _v1.positionScreen.z < - 1 || _v1.positionScreen.z > 1 ) continue;
+            if ( _v2.positionScreen.z < - 1 || _v2.positionScreen.z > 1 ) continue;
+            if ( _v3.positionScreen.z < - 1 || _v3.positionScreen.z > 1 ) continue;
+
+            _v1.positionScreen.x *= _canvasWidthHalf; _v1.positionScreen.y *= _canvasHeightHalf;
+            _v2.positionScreen.x *= _canvasWidthHalf; _v2.positionScreen.y *= _canvasHeightHalf;
+            _v3.positionScreen.x *= _canvasWidthHalf; _v3.positionScreen.y *= _canvasHeightHalf;
+
+            if ( material.overdraw > 0 ) {
+
+              expand( _v1.positionScreen, _v2.positionScreen, material.overdraw );
+              expand( _v2.positionScreen, _v3.positionScreen, material.overdraw );
+              expand( _v3.positionScreen, _v1.positionScreen, material.overdraw );
+
+            }
+
+            _elemBox.setFromPoints( [
+              _v1.positionScreen,
+              _v2.positionScreen,
+              _v3.positionScreen
+            ] );
+
+            if ( _clipBox.intersectsBox( _elemBox ) === true ) {
+
+              renderFace3( _v1, _v2, _v3, 0, 1, 2, element, material );
+
+            }
+
+          }
+
+          /* DEBUG
+             setLineWidth( 1 );
+             setStrokeStyle( 'rgba( 0, 255, 0, 0.5 )' );
+             _context.strokeRect( _elemBox.min.x, _elemBox.min.y, _elemBox.max.x - _elemBox.min.x, _elemBox.max.y - _elemBox.min.y );
+             */
+
+          _clearBox.union( _elemBox );
+
+        }
+
+        /* DEBUG
+           setLineWidth( 1 );
+           setStrokeStyle( 'rgba( 255, 0, 0, 0.5 )' );
+           _context.strokeRect( _clearBox.min.x, _clearBox.min.y, _clearBox.max.x - _clearBox.min.x, _clearBox.max.y - _clearBox.min.y );
+           */
+
+        _context.setTransform( 1, 0, 0, 1, 0, 0 );
+
+      };
+
+      //
+
+      function calculateLights() {
+
+        _ambientLight.setRGB( 0, 0, 0 );
+        _directionalLights.setRGB( 0, 0, 0 );
+        _pointLights.setRGB( 0, 0, 0 );
+
+        for ( var l = 0, ll = _lights.length; l < ll; l ++ ) {
+
+          var light = _lights[ l ];
+          var lightColor = light.color;
+
+          if ( light instanceof THREE.AmbientLight ) {
+
+            _ambientLight.add( lightColor );
+
+          } else if ( light instanceof THREE.DirectionalLight ) {
+
+            // for sprites
+
+            _directionalLights.add( lightColor );
+
+          } else if ( light instanceof THREE.PointLight ) {
+
+            // for sprites
+
+            _pointLights.add( lightColor );
+
+          }
+
+        }
+
+      }
+
+      function calculateLight( position, normal, color ) {
+
+        for ( var l = 0, ll = _lights.length; l < ll; l ++ ) {
+
+          var light = _lights[ l ];
+
+          _lightColor.copy( light.color );
+
+          if ( light instanceof THREE.DirectionalLight ) {
+
+            var lightPosition = _vector3.setFromMatrixPosition( light.matrixWorld ).normalize();
+
+            var amount = normal.dot( lightPosition );
+
+            if ( amount <= 0 ) continue;
+
+            amount *= light.intensity;
+
+            color.add( _lightColor.multiplyScalar( amount ) );
+
+          } else if ( light instanceof THREE.PointLight ) {
+
+            var lightPosition = _vector3.setFromMatrixPosition( light.matrixWorld );
+
+            var amount = normal.dot( _vector3.subVectors( lightPosition, position ).normalize() );
+
+            if ( amount <= 0 ) continue;
+
+            amount *= light.distance == 0 ? 1 : 1 - Math.min( position.distanceTo( lightPosition ) / light.distance, 1 );
+
+            if ( amount == 0 ) continue;
+
+            amount *= light.intensity;
+
+            color.add( _lightColor.multiplyScalar( amount ) );
+
+          }
+
+        }
+
+      }
+
+      function renderSprite( v1, element, material ) {
+
+        setOpacity( material.opacity );
+        setBlending( material.blending );
+
+        var scaleX = element.scale.x * _canvasWidthHalf;
+        var scaleY = element.scale.y * _canvasHeightHalf;
+
+        var dist = 0.5 * Math.sqrt( scaleX * scaleX + scaleY * scaleY ); // allow for rotated sprite
+        _elemBox.min.set( v1.x - dist, v1.y - dist );
+        _elemBox.max.set( v1.x + dist, v1.y + dist );
+
+        if ( material instanceof THREE.SpriteMaterial ) {
+
+          var texture = material.map;
+
+          if ( texture !== null ) {
+
+            var pattern = _patterns[ texture.id ];
+
+            if ( pattern === undefined || pattern.version !== texture.version ) {
+
+              pattern = textureToPattern( texture );
+              _patterns[ texture.id ] = pattern;
+
+            }
+
+            if ( pattern.canvas !== undefined ) {
+
+              setFillStyle( pattern.canvas );
+
+              var bitmap = texture.image;
+
+              var ox = bitmap.width * texture.offset.x;
+              var oy = bitmap.height * texture.offset.y;
+
+              var sx = bitmap.width * texture.repeat.x;
+              var sy = bitmap.height * texture.repeat.y;
+
+              var cx = scaleX / sx;
+              var cy = scaleY / sy;
+
+              _context.save();
+              _context.translate( v1.x, v1.y );
+              if ( material.rotation !== 0 ) _context.rotate( material.rotation );
+              _context.translate( - scaleX / 2, - scaleY / 2 );
+              _context.scale( cx, cy );
+              _context.translate( - ox, - oy );
+              _context.fillRect( ox, oy, sx, sy );
+              _context.restore();
+
+            }
+
+          } else {
+
+            // no texture
+
+            setFillStyle( material.color.getStyle() );
+
+            _context.save();
+            _context.translate( v1.x, v1.y );
+            if ( material.rotation !== 0 ) _context.rotate( material.rotation );
+            _context.scale( scaleX, - scaleY );
+            _context.fillRect( - 0.5, - 0.5, 1, 1 );
+            _context.restore();
+
+          }
+
+        } else if ( material instanceof THREE.SpriteCanvasMaterial ) {
+
+          setStrokeStyle( material.color.getStyle() );
+          setFillStyle( material.color.getStyle() );
+
+          _context.save();
+          _context.translate( v1.x, v1.y );
+          if ( material.rotation !== 0 ) _context.rotate( material.rotation );
+          _context.scale( scaleX, scaleY );
+
+          material.program( _context );
+
+          _context.restore();
+
+        }
+
+        /* DEBUG
+           setStrokeStyle( 'rgb(255,255,0)' );
+           _context.beginPath();
+           _context.moveTo( v1.x - 10, v1.y );
+           _context.lineTo( v1.x + 10, v1.y );
+           _context.moveTo( v1.x, v1.y - 10 );
+           _context.lineTo( v1.x, v1.y + 10 );
+           _context.stroke();
+           */
+
+      }
+
+      function renderLine( v1, v2, element, material ) {
+
+        setOpacity( material.opacity );
+        setBlending( material.blending );
+
+        _context.beginPath();
+        _context.moveTo( v1.positionScreen.x, v1.positionScreen.y );
+        _context.lineTo( v2.positionScreen.x, v2.positionScreen.y );
+
+        if ( material instanceof THREE.LineBasicMaterial ) {
+
+          setLineWidth( material.linewidth );
+          setLineCap( material.linecap );
+          setLineJoin( material.linejoin );
+
+          if ( material.vertexColors !== THREE.VertexColors ) {
+
+            setStrokeStyle( material.color.getStyle() );
+
+          } else {
+
+            var colorStyle1 = element.vertexColors[ 0 ].getStyle();
+            var colorStyle2 = element.vertexColors[ 1 ].getStyle();
+
+            if ( colorStyle1 === colorStyle2 ) {
+
+              setStrokeStyle( colorStyle1 );
+
+            } else {
+
+              try {
+
+                var grad = _context.createLinearGradient(
+                  v1.positionScreen.x,
+                  v1.positionScreen.y,
+                  v2.positionScreen.x,
+                  v2.positionScreen.y
+                );
+                grad.addColorStop( 0, colorStyle1 );
+                grad.addColorStop( 1, colorStyle2 );
+
+              } catch ( exception ) {
+
+                grad = colorStyle1;
+
+              }
+
+              setStrokeStyle( grad );
+
+            }
+
+          }
+
+          _context.stroke();
+          _elemBox.expandByScalar( material.linewidth * 2 );
+
+        } else if ( material instanceof THREE.LineDashedMaterial ) {
+
+          setLineWidth( material.linewidth );
+          setLineCap( material.linecap );
+          setLineJoin( material.linejoin );
+          setStrokeStyle( material.color.getStyle() );
+          setLineDash( [ material.dashSize, material.gapSize ] );
+
+          _context.stroke();
+
+          _elemBox.expandByScalar( material.linewidth * 2 );
+
+          setLineDash( [] );
+
+        }
+
+      }
+
+      function renderFace3( v1, v2, v3, uv1, uv2, uv3, element, material ) {
+
+        _this.info.render.vertices += 3;
+        _this.info.render.faces ++;
+
+        setOpacity( material.opacity );
+        setBlending( material.blending );
+
+        _v1x = v1.positionScreen.x; _v1y = v1.positionScreen.y;
+        _v2x = v2.positionScreen.x; _v2y = v2.positionScreen.y;
+        _v3x = v3.positionScreen.x; _v3y = v3.positionScreen.y;
+
+        drawTriangle( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y );
+
+        if ( ( material instanceof THREE.MeshLambertMaterial || material instanceof THREE.MeshPhongMaterial ) && material.map === null ) {
+
+          _diffuseColor.copy( material.color );
+          _emissiveColor.copy( material.emissive );
+
+          if ( material.vertexColors === THREE.FaceColors ) {
+
+            _diffuseColor.multiply( element.color );
+
+          }
+
+          _color.copy( _ambientLight );
+
+          _centroid.copy( v1.positionWorld ).add( v2.positionWorld ).add( v3.positionWorld ).divideScalar( 3 );
+
+          calculateLight( _centroid, element.normalModel, _color );
+
+          _color.multiply( _diffuseColor ).add( _emissiveColor );
+
+          material.wireframe === true
+            ? strokePath( _color, material.wireframeLinewidth, material.wireframeLinecap, material.wireframeLinejoin )
+            : fillPath( _color );
+
+        } else if ( material instanceof THREE.MeshBasicMaterial ||
+                   material instanceof THREE.MeshLambertMaterial ||
+                     material instanceof THREE.MeshPhongMaterial ) {
+
+          if ( material.map !== null ) {
+
+            var mapping = material.map.mapping;
+
+            if ( mapping === THREE.UVMapping ) {
+
+              _uvs = element.uvs;
+              patternPath( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y, _uvs[ uv1 ].x, _uvs[ uv1 ].y, _uvs[ uv2 ].x, _uvs[ uv2 ].y, _uvs[ uv3 ].x, _uvs[ uv3 ].y, material.map );
+
+            }
+
+          } else if ( material.envMap !== null ) {
+
+            if ( material.envMap.mapping === THREE.SphericalReflectionMapping ) {
+
+              _normal.copy( element.vertexNormalsModel[ uv1 ] ).applyMatrix3( _normalViewMatrix );
+              _uv1x = 0.5 * _normal.x + 0.5;
+              _uv1y = 0.5 * _normal.y + 0.5;
+
+              _normal.copy( element.vertexNormalsModel[ uv2 ] ).applyMatrix3( _normalViewMatrix );
+              _uv2x = 0.5 * _normal.x + 0.5;
+              _uv2y = 0.5 * _normal.y + 0.5;
+
+              _normal.copy( element.vertexNormalsModel[ uv3 ] ).applyMatrix3( _normalViewMatrix );
+              _uv3x = 0.5 * _normal.x + 0.5;
+              _uv3y = 0.5 * _normal.y + 0.5;
+
+              patternPath( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y, _uv1x, _uv1y, _uv2x, _uv2y, _uv3x, _uv3y, material.envMap );
+
+            }
+
+          } else {
+
+            _color.copy( material.color );
+
+            if ( material.vertexColors === THREE.FaceColors ) {
+
+              _color.multiply( element.color );
+
+            }
+
+            material.wireframe === true
+              ? strokePath( _color, material.wireframeLinewidth, material.wireframeLinecap, material.wireframeLinejoin )
+              : fillPath( _color );
+
+          }
+
+        } else if ( material instanceof THREE.MeshNormalMaterial ) {
+
+          _normal.copy( element.normalModel ).applyMatrix3( _normalViewMatrix );
+
+          _color.setRGB( _normal.x, _normal.y, _normal.z ).multiplyScalar( 0.5 ).addScalar( 0.5 );
+
+          material.wireframe === true
+            ? strokePath( _color, material.wireframeLinewidth, material.wireframeLinecap, material.wireframeLinejoin )
+            : fillPath( _color );
+
+        } else {
+
+          _color.setRGB( 1, 1, 1 );
+
+          material.wireframe === true
+            ? strokePath( _color, material.wireframeLinewidth, material.wireframeLinecap, material.wireframeLinejoin )
+            : fillPath( _color );
+
+        }
+
+      }
+
+      //
+
+      function drawTriangle( x0, y0, x1, y1, x2, y2 ) {
+
+        _context.beginPath();
+        _context.moveTo( x0, y0 );
+        _context.lineTo( x1, y1 );
+        _context.lineTo( x2, y2 );
+        _context.closePath();
+
+      }
+
+      function strokePath( color, linewidth, linecap, linejoin ) {
+
+        setLineWidth( linewidth );
+        setLineCap( linecap );
+        setLineJoin( linejoin );
+        setStrokeStyle( color.getStyle() );
+
+        _context.stroke();
+
+        _elemBox.expandByScalar( linewidth * 2 );
+
+      }
+
+      function fillPath( color ) {
+
+        setFillStyle( color.getStyle() );
+        _context.fill();
+
+      }
+
+      function textureToPattern( texture ) {
+
+        if ( texture.version === 0 ||
+            texture instanceof THREE.CompressedTexture ||
+              texture instanceof THREE.DataTexture ) {
+
+          return {
+            canvas: undefined,
+            version: texture.version
+          };
+
+        }
+
+        var image = texture.image;
+
+        if ( image.complete === false ) {
+
+          return {
+            canvas: undefined,
+            version: 0
+          };
+
+        }
+
+        var canvas = document.createElement( 'canvas' );
+        canvas.width = image.width;
+        canvas.height = image.height;
+
+        var context = canvas.getContext( '2d' );
+        context.setTransform( 1, 0, 0, - 1, 0, image.height );
+        context.drawImage( image, 0, 0 );
+
+        var repeatX = texture.wrapS === THREE.RepeatWrapping;
+        var repeatY = texture.wrapT === THREE.RepeatWrapping;
+
+        var repeat = 'no-repeat';
+
+        if ( repeatX === true && repeatY === true ) {
+
+          repeat = 'repeat';
+
+        } else if ( repeatX === true ) {
+
+          repeat = 'repeat-x';
+
+        } else if ( repeatY === true ) {
+
+          repeat = 'repeat-y';
+
+        }
+
+        var pattern = _context.createPattern( canvas, repeat );
+
+        if ( texture.onUpdate ) texture.onUpdate( texture );
+
+        return {
+          canvas: pattern,
+          version: texture.version
+        };
+
+      }
+
+      function patternPath( x0, y0, x1, y1, x2, y2, u0, v0, u1, v1, u2, v2, texture ) {
+
+        var pattern = _patterns[ texture.id ];
+
+        if ( pattern === undefined || pattern.version !== texture.version ) {
+
+          pattern = textureToPattern( texture );
+          _patterns[ texture.id ] = pattern;
+
+        }
+
+        if ( pattern.canvas !== undefined ) {
+
+          setFillStyle( pattern.canvas );
+
+        } else {
+
+          setFillStyle( 'rgba( 0, 0, 0, 1)' );
+          _context.fill();
+          return;
+
+        }
+
+        // http://extremelysatisfactorytotalitarianism.com/blog/?p=2120
+
+        var a, b, c, d, e, f, det, idet,
+        offsetX = texture.offset.x / texture.repeat.x,
+        offsetY = texture.offset.y / texture.repeat.y,
+        width = texture.image.width * texture.repeat.x,
+        height = texture.image.height * texture.repeat.y;
+
+        u0 = ( u0 + offsetX ) * width;
+        v0 = ( v0 + offsetY ) * height;
+
+        u1 = ( u1 + offsetX ) * width;
+        v1 = ( v1 + offsetY ) * height;
+
+        u2 = ( u2 + offsetX ) * width;
+        v2 = ( v2 + offsetY ) * height;
+
+        x1 -= x0; y1 -= y0;
+        x2 -= x0; y2 -= y0;
+
+        u1 -= u0; v1 -= v0;
+        u2 -= u0; v2 -= v0;
+
+        det = u1 * v2 - u2 * v1;
+
+        if ( det === 0 ) return;
+
+        idet = 1 / det;
+
+        a = ( v2 * x1 - v1 * x2 ) * idet;
+        b = ( v2 * y1 - v1 * y2 ) * idet;
+        c = ( u1 * x2 - u2 * x1 ) * idet;
+        d = ( u1 * y2 - u2 * y1 ) * idet;
+
+        e = x0 - a * u0 - c * v0;
+        f = y0 - b * u0 - d * v0;
+
+        _context.save();
+        _context.transform( a, b, c, d, e, f );
+        _context.fill();
+        _context.restore();
+
+      }
+
+      function clipImage( x0, y0, x1, y1, x2, y2, u0, v0, u1, v1, u2, v2, image ) {
+
+        // http://extremelysatisfactorytotalitarianism.com/blog/?p=2120
+
+        var a, b, c, d, e, f, det, idet,
+        width = image.width - 1,
+        height = image.height - 1;
+
+        u0 *= width; v0 *= height;
+        u1 *= width; v1 *= height;
+        u2 *= width; v2 *= height;
+
+        x1 -= x0; y1 -= y0;
+        x2 -= x0; y2 -= y0;
+
+        u1 -= u0; v1 -= v0;
+        u2 -= u0; v2 -= v0;
+
+        det = u1 * v2 - u2 * v1;
+
+        idet = 1 / det;
+
+        a = ( v2 * x1 - v1 * x2 ) * idet;
+        b = ( v2 * y1 - v1 * y2 ) * idet;
+        c = ( u1 * x2 - u2 * x1 ) * idet;
+        d = ( u1 * y2 - u2 * y1 ) * idet;
+
+        e = x0 - a * u0 - c * v0;
+        f = y0 - b * u0 - d * v0;
+
+        _context.save();
+        _context.transform( a, b, c, d, e, f );
+        _context.clip();
+        _context.drawImage( image, 0, 0 );
+        _context.restore();
+
+      }
+
+      // Hide anti-alias gaps
+
+      function expand( v1, v2, pixels ) {
+
+        var x = v2.x - v1.x, y = v2.y - v1.y,
+        det = x * x + y * y, idet;
+
+        if ( det === 0 ) return;
+
+        idet = pixels / Math.sqrt( det );
+
+        x *= idet; y *= idet;
+
+        v2.x += x; v2.y += y;
+        v1.x -= x; v1.y -= y;
+
+      }
+
+      // Context cached methods.
+
+      function setOpacity( value ) {
+
+        if ( _contextGlobalAlpha !== value ) {
+
+          _context.globalAlpha = value;
+          _contextGlobalAlpha = value;
+
+        }
+
+      }
+
+      function setBlending( value ) {
+
+        if ( _contextGlobalCompositeOperation !== value ) {
+
+          if ( value === THREE.NormalBlending ) {
+
+            _context.globalCompositeOperation = 'source-over';
+
+          } else if ( value === THREE.AdditiveBlending ) {
+
+            _context.globalCompositeOperation = 'lighter';
+
+          } else if ( value === THREE.SubtractiveBlending ) {
+
+            _context.globalCompositeOperation = 'darker';
+
+          }
+
+          _contextGlobalCompositeOperation = value;
+
+        }
+
+      }
+
+      function setLineWidth( value ) {
+
+        if ( _contextLineWidth !== value ) {
+
+          _context.lineWidth = value;
+          _contextLineWidth = value;
+
+        }
+
+      }
+
+      function setLineCap( value ) {
+
+        // "butt", "round", "square"
+
+        if ( _contextLineCap !== value ) {
+
+          _context.lineCap = value;
+          _contextLineCap = value;
+
+        }
+
+      }
+
+      function setLineJoin( value ) {
+
+        // "round", "bevel", "miter"
+
+        if ( _contextLineJoin !== value ) {
+
+          _context.lineJoin = value;
+          _contextLineJoin = value;
+
+        }
+
+      }
+
+      function setStrokeStyle( value ) {
+
+        if ( _contextStrokeStyle !== value ) {
+
+          _context.strokeStyle = value;
+          _contextStrokeStyle = value;
+
+        }
+
+      }
+
+      function setFillStyle( value ) {
+
+        if ( _contextFillStyle !== value ) {
+
+          _context.fillStyle = value;
+          _contextFillStyle = value;
+
+        }
+
+      }
+
+      function setLineDash( value ) {
+
+        if ( _contextLineDash.length !== value.length ) {
+
+          _context.setLineDash( value );
+          _contextLineDash = value;
+
+        }
+
+      }
+
+  };
+  return THREE.CanvasRenderer;
+};
+
+},{"three-projector-renderer":62}],19:[function(require,module,exports){
+
+module.exports = function (THREE) {
+  /**
+   * @author dmarcos / https://github.com/dmarcos
+   * @author mrdoob / http://mrdoob.com
+   *
+   * WebVR Spec: http://mozvr.github.io/webvr-spec/webvr.html
+   *
+   * Firefox: http://mozvr.com/downloads/
+   * Chromium: https://drive.google.com/folderview?id=0BzudLt22BqGRbW9WTHMtOWMzNjQ&usp=sharing#list
+   *
+   */
+
+  THREE.VREffect = function ( renderer, onError ) {
+
+    var self = this;
+    var vrHMD;
+    var vrSensor;
+    var eyeTranslationL, eyeFOVL;
+    var eyeTranslationR, eyeFOVR;
+
+    function gotVRDevices( devices ) {
+
+      for ( var i = 0; i < devices.length; i ++ ) {
+
+        if (null == vrHMD && devices[ i ] instanceof HMDVRDevice ) {
+
+          vrHMD = devices[ i ];
+
+          if ( vrHMD.getEyeParameters !== undefined ) {
+
+            var eyeParamsL = vrHMD.getEyeParameters( 'left' );
+            var eyeParamsR = vrHMD.getEyeParameters( 'right' );
+
+            eyeTranslationL = eyeParamsL.eyeTranslation;
+            eyeTranslationR = eyeParamsR.eyeTranslation;
+            eyeFOVL = eyeParamsL.recommendedFieldOfView;
+            eyeFOVR = eyeParamsR.recommendedFieldOfView;
+
+          } else {
+
+            // TODO: This is an older code path and not spec compliant.
+            // It should be removed at some point in the near future.
+            eyeTranslationL = vrHMD.getEyeTranslation( 'left' );
+            eyeTranslationR = vrHMD.getEyeTranslation( 'right' );
+            eyeFOVL = vrHMD.getRecommendedEyeFieldOfView( 'left' );
+            eyeFOVR = vrHMD.getRecommendedEyeFieldOfView( 'right' );
+
+          }
+
+        } else if (null == vrSensor && devices[i] instanceof PositionSensorVRDevice) {
+          vrSensor = devices[i];
+        } else {
+          break;
+        }
+      }
+
+      if ( vrHMD === undefined ) {
+
+        if ( onError ) onError( 'HMD not available' );
+
+      }
+
+      self._vrHMD = vrHMD;
+      self._sensor = vrSensor;
+    }
+
+    if ( navigator.getVRDevices ) {
+
+      navigator.getVRDevices().then( gotVRDevices );
+
+    }
+
+    //
+
+    this.scale = 1;
+
+    this.setSize = function( width, height ) {
+
+      renderer.setSize( width, height );
+
+    };
+
+    // fullscreen
+
+    var isFullscreen = false;
+
+    var canvas = renderer.domElement;
+    var fullscreenchange = canvas.mozRequestFullScreen ? 'mozfullscreenchange' : 'webkitfullscreenchange';
+
+    document.addEventListener( fullscreenchange, function ( event ) {
+
+      isFullscreen = document.mozFullScreenElement || document.webkitFullscreenElement;
+
+    }, false );
+
+    this.setFullScreen = function ( boolean ) {
+
+      if ( vrHMD === undefined ) return;
+      if ( isFullscreen === boolean ) return;
+
+      if ( canvas.mozRequestFullScreen ) {
+
+        canvas.mozRequestFullScreen( { vrDisplay: vrHMD } );
+
+      } else if ( canvas.webkitRequestFullscreen ) {
+
+        canvas.webkitRequestFullscreen( { vrDisplay: vrHMD } );
+
+      }
+
+    };
+
+    // render
+
+    var cameraL = new THREE.PerspectiveCamera();
+    var cameraR = new THREE.PerspectiveCamera();
+
+    this.render = function ( scene, camera ) {
+
+      if ( vrHMD ) {
+
+        var sceneL, sceneR;
+
+        if ( scene instanceof Array ) {
+
+          sceneL = scene[ 0 ];
+          sceneR = scene[ 1 ];
+
+        } else {
+
+          sceneL = scene;
+          sceneR = scene;
+
+        }
+
+        var size = {width: renderer.domElement.width, height: renderer.domElement.height};
+        size.width /= 2;
+
+        renderer.enableScissorTest( true );
+        renderer.clear();
+
+        if ( camera.parent === undefined ) camera.updateMatrixWorld();
+
+        cameraL.projectionMatrix = fovToProjection( eyeFOVL, true, camera.near, camera.far );
+        cameraR.projectionMatrix = fovToProjection( eyeFOVR, true, camera.near, camera.far );
+
+        camera.matrixWorld.decompose( cameraL.position, cameraL.quaternion, cameraL.scale );
+        camera.matrixWorld.decompose( cameraR.position, cameraR.quaternion, cameraR.scale );
+
+        cameraL.translateX( eyeTranslationL.x * this.scale );
+        cameraR.translateX( eyeTranslationR.x * this.scale );
+
+        // render left eye
+        renderer.setViewport( 0, 0, size.width, size.height );
+        renderer.setScissor( 0, 0, size.width, size.height );
+        renderer.render( sceneL, cameraL );
+
+        // render right eye
+        renderer.setViewport( size.width, 0, size.width, size.height );
+        renderer.setScissor( size.width, 0, size.width, size.height );
+        renderer.render( sceneR, cameraR );
+
+        renderer.enableScissorTest( false );
+
+        return;
+
+      }
+
+      // Regular render mode if not HMD
+
+      if ( scene instanceof Array ) scene = scene[ 0 ];
+
+      renderer.render( scene, camera );
+
+    };
+
+    //
+
+    function fovToNDCScaleOffset( fov ) {
+
+      var pxscale = 2.0 / (fov.leftTan + fov.rightTan);
+      var pxoffset = (fov.leftTan - fov.rightTan) * pxscale * 0.5;
+      var pyscale = 2.0 / (fov.upTan + fov.downTan);
+      var pyoffset = (fov.upTan - fov.downTan) * pyscale * 0.5;
+      return { scale: [ pxscale, pyscale ], offset: [ pxoffset, pyoffset ] };
+
+    }
+
+    function fovPortToProjection( fov, rightHanded, zNear, zFar ) {
+
+      rightHanded = rightHanded === undefined ? true : rightHanded;
+      zNear = zNear === undefined ? 0.01 : zNear;
+      zFar = zFar === undefined ? 10000.0 : zFar;
+
+      var handednessScale = rightHanded ? -1.0 : 1.0;
+
+      // start with an identity matrix
+      var mobj = new THREE.Matrix4();
+      var m = mobj.elements;
+
+      // and with scale/offset info for normalized device coords
+      var scaleAndOffset = fovToNDCScaleOffset(fov);
+
+      // X result, map clip edges to [-w,+w]
+      m[0 * 4 + 0] = scaleAndOffset.scale[0];
+      m[0 * 4 + 1] = 0.0;
+      m[0 * 4 + 2] = scaleAndOffset.offset[0] * handednessScale;
+      m[0 * 4 + 3] = 0.0;
+
+      // Y result, map clip edges to [-w,+w]
+      // Y offset is negated because this proj matrix transforms from world coords with Y=up,
+      // but the NDC scaling has Y=down (thanks D3D?)
+      m[1 * 4 + 0] = 0.0;
+      m[1 * 4 + 1] = scaleAndOffset.scale[1];
+      m[1 * 4 + 2] = -scaleAndOffset.offset[1] * handednessScale;
+      m[1 * 4 + 3] = 0.0;
+
+      // Z result (up to the app)
+      m[2 * 4 + 0] = 0.0;
+      m[2 * 4 + 1] = 0.0;
+      m[2 * 4 + 2] = zFar / (zNear - zFar) * -handednessScale;
+      m[2 * 4 + 3] = (zFar * zNear) / (zNear - zFar);
+
+      // W result (= Z in)
+      m[3 * 4 + 0] = 0.0;
+      m[3 * 4 + 1] = 0.0;
+      m[3 * 4 + 2] = handednessScale;
+      m[3 * 4 + 3] = 0.0;
+
+      mobj.transpose();
+
+      return mobj;
+    }
+
+    function fovToProjection( fov, rightHanded, zNear, zFar ) {
+
+      var DEG2RAD = Math.PI / 180.0;
+
+      var fovPort = {
+        upTan: Math.tan( fov.upDegrees * DEG2RAD ),
+        downTan: Math.tan( fov.downDegrees * DEG2RAD ),
+        leftTan: Math.tan( fov.leftDegrees * DEG2RAD ),
+        rightTan: Math.tan( fov.rightDegrees * DEG2RAD )
+      };
+
+      return fovPortToProjection( fovPort, rightHanded, zNear, zFar );
+
+    }
+
+  };
+};
+
+},{}],20:[function(require,module,exports){
+'use strict'
+
+exports.toByteArray = toByteArray
+exports.fromByteArray = fromByteArray
+
+var lookup = []
+var revLookup = []
+var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
+
+function init () {
+  var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  for (var i = 0, len = code.length; i < len; ++i) {
+    lookup[i] = code[i]
+    revLookup[code.charCodeAt(i)] = i
+  }
+
+  revLookup['-'.charCodeAt(0)] = 62
+  revLookup['_'.charCodeAt(0)] = 63
+}
+
+init()
+
+function toByteArray (b64) {
+  var i, j, l, tmp, placeHolders, arr
+  var len = b64.length
+
+  if (len % 4 > 0) {
+    throw new Error('Invalid string. Length must be a multiple of 4')
+  }
+
+  // the number of equal signs (place holders)
+  // if there are two placeholders, than the two characters before it
+  // represent one byte
+  // if there is only one, then the three characters before it represent 2 bytes
+  // this is just a cheap hack to not do indexOf twice
+  placeHolders = b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
+
+  // base64 is 4/3 + up to two characters of the original data
+  arr = new Arr(len * 3 / 4 - placeHolders)
+
+  // if there are placeholders, only get up to the last complete 4 chars
+  l = placeHolders > 0 ? len - 4 : len
+
+  var L = 0
+
+  for (i = 0, j = 0; i < l; i += 4, j += 3) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
+    arr[L++] = (tmp >> 16) & 0xFF
+    arr[L++] = (tmp >> 8) & 0xFF
+    arr[L++] = tmp & 0xFF
+  }
+
+  if (placeHolders === 2) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
+    arr[L++] = tmp & 0xFF
+  } else if (placeHolders === 1) {
+    tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
+    arr[L++] = (tmp >> 8) & 0xFF
+    arr[L++] = tmp & 0xFF
+  }
+
+  return arr
+}
+
+function tripletToBase64 (num) {
+  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F]
+}
+
+function encodeChunk (uint8, start, end) {
+  var tmp
+  var output = []
+  for (var i = start; i < end; i += 3) {
+    tmp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
+    output.push(tripletToBase64(tmp))
+  }
+  return output.join('')
+}
+
+function fromByteArray (uint8) {
+  var tmp
+  var len = uint8.length
+  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
+  var output = ''
+  var parts = []
+  var maxChunkLength = 16383 // must be multiple of 3
+
+  // go through the array every three bytes, we'll deal with trailing stuff later
+  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
+  }
+
+  // pad the end with zeros, but make sure to not forget the extra bytes
+  if (extraBytes === 1) {
+    tmp = uint8[len - 1]
+    output += lookup[tmp >> 2]
+    output += lookup[(tmp << 4) & 0x3F]
+    output += '=='
+  } else if (extraBytes === 2) {
+    tmp = (uint8[len - 2] << 8) + (uint8[len - 1])
+    output += lookup[tmp >> 10]
+    output += lookup[(tmp >> 4) & 0x3F]
+    output += lookup[(tmp << 2) & 0x3F]
+    output += '='
+  }
+
+  parts.push(output)
+
+  return parts.join('')
+}
+
+},{}],21:[function(require,module,exports){
+
+},{}],22:[function(require,module,exports){
+(function (global){
+'use strict';
+
+var buffer = require('buffer');
+var Buffer = buffer.Buffer;
+var SlowBuffer = buffer.SlowBuffer;
+var MAX_LEN = buffer.kMaxLength || 2147483647;
+exports.alloc = function alloc(size, fill, encoding) {
+  if (typeof Buffer.alloc === 'function') {
+    return Buffer.alloc(size, fill, encoding);
+  }
+  if (typeof encoding === 'number') {
+    throw new TypeError('encoding must not be number');
+  }
+  if (typeof size !== 'number') {
+    throw new TypeError('size must be a number');
+  }
+  if (size > MAX_LEN) {
+    throw new RangeError('size is too large');
+  }
+  var enc = encoding;
+  var _fill = fill;
+  if (_fill === undefined) {
+    enc = undefined;
+    _fill = 0;
+  }
+  var buf = new Buffer(size);
+  if (typeof _fill === 'string') {
+    var fillBuf = new Buffer(_fill, enc);
+    var flen = fillBuf.length;
+    var i = -1;
+    while (++i < size) {
+      buf[i] = fillBuf[i % flen];
+    }
+  } else {
+    buf.fill(_fill);
+  }
+  return buf;
+}
+exports.allocUnsafe = function allocUnsafe(size) {
+  if (typeof Buffer.allocUnsafe === 'function') {
+    return Buffer.allocUnsafe(size);
+  }
+  if (typeof size !== 'number') {
+    throw new TypeError('size must be a number');
+  }
+  if (size > MAX_LEN) {
+    throw new RangeError('size is too large');
+  }
+  return new Buffer(size);
+}
+exports.from = function from(value, encodingOrOffset, length) {
+  if (typeof Buffer.from === 'function' && (!global.Uint8Array || Uint8Array.from !== Buffer.from)) {
+    return Buffer.from(value, encodingOrOffset, length);
+  }
+  if (typeof value === 'number') {
+    throw new TypeError('"value" argument must not be a number');
+  }
+  if (typeof value === 'string') {
+    return new Buffer(value, encodingOrOffset);
+  }
+  if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+    var offset = encodingOrOffset;
+    if (arguments.length === 1) {
+      return new Buffer(value);
+    }
+    if (typeof offset === 'undefined') {
+      offset = 0;
+    }
+    var len = length;
+    if (typeof len === 'undefined') {
+      len = value.byteLength - offset;
+    }
+    if (offset >= value.byteLength) {
+      throw new RangeError('\'offset\' is out of bounds');
+    }
+    if (len > value.byteLength - offset) {
+      throw new RangeError('\'length\' is out of bounds');
+    }
+    return new Buffer(value.slice(offset, offset + len));
+  }
+  if (Buffer.isBuffer(value)) {
+    var out = new Buffer(value.length);
+    value.copy(out, 0, 0, value.length);
+    return out;
+  }
+  if (value) {
+    if (Array.isArray(value) || (typeof ArrayBuffer !== 'undefined' && value.buffer instanceof ArrayBuffer) || 'length' in value) {
+      return new Buffer(value);
+    }
+    if (value.type === 'Buffer' && Array.isArray(value.data)) {
+      return new Buffer(value.data);
+    }
+  }
+
+  throw new TypeError('First argument must be a string, Buffer, ' + 'ArrayBuffer, Array, or array-like object.');
+}
+exports.allocUnsafeSlow = function allocUnsafeSlow(size) {
+  if (typeof Buffer.allocUnsafeSlow === 'function') {
+    return Buffer.allocUnsafeSlow(size);
+  }
+  if (typeof size !== 'number') {
+    throw new TypeError('size must be a number');
+  }
+  if (size >= MAX_LEN) {
+    throw new RangeError('size is too large');
+  }
+  return new SlowBuffer(size);
+}
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"buffer":23}],23:[function(require,module,exports){
+(function (global){
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+ * @license  MIT
+ */
+/* eslint-disable no-proto */
+
+'use strict'
+
+var base64 = require('base64-js')
+var ieee754 = require('ieee754')
+var isArray = require('isarray')
+
+exports.Buffer = Buffer
+exports.SlowBuffer = SlowBuffer
+exports.INSPECT_MAX_BYTES = 50
+
+/**
+ * If `Buffer.TYPED_ARRAY_SUPPORT`:
+ *   === true    Use Uint8Array implementation (fastest)
+ *   === false   Use Object implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * Due to various browser bugs, sometimes the Object implementation will be used even
+ * when the browser supports typed arrays.
+ *
+ * Note:
+ *
+ *   - Firefox 4-29 lacks support for adding new properties to `Uint8Array` instances,
+ *     See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
+ *
+ *   - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
+ *
+ *   - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
+ *     incorrect length in some situations.
+
+ * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
+ * get the Object implementation, which is slower but behaves correctly.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = global.TYPED_ARRAY_SUPPORT !== undefined
+  ? global.TYPED_ARRAY_SUPPORT
+  : typedArraySupport()
+
+/*
+ * Export kMaxLength after typed array support is determined.
+ */
+exports.kMaxLength = kMaxLength()
+
+function typedArraySupport () {
+  try {
+    var arr = new Uint8Array(1)
+    arr.__proto__ = {__proto__: Uint8Array.prototype, foo: function () { return 42 }}
+    return arr.foo() === 42 && // typed array instances can be augmented
+        typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
+        arr.subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
+  } catch (e) {
+    return false
+  }
+}
+
+function kMaxLength () {
+  return Buffer.TYPED_ARRAY_SUPPORT
+    ? 0x7fffffff
+    : 0x3fffffff
+}
+
+function createBuffer (that, length) {
+  if (kMaxLength() < length) {
+    throw new RangeError('Invalid typed array length')
+  }
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = new Uint8Array(length)
+    that.__proto__ = Buffer.prototype
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    if (that === null) {
+      that = new Buffer(length)
+    }
+    that.length = length
+  }
+
+  return that
+}
+
+/**
+ * The Buffer constructor returns instances of `Uint8Array` that have their
+ * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+ * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+ * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+ * returns a single octet.
+ *
+ * The `Uint8Array` prototype remains unmodified.
+ */
+
+function Buffer (arg, encodingOrOffset, length) {
+  if (!Buffer.TYPED_ARRAY_SUPPORT && !(this instanceof Buffer)) {
+    return new Buffer(arg, encodingOrOffset, length)
+  }
+
+  // Common case.
+  if (typeof arg === 'number') {
+    if (typeof encodingOrOffset === 'string') {
+      throw new Error(
+        'If encoding is specified then the first argument must be a string'
+      )
+    }
+    return allocUnsafe(this, arg)
+  }
+  return from(this, arg, encodingOrOffset, length)
+}
+
+Buffer.poolSize = 8192 // not used by this implementation
+
+// TODO: Legacy, not needed anymore. Remove in next major version.
+Buffer._augment = function (arr) {
+  arr.__proto__ = Buffer.prototype
+  return arr
+}
+
+function from (that, value, encodingOrOffset, length) {
+  if (typeof value === 'number') {
+    throw new TypeError('"value" argument must not be a number')
+  }
+
+  if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+    return fromArrayBuffer(that, value, encodingOrOffset, length)
+  }
+
+  if (typeof value === 'string') {
+    return fromString(that, value, encodingOrOffset)
+  }
+
+  return fromObject(that, value)
+}
+
+/**
+ * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+ * if value is a number.
+ * Buffer.from(str[, encoding])
+ * Buffer.from(array)
+ * Buffer.from(buffer)
+ * Buffer.from(arrayBuffer[, byteOffset[, length]])
+ **/
+Buffer.from = function (value, encodingOrOffset, length) {
+  return from(null, value, encodingOrOffset, length)
+}
+
+if (Buffer.TYPED_ARRAY_SUPPORT) {
+  Buffer.prototype.__proto__ = Uint8Array.prototype
+  Buffer.__proto__ = Uint8Array
+  if (typeof Symbol !== 'undefined' && Symbol.species &&
+      Buffer[Symbol.species] === Buffer) {
+    // Fix subarray() in ES2016. See: https://github.com/feross/buffer/pull/97
+    Object.defineProperty(Buffer, Symbol.species, {
+      value: null,
+      configurable: true
+    })
+  }
+}
+
+function assertSize (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('"size" argument must be a number')
+  }
+}
+
+function alloc (that, size, fill, encoding) {
+  assertSize(size)
+  if (size <= 0) {
+    return createBuffer(that, size)
+  }
+  if (fill !== undefined) {
+    // Only pay attention to encoding if it's a string. This
+    // prevents accidentally sending in a number that would
+    // be interpretted as a start offset.
+    return typeof encoding === 'string'
+      ? createBuffer(that, size).fill(fill, encoding)
+      : createBuffer(that, size).fill(fill)
+  }
+  return createBuffer(that, size)
+}
+
+/**
+ * Creates a new filled Buffer instance.
+ * alloc(size[, fill[, encoding]])
+ **/
+Buffer.alloc = function (size, fill, encoding) {
+  return alloc(null, size, fill, encoding)
+}
+
+function allocUnsafe (that, size) {
+  assertSize(size)
+  that = createBuffer(that, size < 0 ? 0 : checked(size) | 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) {
+    for (var i = 0; i < size; ++i) {
+      that[i] = 0
+    }
+  }
+  return that
+}
+
+/**
+ * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+ * */
+Buffer.allocUnsafe = function (size) {
+  return allocUnsafe(null, size)
+}
+/**
+ * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
+ */
+Buffer.allocUnsafeSlow = function (size) {
+  return allocUnsafe(null, size)
+}
+
+function fromString (that, string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') {
+    encoding = 'utf8'
+  }
+
+  if (!Buffer.isEncoding(encoding)) {
+    throw new TypeError('"encoding" must be a valid string encoding')
+  }
+
+  var length = byteLength(string, encoding) | 0
+  that = createBuffer(that, length)
+
+  var actual = that.write(string, encoding)
+
+  if (actual !== length) {
+    // Writing a hex string, for example, that contains invalid characters will
+    // cause everything after the first invalid character to be ignored. (e.g.
+    // 'abxxcd' will be treated as 'ab')
+    that = that.slice(0, actual)
+  }
+
+  return that
+}
+
+function fromArrayLike (that, array) {
+  var length = checked(array.length) | 0
+  that = createBuffer(that, length)
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255
+  }
+  return that
+}
+
+function fromArrayBuffer (that, array, byteOffset, length) {
+  array.byteLength // this throws if `array` is not a valid ArrayBuffer
+
+  if (byteOffset < 0 || array.byteLength < byteOffset) {
+    throw new RangeError('\'offset\' is out of bounds')
+  }
+
+  if (array.byteLength < byteOffset + (length || 0)) {
+    throw new RangeError('\'length\' is out of bounds')
+  }
+
+  if (byteOffset === undefined && length === undefined) {
+    array = new Uint8Array(array)
+  } else if (length === undefined) {
+    array = new Uint8Array(array, byteOffset)
+  } else {
+    array = new Uint8Array(array, byteOffset, length)
+  }
+
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = array
+    that.__proto__ = Buffer.prototype
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    that = fromArrayLike(that, array)
+  }
+  return that
+}
+
+function fromObject (that, obj) {
+  if (Buffer.isBuffer(obj)) {
+    var len = checked(obj.length) | 0
+    that = createBuffer(that, len)
+
+    if (that.length === 0) {
+      return that
+    }
+
+    obj.copy(that, 0, 0, len)
+    return that
+  }
+
+  if (obj) {
+    if ((typeof ArrayBuffer !== 'undefined' &&
+        obj.buffer instanceof ArrayBuffer) || 'length' in obj) {
+      if (typeof obj.length !== 'number' || isnan(obj.length)) {
+        return createBuffer(that, 0)
+      }
+      return fromArrayLike(that, obj)
+    }
+
+    if (obj.type === 'Buffer' && isArray(obj.data)) {
+      return fromArrayLike(that, obj.data)
+    }
+  }
+
+  throw new TypeError('First argument must be a string, Buffer, ArrayBuffer, Array, or array-like object.')
+}
+
+function checked (length) {
+  // Note: cannot use `length < kMaxLength` here because that fails when
+  // length is NaN (which is otherwise coerced to zero.)
+  if (length >= kMaxLength()) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+                         'size: 0x' + kMaxLength().toString(16) + ' bytes')
+  }
+  return length | 0
+}
+
+function SlowBuffer (length) {
+  if (+length != length) { // eslint-disable-line eqeqeq
+    length = 0
+  }
+  return Buffer.alloc(+length)
+}
+
+Buffer.isBuffer = function isBuffer (b) {
+  return !!(b != null && b._isBuffer)
+}
+
+Buffer.compare = function compare (a, b) {
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    throw new TypeError('Arguments must be Buffers')
+  }
+
+  if (a === b) return 0
+
+  var x = a.length
+  var y = b.length
+
+  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
+    if (a[i] !== b[i]) {
+      x = a[i]
+      y = b[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+Buffer.isEncoding = function isEncoding (encoding) {
+  switch (String(encoding).toLowerCase()) {
+    case 'hex':
+    case 'utf8':
+    case 'utf-8':
+    case 'ascii':
+    case 'latin1':
+    case 'binary':
+    case 'base64':
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return true
+    default:
+      return false
+  }
+}
+
+Buffer.concat = function concat (list, length) {
+  if (!isArray(list)) {
+    throw new TypeError('"list" argument must be an Array of Buffers')
+  }
+
+  if (list.length === 0) {
+    return Buffer.alloc(0)
+  }
+
+  var i
+  if (length === undefined) {
+    length = 0
+    for (i = 0; i < list.length; ++i) {
+      length += list[i].length
+    }
+  }
+
+  var buffer = Buffer.allocUnsafe(length)
+  var pos = 0
+  for (i = 0; i < list.length; ++i) {
+    var buf = list[i]
+    if (!Buffer.isBuffer(buf)) {
+      throw new TypeError('"list" argument must be an Array of Buffers')
+    }
+    buf.copy(buffer, pos)
+    pos += buf.length
+  }
+  return buffer
+}
+
+function byteLength (string, encoding) {
+  if (Buffer.isBuffer(string)) {
+    return string.length
+  }
+  if (typeof ArrayBuffer !== 'undefined' && typeof ArrayBuffer.isView === 'function' &&
+      (ArrayBuffer.isView(string) || string instanceof ArrayBuffer)) {
+    return string.byteLength
+  }
+  if (typeof string !== 'string') {
+    string = '' + string
+  }
+
+  var len = string.length
+  if (len === 0) return 0
+
+  // Use a for loop to avoid recursion
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'ascii':
+      case 'latin1':
+      case 'binary':
+        return len
+      case 'utf8':
+      case 'utf-8':
+      case undefined:
+        return utf8ToBytes(string).length
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return len * 2
+      case 'hex':
+        return len >>> 1
+      case 'base64':
+        return base64ToBytes(string).length
+      default:
+        if (loweredCase) return utf8ToBytes(string).length // assume utf8
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+Buffer.byteLength = byteLength
+
+function slowToString (encoding, start, end) {
+  var loweredCase = false
+
+  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
+  // property of a typed array.
+
+  // This behaves neither like String nor Uint8Array in that we set start/end
+  // to their upper/lower bounds if the value passed is out of range.
+  // undefined is handled specially as per ECMA-262 6th Edition,
+  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
+  if (start === undefined || start < 0) {
+    start = 0
+  }
+  // Return early if start > this.length. Done here to prevent potential uint32
+  // coercion fail below.
+  if (start > this.length) {
+    return ''
+  }
+
+  if (end === undefined || end > this.length) {
+    end = this.length
+  }
+
+  if (end <= 0) {
+    return ''
+  }
+
+  // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
+  end >>>= 0
+  start >>>= 0
+
+  if (end <= start) {
+    return ''
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end)
+
+      case 'ascii':
+        return asciiSlice(this, start, end)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Slice(this, start, end)
+
+      case 'base64':
+        return base64Slice(this, start, end)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = (encoding + '').toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+// The property is used by `Buffer.isBuffer` and `is-buffer` (in Safari 5-7) to detect
+// Buffer instances.
+Buffer.prototype._isBuffer = true
+
+function swap (b, n, m) {
+  var i = b[n]
+  b[n] = b[m]
+  b[m] = i
+}
+
+Buffer.prototype.swap16 = function swap16 () {
+  var len = this.length
+  if (len % 2 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 16-bits')
+  }
+  for (var i = 0; i < len; i += 2) {
+    swap(this, i, i + 1)
+  }
+  return this
+}
+
+Buffer.prototype.swap32 = function swap32 () {
+  var len = this.length
+  if (len % 4 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 32-bits')
+  }
+  for (var i = 0; i < len; i += 4) {
+    swap(this, i, i + 3)
+    swap(this, i + 1, i + 2)
+  }
+  return this
+}
+
+Buffer.prototype.swap64 = function swap64 () {
+  var len = this.length
+  if (len % 8 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 64-bits')
+  }
+  for (var i = 0; i < len; i += 8) {
+    swap(this, i, i + 7)
+    swap(this, i + 1, i + 6)
+    swap(this, i + 2, i + 5)
+    swap(this, i + 3, i + 4)
+  }
+  return this
+}
+
+Buffer.prototype.toString = function toString () {
+  var length = this.length | 0
+  if (length === 0) return ''
+  if (arguments.length === 0) return utf8Slice(this, 0, length)
+  return slowToString.apply(this, arguments)
+}
+
+Buffer.prototype.equals = function equals (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return true
+  return Buffer.compare(this, b) === 0
+}
+
+Buffer.prototype.inspect = function inspect () {
+  var str = ''
+  var max = exports.INSPECT_MAX_BYTES
+  if (this.length > 0) {
+    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
+    if (this.length > max) str += ' ... '
+  }
+  return '<Buffer ' + str + '>'
+}
+
+Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+  if (!Buffer.isBuffer(target)) {
+    throw new TypeError('Argument must be a Buffer')
+  }
+
+  if (start === undefined) {
+    start = 0
+  }
+  if (end === undefined) {
+    end = target ? target.length : 0
+  }
+  if (thisStart === undefined) {
+    thisStart = 0
+  }
+  if (thisEnd === undefined) {
+    thisEnd = this.length
+  }
+
+  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+    throw new RangeError('out of range index')
+  }
+
+  if (thisStart >= thisEnd && start >= end) {
+    return 0
+  }
+  if (thisStart >= thisEnd) {
+    return -1
+  }
+  if (start >= end) {
+    return 1
+  }
+
+  start >>>= 0
+  end >>>= 0
+  thisStart >>>= 0
+  thisEnd >>>= 0
+
+  if (this === target) return 0
+
+  var x = thisEnd - thisStart
+  var y = end - start
+  var len = Math.min(x, y)
+
+  var thisCopy = this.slice(thisStart, thisEnd)
+  var targetCopy = target.slice(start, end)
+
+  for (var i = 0; i < len; ++i) {
+    if (thisCopy[i] !== targetCopy[i]) {
+      x = thisCopy[i]
+      y = targetCopy[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
+// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
+//
+// Arguments:
+// - buffer - a Buffer to search
+// - val - a string, Buffer, or number
+// - byteOffset - an index into `buffer`; will be clamped to an int32
+// - encoding - an optional encoding, relevant is val is a string
+// - dir - true for indexOf, false for lastIndexOf
+function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
+  // Empty buffer means no match
+  if (buffer.length === 0) return -1
+
+  // Normalize byteOffset
+  if (typeof byteOffset === 'string') {
+    encoding = byteOffset
+    byteOffset = 0
+  } else if (byteOffset > 0x7fffffff) {
+    byteOffset = 0x7fffffff
+  } else if (byteOffset < -0x80000000) {
+    byteOffset = -0x80000000
+  }
+  byteOffset = +byteOffset  // Coerce to Number.
+  if (isNaN(byteOffset)) {
+    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
+    byteOffset = dir ? 0 : (buffer.length - 1)
+  }
+
+  // Normalize byteOffset: negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = buffer.length + byteOffset
+  if (byteOffset >= buffer.length) {
+    if (dir) return -1
+    else byteOffset = buffer.length - 1
+  } else if (byteOffset < 0) {
+    if (dir) byteOffset = 0
+    else return -1
+  }
+
+  // Normalize val
+  if (typeof val === 'string') {
+    val = Buffer.from(val, encoding)
+  }
+
+  // Finally, search either indexOf (if dir is true) or lastIndexOf
+  if (Buffer.isBuffer(val)) {
+    // Special case: looking for empty string/buffer always fails
+    if (val.length === 0) {
+      return -1
+    }
+    return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
+  } else if (typeof val === 'number') {
+    val = val & 0xFF // Search for a byte value [0-255]
+    if (Buffer.TYPED_ARRAY_SUPPORT &&
+        typeof Uint8Array.prototype.indexOf === 'function') {
+      if (dir) {
+        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
+      } else {
+        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
+      }
+    }
+    return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
+  }
+
+  throw new TypeError('val must be string, number or Buffer')
+}
+
+function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
+  var indexSize = 1
+  var arrLength = arr.length
+  var valLength = val.length
+
+  if (encoding !== undefined) {
+    encoding = String(encoding).toLowerCase()
+    if (encoding === 'ucs2' || encoding === 'ucs-2' ||
+        encoding === 'utf16le' || encoding === 'utf-16le') {
+      if (arr.length < 2 || val.length < 2) {
+        return -1
+      }
+      indexSize = 2
+      arrLength /= 2
+      valLength /= 2
+      byteOffset /= 2
+    }
+  }
+
+  function read (buf, i) {
+    if (indexSize === 1) {
+      return buf[i]
+    } else {
+      return buf.readUInt16BE(i * indexSize)
+    }
+  }
+
+  var i
+  if (dir) {
+    var foundIndex = -1
+    for (i = byteOffset; i < arrLength; i++) {
+      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
+      } else {
+        if (foundIndex !== -1) i -= i - foundIndex
+        foundIndex = -1
+      }
+    }
+  } else {
+    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
+    for (i = byteOffset; i >= 0; i--) {
+      var found = true
+      for (var j = 0; j < valLength; j++) {
+        if (read(arr, i + j) !== read(val, j)) {
+          found = false
+          break
+        }
+      }
+      if (found) return i
+    }
+  }
+
+  return -1
+}
+
+Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
+  return this.indexOf(val, byteOffset, encoding) !== -1
+}
+
+Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
+}
+
+Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
+}
+
+function hexWrite (buf, string, offset, length) {
+  offset = Number(offset) || 0
+  var remaining = buf.length - offset
+  if (!length) {
+    length = remaining
+  } else {
+    length = Number(length)
+    if (length > remaining) {
+      length = remaining
+    }
+  }
+
+  // must be an even number of digits
+  var strLen = string.length
+  if (strLen % 2 !== 0) throw new TypeError('Invalid hex string')
+
+  if (length > strLen / 2) {
+    length = strLen / 2
+  }
+  for (var i = 0; i < length; ++i) {
+    var parsed = parseInt(string.substr(i * 2, 2), 16)
+    if (isNaN(parsed)) return i
+    buf[offset + i] = parsed
+  }
+  return i
+}
+
+function utf8Write (buf, string, offset, length) {
+  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+function asciiWrite (buf, string, offset, length) {
+  return blitBuffer(asciiToBytes(string), buf, offset, length)
+}
+
+function latin1Write (buf, string, offset, length) {
+  return asciiWrite(buf, string, offset, length)
+}
+
+function base64Write (buf, string, offset, length) {
+  return blitBuffer(base64ToBytes(string), buf, offset, length)
+}
+
+function ucs2Write (buf, string, offset, length) {
+  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+Buffer.prototype.write = function write (string, offset, length, encoding) {
+  // Buffer#write(string)
+  if (offset === undefined) {
+    encoding = 'utf8'
+    length = this.length
+    offset = 0
+  // Buffer#write(string, encoding)
+  } else if (length === undefined && typeof offset === 'string') {
+    encoding = offset
+    length = this.length
+    offset = 0
+  // Buffer#write(string, offset[, length][, encoding])
+  } else if (isFinite(offset)) {
+    offset = offset | 0
+    if (isFinite(length)) {
+      length = length | 0
+      if (encoding === undefined) encoding = 'utf8'
+    } else {
+      encoding = length
+      length = undefined
+    }
+  // legacy write(string, encoding, offset, length) - remove in v0.13
+  } else {
+    throw new Error(
+      'Buffer.write(string, encoding, offset[, length]) is no longer supported'
+    )
+  }
+
+  var remaining = this.length - offset
+  if (length === undefined || length > remaining) length = remaining
+
+  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+    throw new RangeError('Attempt to write outside buffer bounds')
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'hex':
+        return hexWrite(this, string, offset, length)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Write(this, string, offset, length)
+
+      case 'ascii':
+        return asciiWrite(this, string, offset, length)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Write(this, string, offset, length)
+
+      case 'base64':
+        // Warning: maxLength not taken into account in base64Write
+        return base64Write(this, string, offset, length)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return ucs2Write(this, string, offset, length)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+Buffer.prototype.toJSON = function toJSON () {
+  return {
+    type: 'Buffer',
+    data: Array.prototype.slice.call(this._arr || this, 0)
+  }
+}
+
+function base64Slice (buf, start, end) {
+  if (start === 0 && end === buf.length) {
+    return base64.fromByteArray(buf)
+  } else {
+    return base64.fromByteArray(buf.slice(start, end))
+  }
+}
+
+function utf8Slice (buf, start, end) {
+  end = Math.min(buf.length, end)
+  var res = []
+
+  var i = start
+  while (i < end) {
+    var firstByte = buf[i]
+    var codePoint = null
+    var bytesPerSequence = (firstByte > 0xEF) ? 4
+      : (firstByte > 0xDF) ? 3
+      : (firstByte > 0xBF) ? 2
+      : 1
+
+    if (i + bytesPerSequence <= end) {
+      var secondByte, thirdByte, fourthByte, tempCodePoint
+
+      switch (bytesPerSequence) {
+        case 1:
+          if (firstByte < 0x80) {
+            codePoint = firstByte
+          }
+          break
+        case 2:
+          secondByte = buf[i + 1]
+          if ((secondByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
+            if (tempCodePoint > 0x7F) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 3:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
+            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 4:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          fourthByte = buf[i + 3]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
+            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+              codePoint = tempCodePoint
+            }
+          }
+      }
+    }
+
+    if (codePoint === null) {
+      // we did not generate a valid codePoint so insert a
+      // replacement char (U+FFFD) and advance only 1 byte
+      codePoint = 0xFFFD
+      bytesPerSequence = 1
+    } else if (codePoint > 0xFFFF) {
+      // encode to utf16 (surrogate pair dance)
+      codePoint -= 0x10000
+      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
+      codePoint = 0xDC00 | codePoint & 0x3FF
+    }
+
+    res.push(codePoint)
+    i += bytesPerSequence
+  }
+
+  return decodeCodePointsArray(res)
+}
+
+// Based on http://stackoverflow.com/a/22747272/680742, the browser with
+// the lowest limit is Chrome, with 0x10000 args.
+// We go 1 magnitude less, for safety
+var MAX_ARGUMENTS_LENGTH = 0x1000
+
+function decodeCodePointsArray (codePoints) {
+  var len = codePoints.length
+  if (len <= MAX_ARGUMENTS_LENGTH) {
+    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
+  }
+
+  // Decode in chunks to avoid "call stack size exceeded".
+  var res = ''
+  var i = 0
+  while (i < len) {
+    res += String.fromCharCode.apply(
+      String,
+      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
+    )
+  }
+  return res
+}
+
+function asciiSlice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i] & 0x7F)
+  }
+  return ret
+}
+
+function latin1Slice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i])
+  }
+  return ret
+}
+
+function hexSlice (buf, start, end) {
+  var len = buf.length
+
+  if (!start || start < 0) start = 0
+  if (!end || end < 0 || end > len) end = len
+
+  var out = ''
+  for (var i = start; i < end; ++i) {
+    out += toHex(buf[i])
+  }
+  return out
+}
+
+function utf16leSlice (buf, start, end) {
+  var bytes = buf.slice(start, end)
+  var res = ''
+  for (var i = 0; i < bytes.length; i += 2) {
+    res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256)
+  }
+  return res
+}
+
+Buffer.prototype.slice = function slice (start, end) {
+  var len = this.length
+  start = ~~start
+  end = end === undefined ? len : ~~end
+
+  if (start < 0) {
+    start += len
+    if (start < 0) start = 0
+  } else if (start > len) {
+    start = len
+  }
+
+  if (end < 0) {
+    end += len
+    if (end < 0) end = 0
+  } else if (end > len) {
+    end = len
+  }
+
+  if (end < start) end = start
+
+  var newBuf
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    newBuf = this.subarray(start, end)
+    newBuf.__proto__ = Buffer.prototype
+  } else {
+    var sliceLen = end - start
+    newBuf = new Buffer(sliceLen, undefined)
+    for (var i = 0; i < sliceLen; ++i) {
+      newBuf[i] = this[i + start]
+    }
+  }
+
+  return newBuf
+}
+
+/*
+ * Need to make sure that buffer isn't trying to write out of bounds.
+ */
+function checkOffset (offset, ext, length) {
+  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+}
+
+Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) {
+    checkOffset(offset, byteLength, this.length)
+  }
+
+  var val = this[offset + --byteLength]
+  var mul = 1
+  while (byteLength > 0 && (mul *= 0x100)) {
+    val += this[offset + --byteLength] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  return this[offset]
+}
+
+Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return this[offset] | (this[offset + 1] << 8)
+}
+
+Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return (this[offset] << 8) | this[offset + 1]
+}
+
+Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return ((this[offset]) |
+      (this[offset + 1] << 8) |
+      (this[offset + 2] << 16)) +
+      (this[offset + 3] * 0x1000000)
+}
+
+Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] * 0x1000000) +
+    ((this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    this[offset + 3])
+}
+
+Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var i = byteLength
+  var mul = 1
+  var val = this[offset + --i]
+  while (i > 0 && (mul *= 0x100)) {
+    val += this[offset + --i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  if (!(this[offset] & 0x80)) return (this[offset])
+  return ((0xff - this[offset] + 1) * -1)
+}
+
+Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset] | (this[offset + 1] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset + 1] | (this[offset] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset]) |
+    (this[offset + 1] << 8) |
+    (this[offset + 2] << 16) |
+    (this[offset + 3] << 24)
+}
+
+Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] << 24) |
+    (this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    (this[offset + 3])
+}
+
+Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, true, 23, 4)
+}
+
+Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, false, 23, 4)
+}
+
+Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, true, 52, 8)
+}
+
+Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, false, 52, 8)
+}
+
+function checkInt (buf, value, offset, ext, max, min) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
+  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+}
+
+Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var mul = 1
+  var i = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  byteLength = byteLength | 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+function objectWriteUInt16 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; ++i) {
+    buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
+      (littleEndian ? i : 1 - i) * 8
+  }
+}
+
+Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = (value & 0xff)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
+  return offset + 2
+}
+
+function objectWriteUInt32 (buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffffffff + value + 1
+  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; ++i) {
+    buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff
+  }
+}
+
+Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset + 3] = (value >>> 24)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 1] = (value >>> 8)
+    this[offset] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = 0
+  var mul = 1
+  var sub = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  var sub = 0
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
+  if (value < 0) value = 0xff + value + 1
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+  } else {
+    objectWriteUInt16(this, value, offset, true)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 8)
+    this[offset + 1] = (value & 0xff)
+  } else {
+    objectWriteUInt16(this, value, offset, false)
+  }
+  return offset + 2
+}
+
+Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value & 0xff)
+    this[offset + 1] = (value >>> 8)
+    this[offset + 2] = (value >>> 16)
+    this[offset + 3] = (value >>> 24)
+  } else {
+    objectWriteUInt32(this, value, offset, true)
+  }
+  return offset + 4
+}
+
+Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset | 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (value < 0) value = 0xffffffff + value + 1
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = (value >>> 24)
+    this[offset + 1] = (value >>> 16)
+    this[offset + 2] = (value >>> 8)
+    this[offset + 3] = (value & 0xff)
+  } else {
+    objectWriteUInt32(this, value, offset, false)
+  }
+  return offset + 4
+}
+
+function checkIEEE754 (buf, value, offset, ext, max, min) {
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+  if (offset < 0) throw new RangeError('Index out of range')
+}
+
+function writeFloat (buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 23, 4)
+  return offset + 4
+}
+
+Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, false, noAssert)
+}
+
+function writeDouble (buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 52, 8)
+  return offset + 8
+}
+
+Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, false, noAssert)
+}
+
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+  if (!start) start = 0
+  if (!end && end !== 0) end = this.length
+  if (targetStart >= target.length) targetStart = target.length
+  if (!targetStart) targetStart = 0
+  if (end > 0 && end < start) end = start
+
+  // Copy 0 bytes; we're done
+  if (end === start) return 0
+  if (target.length === 0 || this.length === 0) return 0
+
+  // Fatal error conditions
+  if (targetStart < 0) {
+    throw new RangeError('targetStart out of bounds')
+  }
+  if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds')
+  if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+  // Are we oob?
+  if (end > this.length) end = this.length
+  if (target.length - targetStart < end - start) {
+    end = target.length - targetStart + start
+  }
+
+  var len = end - start
+  var i
+
+  if (this === target && start < targetStart && targetStart < end) {
+    // descending copy from end
+    for (i = len - 1; i >= 0; --i) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
+    // ascending copy from start
+    for (i = 0; i < len; ++i) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else {
+    Uint8Array.prototype.set.call(
+      target,
+      this.subarray(start, start + len),
+      targetStart
+    )
+  }
+
+  return len
+}
+
+// Usage:
+//    buffer.fill(number[, offset[, end]])
+//    buffer.fill(buffer[, offset[, end]])
+//    buffer.fill(string[, offset[, end]][, encoding])
+Buffer.prototype.fill = function fill (val, start, end, encoding) {
+  // Handle string cases:
+  if (typeof val === 'string') {
+    if (typeof start === 'string') {
+      encoding = start
+      start = 0
+      end = this.length
+    } else if (typeof end === 'string') {
+      encoding = end
+      end = this.length
+    }
+    if (val.length === 1) {
+      var code = val.charCodeAt(0)
+      if (code < 256) {
+        val = code
+      }
+    }
+    if (encoding !== undefined && typeof encoding !== 'string') {
+      throw new TypeError('encoding must be a string')
+    }
+    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+      throw new TypeError('Unknown encoding: ' + encoding)
+    }
+  } else if (typeof val === 'number') {
+    val = val & 255
+  }
+
+  // Invalid ranges are not set to a default, so can range check early.
+  if (start < 0 || this.length < start || this.length < end) {
+    throw new RangeError('Out of range index')
+  }
+
+  if (end <= start) {
+    return this
+  }
+
+  start = start >>> 0
+  end = end === undefined ? this.length : end >>> 0
+
+  if (!val) val = 0
+
+  var i
+  if (typeof val === 'number') {
+    for (i = start; i < end; ++i) {
+      this[i] = val
+    }
+  } else {
+    var bytes = Buffer.isBuffer(val)
+      ? val
+      : utf8ToBytes(new Buffer(val, encoding).toString())
+    var len = bytes.length
+    for (i = 0; i < end - start; ++i) {
+      this[i + start] = bytes[i % len]
+    }
+  }
+
+  return this
+}
+
+// HELPER FUNCTIONS
+// ================
+
+var INVALID_BASE64_RE = /[^+\/0-9A-Za-z-_]/g
+
+function base64clean (str) {
+  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+  str = stringtrim(str).replace(INVALID_BASE64_RE, '')
+  // Node converts strings with length < 2 to ''
+  if (str.length < 2) return ''
+  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+  while (str.length % 4 !== 0) {
+    str = str + '='
+  }
+  return str
+}
+
+function stringtrim (str) {
+  if (str.trim) return str.trim()
+  return str.replace(/^\s+|\s+$/g, '')
+}
+
+function toHex (n) {
+  if (n < 16) return '0' + n.toString(16)
+  return n.toString(16)
+}
+
+function utf8ToBytes (string, units) {
+  units = units || Infinity
+  var codePoint
+  var length = string.length
+  var leadSurrogate = null
+  var bytes = []
+
+  for (var i = 0; i < length; ++i) {
+    codePoint = string.charCodeAt(i)
+
+    // is surrogate component
+    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+      // last char was a lead
+      if (!leadSurrogate) {
+        // no lead yet
+        if (codePoint > 0xDBFF) {
+          // unexpected trail
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        } else if (i + 1 === length) {
+          // unpaired lead
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        }
+
+        // valid lead
+        leadSurrogate = codePoint
+
+        continue
+      }
+
+      // 2 leads in a row
+      if (codePoint < 0xDC00) {
+        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+        leadSurrogate = codePoint
+        continue
+      }
+
+      // valid surrogate pair
+      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
+    } else if (leadSurrogate) {
+      // valid bmp char, but last char was a lead
+      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+    }
+
+    leadSurrogate = null
+
+    // encode utf8
+    if (codePoint < 0x80) {
+      if ((units -= 1) < 0) break
+      bytes.push(codePoint)
+    } else if (codePoint < 0x800) {
+      if ((units -= 2) < 0) break
+      bytes.push(
+        codePoint >> 0x6 | 0xC0,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x10000) {
+      if ((units -= 3) < 0) break
+      bytes.push(
+        codePoint >> 0xC | 0xE0,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x110000) {
+      if ((units -= 4) < 0) break
+      bytes.push(
+        codePoint >> 0x12 | 0xF0,
+        codePoint >> 0xC & 0x3F | 0x80,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else {
+      throw new Error('Invalid code point')
+    }
+  }
+
+  return bytes
+}
+
+function asciiToBytes (str) {
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    // Node's code seems to be doing this and not & 0x7F..
+    byteArray.push(str.charCodeAt(i) & 0xFF)
+  }
+  return byteArray
+}
+
+function utf16leToBytes (str, units) {
+  var c, hi, lo
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    if ((units -= 2) < 0) break
+
+    c = str.charCodeAt(i)
+    hi = c >> 8
+    lo = c % 256
+    byteArray.push(lo)
+    byteArray.push(hi)
+  }
+
+  return byteArray
+}
+
+function base64ToBytes (str) {
+  return base64.toByteArray(base64clean(str))
+}
+
+function blitBuffer (src, dst, offset, length) {
+  for (var i = 0; i < length; ++i) {
+    if ((i + offset >= dst.length) || (i >= src.length)) break
+    dst[i + offset] = src[i]
+  }
+  return i
+}
+
+function isnan (val) {
+  return val !== val // eslint-disable-line no-self-compare
+}
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"base64-js":20,"ieee754":35,"isarray":38}],24:[function(require,module,exports){
+/**
+ * Module Dependencies
+ */
+
+try {
+  var matches = require('matches-selector')
+} catch (err) {
+  var matches = require('component-matches-selector')
+}
+
+/**
+ * Export `closest`
+ */
+
+module.exports = closest
+
+/**
+ * Closest
+ *
+ * @param {Element} el
+ * @param {String} selector
+ * @param {Element} scope (optional)
+ */
+
+function closest (el, selector, scope) {
+  scope = scope || document.documentElement;
+
+  // walk up the dom
+  while (el && el !== scope) {
+    if (matches(el, selector)) return el;
+    el = el.parentNode;
+  }
+
+  // check scope for match
+  return matches(el, selector) ? el : null;
+}
+
+},{"component-matches-selector":29,"matches-selector":29}],25:[function(require,module,exports){
+/**
+ * Module dependencies.
+ */
+
+try {
+  var closest = require('closest');
+} catch(err) {
+  var closest = require('component-closest');
+}
+
+try {
+  var event = require('event');
+} catch(err) {
+  var event = require('component-event');
+}
+
+/**
+ * Delegate event `type` to `selector`
+ * and invoke `fn(e)`. A callback function
+ * is returned which may be passed to `.unbind()`.
+ *
+ * @param {Element} el
+ * @param {String} selector
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @return {Function}
+ * @api public
+ */
+
+exports.bind = function(el, selector, type, fn, capture){
+  return event.bind(el, type, function(e){
+    var target = e.target || e.srcElement;
+    e.delegateTarget = closest(target, selector, true, el);
+    if (e.delegateTarget) fn.call(el, e);
+  }, capture);
+};
+
+/**
+ * Unbind event `type`'s callback `fn`.
+ *
+ * @param {Element} el
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @api public
+ */
+
+exports.unbind = function(el, type, fn, capture){
+  event.unbind(el, type, fn, capture);
+};
+
+},{"closest":24,"component-closest":24,"component-event":27,"event":27}],26:[function(require,module,exports){
+
+/**
+ * Expose `Emitter`.
+ */
+
+if (typeof module !== 'undefined') {
+  module.exports = Emitter;
+}
+
+/**
+ * Initialize a new `Emitter`.
+ *
+ * @api public
+ */
+
+function Emitter(obj) {
+  if (obj) return mixin(obj);
+};
+
+/**
+ * Mixin the emitter properties.
+ *
+ * @param {Object} obj
+ * @return {Object}
+ * @api private
+ */
+
+function mixin(obj) {
+  for (var key in Emitter.prototype) {
+    obj[key] = Emitter.prototype[key];
+  }
+  return obj;
+}
+
+/**
+ * Listen on the given `event` with `fn`.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.on =
+Emitter.prototype.addEventListener = function(event, fn){
+  this._callbacks = this._callbacks || {};
+  (this._callbacks['$' + event] = this._callbacks['$' + event] || [])
+    .push(fn);
+  return this;
+};
+
+/**
+ * Adds an `event` listener that will be invoked a single
+ * time then automatically removed.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.once = function(event, fn){
+  function on() {
+    this.off(event, on);
+    fn.apply(this, arguments);
+  }
+
+  on.fn = fn;
+  this.on(event, on);
+  return this;
+};
+
+/**
+ * Remove the given callback for `event` or all
+ * registered callbacks.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.off =
+Emitter.prototype.removeListener =
+Emitter.prototype.removeAllListeners =
+Emitter.prototype.removeEventListener = function(event, fn){
+  this._callbacks = this._callbacks || {};
+
+  // all
+  if (0 == arguments.length) {
+    this._callbacks = {};
+    return this;
+  }
+
+  // specific event
+  var callbacks = this._callbacks['$' + event];
+  if (!callbacks) return this;
+
+  // remove all handlers
+  if (1 == arguments.length) {
+    delete this._callbacks['$' + event];
+    return this;
+  }
+
+  // remove specific handler
+  var cb;
+  for (var i = 0; i < callbacks.length; i++) {
+    cb = callbacks[i];
+    if (cb === fn || cb.fn === fn) {
+      callbacks.splice(i, 1);
+      break;
+    }
+  }
+  return this;
+};
+
+/**
+ * Emit `event` with the given args.
+ *
+ * @param {String} event
+ * @param {Mixed} ...
+ * @return {Emitter}
+ */
+
+Emitter.prototype.emit = function(event){
+  this._callbacks = this._callbacks || {};
+  var args = [].slice.call(arguments, 1)
+    , callbacks = this._callbacks['$' + event];
+
+  if (callbacks) {
+    callbacks = callbacks.slice(0);
+    for (var i = 0, len = callbacks.length; i < len; ++i) {
+      callbacks[i].apply(this, args);
+    }
+  }
+
+  return this;
+};
+
+/**
+ * Return array of callbacks for `event`.
+ *
+ * @param {String} event
+ * @return {Array}
+ * @api public
+ */
+
+Emitter.prototype.listeners = function(event){
+  this._callbacks = this._callbacks || {};
+  return this._callbacks['$' + event] || [];
+};
+
+/**
+ * Check if this emitter has `event` handlers.
+ *
+ * @param {String} event
+ * @return {Boolean}
+ * @api public
+ */
+
+Emitter.prototype.hasListeners = function(event){
+  return !! this.listeners(event).length;
+};
+
+},{}],27:[function(require,module,exports){
+var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
+    unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
+    prefix = bind !== 'addEventListener' ? 'on' : '';
+
+/**
+ * Bind `el` event `type` to `fn`.
+ *
+ * @param {Element} el
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @return {Function}
+ * @api public
+ */
+
+exports.bind = function(el, type, fn, capture){
+  el[bind](prefix + type, fn, capture || false);
+  return fn;
+};
+
+/**
+ * Unbind `el` event `type`'s callback `fn`.
+ *
+ * @param {Element} el
+ * @param {String} type
+ * @param {Function} fn
+ * @param {Boolean} capture
+ * @return {Function}
+ * @api public
+ */
+
+exports.unbind = function(el, type, fn, capture){
+  el[unbind](prefix + type, fn, capture || false);
+  return fn;
+};
+},{}],28:[function(require,module,exports){
+
+/**
+ * Module dependencies.
+ */
+
+try {
+  var events = require('event');
+} catch(err) {
+  var events = require('component-event');
+}
+
+try {
+  var delegate = require('delegate');
+} catch(err) {
+  var delegate = require('component-delegate');
+}
+
+/**
+ * Expose `Events`.
+ */
+
+module.exports = Events;
+
+/**
+ * Initialize an `Events` with the given
+ * `el` object which events will be bound to,
+ * and the `obj` which will receive method calls.
+ *
+ * @param {Object} el
+ * @param {Object} obj
+ * @api public
+ */
+
+function Events(el, obj) {
+  if (!(this instanceof Events)) return new Events(el, obj);
+  if (!el) throw new Error('element required');
+  if (!obj) throw new Error('object required');
+  this.el = el;
+  this.obj = obj;
+  this._events = {};
+}
+
+/**
+ * Subscription helper.
+ */
+
+Events.prototype.sub = function(event, method, cb){
+  this._events[event] = this._events[event] || {};
+  this._events[event][method] = cb;
+};
+
+/**
+ * Bind to `event` with optional `method` name.
+ * When `method` is undefined it becomes `event`
+ * with the "on" prefix.
+ *
+ * Examples:
+ *
+ *  Direct event handling:
+ *
+ *    events.bind('click') // implies "onclick"
+ *    events.bind('click', 'remove')
+ *    events.bind('click', 'sort', 'asc')
+ *
+ *  Delegated event handling:
+ *
+ *    events.bind('click li > a')
+ *    events.bind('click li > a', 'remove')
+ *    events.bind('click a.sort-ascending', 'sort', 'asc')
+ *    events.bind('click a.sort-descending', 'sort', 'desc')
+ *
+ * @param {String} event
+ * @param {String|function} [method]
+ * @return {Function} callback
+ * @api public
+ */
+
+Events.prototype.bind = function(event, method){
+  var e = parse(event);
+  var el = this.el;
+  var obj = this.obj;
+  var name = e.name;
+  var method = method || 'on' + name;
+  var args = [].slice.call(arguments, 2);
+
+  // callback
+  function cb(){
+    var a = [].slice.call(arguments).concat(args);
+    obj[method].apply(obj, a);
+  }
+
+  // bind
+  if (e.selector) {
+    cb = delegate.bind(el, e.selector, name, cb);
+  } else {
+    events.bind(el, name, cb);
+  }
+
+  // subscription for unbinding
+  this.sub(name, method, cb);
+
+  return cb;
+};
+
+/**
+ * Unbind a single binding, all bindings for `event`,
+ * or all bindings within the manager.
+ *
+ * Examples:
+ *
+ *  Unbind direct handlers:
+ *
+ *     events.unbind('click', 'remove')
+ *     events.unbind('click')
+ *     events.unbind()
+ *
+ * Unbind delegate handlers:
+ *
+ *     events.unbind('click', 'remove')
+ *     events.unbind('click')
+ *     events.unbind()
+ *
+ * @param {String|Function} [event]
+ * @param {String|Function} [method]
+ * @api public
+ */
+
+Events.prototype.unbind = function(event, method){
+  if (0 == arguments.length) return this.unbindAll();
+  if (1 == arguments.length) return this.unbindAllOf(event);
+
+  // no bindings for this event
+  var bindings = this._events[event];
+  if (!bindings) return;
+
+  // no bindings for this method
+  var cb = bindings[method];
+  if (!cb) return;
+
+  events.unbind(this.el, event, cb);
+};
+
+/**
+ * Unbind all events.
+ *
+ * @api private
+ */
+
+Events.prototype.unbindAll = function(){
+  for (var event in this._events) {
+    this.unbindAllOf(event);
+  }
+};
+
+/**
+ * Unbind all events for `event`.
+ *
+ * @param {String} event
+ * @api private
+ */
+
+Events.prototype.unbindAllOf = function(event){
+  var bindings = this._events[event];
+  if (!bindings) return;
+
+  for (var method in bindings) {
+    this.unbind(event, method);
+  }
+};
+
+/**
+ * Parse `event`.
+ *
+ * @param {String} event
+ * @return {Object}
+ * @api private
+ */
+
+function parse(event) {
+  var parts = event.split(/ +/);
+  return {
+    name: parts.shift(),
+    selector: parts.join(' ')
+  }
+}
+
+},{"component-delegate":25,"component-event":27,"delegate":25,"event":27}],29:[function(require,module,exports){
+/**
+ * Module dependencies.
+ */
+
+try {
+  var query = require('query');
+} catch (err) {
+  var query = require('component-query');
+}
+
+/**
+ * Element prototype.
+ */
+
+var proto = Element.prototype;
+
+/**
+ * Vendor function.
+ */
+
+var vendor = proto.matches
+  || proto.webkitMatchesSelector
+  || proto.mozMatchesSelector
+  || proto.msMatchesSelector
+  || proto.oMatchesSelector;
+
+/**
+ * Expose `match()`.
+ */
+
+module.exports = match;
+
+/**
+ * Match `el` to `selector`.
+ *
+ * @param {Element} el
+ * @param {String} selector
+ * @return {Boolean}
+ * @api public
+ */
+
+function match(el, selector) {
+  if (!el || el.nodeType !== 1) return false;
+  if (vendor) return vendor.call(el, selector);
+  var nodes = query.all(selector, el.parentNode);
+  for (var i = 0; i < nodes.length; ++i) {
+    if (nodes[i] == el) return true;
+  }
+  return false;
+}
+
+},{"component-query":30,"query":30}],30:[function(require,module,exports){
+function one(selector, el) {
+  return el.querySelector(selector);
+}
+
+exports = module.exports = function(selector, el){
+  el = el || document;
+  return one(selector, el);
+};
+
+exports.all = function(selector, el){
+  el = el || document;
+  return el.querySelectorAll(selector);
+};
+
+exports.engine = function(obj){
+  if (!obj.one) throw new Error('.one callback required');
+  if (!obj.all) throw new Error('.all callback required');
+  one = obj.one;
+  exports.all = obj.all;
+  return exports;
+};
+
+},{}],31:[function(require,module,exports){
+(function (Buffer){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// NOTE: These type checking functions intentionally don't use `instanceof`
+// because it is fragile and can be easily faked with `Object.create()`.
+
+function isArray(arg) {
+  if (Array.isArray) {
+    return Array.isArray(arg);
+  }
+  return objectToString(arg) === '[object Array]';
+}
+exports.isArray = isArray;
+
+function isBoolean(arg) {
+  return typeof arg === 'boolean';
+}
+exports.isBoolean = isBoolean;
+
+function isNull(arg) {
+  return arg === null;
+}
+exports.isNull = isNull;
+
+function isNullOrUndefined(arg) {
+  return arg == null;
+}
+exports.isNullOrUndefined = isNullOrUndefined;
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+exports.isNumber = isNumber;
+
+function isString(arg) {
+  return typeof arg === 'string';
+}
+exports.isString = isString;
+
+function isSymbol(arg) {
+  return typeof arg === 'symbol';
+}
+exports.isSymbol = isSymbol;
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+exports.isUndefined = isUndefined;
+
+function isRegExp(re) {
+  return objectToString(re) === '[object RegExp]';
+}
+exports.isRegExp = isRegExp;
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+exports.isObject = isObject;
+
+function isDate(d) {
+  return objectToString(d) === '[object Date]';
+}
+exports.isDate = isDate;
+
+function isError(e) {
+  return (objectToString(e) === '[object Error]' || e instanceof Error);
+}
+exports.isError = isError;
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+exports.isFunction = isFunction;
+
+function isPrimitive(arg) {
+  return arg === null ||
+         typeof arg === 'boolean' ||
+         typeof arg === 'number' ||
+         typeof arg === 'string' ||
+         typeof arg === 'symbol' ||  // ES6 symbol
+         typeof arg === 'undefined';
+}
+exports.isPrimitive = isPrimitive;
+
+exports.isBuffer = Buffer.isBuffer;
+
+function objectToString(o) {
+  return Object.prototype.toString.call(o);
+}
+
+}).call(this,{"isBuffer":require("../../is-buffer/index.js")})
+},{"../../is-buffer/index.js":37}],32:[function(require,module,exports){
+
+/**
+ * Expose `parse`.
+ */
+
+module.exports = parse;
+
+/**
+ * Tests for browser support.
+ */
+
+var innerHTMLBug = false;
+var bugTestDiv;
+if (typeof document !== 'undefined') {
+  bugTestDiv = document.createElement('div');
+  // Setup
+  bugTestDiv.innerHTML = '  <link/><table></table><a href="/a">a</a><input type="checkbox"/>';
+  // Make sure that link elements get serialized correctly by innerHTML
+  // This requires a wrapper element in IE
+  innerHTMLBug = !bugTestDiv.getElementsByTagName('link').length;
+  bugTestDiv = undefined;
+}
+
+/**
+ * Wrap map from jquery.
+ */
+
+var map = {
+  legend: [1, '<fieldset>', '</fieldset>'],
+  tr: [2, '<table><tbody>', '</tbody></table>'],
+  col: [2, '<table><tbody></tbody><colgroup>', '</colgroup></table>'],
+  // for script/link/style tags to work in IE6-8, you have to wrap
+  // in a div with a non-whitespace character in front, ha!
+  _default: innerHTMLBug ? [1, 'X<div>', '</div>'] : [0, '', '']
+};
+
+map.td =
+map.th = [3, '<table><tbody><tr>', '</tr></tbody></table>'];
+
+map.option =
+map.optgroup = [1, '<select multiple="multiple">', '</select>'];
+
+map.thead =
+map.tbody =
+map.colgroup =
+map.caption =
+map.tfoot = [1, '<table>', '</table>'];
+
+map.polyline =
+map.ellipse =
+map.polygon =
+map.circle =
+map.text =
+map.line =
+map.path =
+map.rect =
+map.g = [1, '<svg xmlns="http://www.w3.org/2000/svg" version="1.1">','</svg>'];
+
+/**
+ * Parse `html` and return a DOM Node instance, which could be a TextNode,
+ * HTML DOM Node of some kind (<div> for example), or a DocumentFragment
+ * instance, depending on the contents of the `html` string.
+ *
+ * @param {String} html - HTML string to "domify"
+ * @param {Document} doc - The `document` instance to create the Node for
+ * @return {DOMNode} the TextNode, DOM Node, or DocumentFragment instance
+ * @api private
+ */
+
+function parse(html, doc) {
+  if ('string' != typeof html) throw new TypeError('String expected');
+
+  // default to the global `document` object
+  if (!doc) doc = document;
+
+  // tag name
+  var m = /<([\w:]+)/.exec(html);
+  if (!m) return doc.createTextNode(html);
+
+  html = html.replace(/^\s+|\s+$/g, ''); // Remove leading/trailing whitespace
+
+  var tag = m[1];
+
+  // body support
+  if (tag == 'body') {
+    var el = doc.createElement('html');
+    el.innerHTML = html;
+    return el.removeChild(el.lastChild);
+  }
+
+  // wrap map
+  var wrap = map[tag] || map._default;
+  var depth = wrap[0];
+  var prefix = wrap[1];
+  var suffix = wrap[2];
+  var el = doc.createElement('div');
+  el.innerHTML = prefix + html + suffix;
+  while (depth--) el = el.lastChild;
+
+  // one element
+  if (el.firstChild == el.lastChild) {
+    return el.removeChild(el.firstChild);
+  }
+
+  // several elements
+  var fragment = doc.createDocumentFragment();
+  while (el.firstChild) {
+    fragment.appendChild(el.removeChild(el.firstChild));
+  }
+
+  return fragment;
+}
+
+},{}],33:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+module.exports = EventEmitter;
+
+// Backwards-compat with node 0.10.x
+EventEmitter.EventEmitter = EventEmitter;
+
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!isNumber(n) || n < 0 || isNaN(n))
+    throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var er, handler, len, args, i, listeners;
+
+  if (!this._events)
+    this._events = {};
+
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events.error ||
+        (isObject(this._events.error) && !this._events.error.length)) {
+      er = arguments[1];
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      } else {
+        // At least give some kind of context to the user
+        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+        err.context = er;
+        throw err;
+      }
+    }
+  }
+
+  handler = this._events[type];
+
+  if (isUndefined(handler))
+    return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    args = Array.prototype.slice.call(arguments, 1);
+    listeners = handler.slice();
+    len = listeners.length;
+    for (i = 0; i < len; i++)
+      listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function(type, listener) {
+  var m;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events)
+    this._events = {};
+
+  // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+  if (this._events.newListener)
+    this.emit('newListener', type,
+              isFunction(listener.listener) ?
+              listener.listener : listener);
+
+  if (!this._events[type])
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  else if (isObject(this._events[type]))
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  else
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+
+  // Check for listener leak
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+
+  return this;
+};
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener = function(type, listener) {
+  var list, position, length, i;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events || !this._events[type])
+    return this;
+
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener ||
+      (isFunction(list.listener) && list.listener === listener)) {
+    delete this._events[type];
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener)) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0)
+      return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  var key, listeners;
+
+  if (!this._events)
+    return this;
+
+  // not listening for removeListener, no need to emit
+  if (!this._events.removeListener) {
+    if (arguments.length === 0)
+      this._events = {};
+    else if (this._events[type])
+      delete this._events[type];
+    return this;
+  }
+
+  // emit removeListener for all listeners on all events
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else if (listeners) {
+    // LIFO order
+    while (listeners.length)
+      this.removeListener(type, listeners[listeners.length - 1]);
+  }
+  delete this._events[type];
+
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  var ret;
+  if (!this._events || !this._events[type])
+    ret = [];
+  else if (isFunction(this._events[type]))
+    ret = [this._events[type]];
+  else
+    ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.prototype.listenerCount = function(type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+
+    if (isFunction(evlistener))
+      return 1;
+    else if (evlistener)
+      return evlistener.length;
+  }
+  return 0;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  return emitter.listenerCount(type);
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+
+},{}],34:[function(require,module,exports){
+/**
+ * @author alteredq / http://alteredqualia.com/
+ * @author mr.doob / http://mrdoob.com/
+ */
+
+module.exports = (function() {
+  try { 
+    return !!window.WebGLRenderingContext && 
+           !!document.createElement('canvas').getContext('experimental-webgl'); 
+  } 
+  catch(e) { 
+    return false; 
+  }
+})();
+
+},{}],35:[function(require,module,exports){
+exports.read = function (buffer, offset, isLE, mLen, nBytes) {
+  var e, m
+  var eLen = nBytes * 8 - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var nBits = -7
+  var i = isLE ? (nBytes - 1) : 0
+  var d = isLE ? -1 : 1
+  var s = buffer[offset + i]
+
+  i += d
+
+  e = s & ((1 << (-nBits)) - 1)
+  s >>= (-nBits)
+  nBits += eLen
+  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+  m = e & ((1 << (-nBits)) - 1)
+  e >>= (-nBits)
+  nBits += mLen
+  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
+
+  if (e === 0) {
+    e = 1 - eBias
+  } else if (e === eMax) {
+    return m ? NaN : ((s ? -1 : 1) * Infinity)
+  } else {
+    m = m + Math.pow(2, mLen)
+    e = e - eBias
+  }
+  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
+}
+
+exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
+  var e, m, c
+  var eLen = nBytes * 8 - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
+  var i = isLE ? 0 : (nBytes - 1)
+  var d = isLE ? 1 : -1
+  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
+
+  value = Math.abs(value)
+
+  if (isNaN(value) || value === Infinity) {
+    m = isNaN(value) ? 1 : 0
+    e = eMax
+  } else {
+    e = Math.floor(Math.log(value) / Math.LN2)
+    if (value * (c = Math.pow(2, -e)) < 1) {
+      e--
+      c *= 2
+    }
+    if (e + eBias >= 1) {
+      value += rt / c
+    } else {
+      value += rt * Math.pow(2, 1 - eBias)
+    }
+    if (value * c >= 2) {
+      e++
+      c /= 2
+    }
+
+    if (e + eBias >= eMax) {
+      m = 0
+      e = eMax
+    } else if (e + eBias >= 1) {
+      m = (value * c - 1) * Math.pow(2, mLen)
+      e = e + eBias
+    } else {
+      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
+      e = 0
+    }
+  }
+
+  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
+
+  e = (e << mLen) | m
+  eLen += mLen
+  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
+
+  buffer[offset + i - d] |= s * 128
+}
+
+},{}],36:[function(require,module,exports){
+if (typeof Object.create === 'function') {
+  // implementation from standard node.js 'util' module
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    ctor.prototype = Object.create(superCtor.prototype, {
+      constructor: {
+        value: ctor,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+  };
+} else {
+  // old school shim for old browsers
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    var TempCtor = function () {}
+    TempCtor.prototype = superCtor.prototype
+    ctor.prototype = new TempCtor()
+    ctor.prototype.constructor = ctor
+  }
+}
+
+},{}],37:[function(require,module,exports){
+/*!
+ * Determine if an object is a Buffer
+ *
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+ * @license  MIT
+ */
+
+// The _isBuffer check is for Safari 5-7 support, because it's missing
+// Object.prototype.constructor. Remove this eventually
+module.exports = function (obj) {
+  return obj != null && (isBuffer(obj) || isSlowBuffer(obj) || !!obj._isBuffer)
+}
+
+function isBuffer (obj) {
+  return !!obj.constructor && typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj)
+}
+
+// For Node v0.10 support. Remove this eventually.
+function isSlowBuffer (obj) {
+  return typeof obj.readFloatLE === 'function' && typeof obj.slice === 'function' && isBuffer(obj.slice(0, 0))
+}
+
+},{}],38:[function(require,module,exports){
+var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
+
+},{}],39:[function(require,module,exports){
+/*!
+ * @name JavaScript/NodeJS Merge v1.2.0
+ * @author yeikos
+ * @repository https://github.com/yeikos/js.merge
+
+ * Copyright 2014 yeikos - MIT license
+ * https://raw.github.com/yeikos/js.merge/master/LICENSE
+ */
+
+;(function(isNode) {
+
+	/**
+	 * Merge one or more objects 
+	 * @param bool? clone
+	 * @param mixed,... arguments
+	 * @return object
+	 */
+
+	var Public = function(clone) {
+
+		return merge(clone === true, false, arguments);
+
+	}, publicName = 'merge';
+
+	/**
+	 * Merge two or more objects recursively 
+	 * @param bool? clone
+	 * @param mixed,... arguments
+	 * @return object
+	 */
+
+	Public.recursive = function(clone) {
+
+		return merge(clone === true, true, arguments);
+
+	};
+
+	/**
+	 * Clone the input removing any reference
+	 * @param mixed input
+	 * @return mixed
+	 */
+
+	Public.clone = function(input) {
+
+		var output = input,
+			type = typeOf(input),
+			index, size;
+
+		if (type === 'array') {
+
+			output = [];
+			size = input.length;
+
+			for (index=0;index<size;++index)
+
+				output[index] = Public.clone(input[index]);
+
+		} else if (type === 'object') {
+
+			output = {};
+
+			for (index in input)
+
+				output[index] = Public.clone(input[index]);
+
+		}
+
+		return output;
+
+	};
+
+	/**
+	 * Merge two objects recursively
+	 * @param mixed input
+	 * @param mixed extend
+	 * @return mixed
+	 */
+
+	function merge_recursive(base, extend) {
+
+		if (typeOf(base) !== 'object')
+
+			return extend;
+
+		for (var key in extend) {
+
+			if (typeOf(base[key]) === 'object' && typeOf(extend[key]) === 'object') {
+
+				base[key] = merge_recursive(base[key], extend[key]);
+
+			} else {
+
+				base[key] = extend[key];
+
+			}
+
+		}
+
+		return base;
+
+	}
+
+	/**
+	 * Merge two or more objects
+	 * @param bool clone
+	 * @param bool recursive
+	 * @param array argv
+	 * @return object
+	 */
+
+	function merge(clone, recursive, argv) {
+
+		var result = argv[0],
+			size = argv.length;
+
+		if (clone || typeOf(result) !== 'object')
+
+			result = {};
+
+		for (var index=0;index<size;++index) {
+
+			var item = argv[index],
+
+				type = typeOf(item);
+
+			if (type !== 'object') continue;
+
+			for (var key in item) {
+
+				var sitem = clone ? Public.clone(item[key]) : item[key];
+
+				if (recursive) {
+
+					result[key] = merge_recursive(result[key], sitem);
+
+				} else {
+
+					result[key] = sitem;
+
+				}
+
+			}
+
+		}
+
+		return result;
+
+	}
+
+	/**
+	 * Get type of variable
+	 * @param mixed input
+	 * @return string
+	 *
+	 * @see http://jsperf.com/typeofvar
+	 */
+
+	function typeOf(input) {
+
+		return ({}).toString.call(input).slice(8, -1).toLowerCase();
+
+	}
+
+	if (isNode) {
+
+		module.exports = Public;
+
+	} else {
+
+		window[publicName] = Public;
+
+	}
+
+})(typeof module === 'object' && module && typeof module.exports === 'object' && module.exports);
+},{}],40:[function(require,module,exports){
+(function (process){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// resolves . and .. elements in a path array with directory names there
+// must be no slashes, empty elements, or device names (c:\) in the array
+// (so also no leading and trailing slashes - it does not distinguish
+// relative and absolute paths)
+function normalizeArray(parts, allowAboveRoot) {
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = parts.length - 1; i >= 0; i--) {
+    var last = parts[i];
+    if (last === '.') {
+      parts.splice(i, 1);
+    } else if (last === '..') {
+      parts.splice(i, 1);
+      up++;
+    } else if (up) {
+      parts.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (allowAboveRoot) {
+    for (; up--; up) {
+      parts.unshift('..');
+    }
+  }
+
+  return parts;
+}
+
+// Split a filename into [root, dir, basename, ext], unix version
+// 'root' is just a slash, or nothing.
+var splitPathRe =
+    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
+var splitPath = function(filename) {
+  return splitPathRe.exec(filename).slice(1);
+};
+
+// path.resolve([from ...], to)
+// posix version
+exports.resolve = function() {
+  var resolvedPath = '',
+      resolvedAbsolute = false;
+
+  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+    var path = (i >= 0) ? arguments[i] : process.cwd();
+
+    // Skip empty and invalid entries
+    if (typeof path !== 'string') {
+      throw new TypeError('Arguments to path.resolve must be strings');
+    } else if (!path) {
+      continue;
+    }
+
+    resolvedPath = path + '/' + resolvedPath;
+    resolvedAbsolute = path.charAt(0) === '/';
+  }
+
+  // At this point the path should be resolved to a full absolute path, but
+  // handle relative paths to be safe (might happen when process.cwd() fails)
+
+  // Normalize the path
+  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
+    return !!p;
+  }), !resolvedAbsolute).join('/');
+
+  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+};
+
+// path.normalize(path)
+// posix version
+exports.normalize = function(path) {
+  var isAbsolute = exports.isAbsolute(path),
+      trailingSlash = substr(path, -1) === '/';
+
+  // Normalize the path
+  path = normalizeArray(filter(path.split('/'), function(p) {
+    return !!p;
+  }), !isAbsolute).join('/');
+
+  if (!path && !isAbsolute) {
+    path = '.';
+  }
+  if (path && trailingSlash) {
+    path += '/';
+  }
+
+  return (isAbsolute ? '/' : '') + path;
+};
+
+// posix version
+exports.isAbsolute = function(path) {
+  return path.charAt(0) === '/';
+};
+
+// posix version
+exports.join = function() {
+  var paths = Array.prototype.slice.call(arguments, 0);
+  return exports.normalize(filter(paths, function(p, index) {
+    if (typeof p !== 'string') {
+      throw new TypeError('Arguments to path.join must be strings');
+    }
+    return p;
+  }).join('/'));
+};
+
+
+// path.relative(from, to)
+// posix version
+exports.relative = function(from, to) {
+  from = exports.resolve(from).substr(1);
+  to = exports.resolve(to).substr(1);
+
+  function trim(arr) {
+    var start = 0;
+    for (; start < arr.length; start++) {
+      if (arr[start] !== '') break;
+    }
+
+    var end = arr.length - 1;
+    for (; end >= 0; end--) {
+      if (arr[end] !== '') break;
+    }
+
+    if (start > end) return [];
+    return arr.slice(start, end - start + 1);
+  }
+
+  var fromParts = trim(from.split('/'));
+  var toParts = trim(to.split('/'));
+
+  var length = Math.min(fromParts.length, toParts.length);
+  var samePartsLength = length;
+  for (var i = 0; i < length; i++) {
+    if (fromParts[i] !== toParts[i]) {
+      samePartsLength = i;
+      break;
+    }
+  }
+
+  var outputParts = [];
+  for (var i = samePartsLength; i < fromParts.length; i++) {
+    outputParts.push('..');
+  }
+
+  outputParts = outputParts.concat(toParts.slice(samePartsLength));
+
+  return outputParts.join('/');
+};
+
+exports.sep = '/';
+exports.delimiter = ':';
+
+exports.dirname = function(path) {
+  var result = splitPath(path),
+      root = result[0],
+      dir = result[1];
+
+  if (!root && !dir) {
+    // No dirname whatsoever
+    return '.';
+  }
+
+  if (dir) {
+    // It has a dirname, strip trailing slash
+    dir = dir.substr(0, dir.length - 1);
+  }
+
+  return root + dir;
+};
+
+
+exports.basename = function(path, ext) {
+  var f = splitPath(path)[2];
+  // TODO: make this comparison case-insensitive on windows?
+  if (ext && f.substr(-1 * ext.length) === ext) {
+    f = f.substr(0, f.length - ext.length);
+  }
+  return f;
+};
+
+
+exports.extname = function(path) {
+  return splitPath(path)[3];
+};
+
+function filter (xs, f) {
+    if (xs.filter) return xs.filter(f);
+    var res = [];
+    for (var i = 0; i < xs.length; i++) {
+        if (f(xs[i], i, xs)) res.push(xs[i]);
+    }
+    return res;
+}
+
+// String.prototype.substr - negative index don't work in IE8
+var substr = 'ab'.substr(-1) === 'b'
+    ? function (str, start, len) { return str.substr(start, len) }
+    : function (str, start, len) {
+        if (start < 0) start = str.length + start;
+        return str.substr(start, len);
+    }
+;
+
+}).call(this,require('_process'))
+},{"_process":44}],41:[function(require,module,exports){
+(function (process){
+// Generated by CoffeeScript 1.7.1
+(function() {
+  var getNanoSeconds, hrtime, loadTime;
+
+  if ((typeof performance !== "undefined" && performance !== null) && performance.now) {
+    module.exports = function() {
+      return performance.now();
+    };
+  } else if ((typeof process !== "undefined" && process !== null) && process.hrtime) {
+    module.exports = function() {
+      return (getNanoSeconds() - loadTime) / 1e6;
+    };
+    hrtime = process.hrtime;
+    getNanoSeconds = function() {
+      var hr;
+      hr = hrtime();
+      return hr[0] * 1e9 + hr[1];
+    };
+    loadTime = getNanoSeconds();
+  } else if (Date.now) {
+    module.exports = function() {
+      return Date.now() - loadTime;
+    };
+    loadTime = Date.now();
+  } else {
+    module.exports = function() {
+      return new Date().getTime() - loadTime;
+    };
+    loadTime = new Date().getTime();
+  }
+
+}).call(this);
+
+}).call(this,require('_process'))
+},{"_process":44}],42:[function(require,module,exports){
+module.exports = pointer
+
+pointer.available = available
+
+var EE = require('events').EventEmitter
+  , Stream = require('stream').Stream
+
+function available() {
+  return !!shim(document.body)
+}
+
+function pointer(el) {
+  var ael = el.addEventListener || el.attachEvent
+    , rel = el.removeEventListener || el.detachEvent
+    , doc = el.ownerDocument
+    , body = doc.body
+    , rpl = shim(el) 
+    , out = {dx: 0, dy: 0, dt: 0}
+    , ee = new EE
+    , stream = null
+    , lastPageX, lastPageY
+    , needsFullscreen = false
+    , mouseDownMS
+
+  ael.call(el, 'mousedown', onmousedown, false)
+  ael.call(el, 'mouseup', onmouseup, false)
+  ael.call(body, 'mousemove', onmove, false)
+
+  var vendors = ['', 'webkit', 'moz', 'ms', 'o']
+
+  for(var i = 0, len = vendors.length; i < len; ++i) {
+    ael.call(doc, vendors[i]+'pointerlockchange', onpointerlockchange)
+    ael.call(doc, vendors[i]+'pointerlockerror', onpointerlockerror)
+  }
+
+  ee.release = release
+  ee.target = pointerlockelement
+  ee.request = onmousedown
+  ee.destroy = function() {
+    rel.call(el, 'mouseup', onmouseup, false)
+    rel.call(el, 'mousedown', onmousedown, false)
+    rel.call(el, 'mousemove', onmove, false)
+  }
+
+  if(!shim) {
+    setTimeout(function() {
+      ee.emit('error', new Error('pointer lock is not supported'))
+    }, 0)
+  }
+  return ee
+
+  function onmousedown(ev) {
+    if(pointerlockelement()) {
+      return
+    }
+    mouseDownMS = +new Date
+    rpl.call(el)
+  }
+
+  function onmouseup(ev) {
+    if(!needsFullscreen) {
+      return
+    }
+
+    ee.emit('needs-fullscreen')
+    needsFullscreen = false
+  }
+
+  function onpointerlockchange(ev) {
+    if(!pointerlockelement()) {
+      if(stream) release()
+      return
+    }
+
+    stream = new Stream
+    stream.readable = true
+    stream.initial = {x: lastPageX, y: lastPageY, t: Date.now()}
+
+    ee.emit('attain', stream)
+  }
+
+  function onpointerlockerror(ev) {
+    var dt = +(new Date) - mouseDownMS
+    if(dt < 100) {
+      // we errored immediately, we need to do fullscreen first.
+      needsFullscreen = true
+      return
+    }
+
+    ee.emit('error')
+    if(stream) {
+      stream.emit('error', ev)
+    }
+    stream = null
+  }
+
+  function release() {
+    ee.emit('release')
+
+    if(stream) {
+      stream.emit('end')
+      stream.readable = false
+      stream.emit('close')
+      stream = null
+    }
+
+    var pel = pointerlockelement()
+    if(!pel) {
+      return
+    }
+
+    (doc.exitPointerLock ||
+    doc.mozExitPointerLock ||
+    doc.webkitExitPointerLock ||
+    doc.msExitPointerLock ||
+    doc.oExitPointerLock).call(doc)
+  }
+
+  function onmove(ev) {
+    lastPageX = ev.pageX
+    lastPageY = ev.pageY
+
+    if(!stream) return
+
+    // we're reusing a single object
+    // because I'd like to avoid piling up
+    // a ton of objects for the garbage
+    // collector.
+    out.dx =
+      ev.movementX || ev.webkitMovementX ||
+      ev.mozMovementX || ev.msMovementX ||
+      ev.oMovementX || 0
+
+    out.dy = 
+      ev.movementY || ev.webkitMovementY ||
+      ev.mozMovementY || ev.msMovementY ||
+      ev.oMovementY || 0
+
+    out.dt = Date.now() - stream.initial.t
+
+    ee.emit('data', out)
+    stream.emit('data', out)
+  }
+
+  function pointerlockelement() {
+    return 0 ||
+      doc.pointerLockElement ||
+      doc.mozPointerLockElement ||
+      doc.webkitPointerLockElement ||
+      doc.msPointerLockElement ||
+      doc.oPointerLockElement ||
+      null
+  }
+}
+
+function shim(el) {
+  return el.requestPointerLock ||
+    el.webkitRequestPointerLock ||
+    el.mozRequestPointerLock ||
+    el.msRequestPointerLock ||
+    el.oRequestPointerLock ||
+    null
+}
+
+},{"events":33,"stream":60}],43:[function(require,module,exports){
+(function (process){
+'use strict';
+
+if (!process.version ||
+    process.version.indexOf('v0.') === 0 ||
+    process.version.indexOf('v1.') === 0 && process.version.indexOf('v1.8.') !== 0) {
+  module.exports = nextTick;
+} else {
+  module.exports = process.nextTick;
+}
+
+function nextTick(fn, arg1, arg2, arg3) {
+  if (typeof fn !== 'function') {
+    throw new TypeError('"callback" argument must be a function');
+  }
+  var len = arguments.length;
+  var args, i;
+  switch (len) {
+  case 0:
+  case 1:
+    return process.nextTick(fn);
+  case 2:
+    return process.nextTick(function afterTickOne() {
+      fn.call(null, arg1);
+    });
+  case 3:
+    return process.nextTick(function afterTickTwo() {
+      fn.call(null, arg1, arg2);
+    });
+  case 4:
+    return process.nextTick(function afterTickThree() {
+      fn.call(null, arg1, arg2, arg3);
+    });
+  default:
+    args = new Array(len - 1);
+    i = 0;
+    while (i < args.length) {
+      args[i++] = arguments[i];
+    }
+    return process.nextTick(function afterTick() {
+      fn.apply(null, args);
+    });
+  }
+}
+
+}).call(this,require('_process'))
+},{"_process":44}],44:[function(require,module,exports){
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+(function () {
+    try {
+        cachedSetTimeout = setTimeout;
+    } catch (e) {
+        cachedSetTimeout = function () {
+            throw new Error('setTimeout is not defined');
+        }
+    }
+    try {
+        cachedClearTimeout = clearTimeout;
+    } catch (e) {
+        cachedClearTimeout = function () {
+            throw new Error('clearTimeout is not defined');
+        }
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],45:[function(require,module,exports){
+(function (global){
+/*! https://mths.be/punycode v1.4.1 by @mathias */
+;(function(root) {
+
+	/** Detect free variables */
+	var freeExports = typeof exports == 'object' && exports &&
+		!exports.nodeType && exports;
+	var freeModule = typeof module == 'object' && module &&
+		!module.nodeType && module;
+	var freeGlobal = typeof global == 'object' && global;
+	if (
+		freeGlobal.global === freeGlobal ||
+		freeGlobal.window === freeGlobal ||
+		freeGlobal.self === freeGlobal
+	) {
+		root = freeGlobal;
+	}
+
+	/**
+	 * The `punycode` object.
+	 * @name punycode
+	 * @type Object
+	 */
+	var punycode,
+
+	/** Highest positive signed 32-bit float value */
+	maxInt = 2147483647, // aka. 0x7FFFFFFF or 2^31-1
+
+	/** Bootstring parameters */
+	base = 36,
+	tMin = 1,
+	tMax = 26,
+	skew = 38,
+	damp = 700,
+	initialBias = 72,
+	initialN = 128, // 0x80
+	delimiter = '-', // '\x2D'
+
+	/** Regular expressions */
+	regexPunycode = /^xn--/,
+	regexNonASCII = /[^\x20-\x7E]/, // unprintable ASCII chars + non-ASCII chars
+	regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g, // RFC 3490 separators
+
+	/** Error messages */
+	errors = {
+		'overflow': 'Overflow: input needs wider integers to process',
+		'not-basic': 'Illegal input >= 0x80 (not a basic code point)',
+		'invalid-input': 'Invalid input'
+	},
+
+	/** Convenience shortcuts */
+	baseMinusTMin = base - tMin,
+	floor = Math.floor,
+	stringFromCharCode = String.fromCharCode,
+
+	/** Temporary variable */
+	key;
+
+	/*--------------------------------------------------------------------------*/
+
+	/**
+	 * A generic error utility function.
+	 * @private
+	 * @param {String} type The error type.
+	 * @returns {Error} Throws a `RangeError` with the applicable error message.
+	 */
+	function error(type) {
+		throw new RangeError(errors[type]);
+	}
+
+	/**
+	 * A generic `Array#map` utility function.
+	 * @private
+	 * @param {Array} array The array to iterate over.
+	 * @param {Function} callback The function that gets called for every array
+	 * item.
+	 * @returns {Array} A new array of values returned by the callback function.
+	 */
+	function map(array, fn) {
+		var length = array.length;
+		var result = [];
+		while (length--) {
+			result[length] = fn(array[length]);
+		}
+		return result;
+	}
+
+	/**
+	 * A simple `Array#map`-like wrapper to work with domain name strings or email
+	 * addresses.
+	 * @private
+	 * @param {String} domain The domain name or email address.
+	 * @param {Function} callback The function that gets called for every
+	 * character.
+	 * @returns {Array} A new string of characters returned by the callback
+	 * function.
+	 */
+	function mapDomain(string, fn) {
+		var parts = string.split('@');
+		var result = '';
+		if (parts.length > 1) {
+			// In email addresses, only the domain name should be punycoded. Leave
+			// the local part (i.e. everything up to `@`) intact.
+			result = parts[0] + '@';
+			string = parts[1];
+		}
+		// Avoid `split(regex)` for IE8 compatibility. See #17.
+		string = string.replace(regexSeparators, '\x2E');
+		var labels = string.split('.');
+		var encoded = map(labels, fn).join('.');
+		return result + encoded;
+	}
+
+	/**
+	 * Creates an array containing the numeric code points of each Unicode
+	 * character in the string. While JavaScript uses UCS-2 internally,
+	 * this function will convert a pair of surrogate halves (each of which
+	 * UCS-2 exposes as separate characters) into a single code point,
+	 * matching UTF-16.
+	 * @see `punycode.ucs2.encode`
+	 * @see <https://mathiasbynens.be/notes/javascript-encoding>
+	 * @memberOf punycode.ucs2
+	 * @name decode
+	 * @param {String} string The Unicode input string (UCS-2).
+	 * @returns {Array} The new array of code points.
+	 */
+	function ucs2decode(string) {
+		var output = [],
+		    counter = 0,
+		    length = string.length,
+		    value,
+		    extra;
+		while (counter < length) {
+			value = string.charCodeAt(counter++);
+			if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
+				// high surrogate, and there is a next character
+				extra = string.charCodeAt(counter++);
+				if ((extra & 0xFC00) == 0xDC00) { // low surrogate
+					output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000);
+				} else {
+					// unmatched surrogate; only append this code unit, in case the next
+					// code unit is the high surrogate of a surrogate pair
+					output.push(value);
+					counter--;
+				}
+			} else {
+				output.push(value);
+			}
+		}
+		return output;
+	}
+
+	/**
+	 * Creates a string based on an array of numeric code points.
+	 * @see `punycode.ucs2.decode`
+	 * @memberOf punycode.ucs2
+	 * @name encode
+	 * @param {Array} codePoints The array of numeric code points.
+	 * @returns {String} The new Unicode string (UCS-2).
+	 */
+	function ucs2encode(array) {
+		return map(array, function(value) {
+			var output = '';
+			if (value > 0xFFFF) {
+				value -= 0x10000;
+				output += stringFromCharCode(value >>> 10 & 0x3FF | 0xD800);
+				value = 0xDC00 | value & 0x3FF;
+			}
+			output += stringFromCharCode(value);
+			return output;
+		}).join('');
+	}
+
+	/**
+	 * Converts a basic code point into a digit/integer.
+	 * @see `digitToBasic()`
+	 * @private
+	 * @param {Number} codePoint The basic numeric code point value.
+	 * @returns {Number} The numeric value of a basic code point (for use in
+	 * representing integers) in the range `0` to `base - 1`, or `base` if
+	 * the code point does not represent a value.
+	 */
+	function basicToDigit(codePoint) {
+		if (codePoint - 48 < 10) {
+			return codePoint - 22;
+		}
+		if (codePoint - 65 < 26) {
+			return codePoint - 65;
+		}
+		if (codePoint - 97 < 26) {
+			return codePoint - 97;
+		}
+		return base;
+	}
+
+	/**
+	 * Converts a digit/integer into a basic code point.
+	 * @see `basicToDigit()`
+	 * @private
+	 * @param {Number} digit The numeric value of a basic code point.
+	 * @returns {Number} The basic code point whose value (when used for
+	 * representing integers) is `digit`, which needs to be in the range
+	 * `0` to `base - 1`. If `flag` is non-zero, the uppercase form is
+	 * used; else, the lowercase form is used. The behavior is undefined
+	 * if `flag` is non-zero and `digit` has no uppercase form.
+	 */
+	function digitToBasic(digit, flag) {
+		//  0..25 map to ASCII a..z or A..Z
+		// 26..35 map to ASCII 0..9
+		return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
+	}
+
+	/**
+	 * Bias adaptation function as per section 3.4 of RFC 3492.
+	 * https://tools.ietf.org/html/rfc3492#section-3.4
+	 * @private
+	 */
+	function adapt(delta, numPoints, firstTime) {
+		var k = 0;
+		delta = firstTime ? floor(delta / damp) : delta >> 1;
+		delta += floor(delta / numPoints);
+		for (/* no initialization */; delta > baseMinusTMin * tMax >> 1; k += base) {
+			delta = floor(delta / baseMinusTMin);
+		}
+		return floor(k + (baseMinusTMin + 1) * delta / (delta + skew));
+	}
+
+	/**
+	 * Converts a Punycode string of ASCII-only symbols to a string of Unicode
+	 * symbols.
+	 * @memberOf punycode
+	 * @param {String} input The Punycode string of ASCII-only symbols.
+	 * @returns {String} The resulting string of Unicode symbols.
+	 */
+	function decode(input) {
+		// Don't use UCS-2
+		var output = [],
+		    inputLength = input.length,
+		    out,
+		    i = 0,
+		    n = initialN,
+		    bias = initialBias,
+		    basic,
+		    j,
+		    index,
+		    oldi,
+		    w,
+		    k,
+		    digit,
+		    t,
+		    /** Cached calculation results */
+		    baseMinusT;
+
+		// Handle the basic code points: let `basic` be the number of input code
+		// points before the last delimiter, or `0` if there is none, then copy
+		// the first basic code points to the output.
+
+		basic = input.lastIndexOf(delimiter);
+		if (basic < 0) {
+			basic = 0;
+		}
+
+		for (j = 0; j < basic; ++j) {
+			// if it's not a basic code point
+			if (input.charCodeAt(j) >= 0x80) {
+				error('not-basic');
+			}
+			output.push(input.charCodeAt(j));
+		}
+
+		// Main decoding loop: start just after the last delimiter if any basic code
+		// points were copied; start at the beginning otherwise.
+
+		for (index = basic > 0 ? basic + 1 : 0; index < inputLength; /* no final expression */) {
+
+			// `index` is the index of the next character to be consumed.
+			// Decode a generalized variable-length integer into `delta`,
+			// which gets added to `i`. The overflow checking is easier
+			// if we increase `i` as we go, then subtract off its starting
+			// value at the end to obtain `delta`.
+			for (oldi = i, w = 1, k = base; /* no condition */; k += base) {
+
+				if (index >= inputLength) {
+					error('invalid-input');
+				}
+
+				digit = basicToDigit(input.charCodeAt(index++));
+
+				if (digit >= base || digit > floor((maxInt - i) / w)) {
+					error('overflow');
+				}
+
+				i += digit * w;
+				t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
+
+				if (digit < t) {
+					break;
+				}
+
+				baseMinusT = base - t;
+				if (w > floor(maxInt / baseMinusT)) {
+					error('overflow');
+				}
+
+				w *= baseMinusT;
+
+			}
+
+			out = output.length + 1;
+			bias = adapt(i - oldi, out, oldi == 0);
+
+			// `i` was supposed to wrap around from `out` to `0`,
+			// incrementing `n` each time, so we'll fix that now:
+			if (floor(i / out) > maxInt - n) {
+				error('overflow');
+			}
+
+			n += floor(i / out);
+			i %= out;
+
+			// Insert `n` at position `i` of the output
+			output.splice(i++, 0, n);
+
+		}
+
+		return ucs2encode(output);
+	}
+
+	/**
+	 * Converts a string of Unicode symbols (e.g. a domain name label) to a
+	 * Punycode string of ASCII-only symbols.
+	 * @memberOf punycode
+	 * @param {String} input The string of Unicode symbols.
+	 * @returns {String} The resulting Punycode string of ASCII-only symbols.
+	 */
+	function encode(input) {
+		var n,
+		    delta,
+		    handledCPCount,
+		    basicLength,
+		    bias,
+		    j,
+		    m,
+		    q,
+		    k,
+		    t,
+		    currentValue,
+		    output = [],
+		    /** `inputLength` will hold the number of code points in `input`. */
+		    inputLength,
+		    /** Cached calculation results */
+		    handledCPCountPlusOne,
+		    baseMinusT,
+		    qMinusT;
+
+		// Convert the input in UCS-2 to Unicode
+		input = ucs2decode(input);
+
+		// Cache the length
+		inputLength = input.length;
+
+		// Initialize the state
+		n = initialN;
+		delta = 0;
+		bias = initialBias;
+
+		// Handle the basic code points
+		for (j = 0; j < inputLength; ++j) {
+			currentValue = input[j];
+			if (currentValue < 0x80) {
+				output.push(stringFromCharCode(currentValue));
+			}
+		}
+
+		handledCPCount = basicLength = output.length;
+
+		// `handledCPCount` is the number of code points that have been handled;
+		// `basicLength` is the number of basic code points.
+
+		// Finish the basic string - if it is not empty - with a delimiter
+		if (basicLength) {
+			output.push(delimiter);
+		}
+
+		// Main encoding loop:
+		while (handledCPCount < inputLength) {
+
+			// All non-basic code points < n have been handled already. Find the next
+			// larger one:
+			for (m = maxInt, j = 0; j < inputLength; ++j) {
+				currentValue = input[j];
+				if (currentValue >= n && currentValue < m) {
+					m = currentValue;
+				}
+			}
+
+			// Increase `delta` enough to advance the decoder's <n,i> state to <m,0>,
+			// but guard against overflow
+			handledCPCountPlusOne = handledCPCount + 1;
+			if (m - n > floor((maxInt - delta) / handledCPCountPlusOne)) {
+				error('overflow');
+			}
+
+			delta += (m - n) * handledCPCountPlusOne;
+			n = m;
+
+			for (j = 0; j < inputLength; ++j) {
+				currentValue = input[j];
+
+				if (currentValue < n && ++delta > maxInt) {
+					error('overflow');
+				}
+
+				if (currentValue == n) {
+					// Represent delta as a generalized variable-length integer
+					for (q = delta, k = base; /* no condition */; k += base) {
+						t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
+						if (q < t) {
+							break;
+						}
+						qMinusT = q - t;
+						baseMinusT = base - t;
+						output.push(
+							stringFromCharCode(digitToBasic(t + qMinusT % baseMinusT, 0))
+						);
+						q = floor(qMinusT / baseMinusT);
+					}
+
+					output.push(stringFromCharCode(digitToBasic(q, 0)));
+					bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
+					delta = 0;
+					++handledCPCount;
+				}
+			}
+
+			++delta;
+			++n;
+
+		}
+		return output.join('');
+	}
+
+	/**
+	 * Converts a Punycode string representing a domain name or an email address
+	 * to Unicode. Only the Punycoded parts of the input will be converted, i.e.
+	 * it doesn't matter if you call it on a string that has already been
+	 * converted to Unicode.
+	 * @memberOf punycode
+	 * @param {String} input The Punycoded domain name or email address to
+	 * convert to Unicode.
+	 * @returns {String} The Unicode representation of the given Punycode
+	 * string.
+	 */
+	function toUnicode(input) {
+		return mapDomain(input, function(string) {
+			return regexPunycode.test(string)
+				? decode(string.slice(4).toLowerCase())
+				: string;
+		});
+	}
+
+	/**
+	 * Converts a Unicode string representing a domain name or an email address to
+	 * Punycode. Only the non-ASCII parts of the domain name will be converted,
+	 * i.e. it doesn't matter if you call it with a domain that's already in
+	 * ASCII.
+	 * @memberOf punycode
+	 * @param {String} input The domain name or email address to convert, as a
+	 * Unicode string.
+	 * @returns {String} The Punycode representation of the given domain name or
+	 * email address.
+	 */
+	function toASCII(input) {
+		return mapDomain(input, function(string) {
+			return regexNonASCII.test(string)
+				? 'xn--' + encode(string)
+				: string;
+		});
+	}
+
+	/*--------------------------------------------------------------------------*/
+
+	/** Define the public API */
+	punycode = {
+		/**
+		 * A string representing the current Punycode.js version number.
+		 * @memberOf punycode
+		 * @type String
+		 */
+		'version': '1.4.1',
+		/**
+		 * An object of methods to convert from JavaScript's internal character
+		 * representation (UCS-2) to Unicode code points, and back.
+		 * @see <https://mathiasbynens.be/notes/javascript-encoding>
+		 * @memberOf punycode
+		 * @type Object
+		 */
+		'ucs2': {
+			'decode': ucs2decode,
+			'encode': ucs2encode
+		},
+		'decode': decode,
+		'encode': encode,
+		'toASCII': toASCII,
+		'toUnicode': toUnicode
+	};
+
+	/** Expose `punycode` */
+	// Some AMD build optimizers, like r.js, check for specific condition patterns
+	// like the following:
+	if (
+		typeof define == 'function' &&
+		typeof define.amd == 'object' &&
+		define.amd
+	) {
+		define('punycode', function() {
+			return punycode;
+		});
+	} else if (freeExports && freeModule) {
+		if (module.exports == freeExports) {
+			// in Node.js, io.js, or RingoJS v0.8.0+
+			freeModule.exports = punycode;
+		} else {
+			// in Narwhal or RingoJS v0.7.0-
+			for (key in punycode) {
+				punycode.hasOwnProperty(key) && (freeExports[key] = punycode[key]);
+			}
+		}
+	} else {
+		// in Rhino or a web browser
+		root.punycode = punycode;
+	}
+
+}(this));
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],46:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+'use strict';
+
+// If obj.hasOwnProperty has been overridden, then calling
+// obj.hasOwnProperty(prop) will break.
+// See: https://github.com/joyent/node/issues/1707
+function hasOwnProperty(obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
+}
+
+module.exports = function(qs, sep, eq, options) {
+  sep = sep || '&';
+  eq = eq || '=';
+  var obj = {};
+
+  if (typeof qs !== 'string' || qs.length === 0) {
+    return obj;
+  }
+
+  var regexp = /\+/g;
+  qs = qs.split(sep);
+
+  var maxKeys = 1000;
+  if (options && typeof options.maxKeys === 'number') {
+    maxKeys = options.maxKeys;
+  }
+
+  var len = qs.length;
+  // maxKeys <= 0 means that we should not limit keys count
+  if (maxKeys > 0 && len > maxKeys) {
+    len = maxKeys;
+  }
+
+  for (var i = 0; i < len; ++i) {
+    var x = qs[i].replace(regexp, '%20'),
+        idx = x.indexOf(eq),
+        kstr, vstr, k, v;
+
+    if (idx >= 0) {
+      kstr = x.substr(0, idx);
+      vstr = x.substr(idx + 1);
+    } else {
+      kstr = x;
+      vstr = '';
+    }
+
+    k = decodeURIComponent(kstr);
+    v = decodeURIComponent(vstr);
+
+    if (!hasOwnProperty(obj, k)) {
+      obj[k] = v;
+    } else if (isArray(obj[k])) {
+      obj[k].push(v);
+    } else {
+      obj[k] = [obj[k], v];
+    }
+  }
+
+  return obj;
+};
+
+var isArray = Array.isArray || function (xs) {
+  return Object.prototype.toString.call(xs) === '[object Array]';
+};
+
+},{}],47:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+'use strict';
+
+var stringifyPrimitive = function(v) {
+  switch (typeof v) {
+    case 'string':
+      return v;
+
+    case 'boolean':
+      return v ? 'true' : 'false';
+
+    case 'number':
+      return isFinite(v) ? v : '';
+
+    default:
+      return '';
+  }
+};
+
+module.exports = function(obj, sep, eq, name) {
+  sep = sep || '&';
+  eq = eq || '=';
+  if (obj === null) {
+    obj = undefined;
+  }
+
+  if (typeof obj === 'object') {
+    return map(objectKeys(obj), function(k) {
+      var ks = encodeURIComponent(stringifyPrimitive(k)) + eq;
+      if (isArray(obj[k])) {
+        return map(obj[k], function(v) {
+          return ks + encodeURIComponent(stringifyPrimitive(v));
+        }).join(sep);
+      } else {
+        return ks + encodeURIComponent(stringifyPrimitive(obj[k]));
+      }
+    }).join(sep);
+
+  }
+
+  if (!name) return '';
+  return encodeURIComponent(stringifyPrimitive(name)) + eq +
+         encodeURIComponent(stringifyPrimitive(obj));
+};
+
+var isArray = Array.isArray || function (xs) {
+  return Object.prototype.toString.call(xs) === '[object Array]';
+};
+
+function map (xs, f) {
+  if (xs.map) return xs.map(f);
+  var res = [];
+  for (var i = 0; i < xs.length; i++) {
+    res.push(f(xs[i], i));
+  }
+  return res;
+}
+
+var objectKeys = Object.keys || function (obj) {
+  var res = [];
+  for (var key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) res.push(key);
+  }
+  return res;
+};
+
+},{}],48:[function(require,module,exports){
+'use strict';
+
+exports.decode = exports.parse = require('./decode');
+exports.encode = exports.stringify = require('./encode');
+
+},{"./decode":46,"./encode":47}],49:[function(require,module,exports){
+(function (global){
+var now = require('performance-now')
+  , root = typeof window === 'undefined' ? global : window
+  , vendors = ['moz', 'webkit']
+  , suffix = 'AnimationFrame'
+  , raf = root['request' + suffix]
+  , caf = root['cancel' + suffix] || root['cancelRequest' + suffix]
+
+for(var i = 0; !raf && i < vendors.length; i++) {
+  raf = root[vendors[i] + 'Request' + suffix]
+  caf = root[vendors[i] + 'Cancel' + suffix]
+      || root[vendors[i] + 'CancelRequest' + suffix]
+}
+
+// Some versions of FF have rAF but not cAF
+if(!raf || !caf) {
+  var last = 0
+    , id = 0
+    , queue = []
+    , frameDuration = 1000 / 60
+
+  raf = function(callback) {
+    if(queue.length === 0) {
+      var _now = now()
+        , next = Math.max(0, frameDuration - (_now - last))
+      last = next + _now
+      setTimeout(function() {
+        var cp = queue.slice(0)
+        // Clear queue here to prevent
+        // callbacks from appending listeners
+        // to the current frame's queue
+        queue.length = 0
+        for(var i = 0; i < cp.length; i++) {
+          if(!cp[i].cancelled) {
+            try{
+              cp[i].callback(last)
+            } catch(e) {
+              setTimeout(function() { throw e }, 0)
+            }
+          }
+        }
+      }, Math.round(next))
+    }
+    queue.push({
+      handle: ++id,
+      callback: callback,
+      cancelled: false
+    })
+    return id
+  }
+
+  caf = function(handle) {
+    for(var i = 0; i < queue.length; i++) {
+      if(queue[i].handle === handle) {
+        queue[i].cancelled = true
+      }
+    }
+  }
+}
+
+module.exports = function(fn) {
+  // Wrap in a new function to prevent
+  // `cancel` potentially being assigned
+  // to the native rAF function
+  return raf.call(root, fn)
+}
+module.exports.cancel = function() {
+  caf.apply(root, arguments)
+}
+module.exports.polyfill = function() {
+  root.requestAnimationFrame = raf
+  root.cancelAnimationFrame = caf
+}
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"performance-now":41}],50:[function(require,module,exports){
+module.exports = require("./lib/_stream_duplex.js")
+
+},{"./lib/_stream_duplex.js":51}],51:[function(require,module,exports){
+// a duplex stream is just a stream that is both readable and writable.
+// Since JS doesn't have multiple prototypal inheritance, this class
+// prototypally inherits from Readable, and then parasitically from
+// Writable.
+
+'use strict';
+
+/*<replacement>*/
+
+var objectKeys = Object.keys || function (obj) {
+  var keys = [];
+  for (var key in obj) {
+    keys.push(key);
+  }return keys;
+};
+/*</replacement>*/
+
+module.exports = Duplex;
+
+/*<replacement>*/
+var processNextTick = require('process-nextick-args');
+/*</replacement>*/
+
+/*<replacement>*/
+var util = require('core-util-is');
+util.inherits = require('inherits');
+/*</replacement>*/
+
+var Readable = require('./_stream_readable');
+var Writable = require('./_stream_writable');
+
+util.inherits(Duplex, Readable);
+
+var keys = objectKeys(Writable.prototype);
+for (var v = 0; v < keys.length; v++) {
+  var method = keys[v];
+  if (!Duplex.prototype[method]) Duplex.prototype[method] = Writable.prototype[method];
+}
+
+function Duplex(options) {
+  if (!(this instanceof Duplex)) return new Duplex(options);
+
+  Readable.call(this, options);
+  Writable.call(this, options);
+
+  if (options && options.readable === false) this.readable = false;
+
+  if (options && options.writable === false) this.writable = false;
+
+  this.allowHalfOpen = true;
+  if (options && options.allowHalfOpen === false) this.allowHalfOpen = false;
+
+  this.once('end', onend);
+}
+
+// the no-half-open enforcer
+function onend() {
+  // if we allow half-open state, or if the writable side ended,
+  // then we're ok.
+  if (this.allowHalfOpen || this._writableState.ended) return;
+
+  // no more data can be written.
+  // But allow more writes to happen in this tick.
+  processNextTick(onEndNT, this);
+}
+
+function onEndNT(self) {
+  self.end();
+}
+
+function forEach(xs, f) {
+  for (var i = 0, l = xs.length; i < l; i++) {
+    f(xs[i], i);
+  }
+}
+},{"./_stream_readable":53,"./_stream_writable":55,"core-util-is":31,"inherits":36,"process-nextick-args":43}],52:[function(require,module,exports){
+// a passthrough stream.
+// basically just the most minimal sort of Transform stream.
+// Every written chunk gets output as-is.
+
+'use strict';
+
+module.exports = PassThrough;
+
+var Transform = require('./_stream_transform');
+
+/*<replacement>*/
+var util = require('core-util-is');
+util.inherits = require('inherits');
+/*</replacement>*/
+
+util.inherits(PassThrough, Transform);
+
+function PassThrough(options) {
+  if (!(this instanceof PassThrough)) return new PassThrough(options);
+
+  Transform.call(this, options);
+}
+
+PassThrough.prototype._transform = function (chunk, encoding, cb) {
+  cb(null, chunk);
+};
+},{"./_stream_transform":54,"core-util-is":31,"inherits":36}],53:[function(require,module,exports){
+(function (process){
+'use strict';
+
+module.exports = Readable;
+
+/*<replacement>*/
+var processNextTick = require('process-nextick-args');
+/*</replacement>*/
+
+/*<replacement>*/
+var isArray = require('isarray');
+/*</replacement>*/
+
+Readable.ReadableState = ReadableState;
+
+/*<replacement>*/
+var EE = require('events').EventEmitter;
+
+var EElistenerCount = function (emitter, type) {
+  return emitter.listeners(type).length;
+};
+/*</replacement>*/
+
+/*<replacement>*/
+var Stream;
+(function () {
+  try {
+    Stream = require('st' + 'ream');
+  } catch (_) {} finally {
+    if (!Stream) Stream = require('events').EventEmitter;
+  }
+})();
+/*</replacement>*/
+
+var Buffer = require('buffer').Buffer;
+/*<replacement>*/
+var bufferShim = require('buffer-shims');
+/*</replacement>*/
+
+/*<replacement>*/
+var util = require('core-util-is');
+util.inherits = require('inherits');
+/*</replacement>*/
+
+/*<replacement>*/
+var debugUtil = require('util');
+var debug = void 0;
+if (debugUtil && debugUtil.debuglog) {
+  debug = debugUtil.debuglog('stream');
+} else {
+  debug = function () {};
+}
+/*</replacement>*/
+
+var StringDecoder;
+
+util.inherits(Readable, Stream);
+
+var hasPrependListener = typeof EE.prototype.prependListener === 'function';
+
+function prependListener(emitter, event, fn) {
+  if (hasPrependListener) return emitter.prependListener(event, fn);
+
+  // This is a brutally ugly hack to make sure that our error handler
+  // is attached before any userland ones.  NEVER DO THIS. This is here
+  // only because this code needs to continue to work with older versions
+  // of Node.js that do not include the prependListener() method. The goal
+  // is to eventually remove this hack.
+  if (!emitter._events || !emitter._events[event]) emitter.on(event, fn);else if (isArray(emitter._events[event])) emitter._events[event].unshift(fn);else emitter._events[event] = [fn, emitter._events[event]];
+}
+
+var Duplex;
+function ReadableState(options, stream) {
+  Duplex = Duplex || require('./_stream_duplex');
+
+  options = options || {};
+
+  // object stream flag. Used to make read(n) ignore n and to
+  // make all the buffer merging and length checks go away
+  this.objectMode = !!options.objectMode;
+
+  if (stream instanceof Duplex) this.objectMode = this.objectMode || !!options.readableObjectMode;
+
+  // the point at which it stops calling _read() to fill the buffer
+  // Note: 0 is a valid value, means "don't call _read preemptively ever"
+  var hwm = options.highWaterMark;
+  var defaultHwm = this.objectMode ? 16 : 16 * 1024;
+  this.highWaterMark = hwm || hwm === 0 ? hwm : defaultHwm;
+
+  // cast to ints.
+  this.highWaterMark = ~ ~this.highWaterMark;
+
+  this.buffer = [];
+  this.length = 0;
+  this.pipes = null;
+  this.pipesCount = 0;
+  this.flowing = null;
+  this.ended = false;
+  this.endEmitted = false;
+  this.reading = false;
+
+  // a flag to be able to tell if the onwrite cb is called immediately,
+  // or on a later tick.  We set this to true at first, because any
+  // actions that shouldn't happen until "later" should generally also
+  // not happen before the first write call.
+  this.sync = true;
+
+  // whenever we return null, then we set a flag to say
+  // that we're awaiting a 'readable' event emission.
+  this.needReadable = false;
+  this.emittedReadable = false;
+  this.readableListening = false;
+  this.resumeScheduled = false;
+
+  // Crypto is kind of old and crusty.  Historically, its default string
+  // encoding is 'binary' so we have to make this configurable.
+  // Everything else in the universe uses 'utf8', though.
+  this.defaultEncoding = options.defaultEncoding || 'utf8';
+
+  // when piping, we only care about 'readable' events that happen
+  // after read()ing all the bytes and not getting any pushback.
+  this.ranOut = false;
+
+  // the number of writers that are awaiting a drain event in .pipe()s
+  this.awaitDrain = 0;
+
+  // if true, a maybeReadMore has been scheduled
+  this.readingMore = false;
+
+  this.decoder = null;
+  this.encoding = null;
+  if (options.encoding) {
+    if (!StringDecoder) StringDecoder = require('string_decoder/').StringDecoder;
+    this.decoder = new StringDecoder(options.encoding);
+    this.encoding = options.encoding;
+  }
+}
+
+var Duplex;
+function Readable(options) {
+  Duplex = Duplex || require('./_stream_duplex');
+
+  if (!(this instanceof Readable)) return new Readable(options);
+
+  this._readableState = new ReadableState(options, this);
+
+  // legacy
+  this.readable = true;
+
+  if (options && typeof options.read === 'function') this._read = options.read;
+
+  Stream.call(this);
+}
+
+// Manually shove something into the read() buffer.
+// This returns true if the highWaterMark has not been hit yet,
+// similar to how Writable.write() returns true if you should
+// write() some more.
+Readable.prototype.push = function (chunk, encoding) {
+  var state = this._readableState;
+
+  if (!state.objectMode && typeof chunk === 'string') {
+    encoding = encoding || state.defaultEncoding;
+    if (encoding !== state.encoding) {
+      chunk = bufferShim.from(chunk, encoding);
+      encoding = '';
+    }
+  }
+
+  return readableAddChunk(this, state, chunk, encoding, false);
+};
+
+// Unshift should *always* be something directly out of read()
+Readable.prototype.unshift = function (chunk) {
+  var state = this._readableState;
+  return readableAddChunk(this, state, chunk, '', true);
+};
+
+Readable.prototype.isPaused = function () {
+  return this._readableState.flowing === false;
+};
+
+function readableAddChunk(stream, state, chunk, encoding, addToFront) {
+  var er = chunkInvalid(state, chunk);
+  if (er) {
+    stream.emit('error', er);
+  } else if (chunk === null) {
+    state.reading = false;
+    onEofChunk(stream, state);
+  } else if (state.objectMode || chunk && chunk.length > 0) {
+    if (state.ended && !addToFront) {
+      var e = new Error('stream.push() after EOF');
+      stream.emit('error', e);
+    } else if (state.endEmitted && addToFront) {
+      var _e = new Error('stream.unshift() after end event');
+      stream.emit('error', _e);
+    } else {
+      var skipAdd;
+      if (state.decoder && !addToFront && !encoding) {
+        chunk = state.decoder.write(chunk);
+        skipAdd = !state.objectMode && chunk.length === 0;
+      }
+
+      if (!addToFront) state.reading = false;
+
+      // Don't add to the buffer if we've decoded to an empty string chunk and
+      // we're not in object mode
+      if (!skipAdd) {
+        // if we want the data now, just emit it.
+        if (state.flowing && state.length === 0 && !state.sync) {
+          stream.emit('data', chunk);
+          stream.read(0);
+        } else {
+          // update the buffer info.
+          state.length += state.objectMode ? 1 : chunk.length;
+          if (addToFront) state.buffer.unshift(chunk);else state.buffer.push(chunk);
+
+          if (state.needReadable) emitReadable(stream);
+        }
+      }
+
+      maybeReadMore(stream, state);
+    }
+  } else if (!addToFront) {
+    state.reading = false;
+  }
+
+  return needMoreData(state);
+}
+
+// if it's past the high water mark, we can push in some more.
+// Also, if we have no data yet, we can stand some
+// more bytes.  This is to work around cases where hwm=0,
+// such as the repl.  Also, if the push() triggered a
+// readable event, and the user called read(largeNumber) such that
+// needReadable was set, then we ought to push more, so that another
+// 'readable' event will be triggered.
+function needMoreData(state) {
+  return !state.ended && (state.needReadable || state.length < state.highWaterMark || state.length === 0);
+}
+
+// backwards compatibility.
+Readable.prototype.setEncoding = function (enc) {
+  if (!StringDecoder) StringDecoder = require('string_decoder/').StringDecoder;
+  this._readableState.decoder = new StringDecoder(enc);
+  this._readableState.encoding = enc;
+  return this;
+};
+
+// Don't raise the hwm > 8MB
+var MAX_HWM = 0x800000;
+function computeNewHighWaterMark(n) {
+  if (n >= MAX_HWM) {
+    n = MAX_HWM;
+  } else {
+    // Get the next highest power of 2
+    n--;
+    n |= n >>> 1;
+    n |= n >>> 2;
+    n |= n >>> 4;
+    n |= n >>> 8;
+    n |= n >>> 16;
+    n++;
+  }
+  return n;
+}
+
+function howMuchToRead(n, state) {
+  if (state.length === 0 && state.ended) return 0;
+
+  if (state.objectMode) return n === 0 ? 0 : 1;
+
+  if (n === null || isNaN(n)) {
+    // only flow one buffer at a time
+    if (state.flowing && state.buffer.length) return state.buffer[0].length;else return state.length;
+  }
+
+  if (n <= 0) return 0;
+
+  // If we're asking for more than the target buffer level,
+  // then raise the water mark.  Bump up to the next highest
+  // power of 2, to prevent increasing it excessively in tiny
+  // amounts.
+  if (n > state.highWaterMark) state.highWaterMark = computeNewHighWaterMark(n);
+
+  // don't have that much.  return null, unless we've ended.
+  if (n > state.length) {
+    if (!state.ended) {
+      state.needReadable = true;
+      return 0;
+    } else {
+      return state.length;
+    }
+  }
+
+  return n;
+}
+
+// you can override either this method, or the async _read(n) below.
+Readable.prototype.read = function (n) {
+  debug('read', n);
+  var state = this._readableState;
+  var nOrig = n;
+
+  if (typeof n !== 'number' || n > 0) state.emittedReadable = false;
+
+  // if we're doing read(0) to trigger a readable event, but we
+  // already have a bunch of data in the buffer, then just trigger
+  // the 'readable' event and move on.
+  if (n === 0 && state.needReadable && (state.length >= state.highWaterMark || state.ended)) {
+    debug('read: emitReadable', state.length, state.ended);
+    if (state.length === 0 && state.ended) endReadable(this);else emitReadable(this);
+    return null;
+  }
+
+  n = howMuchToRead(n, state);
+
+  // if we've ended, and we're now clear, then finish it up.
+  if (n === 0 && state.ended) {
+    if (state.length === 0) endReadable(this);
+    return null;
+  }
+
+  // All the actual chunk generation logic needs to be
+  // *below* the call to _read.  The reason is that in certain
+  // synthetic stream cases, such as passthrough streams, _read
+  // may be a completely synchronous operation which may change
+  // the state of the read buffer, providing enough data when
+  // before there was *not* enough.
+  //
+  // So, the steps are:
+  // 1. Figure out what the state of things will be after we do
+  // a read from the buffer.
+  //
+  // 2. If that resulting state will trigger a _read, then call _read.
+  // Note that this may be asynchronous, or synchronous.  Yes, it is
+  // deeply ugly to write APIs this way, but that still doesn't mean
+  // that the Readable class should behave improperly, as streams are
+  // designed to be sync/async agnostic.
+  // Take note if the _read call is sync or async (ie, if the read call
+  // has returned yet), so that we know whether or not it's safe to emit
+  // 'readable' etc.
+  //
+  // 3. Actually pull the requested chunks out of the buffer and return.
+
+  // if we need a readable event, then we need to do some reading.
+  var doRead = state.needReadable;
+  debug('need readable', doRead);
+
+  // if we currently have less than the highWaterMark, then also read some
+  if (state.length === 0 || state.length - n < state.highWaterMark) {
+    doRead = true;
+    debug('length less than watermark', doRead);
+  }
+
+  // however, if we've ended, then there's no point, and if we're already
+  // reading, then it's unnecessary.
+  if (state.ended || state.reading) {
+    doRead = false;
+    debug('reading or ended', doRead);
+  }
+
+  if (doRead) {
+    debug('do read');
+    state.reading = true;
+    state.sync = true;
+    // if the length is currently zero, then we *need* a readable event.
+    if (state.length === 0) state.needReadable = true;
+    // call internal read method
+    this._read(state.highWaterMark);
+    state.sync = false;
+  }
+
+  // If _read pushed data synchronously, then `reading` will be false,
+  // and we need to re-evaluate how much data we can return to the user.
+  if (doRead && !state.reading) n = howMuchToRead(nOrig, state);
+
+  var ret;
+  if (n > 0) ret = fromList(n, state);else ret = null;
+
+  if (ret === null) {
+    state.needReadable = true;
+    n = 0;
+  }
+
+  state.length -= n;
+
+  // If we have nothing in the buffer, then we want to know
+  // as soon as we *do* get something into the buffer.
+  if (state.length === 0 && !state.ended) state.needReadable = true;
+
+  // If we tried to read() past the EOF, then emit end on the next tick.
+  if (nOrig !== n && state.ended && state.length === 0) endReadable(this);
+
+  if (ret !== null) this.emit('data', ret);
+
+  return ret;
+};
+
+function chunkInvalid(state, chunk) {
+  var er = null;
+  if (!Buffer.isBuffer(chunk) && typeof chunk !== 'string' && chunk !== null && chunk !== undefined && !state.objectMode) {
+    er = new TypeError('Invalid non-string/buffer chunk');
+  }
+  return er;
+}
+
+function onEofChunk(stream, state) {
+  if (state.ended) return;
+  if (state.decoder) {
+    var chunk = state.decoder.end();
+    if (chunk && chunk.length) {
+      state.buffer.push(chunk);
+      state.length += state.objectMode ? 1 : chunk.length;
+    }
+  }
+  state.ended = true;
+
+  // emit 'readable' now to make sure it gets picked up.
+  emitReadable(stream);
+}
+
+// Don't emit readable right away in sync mode, because this can trigger
+// another read() call => stack overflow.  This way, it might trigger
+// a nextTick recursion warning, but that's not so bad.
+function emitReadable(stream) {
+  var state = stream._readableState;
+  state.needReadable = false;
+  if (!state.emittedReadable) {
+    debug('emitReadable', state.flowing);
+    state.emittedReadable = true;
+    if (state.sync) processNextTick(emitReadable_, stream);else emitReadable_(stream);
+  }
+}
+
+function emitReadable_(stream) {
+  debug('emit readable');
+  stream.emit('readable');
+  flow(stream);
+}
+
+// at this point, the user has presumably seen the 'readable' event,
+// and called read() to consume some data.  that may have triggered
+// in turn another _read(n) call, in which case reading = true if
+// it's in progress.
+// However, if we're not ended, or reading, and the length < hwm,
+// then go ahead and try to read some more preemptively.
+function maybeReadMore(stream, state) {
+  if (!state.readingMore) {
+    state.readingMore = true;
+    processNextTick(maybeReadMore_, stream, state);
+  }
+}
+
+function maybeReadMore_(stream, state) {
+  var len = state.length;
+  while (!state.reading && !state.flowing && !state.ended && state.length < state.highWaterMark) {
+    debug('maybeReadMore read 0');
+    stream.read(0);
+    if (len === state.length)
+      // didn't get any data, stop spinning.
+      break;else len = state.length;
+  }
+  state.readingMore = false;
+}
+
+// abstract method.  to be overridden in specific implementation classes.
+// call cb(er, data) where data is <= n in length.
+// for virtual (non-string, non-buffer) streams, "length" is somewhat
+// arbitrary, and perhaps not very meaningful.
+Readable.prototype._read = function (n) {
+  this.emit('error', new Error('not implemented'));
+};
+
+Readable.prototype.pipe = function (dest, pipeOpts) {
+  var src = this;
+  var state = this._readableState;
+
+  switch (state.pipesCount) {
+    case 0:
+      state.pipes = dest;
+      break;
+    case 1:
+      state.pipes = [state.pipes, dest];
+      break;
+    default:
+      state.pipes.push(dest);
+      break;
+  }
+  state.pipesCount += 1;
+  debug('pipe count=%d opts=%j', state.pipesCount, pipeOpts);
+
+  var doEnd = (!pipeOpts || pipeOpts.end !== false) && dest !== process.stdout && dest !== process.stderr;
+
+  var endFn = doEnd ? onend : cleanup;
+  if (state.endEmitted) processNextTick(endFn);else src.once('end', endFn);
+
+  dest.on('unpipe', onunpipe);
+  function onunpipe(readable) {
+    debug('onunpipe');
+    if (readable === src) {
+      cleanup();
+    }
+  }
+
+  function onend() {
+    debug('onend');
+    dest.end();
+  }
+
+  // when the dest drains, it reduces the awaitDrain counter
+  // on the source.  This would be more elegant with a .once()
+  // handler in flow(), but adding and removing repeatedly is
+  // too slow.
+  var ondrain = pipeOnDrain(src);
+  dest.on('drain', ondrain);
+
+  var cleanedUp = false;
+  function cleanup() {
+    debug('cleanup');
+    // cleanup event handlers once the pipe is broken
+    dest.removeListener('close', onclose);
+    dest.removeListener('finish', onfinish);
+    dest.removeListener('drain', ondrain);
+    dest.removeListener('error', onerror);
+    dest.removeListener('unpipe', onunpipe);
+    src.removeListener('end', onend);
+    src.removeListener('end', cleanup);
+    src.removeListener('data', ondata);
+
+    cleanedUp = true;
+
+    // if the reader is waiting for a drain event from this
+    // specific writer, then it would cause it to never start
+    // flowing again.
+    // So, if this is awaiting a drain, then we just call it now.
+    // If we don't know, then assume that we are waiting for one.
+    if (state.awaitDrain && (!dest._writableState || dest._writableState.needDrain)) ondrain();
+  }
+
+  src.on('data', ondata);
+  function ondata(chunk) {
+    debug('ondata');
+    var ret = dest.write(chunk);
+    if (false === ret) {
+      // If the user unpiped during `dest.write()`, it is possible
+      // to get stuck in a permanently paused state if that write
+      // also returned false.
+      // => Check whether `dest` is still a piping destination.
+      if ((state.pipesCount === 1 && state.pipes === dest || state.pipesCount > 1 && indexOf(state.pipes, dest) !== -1) && !cleanedUp) {
+        debug('false write response, pause', src._readableState.awaitDrain);
+        src._readableState.awaitDrain++;
+      }
+      src.pause();
+    }
+  }
+
+  // if the dest has an error, then stop piping into it.
+  // however, don't suppress the throwing behavior for this.
+  function onerror(er) {
+    debug('onerror', er);
+    unpipe();
+    dest.removeListener('error', onerror);
+    if (EElistenerCount(dest, 'error') === 0) dest.emit('error', er);
+  }
+
+  // Make sure our error handler is attached before userland ones.
+  prependListener(dest, 'error', onerror);
+
+  // Both close and finish should trigger unpipe, but only once.
+  function onclose() {
+    dest.removeListener('finish', onfinish);
+    unpipe();
+  }
+  dest.once('close', onclose);
+  function onfinish() {
+    debug('onfinish');
+    dest.removeListener('close', onclose);
+    unpipe();
+  }
+  dest.once('finish', onfinish);
+
+  function unpipe() {
+    debug('unpipe');
+    src.unpipe(dest);
+  }
+
+  // tell the dest that it's being piped to
+  dest.emit('pipe', src);
+
+  // start the flow if it hasn't been started already.
+  if (!state.flowing) {
+    debug('pipe resume');
+    src.resume();
+  }
+
+  return dest;
+};
+
+function pipeOnDrain(src) {
+  return function () {
+    var state = src._readableState;
+    debug('pipeOnDrain', state.awaitDrain);
+    if (state.awaitDrain) state.awaitDrain--;
+    if (state.awaitDrain === 0 && EElistenerCount(src, 'data')) {
+      state.flowing = true;
+      flow(src);
+    }
+  };
+}
+
+Readable.prototype.unpipe = function (dest) {
+  var state = this._readableState;
+
+  // if we're not piping anywhere, then do nothing.
+  if (state.pipesCount === 0) return this;
+
+  // just one destination.  most common case.
+  if (state.pipesCount === 1) {
+    // passed in one, but it's not the right one.
+    if (dest && dest !== state.pipes) return this;
+
+    if (!dest) dest = state.pipes;
+
+    // got a match.
+    state.pipes = null;
+    state.pipesCount = 0;
+    state.flowing = false;
+    if (dest) dest.emit('unpipe', this);
+    return this;
+  }
+
+  // slow case. multiple pipe destinations.
+
+  if (!dest) {
+    // remove all.
+    var dests = state.pipes;
+    var len = state.pipesCount;
+    state.pipes = null;
+    state.pipesCount = 0;
+    state.flowing = false;
+
+    for (var _i = 0; _i < len; _i++) {
+      dests[_i].emit('unpipe', this);
+    }return this;
+  }
+
+  // try to find the right one.
+  var i = indexOf(state.pipes, dest);
+  if (i === -1) return this;
+
+  state.pipes.splice(i, 1);
+  state.pipesCount -= 1;
+  if (state.pipesCount === 1) state.pipes = state.pipes[0];
+
+  dest.emit('unpipe', this);
+
+  return this;
+};
+
+// set up data events if they are asked for
+// Ensure readable listeners eventually get something
+Readable.prototype.on = function (ev, fn) {
+  var res = Stream.prototype.on.call(this, ev, fn);
+
+  // If listening to data, and it has not explicitly been paused,
+  // then call resume to start the flow of data on the next tick.
+  if (ev === 'data' && false !== this._readableState.flowing) {
+    this.resume();
+  }
+
+  if (ev === 'readable' && !this._readableState.endEmitted) {
+    var state = this._readableState;
+    if (!state.readableListening) {
+      state.readableListening = true;
+      state.emittedReadable = false;
+      state.needReadable = true;
+      if (!state.reading) {
+        processNextTick(nReadingNextTick, this);
+      } else if (state.length) {
+        emitReadable(this, state);
+      }
+    }
+  }
+
+  return res;
+};
+Readable.prototype.addListener = Readable.prototype.on;
+
+function nReadingNextTick(self) {
+  debug('readable nexttick read 0');
+  self.read(0);
+}
+
+// pause() and resume() are remnants of the legacy readable stream API
+// If the user uses them, then switch into old mode.
+Readable.prototype.resume = function () {
+  var state = this._readableState;
+  if (!state.flowing) {
+    debug('resume');
+    state.flowing = true;
+    resume(this, state);
+  }
+  return this;
+};
+
+function resume(stream, state) {
+  if (!state.resumeScheduled) {
+    state.resumeScheduled = true;
+    processNextTick(resume_, stream, state);
+  }
+}
+
+function resume_(stream, state) {
+  if (!state.reading) {
+    debug('resume read 0');
+    stream.read(0);
+  }
+
+  state.resumeScheduled = false;
+  stream.emit('resume');
+  flow(stream);
+  if (state.flowing && !state.reading) stream.read(0);
+}
+
+Readable.prototype.pause = function () {
+  debug('call pause flowing=%j', this._readableState.flowing);
+  if (false !== this._readableState.flowing) {
+    debug('pause');
+    this._readableState.flowing = false;
+    this.emit('pause');
+  }
+  return this;
+};
+
+function flow(stream) {
+  var state = stream._readableState;
+  debug('flow', state.flowing);
+  if (state.flowing) {
+    do {
+      var chunk = stream.read();
+    } while (null !== chunk && state.flowing);
+  }
+}
+
+// wrap an old-style stream as the async data source.
+// This is *not* part of the readable stream interface.
+// It is an ugly unfortunate mess of history.
+Readable.prototype.wrap = function (stream) {
+  var state = this._readableState;
+  var paused = false;
+
+  var self = this;
+  stream.on('end', function () {
+    debug('wrapped end');
+    if (state.decoder && !state.ended) {
+      var chunk = state.decoder.end();
+      if (chunk && chunk.length) self.push(chunk);
+    }
+
+    self.push(null);
+  });
+
+  stream.on('data', function (chunk) {
+    debug('wrapped data');
+    if (state.decoder) chunk = state.decoder.write(chunk);
+
+    // don't skip over falsy values in objectMode
+    if (state.objectMode && (chunk === null || chunk === undefined)) return;else if (!state.objectMode && (!chunk || !chunk.length)) return;
+
+    var ret = self.push(chunk);
+    if (!ret) {
+      paused = true;
+      stream.pause();
+    }
+  });
+
+  // proxy all the other methods.
+  // important when wrapping filters and duplexes.
+  for (var i in stream) {
+    if (this[i] === undefined && typeof stream[i] === 'function') {
+      this[i] = function (method) {
+        return function () {
+          return stream[method].apply(stream, arguments);
+        };
+      }(i);
+    }
+  }
+
+  // proxy certain important events.
+  var events = ['error', 'close', 'destroy', 'pause', 'resume'];
+  forEach(events, function (ev) {
+    stream.on(ev, self.emit.bind(self, ev));
+  });
+
+  // when we try to consume some more bytes, simply unpause the
+  // underlying stream.
+  self._read = function (n) {
+    debug('wrapped _read', n);
+    if (paused) {
+      paused = false;
+      stream.resume();
+    }
+  };
+
+  return self;
+};
+
+// exposed for testing purposes only.
+Readable._fromList = fromList;
+
+// Pluck off n bytes from an array of buffers.
+// Length is the combined lengths of all the buffers in the list.
+function fromList(n, state) {
+  var list = state.buffer;
+  var length = state.length;
+  var stringMode = !!state.decoder;
+  var objectMode = !!state.objectMode;
+  var ret;
+
+  // nothing in the list, definitely empty.
+  if (list.length === 0) return null;
+
+  if (length === 0) ret = null;else if (objectMode) ret = list.shift();else if (!n || n >= length) {
+    // read it all, truncate the array.
+    if (stringMode) ret = list.join('');else if (list.length === 1) ret = list[0];else ret = Buffer.concat(list, length);
+    list.length = 0;
+  } else {
+    // read just some of it.
+    if (n < list[0].length) {
+      // just take a part of the first list item.
+      // slice is the same for buffers and strings.
+      var buf = list[0];
+      ret = buf.slice(0, n);
+      list[0] = buf.slice(n);
+    } else if (n === list[0].length) {
+      // first list is a perfect match
+      ret = list.shift();
+    } else {
+      // complex case.
+      // we have enough to cover it, but it spans past the first buffer.
+      if (stringMode) ret = '';else ret = bufferShim.allocUnsafe(n);
+
+      var c = 0;
+      for (var i = 0, l = list.length; i < l && c < n; i++) {
+        var _buf = list[0];
+        var cpy = Math.min(n - c, _buf.length);
+
+        if (stringMode) ret += _buf.slice(0, cpy);else _buf.copy(ret, c, 0, cpy);
+
+        if (cpy < _buf.length) list[0] = _buf.slice(cpy);else list.shift();
+
+        c += cpy;
+      }
+    }
+  }
+
+  return ret;
+}
+
+function endReadable(stream) {
+  var state = stream._readableState;
+
+  // If we get here before consuming all the bytes, then that is a
+  // bug in node.  Should never happen.
+  if (state.length > 0) throw new Error('"endReadable()" called on non-empty stream');
+
+  if (!state.endEmitted) {
+    state.ended = true;
+    processNextTick(endReadableNT, state, stream);
+  }
+}
+
+function endReadableNT(state, stream) {
+  // Check that we didn't get one last unshift.
+  if (!state.endEmitted && state.length === 0) {
+    state.endEmitted = true;
+    stream.readable = false;
+    stream.emit('end');
+  }
+}
+
+function forEach(xs, f) {
+  for (var i = 0, l = xs.length; i < l; i++) {
+    f(xs[i], i);
+  }
+}
+
+function indexOf(xs, x) {
+  for (var i = 0, l = xs.length; i < l; i++) {
+    if (xs[i] === x) return i;
+  }
+  return -1;
+}
+}).call(this,require('_process'))
+},{"./_stream_duplex":51,"_process":44,"buffer":23,"buffer-shims":22,"core-util-is":31,"events":33,"inherits":36,"isarray":38,"process-nextick-args":43,"string_decoder/":61,"util":21}],54:[function(require,module,exports){
+// a transform stream is a readable/writable stream where you do
+// something with the data.  Sometimes it's called a "filter",
+// but that's not a great name for it, since that implies a thing where
+// some bits pass through, and others are simply ignored.  (That would
+// be a valid example of a transform, of course.)
+//
+// While the output is causally related to the input, it's not a
+// necessarily symmetric or synchronous transformation.  For example,
+// a zlib stream might take multiple plain-text writes(), and then
+// emit a single compressed chunk some time in the future.
+//
+// Here's how this works:
+//
+// The Transform stream has all the aspects of the readable and writable
+// stream classes.  When you write(chunk), that calls _write(chunk,cb)
+// internally, and returns false if there's a lot of pending writes
+// buffered up.  When you call read(), that calls _read(n) until
+// there's enough pending readable data buffered up.
+//
+// In a transform stream, the written data is placed in a buffer.  When
+// _read(n) is called, it transforms the queued up data, calling the
+// buffered _write cb's as it consumes chunks.  If consuming a single
+// written chunk would result in multiple output chunks, then the first
+// outputted bit calls the readcb, and subsequent chunks just go into
+// the read buffer, and will cause it to emit 'readable' if necessary.
+//
+// This way, back-pressure is actually determined by the reading side,
+// since _read has to be called to start processing a new chunk.  However,
+// a pathological inflate type of transform can cause excessive buffering
+// here.  For example, imagine a stream where every byte of input is
+// interpreted as an integer from 0-255, and then results in that many
+// bytes of output.  Writing the 4 bytes {ff,ff,ff,ff} would result in
+// 1kb of data being output.  In this case, you could write a very small
+// amount of input, and end up with a very large amount of output.  In
+// such a pathological inflating mechanism, there'd be no way to tell
+// the system to stop doing the transform.  A single 4MB write could
+// cause the system to run out of memory.
+//
+// However, even in such a pathological case, only a single written chunk
+// would be consumed, and then the rest would wait (un-transformed) until
+// the results of the previous transformed chunk were consumed.
+
+'use strict';
+
+module.exports = Transform;
+
+var Duplex = require('./_stream_duplex');
+
+/*<replacement>*/
+var util = require('core-util-is');
+util.inherits = require('inherits');
+/*</replacement>*/
+
+util.inherits(Transform, Duplex);
+
+function TransformState(stream) {
+  this.afterTransform = function (er, data) {
+    return afterTransform(stream, er, data);
+  };
+
+  this.needTransform = false;
+  this.transforming = false;
+  this.writecb = null;
+  this.writechunk = null;
+  this.writeencoding = null;
+}
+
+function afterTransform(stream, er, data) {
+  var ts = stream._transformState;
+  ts.transforming = false;
+
+  var cb = ts.writecb;
+
+  if (!cb) return stream.emit('error', new Error('no writecb in Transform class'));
+
+  ts.writechunk = null;
+  ts.writecb = null;
+
+  if (data !== null && data !== undefined) stream.push(data);
+
+  cb(er);
+
+  var rs = stream._readableState;
+  rs.reading = false;
+  if (rs.needReadable || rs.length < rs.highWaterMark) {
+    stream._read(rs.highWaterMark);
+  }
+}
+
+function Transform(options) {
+  if (!(this instanceof Transform)) return new Transform(options);
+
+  Duplex.call(this, options);
+
+  this._transformState = new TransformState(this);
+
+  // when the writable side finishes, then flush out anything remaining.
+  var stream = this;
+
+  // start out asking for a readable event once data is transformed.
+  this._readableState.needReadable = true;
+
+  // we have implemented the _read method, and done the other things
+  // that Readable wants before the first _read call, so unset the
+  // sync guard flag.
+  this._readableState.sync = false;
+
+  if (options) {
+    if (typeof options.transform === 'function') this._transform = options.transform;
+
+    if (typeof options.flush === 'function') this._flush = options.flush;
+  }
+
+  this.once('prefinish', function () {
+    if (typeof this._flush === 'function') this._flush(function (er) {
+      done(stream, er);
+    });else done(stream);
+  });
+}
+
+Transform.prototype.push = function (chunk, encoding) {
+  this._transformState.needTransform = false;
+  return Duplex.prototype.push.call(this, chunk, encoding);
+};
+
+// This is the part where you do stuff!
+// override this function in implementation classes.
+// 'chunk' is an input chunk.
+//
+// Call `push(newChunk)` to pass along transformed output
+// to the readable side.  You may call 'push' zero or more times.
+//
+// Call `cb(err)` when you are done with this chunk.  If you pass
+// an error, then that'll put the hurt on the whole operation.  If you
+// never call cb(), then you'll never get another chunk.
+Transform.prototype._transform = function (chunk, encoding, cb) {
+  throw new Error('Not implemented');
+};
+
+Transform.prototype._write = function (chunk, encoding, cb) {
+  var ts = this._transformState;
+  ts.writecb = cb;
+  ts.writechunk = chunk;
+  ts.writeencoding = encoding;
+  if (!ts.transforming) {
+    var rs = this._readableState;
+    if (ts.needTransform || rs.needReadable || rs.length < rs.highWaterMark) this._read(rs.highWaterMark);
+  }
+};
+
+// Doesn't matter what the args are here.
+// _transform does all the work.
+// That we got here means that the readable side wants more data.
+Transform.prototype._read = function (n) {
+  var ts = this._transformState;
+
+  if (ts.writechunk !== null && ts.writecb && !ts.transforming) {
+    ts.transforming = true;
+    this._transform(ts.writechunk, ts.writeencoding, ts.afterTransform);
+  } else {
+    // mark that we need a transform, so that any data that comes in
+    // will get processed, now that we've asked for it.
+    ts.needTransform = true;
+  }
+};
+
+function done(stream, er) {
+  if (er) return stream.emit('error', er);
+
+  // if there's nothing in the write buffer, then that means
+  // that nothing more will ever be provided
+  var ws = stream._writableState;
+  var ts = stream._transformState;
+
+  if (ws.length) throw new Error('Calling transform done when ws.length != 0');
+
+  if (ts.transforming) throw new Error('Calling transform done when still transforming');
+
+  return stream.push(null);
+}
+},{"./_stream_duplex":51,"core-util-is":31,"inherits":36}],55:[function(require,module,exports){
+(function (process){
+// A bit simpler than readable streams.
+// Implement an async ._write(chunk, encoding, cb), and it'll handle all
+// the drain event emission and buffering.
+
+'use strict';
+
+module.exports = Writable;
+
+/*<replacement>*/
+var processNextTick = require('process-nextick-args');
+/*</replacement>*/
+
+/*<replacement>*/
+var asyncWrite = !process.browser && ['v0.10', 'v0.9.'].indexOf(process.version.slice(0, 5)) > -1 ? setImmediate : processNextTick;
+/*</replacement>*/
+
+Writable.WritableState = WritableState;
+
+/*<replacement>*/
+var util = require('core-util-is');
+util.inherits = require('inherits');
+/*</replacement>*/
+
+/*<replacement>*/
+var internalUtil = {
+  deprecate: require('util-deprecate')
+};
+/*</replacement>*/
+
+/*<replacement>*/
+var Stream;
+(function () {
+  try {
+    Stream = require('st' + 'ream');
+  } catch (_) {} finally {
+    if (!Stream) Stream = require('events').EventEmitter;
+  }
+})();
+/*</replacement>*/
+
+var Buffer = require('buffer').Buffer;
+/*<replacement>*/
+var bufferShim = require('buffer-shims');
+/*</replacement>*/
+
+util.inherits(Writable, Stream);
+
+function nop() {}
+
+function WriteReq(chunk, encoding, cb) {
+  this.chunk = chunk;
+  this.encoding = encoding;
+  this.callback = cb;
+  this.next = null;
+}
+
+var Duplex;
+function WritableState(options, stream) {
+  Duplex = Duplex || require('./_stream_duplex');
+
+  options = options || {};
+
+  // object stream flag to indicate whether or not this stream
+  // contains buffers or objects.
+  this.objectMode = !!options.objectMode;
+
+  if (stream instanceof Duplex) this.objectMode = this.objectMode || !!options.writableObjectMode;
+
+  // the point at which write() starts returning false
+  // Note: 0 is a valid value, means that we always return false if
+  // the entire buffer is not flushed immediately on write()
+  var hwm = options.highWaterMark;
+  var defaultHwm = this.objectMode ? 16 : 16 * 1024;
+  this.highWaterMark = hwm || hwm === 0 ? hwm : defaultHwm;
+
+  // cast to ints.
+  this.highWaterMark = ~ ~this.highWaterMark;
+
+  this.needDrain = false;
+  // at the start of calling end()
+  this.ending = false;
+  // when end() has been called, and returned
+  this.ended = false;
+  // when 'finish' is emitted
+  this.finished = false;
+
+  // should we decode strings into buffers before passing to _write?
+  // this is here so that some node-core streams can optimize string
+  // handling at a lower level.
+  var noDecode = options.decodeStrings === false;
+  this.decodeStrings = !noDecode;
+
+  // Crypto is kind of old and crusty.  Historically, its default string
+  // encoding is 'binary' so we have to make this configurable.
+  // Everything else in the universe uses 'utf8', though.
+  this.defaultEncoding = options.defaultEncoding || 'utf8';
+
+  // not an actual buffer we keep track of, but a measurement
+  // of how much we're waiting to get pushed to some underlying
+  // socket or file.
+  this.length = 0;
+
+  // a flag to see when we're in the middle of a write.
+  this.writing = false;
+
+  // when true all writes will be buffered until .uncork() call
+  this.corked = 0;
+
+  // a flag to be able to tell if the onwrite cb is called immediately,
+  // or on a later tick.  We set this to true at first, because any
+  // actions that shouldn't happen until "later" should generally also
+  // not happen before the first write call.
+  this.sync = true;
+
+  // a flag to know if we're processing previously buffered items, which
+  // may call the _write() callback in the same tick, so that we don't
+  // end up in an overlapped onwrite situation.
+  this.bufferProcessing = false;
+
+  // the callback that's passed to _write(chunk,cb)
+  this.onwrite = function (er) {
+    onwrite(stream, er);
+  };
+
+  // the callback that the user supplies to write(chunk,encoding,cb)
+  this.writecb = null;
+
+  // the amount that is being written when _write is called.
+  this.writelen = 0;
+
+  this.bufferedRequest = null;
+  this.lastBufferedRequest = null;
+
+  // number of pending user-supplied write callbacks
+  // this must be 0 before 'finish' can be emitted
+  this.pendingcb = 0;
+
+  // emit prefinish if the only thing we're waiting for is _write cbs
+  // This is relevant for synchronous Transform streams
+  this.prefinished = false;
+
+  // True if the error was already emitted and should not be thrown again
+  this.errorEmitted = false;
+
+  // count buffered requests
+  this.bufferedRequestCount = 0;
+
+  // allocate the first CorkedRequest, there is always
+  // one allocated and free to use, and we maintain at most two
+  this.corkedRequestsFree = new CorkedRequest(this);
+}
+
+WritableState.prototype.getBuffer = function writableStateGetBuffer() {
+  var current = this.bufferedRequest;
+  var out = [];
+  while (current) {
+    out.push(current);
+    current = current.next;
+  }
+  return out;
+};
+
+(function () {
+  try {
+    Object.defineProperty(WritableState.prototype, 'buffer', {
+      get: internalUtil.deprecate(function () {
+        return this.getBuffer();
+      }, '_writableState.buffer is deprecated. Use _writableState.getBuffer ' + 'instead.')
+    });
+  } catch (_) {}
+})();
+
+var Duplex;
+function Writable(options) {
+  Duplex = Duplex || require('./_stream_duplex');
+
+  // Writable ctor is applied to Duplexes, though they're not
+  // instanceof Writable, they're instanceof Readable.
+  if (!(this instanceof Writable) && !(this instanceof Duplex)) return new Writable(options);
+
+  this._writableState = new WritableState(options, this);
+
+  // legacy.
+  this.writable = true;
+
+  if (options) {
+    if (typeof options.write === 'function') this._write = options.write;
+
+    if (typeof options.writev === 'function') this._writev = options.writev;
+  }
+
+  Stream.call(this);
+}
+
+// Otherwise people can pipe Writable streams, which is just wrong.
+Writable.prototype.pipe = function () {
+  this.emit('error', new Error('Cannot pipe, not readable'));
+};
+
+function writeAfterEnd(stream, cb) {
+  var er = new Error('write after end');
+  // TODO: defer error events consistently everywhere, not just the cb
+  stream.emit('error', er);
+  processNextTick(cb, er);
+}
+
+// If we get something that is not a buffer, string, null, or undefined,
+// and we're not in objectMode, then that's an error.
+// Otherwise stream chunks are all considered to be of length=1, and the
+// watermarks determine how many objects to keep in the buffer, rather than
+// how many bytes or characters.
+function validChunk(stream, state, chunk, cb) {
+  var valid = true;
+  var er = false;
+  // Always throw error if a null is written
+  // if we are not in object mode then throw
+  // if it is not a buffer, string, or undefined.
+  if (chunk === null) {
+    er = new TypeError('May not write null values to stream');
+  } else if (!Buffer.isBuffer(chunk) && typeof chunk !== 'string' && chunk !== undefined && !state.objectMode) {
+    er = new TypeError('Invalid non-string/buffer chunk');
+  }
+  if (er) {
+    stream.emit('error', er);
+    processNextTick(cb, er);
+    valid = false;
+  }
+  return valid;
+}
+
+Writable.prototype.write = function (chunk, encoding, cb) {
+  var state = this._writableState;
+  var ret = false;
+
+  if (typeof encoding === 'function') {
+    cb = encoding;
+    encoding = null;
+  }
+
+  if (Buffer.isBuffer(chunk)) encoding = 'buffer';else if (!encoding) encoding = state.defaultEncoding;
+
+  if (typeof cb !== 'function') cb = nop;
+
+  if (state.ended) writeAfterEnd(this, cb);else if (validChunk(this, state, chunk, cb)) {
+    state.pendingcb++;
+    ret = writeOrBuffer(this, state, chunk, encoding, cb);
+  }
+
+  return ret;
+};
+
+Writable.prototype.cork = function () {
+  var state = this._writableState;
+
+  state.corked++;
+};
+
+Writable.prototype.uncork = function () {
+  var state = this._writableState;
+
+  if (state.corked) {
+    state.corked--;
+
+    if (!state.writing && !state.corked && !state.finished && !state.bufferProcessing && state.bufferedRequest) clearBuffer(this, state);
+  }
+};
+
+Writable.prototype.setDefaultEncoding = function setDefaultEncoding(encoding) {
+  // node::ParseEncoding() requires lower case.
+  if (typeof encoding === 'string') encoding = encoding.toLowerCase();
+  if (!(['hex', 'utf8', 'utf-8', 'ascii', 'binary', 'base64', 'ucs2', 'ucs-2', 'utf16le', 'utf-16le', 'raw'].indexOf((encoding + '').toLowerCase()) > -1)) throw new TypeError('Unknown encoding: ' + encoding);
+  this._writableState.defaultEncoding = encoding;
+  return this;
+};
+
+function decodeChunk(state, chunk, encoding) {
+  if (!state.objectMode && state.decodeStrings !== false && typeof chunk === 'string') {
+    chunk = bufferShim.from(chunk, encoding);
+  }
+  return chunk;
+}
+
+// if we're already writing something, then just put this
+// in the queue, and wait our turn.  Otherwise, call _write
+// If we return false, then we need a drain event, so set that flag.
+function writeOrBuffer(stream, state, chunk, encoding, cb) {
+  chunk = decodeChunk(state, chunk, encoding);
+
+  if (Buffer.isBuffer(chunk)) encoding = 'buffer';
+  var len = state.objectMode ? 1 : chunk.length;
+
+  state.length += len;
+
+  var ret = state.length < state.highWaterMark;
+  // we must ensure that previous needDrain will not be reset to false.
+  if (!ret) state.needDrain = true;
+
+  if (state.writing || state.corked) {
+    var last = state.lastBufferedRequest;
+    state.lastBufferedRequest = new WriteReq(chunk, encoding, cb);
+    if (last) {
+      last.next = state.lastBufferedRequest;
+    } else {
+      state.bufferedRequest = state.lastBufferedRequest;
+    }
+    state.bufferedRequestCount += 1;
+  } else {
+    doWrite(stream, state, false, len, chunk, encoding, cb);
+  }
+
+  return ret;
+}
+
+function doWrite(stream, state, writev, len, chunk, encoding, cb) {
+  state.writelen = len;
+  state.writecb = cb;
+  state.writing = true;
+  state.sync = true;
+  if (writev) stream._writev(chunk, state.onwrite);else stream._write(chunk, encoding, state.onwrite);
+  state.sync = false;
+}
+
+function onwriteError(stream, state, sync, er, cb) {
+  --state.pendingcb;
+  if (sync) processNextTick(cb, er);else cb(er);
+
+  stream._writableState.errorEmitted = true;
+  stream.emit('error', er);
+}
+
+function onwriteStateUpdate(state) {
+  state.writing = false;
+  state.writecb = null;
+  state.length -= state.writelen;
+  state.writelen = 0;
+}
+
+function onwrite(stream, er) {
+  var state = stream._writableState;
+  var sync = state.sync;
+  var cb = state.writecb;
+
+  onwriteStateUpdate(state);
+
+  if (er) onwriteError(stream, state, sync, er, cb);else {
+    // Check if we're actually ready to finish, but don't emit yet
+    var finished = needFinish(state);
+
+    if (!finished && !state.corked && !state.bufferProcessing && state.bufferedRequest) {
+      clearBuffer(stream, state);
+    }
+
+    if (sync) {
+      /*<replacement>*/
+      asyncWrite(afterWrite, stream, state, finished, cb);
+      /*</replacement>*/
+    } else {
+        afterWrite(stream, state, finished, cb);
+      }
+  }
+}
+
+function afterWrite(stream, state, finished, cb) {
+  if (!finished) onwriteDrain(stream, state);
+  state.pendingcb--;
+  cb();
+  finishMaybe(stream, state);
+}
+
+// Must force callback to be called on nextTick, so that we don't
+// emit 'drain' before the write() consumer gets the 'false' return
+// value, and has a chance to attach a 'drain' listener.
+function onwriteDrain(stream, state) {
+  if (state.length === 0 && state.needDrain) {
+    state.needDrain = false;
+    stream.emit('drain');
+  }
+}
+
+// if there's something in the buffer waiting, then process it
+function clearBuffer(stream, state) {
+  state.bufferProcessing = true;
+  var entry = state.bufferedRequest;
+
+  if (stream._writev && entry && entry.next) {
+    // Fast case, write everything using _writev()
+    var l = state.bufferedRequestCount;
+    var buffer = new Array(l);
+    var holder = state.corkedRequestsFree;
+    holder.entry = entry;
+
+    var count = 0;
+    while (entry) {
+      buffer[count] = entry;
+      entry = entry.next;
+      count += 1;
+    }
+
+    doWrite(stream, state, true, state.length, buffer, '', holder.finish);
+
+    // doWrite is almost always async, defer these to save a bit of time
+    // as the hot path ends with doWrite
+    state.pendingcb++;
+    state.lastBufferedRequest = null;
+    if (holder.next) {
+      state.corkedRequestsFree = holder.next;
+      holder.next = null;
+    } else {
+      state.corkedRequestsFree = new CorkedRequest(state);
+    }
+  } else {
+    // Slow case, write chunks one-by-one
+    while (entry) {
+      var chunk = entry.chunk;
+      var encoding = entry.encoding;
+      var cb = entry.callback;
+      var len = state.objectMode ? 1 : chunk.length;
+
+      doWrite(stream, state, false, len, chunk, encoding, cb);
+      entry = entry.next;
+      // if we didn't call the onwrite immediately, then
+      // it means that we need to wait until it does.
+      // also, that means that the chunk and cb are currently
+      // being processed, so move the buffer counter past them.
+      if (state.writing) {
+        break;
+      }
+    }
+
+    if (entry === null) state.lastBufferedRequest = null;
+  }
+
+  state.bufferedRequestCount = 0;
+  state.bufferedRequest = entry;
+  state.bufferProcessing = false;
+}
+
+Writable.prototype._write = function (chunk, encoding, cb) {
+  cb(new Error('not implemented'));
+};
+
+Writable.prototype._writev = null;
+
+Writable.prototype.end = function (chunk, encoding, cb) {
+  var state = this._writableState;
+
+  if (typeof chunk === 'function') {
+    cb = chunk;
+    chunk = null;
+    encoding = null;
+  } else if (typeof encoding === 'function') {
+    cb = encoding;
+    encoding = null;
+  }
+
+  if (chunk !== null && chunk !== undefined) this.write(chunk, encoding);
+
+  // .end() fully uncorks
+  if (state.corked) {
+    state.corked = 1;
+    this.uncork();
+  }
+
+  // ignore unnecessary end() calls.
+  if (!state.ending && !state.finished) endWritable(this, state, cb);
+};
+
+function needFinish(state) {
+  return state.ending && state.length === 0 && state.bufferedRequest === null && !state.finished && !state.writing;
+}
+
+function prefinish(stream, state) {
+  if (!state.prefinished) {
+    state.prefinished = true;
+    stream.emit('prefinish');
+  }
+}
+
+function finishMaybe(stream, state) {
+  var need = needFinish(state);
+  if (need) {
+    if (state.pendingcb === 0) {
+      prefinish(stream, state);
+      state.finished = true;
+      stream.emit('finish');
+    } else {
+      prefinish(stream, state);
+    }
+  }
+  return need;
+}
+
+function endWritable(stream, state, cb) {
+  state.ending = true;
+  finishMaybe(stream, state);
+  if (cb) {
+    if (state.finished) processNextTick(cb);else stream.once('finish', cb);
+  }
+  state.ended = true;
+  stream.writable = false;
+}
+
+// It seems a linked list but it is not
+// there will be only 2 of these for each stream
+function CorkedRequest(state) {
+  var _this = this;
+
+  this.next = null;
+  this.entry = null;
+
+  this.finish = function (err) {
+    var entry = _this.entry;
+    _this.entry = null;
+    while (entry) {
+      var cb = entry.callback;
+      state.pendingcb--;
+      cb(err);
+      entry = entry.next;
+    }
+    if (state.corkedRequestsFree) {
+      state.corkedRequestsFree.next = _this;
+    } else {
+      state.corkedRequestsFree = _this;
+    }
+  };
+}
+}).call(this,require('_process'))
+},{"./_stream_duplex":51,"_process":44,"buffer":23,"buffer-shims":22,"core-util-is":31,"events":33,"inherits":36,"process-nextick-args":43,"util-deprecate":66}],56:[function(require,module,exports){
+module.exports = require("./lib/_stream_passthrough.js")
+
+},{"./lib/_stream_passthrough.js":52}],57:[function(require,module,exports){
+(function (process){
+var Stream = (function (){
+  try {
+    return require('st' + 'ream'); // hack to fix a circular dependency issue when used with browserify
+  } catch(_){}
+}());
+exports = module.exports = require('./lib/_stream_readable.js');
+exports.Stream = Stream || exports;
+exports.Readable = exports;
+exports.Writable = require('./lib/_stream_writable.js');
+exports.Duplex = require('./lib/_stream_duplex.js');
+exports.Transform = require('./lib/_stream_transform.js');
+exports.PassThrough = require('./lib/_stream_passthrough.js');
+
+if (!process.browser && process.env.READABLE_STREAM === 'disable' && Stream) {
+  module.exports = Stream;
+}
+
+}).call(this,require('_process'))
+},{"./lib/_stream_duplex.js":51,"./lib/_stream_passthrough.js":52,"./lib/_stream_readable.js":53,"./lib/_stream_transform.js":54,"./lib/_stream_writable.js":55,"_process":44}],58:[function(require,module,exports){
+module.exports = require("./lib/_stream_transform.js")
+
+},{"./lib/_stream_transform.js":54}],59:[function(require,module,exports){
+module.exports = require("./lib/_stream_writable.js")
+
+},{"./lib/_stream_writable.js":55}],60:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+module.exports = Stream;
+
+var EE = require('events').EventEmitter;
+var inherits = require('inherits');
+
+inherits(Stream, EE);
+Stream.Readable = require('readable-stream/readable.js');
+Stream.Writable = require('readable-stream/writable.js');
+Stream.Duplex = require('readable-stream/duplex.js');
+Stream.Transform = require('readable-stream/transform.js');
+Stream.PassThrough = require('readable-stream/passthrough.js');
+
+// Backwards-compat with node 0.4.x
+Stream.Stream = Stream;
+
+
+
+// old-style streams.  Note that the pipe method (the only relevant
+// part of this class) is overridden in the Readable class.
+
+function Stream() {
+  EE.call(this);
+}
+
+Stream.prototype.pipe = function(dest, options) {
+  var source = this;
+
+  function ondata(chunk) {
+    if (dest.writable) {
+      if (false === dest.write(chunk) && source.pause) {
+        source.pause();
+      }
+    }
+  }
+
+  source.on('data', ondata);
+
+  function ondrain() {
+    if (source.readable && source.resume) {
+      source.resume();
+    }
+  }
+
+  dest.on('drain', ondrain);
+
+  // If the 'end' option is not supplied, dest.end() will be called when
+  // source gets the 'end' or 'close' events.  Only dest.end() once.
+  if (!dest._isStdio && (!options || options.end !== false)) {
+    source.on('end', onend);
+    source.on('close', onclose);
+  }
+
+  var didOnEnd = false;
+  function onend() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    dest.end();
+  }
+
+
+  function onclose() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    if (typeof dest.destroy === 'function') dest.destroy();
+  }
+
+  // don't leave dangling pipes when there are errors.
+  function onerror(er) {
+    cleanup();
+    if (EE.listenerCount(this, 'error') === 0) {
+      throw er; // Unhandled stream error in pipe.
+    }
+  }
+
+  source.on('error', onerror);
+  dest.on('error', onerror);
+
+  // remove all the event listeners that were added.
+  function cleanup() {
+    source.removeListener('data', ondata);
+    dest.removeListener('drain', ondrain);
+
+    source.removeListener('end', onend);
+    source.removeListener('close', onclose);
+
+    source.removeListener('error', onerror);
+    dest.removeListener('error', onerror);
+
+    source.removeListener('end', cleanup);
+    source.removeListener('close', cleanup);
+
+    dest.removeListener('close', cleanup);
+  }
+
+  source.on('end', cleanup);
+  source.on('close', cleanup);
+
+  dest.on('close', cleanup);
+
+  dest.emit('pipe', source);
+
+  // Allow for unix-like usage: A.pipe(B).pipe(C)
+  return dest;
+};
+
+},{"events":33,"inherits":36,"readable-stream/duplex.js":50,"readable-stream/passthrough.js":56,"readable-stream/readable.js":57,"readable-stream/transform.js":58,"readable-stream/writable.js":59}],61:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+var Buffer = require('buffer').Buffer;
+
+var isBufferEncoding = Buffer.isEncoding
+  || function(encoding) {
+       switch (encoding && encoding.toLowerCase()) {
+         case 'hex': case 'utf8': case 'utf-8': case 'ascii': case 'binary': case 'base64': case 'ucs2': case 'ucs-2': case 'utf16le': case 'utf-16le': case 'raw': return true;
+         default: return false;
+       }
+     }
+
+
+function assertEncoding(encoding) {
+  if (encoding && !isBufferEncoding(encoding)) {
+    throw new Error('Unknown encoding: ' + encoding);
+  }
+}
+
+// StringDecoder provides an interface for efficiently splitting a series of
+// buffers into a series of JS strings without breaking apart multi-byte
+// characters. CESU-8 is handled as part of the UTF-8 encoding.
+//
+// @TODO Handling all encodings inside a single object makes it very difficult
+// to reason about this code, so it should be split up in the future.
+// @TODO There should be a utf8-strict encoding that rejects invalid UTF-8 code
+// points as used by CESU-8.
+var StringDecoder = exports.StringDecoder = function(encoding) {
+  this.encoding = (encoding || 'utf8').toLowerCase().replace(/[-_]/, '');
+  assertEncoding(encoding);
+  switch (this.encoding) {
+    case 'utf8':
+      // CESU-8 represents each of Surrogate Pair by 3-bytes
+      this.surrogateSize = 3;
+      break;
+    case 'ucs2':
+    case 'utf16le':
+      // UTF-16 represents each of Surrogate Pair by 2-bytes
+      this.surrogateSize = 2;
+      this.detectIncompleteChar = utf16DetectIncompleteChar;
+      break;
+    case 'base64':
+      // Base-64 stores 3 bytes in 4 chars, and pads the remainder.
+      this.surrogateSize = 3;
+      this.detectIncompleteChar = base64DetectIncompleteChar;
+      break;
+    default:
+      this.write = passThroughWrite;
+      return;
+  }
+
+  // Enough space to store all bytes of a single character. UTF-8 needs 4
+  // bytes, but CESU-8 may require up to 6 (3 bytes per surrogate).
+  this.charBuffer = new Buffer(6);
+  // Number of bytes received for the current incomplete multi-byte character.
+  this.charReceived = 0;
+  // Number of bytes expected for the current incomplete multi-byte character.
+  this.charLength = 0;
+};
+
+
+// write decodes the given buffer and returns it as JS string that is
+// guaranteed to not contain any partial multi-byte characters. Any partial
+// character found at the end of the buffer is buffered up, and will be
+// returned when calling write again with the remaining bytes.
+//
+// Note: Converting a Buffer containing an orphan surrogate to a String
+// currently works, but converting a String to a Buffer (via `new Buffer`, or
+// Buffer#write) will replace incomplete surrogates with the unicode
+// replacement character. See https://codereview.chromium.org/121173009/ .
+StringDecoder.prototype.write = function(buffer) {
+  var charStr = '';
+  // if our last write ended with an incomplete multibyte character
+  while (this.charLength) {
+    // determine how many remaining bytes this buffer has to offer for this char
+    var available = (buffer.length >= this.charLength - this.charReceived) ?
+        this.charLength - this.charReceived :
+        buffer.length;
+
+    // add the new bytes to the char buffer
+    buffer.copy(this.charBuffer, this.charReceived, 0, available);
+    this.charReceived += available;
+
+    if (this.charReceived < this.charLength) {
+      // still not enough chars in this buffer? wait for more ...
+      return '';
+    }
+
+    // remove bytes belonging to the current character from the buffer
+    buffer = buffer.slice(available, buffer.length);
+
+    // get the character that was split
+    charStr = this.charBuffer.slice(0, this.charLength).toString(this.encoding);
+
+    // CESU-8: lead surrogate (D800-DBFF) is also the incomplete character
+    var charCode = charStr.charCodeAt(charStr.length - 1);
+    if (charCode >= 0xD800 && charCode <= 0xDBFF) {
+      this.charLength += this.surrogateSize;
+      charStr = '';
+      continue;
+    }
+    this.charReceived = this.charLength = 0;
+
+    // if there are no more bytes in this buffer, just emit our char
+    if (buffer.length === 0) {
+      return charStr;
+    }
+    break;
+  }
+
+  // determine and set charLength / charReceived
+  this.detectIncompleteChar(buffer);
+
+  var end = buffer.length;
+  if (this.charLength) {
+    // buffer the incomplete character bytes we got
+    buffer.copy(this.charBuffer, 0, buffer.length - this.charReceived, end);
+    end -= this.charReceived;
+  }
+
+  charStr += buffer.toString(this.encoding, 0, end);
+
+  var end = charStr.length - 1;
+  var charCode = charStr.charCodeAt(end);
+  // CESU-8: lead surrogate (D800-DBFF) is also the incomplete character
+  if (charCode >= 0xD800 && charCode <= 0xDBFF) {
+    var size = this.surrogateSize;
+    this.charLength += size;
+    this.charReceived += size;
+    this.charBuffer.copy(this.charBuffer, size, 0, size);
+    buffer.copy(this.charBuffer, 0, 0, size);
+    return charStr.substring(0, end);
+  }
+
+  // or just emit the charStr
+  return charStr;
+};
+
+// detectIncompleteChar determines if there is an incomplete UTF-8 character at
+// the end of the given buffer. If so, it sets this.charLength to the byte
+// length that character, and sets this.charReceived to the number of bytes
+// that are available for this character.
+StringDecoder.prototype.detectIncompleteChar = function(buffer) {
+  // determine how many bytes we have to check at the end of this buffer
+  var i = (buffer.length >= 3) ? 3 : buffer.length;
+
+  // Figure out if one of the last i bytes of our buffer announces an
+  // incomplete char.
+  for (; i > 0; i--) {
+    var c = buffer[buffer.length - i];
+
+    // See http://en.wikipedia.org/wiki/UTF-8#Description
+
+    // 110XXXXX
+    if (i == 1 && c >> 5 == 0x06) {
+      this.charLength = 2;
+      break;
+    }
+
+    // 1110XXXX
+    if (i <= 2 && c >> 4 == 0x0E) {
+      this.charLength = 3;
+      break;
+    }
+
+    // 11110XXX
+    if (i <= 3 && c >> 3 == 0x1E) {
+      this.charLength = 4;
+      break;
+    }
+  }
+  this.charReceived = i;
+};
+
+StringDecoder.prototype.end = function(buffer) {
+  var res = '';
+  if (buffer && buffer.length)
+    res = this.write(buffer);
+
+  if (this.charReceived) {
+    var cr = this.charReceived;
+    var buf = this.charBuffer;
+    var enc = this.encoding;
+    res += buf.slice(0, cr).toString(enc);
+  }
+
+  return res;
+};
+
+function passThroughWrite(buffer) {
+  return buffer.toString(this.encoding);
+}
+
+function utf16DetectIncompleteChar(buffer) {
+  this.charReceived = buffer.length % 2;
+  this.charLength = this.charReceived ? 2 : 0;
+}
+
+function base64DetectIncompleteChar(buffer) {
+  this.charReceived = buffer.length % 3;
+  this.charLength = this.charReceived ? 3 : 0;
+}
+
+},{"buffer":23}],62:[function(require,module,exports){
+
+module.exports = function (THREE) {
+  /**
+   * @author mrdoob / http://mrdoob.com/
+   * @author supereggbert / http://www.paulbrunt.co.uk/
+   * @author julianwa / https://github.com/julianwa
+   */
+
+  THREE.RenderableObject = function () {
+
+    this.id = 0;
+
+    this.object = null;
+    this.z = 0;
+    this.renderOrder = 0;
+
+  };
+
+  //
+
+  THREE.RenderableFace = function () {
+
+    this.id = 0;
+
+    this.v1 = new THREE.RenderableVertex();
+    this.v2 = new THREE.RenderableVertex();
+    this.v3 = new THREE.RenderableVertex();
+
+    this.normalModel = new THREE.Vector3();
+
+    this.vertexNormalsModel = [ new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3() ];
+    this.vertexNormalsLength = 0;
+
+    this.color = new THREE.Color();
+    this.material = null;
+    this.uvs = [ new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2() ];
+
+    this.z = 0;
+    this.renderOrder = 0;
+
+  };
+
+  //
+
+  THREE.RenderableVertex = function () {
+
+    this.position = new THREE.Vector3();
+    this.positionWorld = new THREE.Vector3();
+    this.positionScreen = new THREE.Vector4();
+
+    this.visible = true;
+
+  };
+
+  THREE.RenderableVertex.prototype.copy = function ( vertex ) {
+
+    this.positionWorld.copy( vertex.positionWorld );
+    this.positionScreen.copy( vertex.positionScreen );
+
+  };
+
+  //
+
+  THREE.RenderableLine = function () {
+
+    this.id = 0;
+
+    this.v1 = new THREE.RenderableVertex();
+    this.v2 = new THREE.RenderableVertex();
+
+    this.vertexColors = [ new THREE.Color(), new THREE.Color() ];
+    this.material = null;
+
+    this.z = 0;
+    this.renderOrder = 0;
+
+  };
+
+  //
+
+  THREE.RenderableSprite = function () {
+
+    this.id = 0;
+
+    this.object = null;
+
+    this.x = 0;
+    this.y = 0;
+    this.z = 0;
+
+    this.rotation = 0;
+    this.scale = new THREE.Vector2();
+
+    this.material = null;
+    this.renderOrder = 0;
+
+  };
+
+  //
+
+  THREE.Projector = function () {
+
+    var _object, _objectCount, _objectPool = [], _objectPoolLength = 0,
+    _vertex, _vertexCount, _vertexPool = [], _vertexPoolLength = 0,
+    _face, _faceCount, _facePool = [], _facePoolLength = 0,
+    _line, _lineCount, _linePool = [], _linePoolLength = 0,
+    _sprite, _spriteCount, _spritePool = [], _spritePoolLength = 0,
+
+    _renderData = { objects: [], lights: [], elements: [] },
+
+    _vector3 = new THREE.Vector3(),
+    _vector4 = new THREE.Vector4(),
+
+    _clipBox = new THREE.Box3( new THREE.Vector3( - 1, - 1, - 1 ), new THREE.Vector3( 1, 1, 1 ) ),
+    _boundingBox = new THREE.Box3(),
+    _points3 = new Array( 3 ),
+    _points4 = new Array( 4 ),
+
+    _viewMatrix = new THREE.Matrix4(),
+    _viewProjectionMatrix = new THREE.Matrix4(),
+
+    _modelMatrix,
+    _modelViewProjectionMatrix = new THREE.Matrix4(),
+
+    _normalMatrix = new THREE.Matrix3(),
+
+    _frustum = new THREE.Frustum(),
+
+    _clippedVertex1PositionScreen = new THREE.Vector4(),
+    _clippedVertex2PositionScreen = new THREE.Vector4();
+
+    //
+
+    this.projectVector = function ( vector, camera ) {
+
+      console.warn( 'THREE.Projector: .projectVector() is now vector.project().' );
+      vector.project( camera );
+
+    };
+
+    this.unprojectVector = function ( vector, camera ) {
+
+      console.warn( 'THREE.Projector: .unprojectVector() is now vector.unproject().' );
+      vector.unproject( camera );
+
+    };
+
+    this.pickingRay = function ( vector, camera ) {
+
+      console.error( 'THREE.Projector: .pickingRay() is now raycaster.setFromCamera().' );
+
+    };
+
+    //
+
+    var RenderList = function () {
+
+      var normals = [];
+      var uvs = [];
+
+      var object = null;
+      var material = null;
+
+      var normalMatrix = new THREE.Matrix3();
+
+      function setObject( value ) {
+
+        object = value;
+        material = object.material;
+
+        normalMatrix.getNormalMatrix( object.matrixWorld );
+
+        normals.length = 0;
+        uvs.length = 0;
+
+      }
+
+      function projectVertex( vertex ) {
+
+        var position = vertex.position;
+        var positionWorld = vertex.positionWorld;
+        var positionScreen = vertex.positionScreen;
+
+        positionWorld.copy( position ).applyMatrix4( _modelMatrix );
+        positionScreen.copy( positionWorld ).applyMatrix4( _viewProjectionMatrix );
+
+        var invW = 1 / positionScreen.w;
+
+        positionScreen.x *= invW;
+        positionScreen.y *= invW;
+        positionScreen.z *= invW;
+
+        vertex.visible = positionScreen.x >= - 1 && positionScreen.x <= 1 &&
+          positionScreen.y >= - 1 && positionScreen.y <= 1 &&
+          positionScreen.z >= - 1 && positionScreen.z <= 1;
+
+      }
+
+      function pushVertex( x, y, z ) {
+
+        _vertex = getNextVertexInPool();
+        _vertex.position.set( x, y, z );
+
+        projectVertex( _vertex );
+
+      }
+
+      function pushNormal( x, y, z ) {
+
+        normals.push( x, y, z );
+
+      }
+
+      function pushUv( x, y ) {
+
+        uvs.push( x, y );
+
+      }
+
+      function checkTriangleVisibility( v1, v2, v3 ) {
+
+        if ( v1.visible === true || v2.visible === true || v3.visible === true ) return true;
+
+        _points3[ 0 ] = v1.positionScreen;
+        _points3[ 1 ] = v2.positionScreen;
+        _points3[ 2 ] = v3.positionScreen;
+
+        return _clipBox.intersectsBox( _boundingBox.setFromPoints( _points3 ) );
+
+      }
+
+      function checkBackfaceCulling( v1, v2, v3 ) {
+
+        return ( ( v3.positionScreen.x - v1.positionScreen.x ) *
+                ( v2.positionScreen.y - v1.positionScreen.y ) -
+                ( v3.positionScreen.y - v1.positionScreen.y ) *
+                ( v2.positionScreen.x - v1.positionScreen.x ) ) < 0;
+
+      }
+
+      function pushLine( a, b ) {
+
+        var v1 = _vertexPool[ a ];
+        var v2 = _vertexPool[ b ];
+
+        _line = getNextLineInPool();
+
+        _line.id = object.id;
+        _line.v1.copy( v1 );
+        _line.v2.copy( v2 );
+        _line.z = ( v1.positionScreen.z + v2.positionScreen.z ) / 2;
+        _line.renderOrder = object.renderOrder;
+
+        _line.material = object.material;
+
+        _renderData.elements.push( _line );
+
+      }
+
+      function pushTriangle( a, b, c ) {
+
+        var v1 = _vertexPool[ a ];
+        var v2 = _vertexPool[ b ];
+        var v3 = _vertexPool[ c ];
+
+        if ( checkTriangleVisibility( v1, v2, v3 ) === false ) return;
+
+        if ( material.side === THREE.DoubleSide || checkBackfaceCulling( v1, v2, v3 ) === true ) {
+
+          _face = getNextFaceInPool();
+
+          _face.id = object.id;
+          _face.v1.copy( v1 );
+          _face.v2.copy( v2 );
+          _face.v3.copy( v3 );
+          _face.z = ( v1.positionScreen.z + v2.positionScreen.z + v3.positionScreen.z ) / 3;
+          _face.renderOrder = object.renderOrder;
+
+          // use first vertex normal as face normal
+
+          _face.normalModel.fromArray( normals, a * 3 );
+          _face.normalModel.applyMatrix3( normalMatrix ).normalize();
+
+          for ( var i = 0; i < 3; i ++ ) {
+
+            var normal = _face.vertexNormalsModel[ i ];
+            normal.fromArray( normals, arguments[ i ] * 3 );
+            normal.applyMatrix3( normalMatrix ).normalize();
+
+            var uv = _face.uvs[ i ];
+            uv.fromArray( uvs, arguments[ i ] * 2 );
+
+          }
+
+          _face.vertexNormalsLength = 3;
+
+          _face.material = object.material;
+
+          _renderData.elements.push( _face );
+
+        }
+
+      }
+
+      return {
+        setObject: setObject,
+        projectVertex: projectVertex,
+        checkTriangleVisibility: checkTriangleVisibility,
+        checkBackfaceCulling: checkBackfaceCulling,
+        pushVertex: pushVertex,
+        pushNormal: pushNormal,
+        pushUv: pushUv,
+        pushLine: pushLine,
+        pushTriangle: pushTriangle
+      }
+
+    };
+
+    var renderList = new RenderList();
+
+    this.projectScene = function ( scene, camera, sortObjects, sortElements ) {
+
+      _faceCount = 0;
+      _lineCount = 0;
+      _spriteCount = 0;
+
+      _renderData.elements.length = 0;
+
+      if ( scene.autoUpdate === true ) scene.updateMatrixWorld();
+      if ( camera.parent === null ) camera.updateMatrixWorld();
+
+      _viewMatrix.copy( camera.matrixWorldInverse.getInverse( camera.matrixWorld ) );
+      _viewProjectionMatrix.multiplyMatrices( camera.projectionMatrix, _viewMatrix );
+
+      _frustum.setFromMatrix( _viewProjectionMatrix );
+
+      //
+
+      _objectCount = 0;
+
+      _renderData.objects.length = 0;
+      _renderData.lights.length = 0;
+
+      scene.traverseVisible( function ( object ) {
+
+        if ( object instanceof THREE.Light ) {
+
+          _renderData.lights.push( object );
+
+        } else if ( object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Sprite ) {
+
+          var material = object.material;
+
+          if ( material.visible === false ) return;
+
+          if ( object.frustumCulled === false || _frustum.intersectsObject( object ) === true ) {
+
+            _object = getNextObjectInPool();
+            _object.id = object.id;
+            _object.object = object;
+
+            _vector3.setFromMatrixPosition( object.matrixWorld );
+            _vector3.applyProjection( _viewProjectionMatrix );
+            _object.z = _vector3.z;
+            _object.renderOrder = object.renderOrder;
+
+            _renderData.objects.push( _object );
+
+          }
+
+        }
+
+      } );
+
+      if ( sortObjects === true ) {
+
+        _renderData.objects.sort( painterSort );
+
+      }
+
+      //
+
+      for ( var o = 0, ol = _renderData.objects.length; o < ol; o ++ ) {
+
+        var object = _renderData.objects[ o ].object;
+        var geometry = object.geometry;
+
+        renderList.setObject( object );
+
+        _modelMatrix = object.matrixWorld;
+
+        _vertexCount = 0;
+
+        if ( object instanceof THREE.Mesh ) {
+
+          if ( geometry instanceof THREE.BufferGeometry ) {
+
+            var attributes = geometry.attributes;
+            var groups = geometry.groups;
+
+            if ( attributes.position === undefined ) continue;
+
+            var positions = attributes.position.array;
+
+            for ( var i = 0, l = positions.length; i < l; i += 3 ) {
+
+              renderList.pushVertex( positions[ i ], positions[ i + 1 ], positions[ i + 2 ] );
+
+            }
+
+            if ( attributes.normal !== undefined ) {
+
+              var normals = attributes.normal.array;
+
+              for ( var i = 0, l = normals.length; i < l; i += 3 ) {
+
+                renderList.pushNormal( normals[ i ], normals[ i + 1 ], normals[ i + 2 ] );
+
+              }
+
+            }
+
+            if ( attributes.uv !== undefined ) {
+
+              var uvs = attributes.uv.array;
+
+              for ( var i = 0, l = uvs.length; i < l; i += 2 ) {
+
+                renderList.pushUv( uvs[ i ], uvs[ i + 1 ] );
+
+              }
+
+            }
+
+            if ( geometry.index !== null ) {
+
+              var indices = geometry.index.array;
+
+              if ( groups.length > 0 ) {
+
+                for ( var o = 0; o < groups.length; o ++ ) {
+
+                  var group = groups[ o ];
+
+                  for ( var i = group.start, l = group.start + group.count; i < l; i += 3 ) {
+
+                    renderList.pushTriangle( indices[ i ], indices[ i + 1 ], indices[ i + 2 ] );
+
+                  }
+
+                }
+
+              } else {
+
+                for ( var i = 0, l = indices.length; i < l; i += 3 ) {
+
+                  renderList.pushTriangle( indices[ i ], indices[ i + 1 ], indices[ i + 2 ] );
+
+                }
+
+              }
+
+            } else {
+
+              for ( var i = 0, l = positions.length / 3; i < l; i += 3 ) {
+
+                renderList.pushTriangle( i, i + 1, i + 2 );
+
+              }
+
+            }
+
+          } else if ( geometry instanceof THREE.Geometry ) {
+
+            var vertices = geometry.vertices;
+            var faces = geometry.faces;
+            var faceVertexUvs = geometry.faceVertexUvs[ 0 ];
+
+            _normalMatrix.getNormalMatrix( _modelMatrix );
+
+            var material = object.material;
+
+            var isFaceMaterial = material instanceof THREE.MultiMaterial;
+            var objectMaterials = isFaceMaterial === true ? object.material : null;
+
+            for ( var v = 0, vl = vertices.length; v < vl; v ++ ) {
+
+              var vertex = vertices[ v ];
+
+              _vector3.copy( vertex );
+
+              if ( material.morphTargets === true ) {
+
+                var morphTargets = geometry.morphTargets;
+                var morphInfluences = object.morphTargetInfluences;
+
+                for ( var t = 0, tl = morphTargets.length; t < tl; t ++ ) {
+
+                  var influence = morphInfluences[ t ];
+
+                  if ( influence === 0 ) continue;
+
+                  var target = morphTargets[ t ];
+                  var targetVertex = target.vertices[ v ];
+
+                  _vector3.x += ( targetVertex.x - vertex.x ) * influence;
+                  _vector3.y += ( targetVertex.y - vertex.y ) * influence;
+                  _vector3.z += ( targetVertex.z - vertex.z ) * influence;
+
+                }
+
+              }
+
+              renderList.pushVertex( _vector3.x, _vector3.y, _vector3.z );
+
+            }
+
+            for ( var f = 0, fl = faces.length; f < fl; f ++ ) {
+
+              var face = faces[ f ];
+
+              material = isFaceMaterial === true
+                ? objectMaterials.materials[ face.materialIndex ]
+                : object.material;
+
+                if ( material === undefined ) continue;
+
+                var side = material.side;
+
+                var v1 = _vertexPool[ face.a ];
+                var v2 = _vertexPool[ face.b ];
+                var v3 = _vertexPool[ face.c ];
+
+                if ( renderList.checkTriangleVisibility( v1, v2, v3 ) === false ) continue;
+
+                var visible = renderList.checkBackfaceCulling( v1, v2, v3 );
+
+                if ( side !== THREE.DoubleSide ) {
+
+                  if ( side === THREE.FrontSide && visible === false ) continue;
+                  if ( side === THREE.BackSide && visible === true ) continue;
+
+                }
+
+                _face = getNextFaceInPool();
+
+                _face.id = object.id;
+                _face.v1.copy( v1 );
+                _face.v2.copy( v2 );
+                _face.v3.copy( v3 );
+
+                _face.normalModel.copy( face.normal );
+
+                if ( visible === false && ( side === THREE.BackSide || side === THREE.DoubleSide ) ) {
+
+                  _face.normalModel.negate();
+
+                }
+
+                _face.normalModel.applyMatrix3( _normalMatrix ).normalize();
+
+                var faceVertexNormals = face.vertexNormals;
+
+                for ( var n = 0, nl = Math.min( faceVertexNormals.length, 3 ); n < nl; n ++ ) {
+
+                  var normalModel = _face.vertexNormalsModel[ n ];
+                  normalModel.copy( faceVertexNormals[ n ] );
+
+                  if ( visible === false && ( side === THREE.BackSide || side === THREE.DoubleSide ) ) {
+
+                    normalModel.negate();
+
+                  }
+
+                  normalModel.applyMatrix3( _normalMatrix ).normalize();
+
+                }
+
+                _face.vertexNormalsLength = faceVertexNormals.length;
+
+                var vertexUvs = faceVertexUvs[ f ];
+
+                if ( vertexUvs !== undefined ) {
+
+                  for ( var u = 0; u < 3; u ++ ) {
+
+                    _face.uvs[ u ].copy( vertexUvs[ u ] );
+
+                  }
+
+                }
+
+                _face.color = face.color;
+                _face.material = material;
+
+                _face.z = ( v1.positionScreen.z + v2.positionScreen.z + v3.positionScreen.z ) / 3;
+                _face.renderOrder = object.renderOrder;
+
+                _renderData.elements.push( _face );
+
+            }
+
+          }
+
+        } else if ( object instanceof THREE.Line ) {
+
+          if ( geometry instanceof THREE.BufferGeometry ) {
+
+            var attributes = geometry.attributes;
+
+            if ( attributes.position !== undefined ) {
+
+              var positions = attributes.position.array;
+
+              for ( var i = 0, l = positions.length; i < l; i += 3 ) {
+
+                renderList.pushVertex( positions[ i ], positions[ i + 1 ], positions[ i + 2 ] );
+
+              }
+
+              if ( geometry.index !== null ) {
+
+                var indices = geometry.index.array;
+
+                for ( var i = 0, l = indices.length; i < l; i += 2 ) {
+
+                  renderList.pushLine( indices[ i ], indices[ i + 1 ] );
+
+                }
+
+              } else {
+
+                var step = object instanceof THREE.LineSegments ? 2 : 1;
+
+                for ( var i = 0, l = ( positions.length / 3 ) - 1; i < l; i += step ) {
+
+                  renderList.pushLine( i, i + 1 );
+
+                }
+
+              }
+
+            }
+
+          } else if ( geometry instanceof THREE.Geometry ) {
+
+            _modelViewProjectionMatrix.multiplyMatrices( _viewProjectionMatrix, _modelMatrix );
+
+            var vertices = object.geometry.vertices;
+
+            if ( vertices.length === 0 ) continue;
+
+            v1 = getNextVertexInPool();
+            v1.positionScreen.copy( vertices[ 0 ] ).applyMatrix4( _modelViewProjectionMatrix );
+
+            var step = object instanceof THREE.LineSegments ? 2 : 1;
+
+            for ( var v = 1, vl = vertices.length; v < vl; v ++ ) {
+
+              v1 = getNextVertexInPool();
+              v1.positionScreen.copy( vertices[ v ] ).applyMatrix4( _modelViewProjectionMatrix );
+
+              if ( ( v + 1 ) % step > 0 ) continue;
+
+              v2 = _vertexPool[ _vertexCount - 2 ];
+
+              _clippedVertex1PositionScreen.copy( v1.positionScreen );
+              _clippedVertex2PositionScreen.copy( v2.positionScreen );
+
+              if ( clipLine( _clippedVertex1PositionScreen, _clippedVertex2PositionScreen ) === true ) {
+
+                // Perform the perspective divide
+                _clippedVertex1PositionScreen.multiplyScalar( 1 / _clippedVertex1PositionScreen.w );
+                _clippedVertex2PositionScreen.multiplyScalar( 1 / _clippedVertex2PositionScreen.w );
+
+                _line = getNextLineInPool();
+
+                _line.id = object.id;
+                _line.v1.positionScreen.copy( _clippedVertex1PositionScreen );
+                _line.v2.positionScreen.copy( _clippedVertex2PositionScreen );
+
+                _line.z = Math.max( _clippedVertex1PositionScreen.z, _clippedVertex2PositionScreen.z );
+                _line.renderOrder = object.renderOrder;
+
+                _line.material = object.material;
+
+                if ( object.material.vertexColors === THREE.VertexColors ) {
+
+                  _line.vertexColors[ 0 ].copy( object.geometry.colors[ v ] );
+                  _line.vertexColors[ 1 ].copy( object.geometry.colors[ v - 1 ] );
+
+                }
+
+                _renderData.elements.push( _line );
+
+              }
+
+            }
+
+          }
+
+        } else if ( object instanceof THREE.Sprite ) {
+
+          _vector4.set( _modelMatrix.elements[ 12 ], _modelMatrix.elements[ 13 ], _modelMatrix.elements[ 14 ], 1 );
+          _vector4.applyMatrix4( _viewProjectionMatrix );
+
+          var invW = 1 / _vector4.w;
+
+          _vector4.z *= invW;
+
+          if ( _vector4.z >= - 1 && _vector4.z <= 1 ) {
+
+            _sprite = getNextSpriteInPool();
+            _sprite.id = object.id;
+            _sprite.x = _vector4.x * invW;
+            _sprite.y = _vector4.y * invW;
+            _sprite.z = _vector4.z;
+            _sprite.renderOrder = object.renderOrder;
+            _sprite.object = object;
+
+            _sprite.rotation = object.rotation;
+
+            _sprite.scale.x = object.scale.x * Math.abs( _sprite.x - ( _vector4.x + camera.projectionMatrix.elements[ 0 ] ) / ( _vector4.w + camera.projectionMatrix.elements[ 12 ] ) );
+            _sprite.scale.y = object.scale.y * Math.abs( _sprite.y - ( _vector4.y + camera.projectionMatrix.elements[ 5 ] ) / ( _vector4.w + camera.projectionMatrix.elements[ 13 ] ) );
+
+            _sprite.material = object.material;
+
+            _renderData.elements.push( _sprite );
+
+          }
+
+        }
+
+      }
+
+      if ( sortElements === true ) {
+
+        _renderData.elements.sort( painterSort );
+
+      }
+
+      return _renderData;
+
+    };
+
+    // Pools
+
+    function getNextObjectInPool() {
+
+      if ( _objectCount === _objectPoolLength ) {
+
+        var object = new THREE.RenderableObject();
+        _objectPool.push( object );
+        _objectPoolLength ++;
+        _objectCount ++;
+        return object;
+
+      }
+
+      return _objectPool[ _objectCount ++ ];
+
+    }
+
+    function getNextVertexInPool() {
+
+      if ( _vertexCount === _vertexPoolLength ) {
+
+        var vertex = new THREE.RenderableVertex();
+        _vertexPool.push( vertex );
+        _vertexPoolLength ++;
+        _vertexCount ++;
+        return vertex;
+
+      }
+
+      return _vertexPool[ _vertexCount ++ ];
+
+    }
+
+    function getNextFaceInPool() {
+
+      if ( _faceCount === _facePoolLength ) {
+
+        var face = new THREE.RenderableFace();
+        _facePool.push( face );
+        _facePoolLength ++;
+        _faceCount ++;
+        return face;
+
+      }
+
+      return _facePool[ _faceCount ++ ];
+
+
+    }
+
+    function getNextLineInPool() {
+
+      if ( _lineCount === _linePoolLength ) {
+
+        var line = new THREE.RenderableLine();
+        _linePool.push( line );
+        _linePoolLength ++;
+        _lineCount ++;
+        return line;
+
+      }
+
+      return _linePool[ _lineCount ++ ];
+
+    }
+
+    function getNextSpriteInPool() {
+
+      if ( _spriteCount === _spritePoolLength ) {
+
+        var sprite = new THREE.RenderableSprite();
+        _spritePool.push( sprite );
+        _spritePoolLength ++;
+        _spriteCount ++;
+        return sprite;
+
+      }
+
+      return _spritePool[ _spriteCount ++ ];
+
+    }
+
+    //
+
+    function painterSort( a, b ) {
+
+      if ( a.renderOrder !== b.renderOrder ) {
+
+        return a.renderOrder - b.renderOrder;
+
+      } else if ( a.z !== b.z ) {
+
+        return b.z - a.z;
+
+      } else if ( a.id !== b.id ) {
+
+        return a.id - b.id;
+
+      } else {
+
+        return 0;
+
+      }
+
+    }
+
+    function clipLine( s1, s2 ) {
+
+      var alpha1 = 0, alpha2 = 1,
+
+      // Calculate the boundary coordinate of each vertex for the near and far clip planes,
+      // Z = -1 and Z = +1, respectively.
+      bc1near =  s1.z + s1.w,
+      bc2near =  s2.z + s2.w,
+      bc1far =  - s1.z + s1.w,
+      bc2far =  - s2.z + s2.w;
+
+      if ( bc1near >= 0 && bc2near >= 0 && bc1far >= 0 && bc2far >= 0 ) {
+
+        // Both vertices lie entirely within all clip planes.
+        return true;
+
+      } else if ( ( bc1near < 0 && bc2near < 0 ) || ( bc1far < 0 && bc2far < 0 ) ) {
+
+        // Both vertices lie entirely outside one of the clip planes.
+        return false;
+
+      } else {
+
+        // The line segment spans at least one clip plane.
+
+        if ( bc1near < 0 ) {
+
+          // v1 lies outside the near plane, v2 inside
+          alpha1 = Math.max( alpha1, bc1near / ( bc1near - bc2near ) );
+
+        } else if ( bc2near < 0 ) {
+
+          // v2 lies outside the near plane, v1 inside
+          alpha2 = Math.min( alpha2, bc1near / ( bc1near - bc2near ) );
+
+        }
+
+        if ( bc1far < 0 ) {
+
+          // v1 lies outside the far plane, v2 inside
+          alpha1 = Math.max( alpha1, bc1far / ( bc1far - bc2far ) );
+
+        } else if ( bc2far < 0 ) {
+
+          // v2 lies outside the far plane, v2 inside
+          alpha2 = Math.min( alpha2, bc1far / ( bc1far - bc2far ) );
+
+        }
+
+        if ( alpha2 < alpha1 ) {
+
+          // The line segment spans two boundaries, but is outside both of them.
+          // (This can't happen when we're only clipping against just near/far but good
+          //  to leave the check here for future usage if other clip planes are added.)
+          return false;
+
+        } else {
+
+          // Update the s1 and s2 vertices to match the clipped line segment.
+          s1.lerp( s2, alpha1 );
+          s2.lerp( s1, 1 - alpha2 );
+
+          return true;
+
+        }
+
+      }
+
+    }
+
+  };
+  return THREE.Projector;
+};
+
+},{}],63:[function(require,module,exports){
 // File:src/Three.js
 
 /**
@@ -44092,999 +56586,830 @@ THREE.MorphBlendMesh.prototype.update = function ( delta ) {
 };
 
 
-}, {}],
-3: [function(require, module, exports) {
+},{}],64:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-/**
- * Expose `parse`.
- */
+'use strict';
 
-module.exports = parse;
+var punycode = require('punycode');
+var util = require('./util');
 
-/**
- * Tests for browser support.
- */
+exports.parse = urlParse;
+exports.resolve = urlResolve;
+exports.resolveObject = urlResolveObject;
+exports.format = urlFormat;
 
-var innerHTMLBug = false;
-var bugTestDiv;
-if (typeof document !== 'undefined') {
-  bugTestDiv = document.createElement('div');
-  // Setup
-  bugTestDiv.innerHTML = '  <link/><table></table><a href="/a">a</a><input type="checkbox"/>';
-  // Make sure that link elements get serialized correctly by innerHTML
-  // This requires a wrapper element in IE
-  innerHTMLBug = !bugTestDiv.getElementsByTagName('link').length;
-  bugTestDiv = undefined;
+exports.Url = Url;
+
+function Url() {
+  this.protocol = null;
+  this.slashes = null;
+  this.auth = null;
+  this.host = null;
+  this.port = null;
+  this.hostname = null;
+  this.hash = null;
+  this.search = null;
+  this.query = null;
+  this.pathname = null;
+  this.path = null;
+  this.href = null;
 }
 
-/**
- * Wrap map from jquery.
- */
+// Reference: RFC 3986, RFC 1808, RFC 2396
 
-var map = {
-  legend: [1, '<fieldset>', '</fieldset>'],
-  tr: [2, '<table><tbody>', '</tbody></table>'],
-  col: [2, '<table><tbody></tbody><colgroup>', '</colgroup></table>'],
-  // for script/link/style tags to work in IE6-8, you have to wrap
-  // in a div with a non-whitespace character in front, ha!
-  _default: innerHTMLBug ? [1, 'X<div>', '</div>'] : [0, '', '']
-};
+// define these here so at least they only have to be
+// compiled once on the first module load.
+var protocolPattern = /^([a-z0-9.+-]+:)/i,
+    portPattern = /:[0-9]*$/,
 
-map.td =
-map.th = [3, '<table><tbody><tr>', '</tr></tbody></table>'];
+    // Special case for a simple path URL
+    simplePathPattern = /^(\/\/?(?!\/)[^\?\s]*)(\?[^\s]*)?$/,
 
-map.option =
-map.optgroup = [1, '<select multiple="multiple">', '</select>'];
+    // RFC 2396: characters reserved for delimiting URLs.
+    // We actually just auto-escape these.
+    delims = ['<', '>', '"', '`', ' ', '\r', '\n', '\t'],
 
-map.thead =
-map.tbody =
-map.colgroup =
-map.caption =
-map.tfoot = [1, '<table>', '</table>'];
+    // RFC 2396: characters not allowed for various reasons.
+    unwise = ['{', '}', '|', '\\', '^', '`'].concat(delims),
 
-map.polyline =
-map.ellipse =
-map.polygon =
-map.circle =
-map.text =
-map.line =
-map.path =
-map.rect =
-map.g = [1, '<svg xmlns="http://www.w3.org/2000/svg" version="1.1">','</svg>'];
+    // Allowed by RFCs, but cause of XSS attacks.  Always escape these.
+    autoEscape = ['\''].concat(unwise),
+    // Characters that are never ever allowed in a hostname.
+    // Note that any invalid chars are also handled, but these
+    // are the ones that are *expected* to be seen, so we fast-path
+    // them.
+    nonHostChars = ['%', '/', '?', ';', '#'].concat(autoEscape),
+    hostEndingChars = ['/', '?', '#'],
+    hostnameMaxLen = 255,
+    hostnamePartPattern = /^[+a-z0-9A-Z_-]{0,63}$/,
+    hostnamePartStart = /^([+a-z0-9A-Z_-]{0,63})(.*)$/,
+    // protocols that can allow "unsafe" and "unwise" chars.
+    unsafeProtocol = {
+      'javascript': true,
+      'javascript:': true
+    },
+    // protocols that never have a hostname.
+    hostlessProtocol = {
+      'javascript': true,
+      'javascript:': true
+    },
+    // protocols that always contain a // bit.
+    slashedProtocol = {
+      'http': true,
+      'https': true,
+      'ftp': true,
+      'gopher': true,
+      'file': true,
+      'http:': true,
+      'https:': true,
+      'ftp:': true,
+      'gopher:': true,
+      'file:': true
+    },
+    querystring = require('querystring');
 
-/**
- * Parse `html` and return a DOM Node instance, which could be a TextNode,
- * HTML DOM Node of some kind (<div> for example), or a DocumentFragment
- * instance, depending on the contents of the `html` string.
- *
- * @param {String} html - HTML string to "domify"
- * @param {Document} doc - The `document` instance to create the Node for
- * @return {DOMNode} the TextNode, DOM Node, or DocumentFragment instance
- * @api private
- */
+function urlParse(url, parseQueryString, slashesDenoteHost) {
+  if (url && util.isObject(url) && url instanceof Url) return url;
 
-function parse(html, doc) {
-  if ('string' != typeof html) throw new TypeError('String expected');
-
-  // default to the global `document` object
-  if (!doc) doc = document;
-
-  // tag name
-  var m = /<([\w:]+)/.exec(html);
-  if (!m) return doc.createTextNode(html);
-
-  html = html.replace(/^\s+|\s+$/g, ''); // Remove leading/trailing whitespace
-
-  var tag = m[1];
-
-  // body support
-  if (tag == 'body') {
-    var el = doc.createElement('html');
-    el.innerHTML = html;
-    return el.removeChild(el.lastChild);
-  }
-
-  // wrap map
-  var wrap = map[tag] || map._default;
-  var depth = wrap[0];
-  var prefix = wrap[1];
-  var suffix = wrap[2];
-  var el = doc.createElement('div');
-  el.innerHTML = prefix + html + suffix;
-  while (depth--) el = el.lastChild;
-
-  // one element
-  if (el.firstChild == el.lastChild) {
-    return el.removeChild(el.firstChild);
-  }
-
-  // several elements
-  var fragment = doc.createDocumentFragment();
-  while (el.firstChild) {
-    fragment.appendChild(el.removeChild(el.firstChild));
-  }
-
-  return fragment;
+  var u = new Url;
+  u.parse(url, parseQueryString, slashesDenoteHost);
+  return u;
 }
 
-}, {}],
-4: [function(require, module, exports) {
-
-/**
- * Expose `Emitter`.
- */
-
-if (typeof module !== 'undefined') {
-  module.exports = Emitter;
-}
-
-/**
- * Initialize a new `Emitter`.
- *
- * @api public
- */
-
-function Emitter(obj) {
-  if (obj) return mixin(obj);
-};
-
-/**
- * Mixin the emitter properties.
- *
- * @param {Object} obj
- * @return {Object}
- * @api private
- */
-
-function mixin(obj) {
-  for (var key in Emitter.prototype) {
-    obj[key] = Emitter.prototype[key];
-  }
-  return obj;
-}
-
-/**
- * Listen on the given `event` with `fn`.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
-
-Emitter.prototype.on =
-Emitter.prototype.addEventListener = function(event, fn){
-  this._callbacks = this._callbacks || {};
-  (this._callbacks['$' + event] = this._callbacks['$' + event] || [])
-    .push(fn);
-  return this;
-};
-
-/**
- * Adds an `event` listener that will be invoked a single
- * time then automatically removed.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
-
-Emitter.prototype.once = function(event, fn){
-  function on() {
-    this.off(event, on);
-    fn.apply(this, arguments);
+Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
+  if (!util.isString(url)) {
+    throw new TypeError("Parameter 'url' must be a string, not " + typeof url);
   }
 
-  on.fn = fn;
-  this.on(event, on);
-  return this;
-};
+  // Copy chrome, IE, opera backslash-handling behavior.
+  // Back slashes before the query string get converted to forward slashes
+  // See: https://code.google.com/p/chromium/issues/detail?id=25916
+  var queryIndex = url.indexOf('?'),
+      splitter =
+          (queryIndex !== -1 && queryIndex < url.indexOf('#')) ? '?' : '#',
+      uSplit = url.split(splitter),
+      slashRegex = /\\/g;
+  uSplit[0] = uSplit[0].replace(slashRegex, '/');
+  url = uSplit.join(splitter);
 
-/**
- * Remove the given callback for `event` or all
- * registered callbacks.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
+  var rest = url;
 
-Emitter.prototype.off =
-Emitter.prototype.removeListener =
-Emitter.prototype.removeAllListeners =
-Emitter.prototype.removeEventListener = function(event, fn){
-  this._callbacks = this._callbacks || {};
+  // trim before proceeding.
+  // This is to support parse stuff like "  http://foo.com  \n"
+  rest = rest.trim();
 
-  // all
-  if (0 == arguments.length) {
-    this._callbacks = {};
-    return this;
-  }
-
-  // specific event
-  var callbacks = this._callbacks['$' + event];
-  if (!callbacks) return this;
-
-  // remove all handlers
-  if (1 == arguments.length) {
-    delete this._callbacks['$' + event];
-    return this;
-  }
-
-  // remove specific handler
-  var cb;
-  for (var i = 0; i < callbacks.length; i++) {
-    cb = callbacks[i];
-    if (cb === fn || cb.fn === fn) {
-      callbacks.splice(i, 1);
-      break;
-    }
-  }
-  return this;
-};
-
-/**
- * Emit `event` with the given args.
- *
- * @param {String} event
- * @param {Mixed} ...
- * @return {Emitter}
- */
-
-Emitter.prototype.emit = function(event){
-  this._callbacks = this._callbacks || {};
-  var args = [].slice.call(arguments, 1)
-    , callbacks = this._callbacks['$' + event];
-
-  if (callbacks) {
-    callbacks = callbacks.slice(0);
-    for (var i = 0, len = callbacks.length; i < len; ++i) {
-      callbacks[i].apply(this, args);
+  if (!slashesDenoteHost && url.split('#').length === 1) {
+    // Try fast path regexp
+    var simplePath = simplePathPattern.exec(rest);
+    if (simplePath) {
+      this.path = rest;
+      this.href = rest;
+      this.pathname = simplePath[1];
+      if (simplePath[2]) {
+        this.search = simplePath[2];
+        if (parseQueryString) {
+          this.query = querystring.parse(this.search.substr(1));
+        } else {
+          this.query = this.search.substr(1);
+        }
+      } else if (parseQueryString) {
+        this.search = '';
+        this.query = {};
+      }
+      return this;
     }
   }
 
-  return this;
-};
-
-/**
- * Return array of callbacks for `event`.
- *
- * @param {String} event
- * @return {Array}
- * @api public
- */
-
-Emitter.prototype.listeners = function(event){
-  this._callbacks = this._callbacks || {};
-  return this._callbacks['$' + event] || [];
-};
-
-/**
- * Check if this emitter has `event` handlers.
- *
- * @param {String} event
- * @return {Boolean}
- * @api public
- */
-
-Emitter.prototype.hasListeners = function(event){
-  return !! this.listeners(event).length;
-};
-
-}, {}],
-5: [function(require, module, exports) {
-
-/**
- * Module dependencies.
- */
-
-try {
-  var events = require('event');
-} catch(err) {
-  var events = require('component-event');
-}
-
-try {
-  var delegate = require('delegate');
-} catch(err) {
-  var delegate = require('component-delegate');
-}
-
-/**
- * Expose `Events`.
- */
-
-module.exports = Events;
-
-/**
- * Initialize an `Events` with the given
- * `el` object which events will be bound to,
- * and the `obj` which will receive method calls.
- *
- * @param {Object} el
- * @param {Object} obj
- * @api public
- */
-
-function Events(el, obj) {
-  if (!(this instanceof Events)) return new Events(el, obj);
-  if (!el) throw new Error('element required');
-  if (!obj) throw new Error('object required');
-  this.el = el;
-  this.obj = obj;
-  this._events = {};
-}
-
-/**
- * Subscription helper.
- */
-
-Events.prototype.sub = function(event, method, cb){
-  this._events[event] = this._events[event] || {};
-  this._events[event][method] = cb;
-};
-
-/**
- * Bind to `event` with optional `method` name.
- * When `method` is undefined it becomes `event`
- * with the "on" prefix.
- *
- * Examples:
- *
- *  Direct event handling:
- *
- *    events.bind('click') // implies "onclick"
- *    events.bind('click', 'remove')
- *    events.bind('click', 'sort', 'asc')
- *
- *  Delegated event handling:
- *
- *    events.bind('click li > a')
- *    events.bind('click li > a', 'remove')
- *    events.bind('click a.sort-ascending', 'sort', 'asc')
- *    events.bind('click a.sort-descending', 'sort', 'desc')
- *
- * @param {String} event
- * @param {String|function} [method]
- * @return {Function} callback
- * @api public
- */
-
-Events.prototype.bind = function(event, method){
-  var e = parse(event);
-  var el = this.el;
-  var obj = this.obj;
-  var name = e.name;
-  var method = method || 'on' + name;
-  var args = [].slice.call(arguments, 2);
-
-  // callback
-  function cb(){
-    var a = [].slice.call(arguments).concat(args);
-    obj[method].apply(obj, a);
+  var proto = protocolPattern.exec(rest);
+  if (proto) {
+    proto = proto[0];
+    var lowerProto = proto.toLowerCase();
+    this.protocol = lowerProto;
+    rest = rest.substr(proto.length);
   }
 
-  // bind
-  if (e.selector) {
-    cb = delegate.bind(el, e.selector, name, cb);
-  } else {
-    events.bind(el, name, cb);
+  // figure out if it's got a host
+  // user@server is *always* interpreted as a hostname, and url
+  // resolution will treat //foo/bar as host=foo,path=bar because that's
+  // how the browser resolves relative URLs.
+  if (slashesDenoteHost || proto || rest.match(/^\/\/[^@\/]+@[^@\/]+/)) {
+    var slashes = rest.substr(0, 2) === '//';
+    if (slashes && !(proto && hostlessProtocol[proto])) {
+      rest = rest.substr(2);
+      this.slashes = true;
+    }
   }
 
-  // subscription for unbinding
-  this.sub(name, method, cb);
-
-  return cb;
-};
-
-/**
- * Unbind a single binding, all bindings for `event`,
- * or all bindings within the manager.
- *
- * Examples:
- *
- *  Unbind direct handlers:
- *
- *     events.unbind('click', 'remove')
- *     events.unbind('click')
- *     events.unbind()
- *
- * Unbind delegate handlers:
- *
- *     events.unbind('click', 'remove')
- *     events.unbind('click')
- *     events.unbind()
- *
- * @param {String|Function} [event]
- * @param {String|Function} [method]
- * @api public
- */
-
-Events.prototype.unbind = function(event, method){
-  if (0 == arguments.length) return this.unbindAll();
-  if (1 == arguments.length) return this.unbindAllOf(event);
-
-  // no bindings for this event
-  var bindings = this._events[event];
-  if (!bindings) return;
-
-  // no bindings for this method
-  var cb = bindings[method];
-  if (!cb) return;
-
-  events.unbind(this.el, event, cb);
-};
-
-/**
- * Unbind all events.
- *
- * @api private
- */
-
-Events.prototype.unbindAll = function(){
-  for (var event in this._events) {
-    this.unbindAllOf(event);
-  }
-};
-
-/**
- * Unbind all events for `event`.
- *
- * @param {String} event
- * @api private
- */
-
-Events.prototype.unbindAllOf = function(event){
-  var bindings = this._events[event];
-  if (!bindings) return;
-
-  for (var method in bindings) {
-    this.unbind(event, method);
-  }
-};
-
-/**
- * Parse `event`.
- *
- * @param {String} event
- * @return {Object}
- * @api private
- */
-
-function parse(event) {
-  var parts = event.split(/ +/);
-  return {
-    name: parts.shift(),
-    selector: parts.join(' ')
-  }
-}
-
-}, {"event":33,"component-event":33,"delegate":34,"component-delegate":34}],
-33: [function(require, module, exports) {
-var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
-    unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
-    prefix = bind !== 'addEventListener' ? 'on' : '';
-
-/**
- * Bind `el` event `type` to `fn`.
- *
- * @param {Element} el
- * @param {String} type
- * @param {Function} fn
- * @param {Boolean} capture
- * @return {Function}
- * @api public
- */
-
-exports.bind = function(el, type, fn, capture){
-  el[bind](prefix + type, fn, capture || false);
-  return fn;
-};
-
-/**
- * Unbind `el` event `type`'s callback `fn`.
- *
- * @param {Element} el
- * @param {String} type
- * @param {Function} fn
- * @param {Boolean} capture
- * @return {Function}
- * @api public
- */
-
-exports.unbind = function(el, type, fn, capture){
-  el[unbind](prefix + type, fn, capture || false);
-  return fn;
-};
-}, {}],
-34: [function(require, module, exports) {
-/**
- * Module dependencies.
- */
-
-try {
-  var closest = require('closest');
-} catch(err) {
-  var closest = require('component-closest');
-}
-
-try {
-  var event = require('event');
-} catch(err) {
-  var event = require('component-event');
-}
-
-/**
- * Delegate event `type` to `selector`
- * and invoke `fn(e)`. A callback function
- * is returned which may be passed to `.unbind()`.
- *
- * @param {Element} el
- * @param {String} selector
- * @param {String} type
- * @param {Function} fn
- * @param {Boolean} capture
- * @return {Function}
- * @api public
- */
-
-exports.bind = function(el, selector, type, fn, capture){
-  return event.bind(el, type, function(e){
-    var target = e.target || e.srcElement;
-    e.delegateTarget = closest(target, selector, true, el);
-    if (e.delegateTarget) fn.call(el, e);
-  }, capture);
-};
-
-/**
- * Unbind event `type`'s callback `fn`.
- *
- * @param {Element} el
- * @param {String} type
- * @param {Function} fn
- * @param {Boolean} capture
- * @api public
- */
-
-exports.unbind = function(el, type, fn, capture){
-  event.unbind(el, type, fn, capture);
-};
-
-}, {"closest":35,"component-closest":35,"event":33,"component-event":33}],
-35: [function(require, module, exports) {
-/**
- * Module Dependencies
- */
-
-try {
-  var matches = require('matches-selector')
-} catch (err) {
-  var matches = require('component-matches-selector')
-}
-
-/**
- * Export `closest`
- */
-
-module.exports = closest
-
-/**
- * Closest
- *
- * @param {Element} el
- * @param {String} selector
- * @param {Element} scope (optional)
- */
-
-function closest (el, selector, scope) {
-  scope = scope || document.documentElement;
-
-  // walk up the dom
-  while (el && el !== scope) {
-    if (matches(el, selector)) return el;
-    el = el.parentNode;
-  }
-
-  // check scope for match
-  return matches(el, selector) ? el : null;
-}
-
-}, {"matches-selector":36,"component-matches-selector":36}],
-36: [function(require, module, exports) {
-/**
- * Module dependencies.
- */
-
-try {
-  var query = require('query');
-} catch (err) {
-  var query = require('component-query');
-}
-
-/**
- * Element prototype.
- */
-
-var proto = Element.prototype;
-
-/**
- * Vendor function.
- */
-
-var vendor = proto.matches
-  || proto.webkitMatchesSelector
-  || proto.mozMatchesSelector
-  || proto.msMatchesSelector
-  || proto.oMatchesSelector;
-
-/**
- * Expose `match()`.
- */
-
-module.exports = match;
-
-/**
- * Match `el` to `selector`.
- *
- * @param {Element} el
- * @param {String} selector
- * @return {Boolean}
- * @api public
- */
-
-function match(el, selector) {
-  if (!el || el.nodeType !== 1) return false;
-  if (vendor) return vendor.call(el, selector);
-  var nodes = query.all(selector, el.parentNode);
-  for (var i = 0; i < nodes.length; ++i) {
-    if (nodes[i] == el) return true;
-  }
-  return false;
-}
-
-}, {"query":37,"component-query":37}],
-37: [function(require, module, exports) {
-function one(selector, el) {
-  return el.querySelector(selector);
-}
-
-exports = module.exports = function(selector, el){
-  el = el || document;
-  return one(selector, el);
-};
-
-exports.all = function(selector, el){
-  el = el || document;
-  return el.querySelectorAll(selector);
-};
-
-exports.engine = function(obj){
-  if (!obj.one) throw new Error('.one callback required');
-  if (!obj.all) throw new Error('.all callback required');
-  one = obj.one;
-  exports.all = obj.all;
-  return exports;
-};
-
-}, {}],
-6: [function(require, module, exports) {
-/**
- * Expose `requestAnimationFrame()`.
- */
-
-exports = module.exports = window.requestAnimationFrame
-  || window.webkitRequestAnimationFrame
-  || window.mozRequestAnimationFrame
-  || fallback;
-
-/**
- * Fallback implementation.
- */
-
-var prev = new Date().getTime();
-function fallback(fn) {
-  var curr = new Date().getTime();
-  var ms = Math.max(0, 16 - (curr - prev));
-  var req = setTimeout(fn, ms);
-  prev = curr;
-  return req;
-}
-
-/**
- * Cancel.
- */
-
-var cancel = window.cancelAnimationFrame
-  || window.webkitCancelAnimationFrame
-  || window.mozCancelAnimationFrame
-  || window.clearTimeout;
-
-exports.cancel = function(id){
-  cancel.call(window, id);
-};
-
-}, {}],
-7: [function(require, module, exports) {
-/**
- * @author alteredq / http://alteredqualia.com/
- * @author mr.doob / http://mrdoob.com/
- */
-
-module.exports = (function() {
-  try { 
-    return !!window.WebGLRenderingContext && 
-           !!document.createElement('canvas').getContext('experimental-webgl'); 
-  } 
-  catch(e) { 
-    return false; 
-  }
-})();
-
-}, {}],
-8: [function(require, module, exports) {
-
-/**
- * Module dependencies.
- */
-
-var Emitter = require('emitter');
-
-/**
- * Expose `fullscreen()`.
- */
-
-exports = module.exports = fullscreen;
-
-/**
- * Mixin emitter.
- */
-
-Emitter(exports);
-
-/**
- * document element.
- */
-
-var element = document.documentElement;
-
-/**
- * fullscreen supported flag.
- */
-
-exports.supported = !!(element.requestFullscreen
-  || element.webkitRequestFullscreen
-  || element.mozRequestFullScreen
-  || element.msRequestFullscreen);
-
-/**
- * Enter fullscreen mode for `el`.
- *
- * @param {Element} [el]
- * @param {Object} opts - optional
- * @api public
- */
-
-function fullscreen(el, opts){
-  el = el || element;
-  if (el.requestFullscreen) return el.requestFullscreen(opts);
-  if (el.mozRequestFullScreen) return el.mozRequestFullScreen(opts);
-  if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen(opts);
-  if (el.msRequestFullscreen) return el.msRequestFullscreen(opts);
-}
-
-/**
- * Exit fullscreen.
- *
- * @api public
- */
-
-exports.exit = function(){
-  var doc = document;
-  if (doc.exitFullscreen) return doc.exitFullscreen();
-  if (doc.mozCancelFullScreen) return doc.mozCancelFullScreen();
-  if (doc.webkitCancelFullScreen) return doc.webkitCancelFullScreen();
-  if (doc.msExitFullscreen) return doc.msExitFullscreen();
-};
-
-/**
- * Change handler function.
- */
-
-function change(prop) {
-  return function(){
-    if (null == document[prop]) {
-      document[prop] = true;
+  if (!hostlessProtocol[proto] &&
+      (slashes || (proto && !slashedProtocol[proto]))) {
+
+    // there's a hostname.
+    // the first instance of /, ?, ;, or # ends the host.
+    //
+    // If there is an @ in the hostname, then non-host chars *are* allowed
+    // to the left of the last @ sign, unless some host-ending character
+    // comes *before* the @-sign.
+    // URLs are obnoxious.
+    //
+    // ex:
+    // http://a@b@c/ => user:a@b host:c
+    // http://a@b?@c => user:a host:c path:/?@c
+
+    // v0.12 TODO(isaacs): This is not quite how Chrome does things.
+    // Review our test case against browsers more comprehensively.
+
+    // find the first instance of any hostEndingChars
+    var hostEnd = -1;
+    for (var i = 0; i < hostEndingChars.length; i++) {
+      var hec = rest.indexOf(hostEndingChars[i]);
+      if (hec !== -1 && (hostEnd === -1 || hec < hostEnd))
+        hostEnd = hec;
+    }
+
+    // at this point, either we have an explicit point where the
+    // auth portion cannot go past, or the last @ char is the decider.
+    var auth, atSign;
+    if (hostEnd === -1) {
+      // atSign can be anywhere.
+      atSign = rest.lastIndexOf('@');
     } else {
-      document[prop] = !document[prop];
+      // atSign must be in auth portion.
+      // http://a@b/c@d => host:b auth:a path:/c@d
+      atSign = rest.lastIndexOf('@', hostEnd);
     }
 
-    val = document[prop];
-    exports.emit('change', val);
+    // Now we have a portion which is definitely the auth.
+    // Pull that off.
+    if (atSign !== -1) {
+      auth = rest.slice(0, atSign);
+      rest = rest.slice(atSign + 1);
+      this.auth = decodeURIComponent(auth);
+    }
+
+    // the host is the remaining to the left of the first non-host char
+    hostEnd = -1;
+    for (var i = 0; i < nonHostChars.length; i++) {
+      var hec = rest.indexOf(nonHostChars[i]);
+      if (hec !== -1 && (hostEnd === -1 || hec < hostEnd))
+        hostEnd = hec;
+    }
+    // if we still have not hit it, then the entire thing is a host.
+    if (hostEnd === -1)
+      hostEnd = rest.length;
+
+    this.host = rest.slice(0, hostEnd);
+    rest = rest.slice(hostEnd);
+
+    // pull out port.
+    this.parseHost();
+
+    // we've indicated that there is a hostname,
+    // so even if it's empty, it has to be present.
+    this.hostname = this.hostname || '';
+
+    // if hostname begins with [ and ends with ]
+    // assume that it's an IPv6 address.
+    var ipv6Hostname = this.hostname[0] === '[' &&
+        this.hostname[this.hostname.length - 1] === ']';
+
+    // validate a little.
+    if (!ipv6Hostname) {
+      var hostparts = this.hostname.split(/\./);
+      for (var i = 0, l = hostparts.length; i < l; i++) {
+        var part = hostparts[i];
+        if (!part) continue;
+        if (!part.match(hostnamePartPattern)) {
+          var newpart = '';
+          for (var j = 0, k = part.length; j < k; j++) {
+            if (part.charCodeAt(j) > 127) {
+              // we replace non-ASCII char with a temporary placeholder
+              // we need this to make sure size of hostname is not
+              // broken by replacing non-ASCII by nothing
+              newpart += 'x';
+            } else {
+              newpart += part[j];
+            }
+          }
+          // we test again with ASCII char only
+          if (!newpart.match(hostnamePartPattern)) {
+            var validParts = hostparts.slice(0, i);
+            var notHost = hostparts.slice(i + 1);
+            var bit = part.match(hostnamePartStart);
+            if (bit) {
+              validParts.push(bit[1]);
+              notHost.unshift(bit[2]);
+            }
+            if (notHost.length) {
+              rest = '/' + notHost.join('.') + rest;
+            }
+            this.hostname = validParts.join('.');
+            break;
+          }
+        }
+      }
+    }
+
+    if (this.hostname.length > hostnameMaxLen) {
+      this.hostname = '';
+    } else {
+      // hostnames are always lower case.
+      this.hostname = this.hostname.toLowerCase();
+    }
+
+    if (!ipv6Hostname) {
+      // IDNA Support: Returns a punycoded representation of "domain".
+      // It only converts parts of the domain name that
+      // have non-ASCII characters, i.e. it doesn't matter if
+      // you call it with a domain that already is ASCII-only.
+      this.hostname = punycode.toASCII(this.hostname);
+    }
+
+    var p = this.port ? ':' + this.port : '';
+    var h = this.hostname || '';
+    this.host = h + p;
+    this.href += this.host;
+
+    // strip [ and ] from the hostname
+    // the host field still retains them, though
+    if (ipv6Hostname) {
+      this.hostname = this.hostname.substr(1, this.hostname.length - 2);
+      if (rest[0] !== '/') {
+        rest = '/' + rest;
+      }
+    }
   }
+
+  // now rest is set to the post-host stuff.
+  // chop off any delim chars.
+  if (!unsafeProtocol[lowerProto]) {
+
+    // First, make 100% sure that any "autoEscape" chars get
+    // escaped, even if encodeURIComponent doesn't think they
+    // need to be.
+    for (var i = 0, l = autoEscape.length; i < l; i++) {
+      var ae = autoEscape[i];
+      if (rest.indexOf(ae) === -1)
+        continue;
+      var esc = encodeURIComponent(ae);
+      if (esc === ae) {
+        esc = escape(ae);
+      }
+      rest = rest.split(ae).join(esc);
+    }
+  }
+
+
+  // chop off from the tail first.
+  var hash = rest.indexOf('#');
+  if (hash !== -1) {
+    // got a fragment string.
+    this.hash = rest.substr(hash);
+    rest = rest.slice(0, hash);
+  }
+  var qm = rest.indexOf('?');
+  if (qm !== -1) {
+    this.search = rest.substr(qm);
+    this.query = rest.substr(qm + 1);
+    if (parseQueryString) {
+      this.query = querystring.parse(this.query);
+    }
+    rest = rest.slice(0, qm);
+  } else if (parseQueryString) {
+    // no query string, but parseQueryString still requested
+    this.search = '';
+    this.query = {};
+  }
+  if (rest) this.pathname = rest;
+  if (slashedProtocol[lowerProto] &&
+      this.hostname && !this.pathname) {
+    this.pathname = '/';
+  }
+
+  //to support http.request
+  if (this.pathname || this.search) {
+    var p = this.pathname || '';
+    var s = this.search || '';
+    this.path = p + s;
+  }
+
+  // finally, reconstruct the href based on what has been validated.
+  this.href = this.format();
+  return this;
+};
+
+// format a parsed object into a url string
+function urlFormat(obj) {
+  // ensure it's an object, and not a string url.
+  // If it's an obj, this is a no-op.
+  // this way, you can call url_format() on strings
+  // to clean up potentially wonky urls.
+  if (util.isString(obj)) obj = urlParse(obj);
+  if (!(obj instanceof Url)) return Url.prototype.format.call(obj);
+  return obj.format();
 }
 
+Url.prototype.format = function() {
+  var auth = this.auth || '';
+  if (auth) {
+    auth = encodeURIComponent(auth);
+    auth = auth.replace(/%3A/i, ':');
+    auth += '@';
+  }
+
+  var protocol = this.protocol || '',
+      pathname = this.pathname || '',
+      hash = this.hash || '',
+      host = false,
+      query = '';
+
+  if (this.host) {
+    host = auth + this.host;
+  } else if (this.hostname) {
+    host = auth + (this.hostname.indexOf(':') === -1 ?
+        this.hostname :
+        '[' + this.hostname + ']');
+    if (this.port) {
+      host += ':' + this.port;
+    }
+  }
+
+  if (this.query &&
+      util.isObject(this.query) &&
+      Object.keys(this.query).length) {
+    query = querystring.stringify(this.query);
+  }
+
+  var search = this.search || (query && ('?' + query)) || '';
+
+  if (protocol && protocol.substr(-1) !== ':') protocol += ':';
+
+  // only the slashedProtocols get the //.  Not mailto:, xmpp:, etc.
+  // unless they had them to begin with.
+  if (this.slashes ||
+      (!protocol || slashedProtocol[protocol]) && host !== false) {
+    host = '//' + (host || '');
+    if (pathname && pathname.charAt(0) !== '/') pathname = '/' + pathname;
+  } else if (!host) {
+    host = '';
+  }
+
+  if (hash && hash.charAt(0) !== '#') hash = '#' + hash;
+  if (search && search.charAt(0) !== '?') search = '?' + search;
+
+  pathname = pathname.replace(/[?#]/g, function(match) {
+    return encodeURIComponent(match);
+  });
+  search = search.replace('#', '%23');
+
+  return protocol + host + pathname + search + hash;
+};
+
+function urlResolve(source, relative) {
+  return urlParse(source, false, true).resolve(relative);
+}
+
+Url.prototype.resolve = function(relative) {
+  return this.resolveObject(urlParse(relative, false, true)).format();
+};
+
+function urlResolveObject(source, relative) {
+  if (!source) return relative;
+  return urlParse(source, false, true).resolveObject(relative);
+}
+
+Url.prototype.resolveObject = function(relative) {
+  if (util.isString(relative)) {
+    var rel = new Url();
+    rel.parse(relative, false, true);
+    relative = rel;
+  }
+
+  var result = new Url();
+  var tkeys = Object.keys(this);
+  for (var tk = 0; tk < tkeys.length; tk++) {
+    var tkey = tkeys[tk];
+    result[tkey] = this[tkey];
+  }
+
+  // hash is always overridden, no matter what.
+  // even href="" will remove it.
+  result.hash = relative.hash;
+
+  // if the relative url is empty, then there's nothing left to do here.
+  if (relative.href === '') {
+    result.href = result.format();
+    return result;
+  }
+
+  // hrefs like //foo/bar always cut to the protocol.
+  if (relative.slashes && !relative.protocol) {
+    // take everything except the protocol from relative
+    var rkeys = Object.keys(relative);
+    for (var rk = 0; rk < rkeys.length; rk++) {
+      var rkey = rkeys[rk];
+      if (rkey !== 'protocol')
+        result[rkey] = relative[rkey];
+    }
+
+    //urlParse appends trailing / to urls like http://www.example.com
+    if (slashedProtocol[result.protocol] &&
+        result.hostname && !result.pathname) {
+      result.path = result.pathname = '/';
+    }
+
+    result.href = result.format();
+    return result;
+  }
+
+  if (relative.protocol && relative.protocol !== result.protocol) {
+    // if it's a known url protocol, then changing
+    // the protocol does weird things
+    // first, if it's not file:, then we MUST have a host,
+    // and if there was a path
+    // to begin with, then we MUST have a path.
+    // if it is file:, then the host is dropped,
+    // because that's known to be hostless.
+    // anything else is assumed to be absolute.
+    if (!slashedProtocol[relative.protocol]) {
+      var keys = Object.keys(relative);
+      for (var v = 0; v < keys.length; v++) {
+        var k = keys[v];
+        result[k] = relative[k];
+      }
+      result.href = result.format();
+      return result;
+    }
+
+    result.protocol = relative.protocol;
+    if (!relative.host && !hostlessProtocol[relative.protocol]) {
+      var relPath = (relative.pathname || '').split('/');
+      while (relPath.length && !(relative.host = relPath.shift()));
+      if (!relative.host) relative.host = '';
+      if (!relative.hostname) relative.hostname = '';
+      if (relPath[0] !== '') relPath.unshift('');
+      if (relPath.length < 2) relPath.unshift('');
+      result.pathname = relPath.join('/');
+    } else {
+      result.pathname = relative.pathname;
+    }
+    result.search = relative.search;
+    result.query = relative.query;
+    result.host = relative.host || '';
+    result.auth = relative.auth;
+    result.hostname = relative.hostname || relative.host;
+    result.port = relative.port;
+    // to support http.request
+    if (result.pathname || result.search) {
+      var p = result.pathname || '';
+      var s = result.search || '';
+      result.path = p + s;
+    }
+    result.slashes = result.slashes || relative.slashes;
+    result.href = result.format();
+    return result;
+  }
+
+  var isSourceAbs = (result.pathname && result.pathname.charAt(0) === '/'),
+      isRelAbs = (
+          relative.host ||
+          relative.pathname && relative.pathname.charAt(0) === '/'
+      ),
+      mustEndAbs = (isRelAbs || isSourceAbs ||
+                    (result.host && relative.pathname)),
+      removeAllDots = mustEndAbs,
+      srcPath = result.pathname && result.pathname.split('/') || [],
+      relPath = relative.pathname && relative.pathname.split('/') || [],
+      psychotic = result.protocol && !slashedProtocol[result.protocol];
+
+  // if the url is a non-slashed url, then relative
+  // links like ../.. should be able
+  // to crawl up to the hostname, as well.  This is strange.
+  // result.protocol has already been set by now.
+  // Later on, put the first path part into the host field.
+  if (psychotic) {
+    result.hostname = '';
+    result.port = null;
+    if (result.host) {
+      if (srcPath[0] === '') srcPath[0] = result.host;
+      else srcPath.unshift(result.host);
+    }
+    result.host = '';
+    if (relative.protocol) {
+      relative.hostname = null;
+      relative.port = null;
+      if (relative.host) {
+        if (relPath[0] === '') relPath[0] = relative.host;
+        else relPath.unshift(relative.host);
+      }
+      relative.host = null;
+    }
+    mustEndAbs = mustEndAbs && (relPath[0] === '' || srcPath[0] === '');
+  }
+
+  if (isRelAbs) {
+    // it's absolute.
+    result.host = (relative.host || relative.host === '') ?
+                  relative.host : result.host;
+    result.hostname = (relative.hostname || relative.hostname === '') ?
+                      relative.hostname : result.hostname;
+    result.search = relative.search;
+    result.query = relative.query;
+    srcPath = relPath;
+    // fall through to the dot-handling below.
+  } else if (relPath.length) {
+    // it's relative
+    // throw away the existing file, and take the new path instead.
+    if (!srcPath) srcPath = [];
+    srcPath.pop();
+    srcPath = srcPath.concat(relPath);
+    result.search = relative.search;
+    result.query = relative.query;
+  } else if (!util.isNullOrUndefined(relative.search)) {
+    // just pull out the search.
+    // like href='?foo'.
+    // Put this after the other two cases because it simplifies the booleans
+    if (psychotic) {
+      result.hostname = result.host = srcPath.shift();
+      //occationaly the auth can get stuck only in host
+      //this especially happens in cases like
+      //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
+      var authInHost = result.host && result.host.indexOf('@') > 0 ?
+                       result.host.split('@') : false;
+      if (authInHost) {
+        result.auth = authInHost.shift();
+        result.host = result.hostname = authInHost.shift();
+      }
+    }
+    result.search = relative.search;
+    result.query = relative.query;
+    //to support http.request
+    if (!util.isNull(result.pathname) || !util.isNull(result.search)) {
+      result.path = (result.pathname ? result.pathname : '') +
+                    (result.search ? result.search : '');
+    }
+    result.href = result.format();
+    return result;
+  }
+
+  if (!srcPath.length) {
+    // no path at all.  easy.
+    // we've already handled the other stuff above.
+    result.pathname = null;
+    //to support http.request
+    if (result.search) {
+      result.path = '/' + result.search;
+    } else {
+      result.path = null;
+    }
+    result.href = result.format();
+    return result;
+  }
+
+  // if a url ENDs in . or .., then it must get a trailing slash.
+  // however, if it ends in anything else non-slashy,
+  // then it must NOT get a trailing slash.
+  var last = srcPath.slice(-1)[0];
+  var hasTrailingSlash = (
+      (result.host || relative.host || srcPath.length > 1) &&
+      (last === '.' || last === '..') || last === '');
+
+  // strip single dots, resolve double dots to parent dir
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = srcPath.length; i >= 0; i--) {
+    last = srcPath[i];
+    if (last === '.') {
+      srcPath.splice(i, 1);
+    } else if (last === '..') {
+      srcPath.splice(i, 1);
+      up++;
+    } else if (up) {
+      srcPath.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (!mustEndAbs && !removeAllDots) {
+    for (; up--; up) {
+      srcPath.unshift('..');
+    }
+  }
+
+  if (mustEndAbs && srcPath[0] !== '' &&
+      (!srcPath[0] || srcPath[0].charAt(0) !== '/')) {
+    srcPath.unshift('');
+  }
+
+  if (hasTrailingSlash && (srcPath.join('/').substr(-1) !== '/')) {
+    srcPath.push('');
+  }
+
+  var isAbsolute = srcPath[0] === '' ||
+      (srcPath[0] && srcPath[0].charAt(0) === '/');
+
+  // put the host back
+  if (psychotic) {
+    result.hostname = result.host = isAbsolute ? '' :
+                                    srcPath.length ? srcPath.shift() : '';
+    //occationaly the auth can get stuck only in host
+    //this especially happens in cases like
+    //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
+    var authInHost = result.host && result.host.indexOf('@') > 0 ?
+                     result.host.split('@') : false;
+    if (authInHost) {
+      result.auth = authInHost.shift();
+      result.host = result.hostname = authInHost.shift();
+    }
+  }
+
+  mustEndAbs = mustEndAbs || (result.host && srcPath.length);
+
+  if (mustEndAbs && !isAbsolute) {
+    srcPath.unshift('');
+  }
+
+  if (!srcPath.length) {
+    result.pathname = null;
+    result.path = null;
+  } else {
+    result.pathname = srcPath.join('/');
+  }
+
+  //to support request.http
+  if (!util.isNull(result.pathname) || !util.isNull(result.search)) {
+    result.path = (result.pathname ? result.pathname : '') +
+                  (result.search ? result.search : '');
+  }
+  result.auth = relative.auth || result.auth;
+  result.slashes = result.slashes || relative.slashes;
+  result.href = result.format();
+  return result;
+};
+
+Url.prototype.parseHost = function() {
+  var host = this.host;
+  var port = portPattern.exec(host);
+  if (port) {
+    port = port[0];
+    if (port !== ':') {
+      this.port = port.substr(1);
+    }
+    host = host.substr(0, host.length - port.length);
+  }
+  if (host) this.hostname = host;
+};
+
+},{"./util":65,"punycode":45,"querystring":48}],65:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+  isString: function(arg) {
+    return typeof(arg) === 'string';
+  },
+  isObject: function(arg) {
+    return typeof(arg) === 'object' && arg !== null;
+  },
+  isNull: function(arg) {
+    return arg === null;
+  },
+  isNullOrUndefined: function(arg) {
+    return arg == null;
+  }
+};
+
+},{}],66:[function(require,module,exports){
+(function (global){
+
 /**
- * Handle events.
+ * Module exports.
  */
 
-if (document.addEventListener) {
-  document.addEventListener('fullscreenchange', change('fullscreen'));
-  document.addEventListener('mozfullscreenchange', change('mozFullScreen'));
-  document.addEventListener('webkitfullscreenchange', change('webkitIsFullScreen'));
-  document.addEventListener('MSFullscreenChange', change('msFullScreen'));
-  document.addEventListener('fullscreenChange', change('msFullScreen'));
-}
-
-}, {"emitter":38}],
-38: [function(require, module, exports) {
+module.exports = deprecate;
 
 /**
- * Expose `Emitter`.
- */
-
-if (typeof module !== 'undefined') {
-  module.exports = Emitter;
-}
-
-/**
- * Initialize a new `Emitter`.
+ * Mark that a method should not be used.
+ * Returns a modified function which warns once by default.
  *
+ * If `localStorage.noDeprecation = true` is set, then it is a no-op.
+ *
+ * If `localStorage.throwDeprecation = true` is set, then deprecated functions
+ * will throw an Error when invoked.
+ *
+ * If `localStorage.traceDeprecation = true` is set, then deprecated functions
+ * will invoke `console.trace()` instead of `console.error()`.
+ *
+ * @param {Function} fn - the function to deprecate
+ * @param {String} msg - the string to print to the console when `fn` is invoked
+ * @returns {Function} a new "deprecated" version of `fn`
  * @api public
  */
 
-function Emitter(obj) {
-  if (obj) return mixin(obj);
-};
+function deprecate (fn, msg) {
+  if (config('noDeprecation')) {
+    return fn;
+  }
+
+  var warned = false;
+  function deprecated() {
+    if (!warned) {
+      if (config('throwDeprecation')) {
+        throw new Error(msg);
+      } else if (config('traceDeprecation')) {
+        console.trace(msg);
+      } else {
+        console.warn(msg);
+      }
+      warned = true;
+    }
+    return fn.apply(this, arguments);
+  }
+
+  return deprecated;
+}
 
 /**
- * Mixin the emitter properties.
+ * Checks `localStorage` for boolean values for the given `name`.
  *
- * @param {Object} obj
- * @return {Object}
+ * @param {String} name
+ * @returns {Boolean}
  * @api private
  */
 
-function mixin(obj) {
-  for (var key in Emitter.prototype) {
-    obj[key] = Emitter.prototype[key];
+function config (name) {
+  // accessing global.localStorage can trigger a DOMException in sandboxed iframes
+  try {
+    if (!global.localStorage) return false;
+  } catch (_) {
+    return false;
   }
-  return obj;
+  var val = global.localStorage[name];
+  if (null == val) return false;
+  return String(val).toLowerCase() === 'true';
 }
 
-/**
- * Listen on the given `event` with `fn`.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
-
-Emitter.prototype.on =
-Emitter.prototype.addEventListener = function(event, fn){
-  this._callbacks = this._callbacks || {};
-  (this._callbacks['$' + event] = this._callbacks['$' + event] || [])
-    .push(fn);
-  return this;
-};
-
-/**
- * Adds an `event` listener that will be invoked a single
- * time then automatically removed.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
-
-Emitter.prototype.once = function(event, fn){
-  function on() {
-    this.off(event, on);
-    fn.apply(this, arguments);
-  }
-
-  on.fn = fn;
-  this.on(event, on);
-  return this;
-};
-
-/**
- * Remove the given callback for `event` or all
- * registered callbacks.
- *
- * @param {String} event
- * @param {Function} fn
- * @return {Emitter}
- * @api public
- */
-
-Emitter.prototype.off =
-Emitter.prototype.removeListener =
-Emitter.prototype.removeAllListeners =
-Emitter.prototype.removeEventListener = function(event, fn){
-  this._callbacks = this._callbacks || {};
-
-  // all
-  if (0 == arguments.length) {
-    this._callbacks = {};
-    return this;
-  }
-
-  // specific event
-  var callbacks = this._callbacks['$' + event];
-  if (!callbacks) return this;
-
-  // remove all handlers
-  if (1 == arguments.length) {
-    delete this._callbacks['$' + event];
-    return this;
-  }
-
-  // remove specific handler
-  var cb;
-  for (var i = 0; i < callbacks.length; i++) {
-    cb = callbacks[i];
-    if (cb === fn || cb.fn === fn) {
-      callbacks.splice(i, 1);
-      break;
-    }
-  }
-  return this;
-};
-
-/**
- * Emit `event` with the given args.
- *
- * @param {String} event
- * @param {Mixed} ...
- * @return {Emitter}
- */
-
-Emitter.prototype.emit = function(event){
-  this._callbacks = this._callbacks || {};
-  var args = [].slice.call(arguments, 1)
-    , callbacks = this._callbacks['$' + event];
-
-  if (callbacks) {
-    callbacks = callbacks.slice(0);
-    for (var i = 0, len = callbacks.length; i < len; ++i) {
-      callbacks[i].apply(this, args);
-    }
-  }
-
-  return this;
-};
-
-/**
- * Return array of callbacks for `event`.
- *
- * @param {String} event
- * @return {Array}
- * @api public
- */
-
-Emitter.prototype.listeners = function(event){
-  this._callbacks = this._callbacks || {};
-  return this._callbacks['$' + event] || [];
-};
-
-/**
- * Check if this emitter has `event` handlers.
- *
- * @param {String} event
- * @return {Boolean}
- * @api public
- */
-
-Emitter.prototype.hasListeners = function(event){
-  return !! this.listeners(event).length;
-};
-
-}, {}],
-9: [function(require, module, exports) {
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],67:[function(require,module,exports){
 
 /**
  * map
@@ -45149,35 +57474,12 @@ module.exports = function(name){
   return map[name.toLowerCase()] || name.toUpperCase().charCodeAt(0);
 };
 
-}, {}],
-10: [function(require, module, exports) {
-
-/**
- * merge `b`'s properties with `a`'s.
- *
- * example:
- *
- *        var user = {};
- *        merge(user, console);
- *        // > { log: fn, dir: fn ..}
- *
- * @param {Object} a
- * @param {Object} b
- * @return {Object}
- */
-
-module.exports = function (a, b) {
-  for (var k in b) a[k] = b[k];
-  return a;
-};
-
-}, {}],
-11: [function(require, module, exports) {
-module.exports = {
-  "name": "littlstar-axis",
+},{}],68:[function(require,module,exports){
+module.exports={
+  "name": "@littlstar/axis",
   "version": "1.22.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
-  "main": "dist/axis.js",
+  "main": "index.js",
   "scripts": {
     "prepublish": "make dist"
   },
@@ -45192,23 +57494,44 @@ module.exports = {
     "webgl"
   ],
   "devDependencies": {
-    "duo": "*",
-    "jsdoc": "^3.3.0"
+    "browserify": "^13.1.0",
+    "jsdoc": "^3.3.0",
+    "postcss-cli": "^2.5.2",
+    "standard": "^7.1.2"
   },
-
   "bugs": {
-    "url" : "https://github.com/littlstar/axis/issues",
-    "email" : "axis@littlstar.com"
+    "url": "https://github.com/littlstar/axis/issues",
+    "email": "axis@littlstar.com"
+  },
+  "dependencies": {
+    "@littlstar/fullscreen": "^2.0.0",
+    "@littlstar/three-canvas-renderer": "^1.0.0",
+    "@littlstar/three-vr-effect": "^1.0.0",
+    "autoprefixer": "^6.4.0",
+    "component-emitter": "^1.2.1",
+    "component-events": "^1.0.10",
+    "domify": "^1.4.0",
+    "has-webgl": "0.0.1",
+    "inherits": "^2.0.1",
+    "merge": "^1.2.0",
+    "pointer-lock": "0.0.4",
+    "raf": "^3.2.0",
+    "three": "^0.79.0",
+    "three-projector-renderer": "^1.0.1",
+    "yields-keycode": "^1.1.0"
+  },
+  "standard": {
+    "ignore": [
+      "public",
+      "dist",
+      "build"
+    ]
   }
 }
-;
-}, {}],
-12: [function(require, module, exports) {
-module.exports = '<section class="axis frame">\n  <div class="axis container">\n    <video class="axis" style="display: none; width: 100%; height: 100%;"></video>\n  </div>\n</section>\n';
-}, {}],
-13: [function(require, module, exports) {
 
-'use strict';
+},{}],69:[function(require,module,exports){
+
+'use strict'
 
 /**
  * @license
@@ -45246,21 +57569,8 @@ module.exports = '<section class="axis frame">\n  <div class="axis container">\n
  */
 
 var raf = require('raf')
-  , three = require('three.js')
 
 var DEFAULT_PROJECTION = require('./constants').DEFAULT_PROJECTION
-
-/**
- * Predicate to determine whether `n' is
- * in fact `NaN'
- *
- * @private
- * @param {Mixed} n
- */
-
-function isNaN (n) {
-  return 'number' == typeof n && n !== n
-}
 
 /**
  * Projections constructor
@@ -45270,37 +57580,35 @@ function isNaN (n) {
  * @param {Object} [scope] - Scope object to apply state to.
  */
 
-module.exports = Projections;
+module.exports = Projections
 function Projections (scope) {
   // ensure instance
   if (!(this instanceof Projections)) {
-    return new Projections(scope);
+    return new Projections(scope)
   }
 
-  var self = this;
-
   // projection scope
-  this.scope = 'object' == typeof scope ? scope : {};
+  this.scope = typeof scope === 'object' ? scope : {}
 
   // install `.state' object if not defined
-  if ('object' != typeof this.scope.state) {
-    this.scope.state = {};
+  if (typeof this.scope.state !== 'object') {
+    this.scope.state = {}
   }
 
   /** Animation frame ID generated from `requestAnimationFrame()`. */
-  this.animationFrameID = NaN;
+  this.animationFrameID = NaN
 
   /** Installed projections. */
-  this.projections = {};
+  this.projections = {}
 
   /** Current requested projection. */
-  this.requested = null;
+  this.requested = null
 
   /** Current applied projection. */
-  this.current = DEFAULT_PROJECTION;
+  this.current = DEFAULT_PROJECTION
 
   /** Current projection constraints. */
-  this.constraints = null;
+  this.constraints = null
 }
 
 /**
@@ -45310,12 +57618,12 @@ function Projections (scope) {
  */
 
 Projections.prototype.cancel = function () {
-  if (false == isNaN(this.animationFrameID)) {
-    raf.cancel(this.animationFrameID);
-    this.scope.state.update('isAnimating', false);
+  if (!isNaN(this.animationFrameID)) {
+    raf.cancel(this.animationFrameID)
+    this.scope.state.update('isAnimating', false)
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Requests an animation frame for a given
@@ -45327,22 +57635,22 @@ Projections.prototype.cancel = function () {
  */
 
 Projections.prototype.animate = function (fn) {
-  var self = this;
-  if ('function' == typeof fn) {
-    this.scope.state.update('isAnimating', true);
+  var self = this
+  if (typeof fn === 'function') {
+    this.scope.state.update('isAnimating', true)
     this.animationFrameID = raf(function animate () {
-      if (false == self.scope.state.isAnimating) {
-        self.cancel();
+      if (!self.scope.state.isAnimating) {
+        self.cancel()
       } else {
-        fn.call(self);
+        fn.call(self)
         if (self.scope.state.isAnimating) {
-          self.animate(fn);
+          self.animate(fn)
         }
       }
-    });
+    })
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Installs a projection by name
@@ -45353,11 +57661,11 @@ Projections.prototype.animate = function (fn) {
  */
 
 Projections.prototype.set = function (name, projection) {
-  if ('string' == typeof name && 'function' == typeof projection) {
-    this.projections[name] = projection;
+  if (typeof name === 'string' && typeof projection === 'function') {
+    this.projections[name] = projection
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Removes a projection by name
@@ -45367,11 +57675,11 @@ Projections.prototype.set = function (name, projection) {
  */
 
 Projections.prototype.remove = function (name) {
-  if ('string' == typeof name && 'function' == typeof this.projections[name]) {
-    delete this.projections[name];
+  if (typeof name === 'string' && typeof this.projections[name] === 'function') {
+    delete this.projections[name]
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Gets a projection by name
@@ -45381,11 +57689,11 @@ Projections.prototype.remove = function (name) {
  */
 
 Projections.prototype.get = function (name) {
-  if ('string' == typeof name && 'function' == typeof this.projections[name]) {
-    return this.projections[name];
+  if (typeof name === 'string' && typeof this.projections[name] === 'function') {
+    return this.projections[name]
   }
-  return null;
-};
+  return null
+}
 
 /**
  * Applies a projection by name
@@ -45396,51 +57704,51 @@ Projections.prototype.get = function (name) {
 
 Projections.prototype.apply = function (name) {
   // set currently requested
-  this.requested = name;
-  this.cancel();
+  this.requested = name
+  this.cancel()
 
   raf(function () {
-    var projection = null;
-    var dimensions = null;
-    var texture = null;
-    var previous = this.current;
+    var projection = null
+    var dimensions = null
+    var texture = null
+    var previous = this.current
 
-    if (null == this.scope) { return; }
+    if (this.scope == null) { return }
 
-    projection = this.projections[name];
-    if (null == projection) { return; }
+    projection = this.projections[name]
+    if (projection == null) { return }
 
-    dimensions = this.scope.dimensions();
-    if (null == dimensions) { return; }
+    dimensions = this.scope.dimensions()
+    if (dimensions == null) { return }
 
-    texture = this.scope.texture;
+    texture = this.scope.texture
 
-    if (null != texture && 'string' == typeof name && 'function' == typeof projection) {
-      this.scope.refreshScene();
+    if (texture != null && typeof name === 'string' && typeof projection === 'function') {
+      this.scope.refreshScene()
 
       // apply constraints
-      if ('object' == typeof projection.constraints) {
-        this.constraints = projection.constraints;
+      if (typeof projection.constraints === 'object') {
+        this.constraints = projection.constraints
       } else {
-        this.constraints = {};
+        this.constraints = {}
       }
 
       // apply projection
-      if (false === projection.call(this, this.scope)) {
-        this.requested = this.current;
+      if (!projection.call(this, this.scope)) {
+        this.requested = this.current
       } else {
         this.scope.emit('projectionchange', {
           current: name,
           previous: previous
-        });
+        })
       }
 
       // set current projection
-      this.current = name;
+      this.current = name
     }
-  }.bind(this));
-  return this;
-};
+  }.bind(this))
+  return this
+}
 
 /**
  * Predicate to determine if a projection is defiend
@@ -45450,8 +57758,8 @@ Projections.prototype.apply = function (name) {
  */
 
 Projections.prototype.contains = function (name) {
-  return 'function' == typeof this.projections[name];
-};
+  return typeof this.projections[name] === 'function'
+}
 
 /**
  * Predicate to determine if axis content has
@@ -45462,11 +57770,11 @@ Projections.prototype.contains = function (name) {
  */
 
 Projections.prototype.contentHasCorrectSizing = function () {
-  var dimensions = this.scope.dimensions();
-  var width = dimensions.width;
-  var height = dimensions.height;
-  return 0 != width && 0 != height;
-};
+  var dimensions = this.scope.dimensions()
+  var width = dimensions.width
+  var height = dimensions.height
+  return width !== 0 && height !== 0
+}
 
 /**
  * Predicate to determine if axis is ready
@@ -45476,8 +57784,8 @@ Projections.prototype.contentHasCorrectSizing = function () {
 
 Projections.prototype.isReady = function () {
   var scope = this.scope
-  return Boolean(scope.camera && scope.texture && scope.scene);
-};
+  return Boolean(scope.camera && scope.texture && scope.scene)
+}
 
 /**
  * Refreshes current projection
@@ -45486,13 +57794,12 @@ Projections.prototype.isReady = function () {
  */
 
 Projections.prototype.refreshCurrent = function () {
-  return this.apply(this.current);
-};
+  return this.apply(this.current)
+}
 
-}, {"raf":6,"three.js":2,"./constants":18}],
-18: [function(require, module, exports) {
+},{"./constants":2,"raf":49}],70:[function(require,module,exports){
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -45519,420 +57826,392 @@ Projections.prototype.refreshCurrent = function () {
  */
 
 /**
- * Axis constants
+ * The equilinear projection mode.
+ *
  * @public
- * @module axis/constants
+ * @module scope/projection/equilinear
+ * @type {Function}
+ */
+
+/**
+ * Applies an equilinear projection to scope frame
+ *
+ * @public
+ * @param {Axis} scope
+ */
+
+module.exports = equilinear
+function equilinear (scope) {
+  // this projection requires an already initialized
+  // camera on the `scope' instance
+  var camera = scope.camera
+
+  // bail if camera not present
+  if (camera == null) { return }
+
+  // bail if not ready
+  if (!this.isReady()) { return }
+
+  // bail if content sizing is incorrect
+  if (!this.contentHasCorrectSizing()) { return }
+
+  var current = this.current
+  var targetX = Math.PI / 180
+  var factor = targetX * 0.8999
+
+  this.constraints = {}
+
+  if (scope.geometry() === 'cylinder') {
+    scope.orientation.x = 0
+    this.constraints.y = true
+    this.constraints.x = false
+  }
+
+  // apply zoom to cylinder geometry type
+  if (scope.geometry() === 'cylinder') {
+    this.constraints.y = true
+    this.constraints.x = false
+    scope.orientation.x = 0
+  } else {
+    this.constraints.y = false
+    this.constraints.x = false
+  }
+
+  // animate
+  scope.debug('animate: EQUILINEAR begin')
+
+  scope.fov(scope.state.originalfov || scope.state.fov)
+
+  if (scope.geometry() === 'cylinder') {
+    scope.orientation.x = targetX
+    this.cancel()
+  } else {
+    this.animate(function () {
+      var x = scope.orientation.x
+
+      if (current === 'tinyplanet') {
+        scope.lookAt(0, 0, 0)
+        scope.orientation.x = 0
+        return this.cancel()
+      }
+
+      if (current === 'fisheye') {
+        return this.cancel()
+      }
+
+      if (x > targetX) {
+        scope.orientation.x -= factor
+      } else {
+        scope.orientation.x = targetX
+      }
+
+      if (x < targetX) {
+        scope.orientation.x += factor
+      } else {
+        scope.orientation.x = targetX
+      }
+
+      if (scope.orientation.x === targetX) {
+        return this.cancel()
+      }
+    })
+  }
+};
+
+},{}],71:[function(require,module,exports){
+
+'use strict'
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The fisheye projection mode.
+ *
+ * @public
+ * @module scope/projection/fisheye
+ * @type {Function}
+ */
+
+/**
+ * Fisheye projection constraints.
+ *
+ * @public
  * @type {Object}
  */
 
-void module.exports;
+fisheye.constraints = {}
 
 /**
- * The default Axis field of view in degrees.
- *
- * @public
- * @const
- * @name DEFAULT_FOV
- * @type {Number}
- */
-
-exports.DEFAULT_FOV = Math.PI / 3 * 180 / Math.PI
-
-/**
- * Cylinder field of view value in degrees.
- *
- * @public
- * @const
- * @name CYLINDER_FOV
- * @type {Number}
- */
-
-exports.CYLINDER_FOV = 60;
-
-/**
- * Max calculated field of view in degrees.
- *
- * @public
- * @const
- * @name MAX_CALC_FOV
- * @type {Number}
- */
-
-exports.MAX_CALC_FOV = 75;
-
-/**
- * Default interpolation factor.
- *
- * @public
- * @const
- * @name DEFAULT_INTERPOLATION_FACTOR
- * @type {Number}
- */
-
-exports.DEFAULT_INTERPOLATION_FACTOR = 0.1;
-
-/**
- * Default frame projection
- *
- * @public
- * @const
- * @name DEFAULT_PROJECTION
- * @type {String}
- */
-
-exports.DEFAULT_PROJECTION = 'equilinear';
-
-/**
- * Default scroll velocity
- *
- * @public
- * @const
- * @name DEFAULT_SCROLL_VELOCITY
- * @type {Number}
- */
-
-exports.DEFAULT_SCROLL_VELOCITY = 0.09;
-
-/**
- * Default geometry radius
- *
- * @public
- * @const
- * @name DEFAULT_GEOMETRY_RADIUS
- * @type {Number}
- */
-
-exports.DEFAULT_GEOMETRY_RADIUS = 400;
-
-/**
- * Default friction to apply to x and y
- * coordinates.
- *
- * @public
- * @const
- * @name DEFAULT_FRICTION
- * @type {Number}
- */
-
-exports.DEFAULT_FRICTION = 0.075;
-
-/**
- * Default key rotate speed
- *
- * @public
- * @const
- * @name DEFAULT_KEY_ROTATE_SPEED
- * @type {Number}
- */
-
-exports.DEFAULT_KEY_ROTATE_SPEED = 0.75;
-
-/**
- * Default controller update timeout.
- *
- * @public
- * @const
- * @name DEFAULT_CONTROLLER_UPDATE_TIMEOUT
- * @type {Number}
- */
-
-exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600;
-
-/**
- * Default mouse movement friction factor.
- *
- * @public
- * @const
- * @name DEFAULT_MOUSE_MOVEMENT_FRICTION
- * @type {Number}
- */
-
-exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.05;
-
-/**
- * Animation factor unit applied to changes in
- * field of view and coordinates during projection
- * animations.
- *
- * @public
- * @const
- * @name ANIMATION_FACTOR
- * @type {Number}
- */
-
-exports.ANIMATION_FACTOR = 24;
-
-/**
- * Max tiny planet projection camera lens value.
- *
- * @public
- * @const
- * @name TINY_PLANET_CAMERA_LENS_VALUE
- * @type {Number}
- */
-
-exports.TINY_PLANET_CAMERA_LENS_VALUE = 7.5;
-
-/**
- * Frame click threshold in milliseconds used
- * to determine an intent to click on the frame
- * or an intent to drag
- *
- * @public
- * @const
- * @name FRAME_CLICK_THRESHOLD
- * @type {Number}
- */
-
-exports.FRAME_CLICK_THRESHOLD = 50;
-
-/**
- * Minimum wheel distance used to fence scrolling
- * with the intent to zoom
- *
- * @public
- * @const
- * @name MIN_WHEEL_DISTANCE
- * @type {Number}
- */
-
-exports.MIN_WHEEL_DISTANCE = 20;
-
-/**
- * Minimum wheel distance used to fence scrolling
- * with the intent to zoom
- *
- * @public
- * @const
- * @name MAX_WHEEL_DISTANCE
- * @type {Number}
- */
-
-exports.MAX_WHEEL_DISTANCE = 150;
-
-/**
- * Minimum possible y coordinate
- *
- * @public
- * @const
- * @name MIN_Y_COORDINATE
- * @type {Number}
- */
-
-exports.MIN_Y_COORDINATE = -85;
-
-/**
- * Maximum possible y coordinate
- *
- * @public
- * @const
- * @name MAX_Y_COORDINATE
- * @type {Number}
- */
-
-exports.MAX_Y_COORDINATE = 85;
-
-/**
- * Minimum possible x coordinate
- *
- * @public
- * @const
- * @name MIN_X_COORDINATE
- * @type {Number}
- */
-
-exports.MIN_X_COORDINATE = 0;
-
-/**
- * Maximum possible x coordinate
- *
- * @public
- * @const
- * @name MAX_X_COORDINATE
- * @type {Number}
- */
-
-exports.MAX_X_COORDINATE = 360;
-
-/**
- * VR device poll timeout
- *
- * @public
- * @const
- * @name VR_POLL_TIMEOUT
- * @type {Number}
- */
-
-exports.VR_POLL_TIMEOUT = 3000;
-
-}, {}],
-14: [function(require, module, exports) {
-
-/**
- * Module dependencies
- */
-
-var three = require('three.js')
-
-// default field of view
-var DEFAULT_FOV = require('./constants').DEFAULT_FOV;
-
-/**
- * Creates an instance of THREE.PerspectiveCamera
- * and assigns it to a scope object if not null.
- *
- * @public
- * @name createCamera
- * @param {Object} scope - Scope object to assign camera to.
- * @param {Boolean} force - Force creation and assignment.
- * @return {THREE.PerspectiveCamera}
- */
-
-module.exports = function createCamera (scope, force) {
-  var height = scope.height();
-  var width = scope.width();
-  var ratio = width / height;
-  var camera = scope.camera;
-  var state = scope.state;
-  var vector = null;
-  var target = null;
-  var fov = state.opts ? state.opts.fov || DEFAULT_FOV : DEFAULT_FOV;
-  if (null == scope.camera || true == force) {
-    vector = new three.Vector3(0, 0, 0);
-    target = camera && camera.target ? camera.target : vector;
-    scope.camera = new three.PerspectiveCamera(fov, ratio, 0.01, 1000);
-    scope.camera.target = target;
-    scope.camera.rotation.reorder('YXZ');
-  }
-  return scope.camera;
-};
-
-}, {"three.js":2,"./constants":18}],
-15: [function(require, module, exports) {
-exports.cylinder = require('./cylinder');
-exports.sphere = require('./sphere');
-exports.plane = require('./plane');
-exports.box = require('./box');
-
-}, {"./cylinder":39,"./sphere":40,"./plane":41,"./box":42}],
-39: [function(require, module, exports) {
-
-/**
- * Module dependencies
- */
-
-var three = require('three.js')
-
-/**
- * Creates and returns a `CylinderGeometry'
- * geometry instance.
+ * Applies a fisheye projection to scope frame
  *
  * @api public
- * @param {Axis} axis
+ * @param {Axis} scope
  */
 
-module.exports = function (axis) {
-  var radiusSegments = 64;
-  var heightSegments = 4;
-  var openEnded = true;
-  var radius = axis.state.radius;
-  var height = axis.dimensions().height;
-  return new three.CylinderGeometry(radius,
-                                    radius,
-                                    height,
-                                    radiusSegments,
-                                    heightSegments,
-                                    openEnded);
-};
+module.exports = fisheye
+function fisheye (scope) {
+  // this projection requires an already initialized
+  // camera on the `scope' instance
+  var camera = scope.camera
 
-}, {"three.js":2}],
-40: [function(require, module, exports) {
-'use strict';
+  // bail if camera not initialized
+  if (camera == null) { return false }
 
-/**
- * Module dependencies
- */
+  // bail if not ready
+  if (!this.isReady()) { return false }
 
-var three = require('three.js')
+  // bail if geometry is a cylinder because fisheye
+  // projection is only supported in a spherical geometry
+  if (scope.geometry() === 'cylinder') { return false }
 
-/**
- * Creates and returns a `SphereGeometry'
- * geometry instance.
- *
- * @api public
- * @param {Axis} axis
- */
+  // max Z and fov
+  var maxZ = (scope.height() / 100) | 0
+  var current = this.current
 
-module.exports = function sphere (axis) {
-  var heightSegments = 8 << 5;
-  var widthSegments = 8 << 5;
-  var radius = axis.state.radius;
-  var phi = Math.PI * 2;
+  scope.fov(scope.state.originalfov + 20)
+  this.constraints = {}
 
-  if (radius < 400) {
-    radius = 200;
-  } else if (radius > 600) {
-    radius = 400;
+  if (scope.geometry() === 'cylinder') {
+    scope.orientation.x = 0
+    this.constraints.y = true
+    this.constraints.x = false
   }
 
-  return new three.SphereGeometry(radius,
-                                  widthSegments,
-                                  heightSegments,
-                                  phi);
+  // begin animation
+  scope.debug('animate: FISHEYE begin')
+  this.animate(function () {
+    scope.camera.position.z = maxZ
+
+    if (current === 'tinyplanet') {
+      scope.orientation.x = 0
+      scope.lookAt(0, 0, 0)
+    } else if (current !== 'equilinear') {
+      scope.orientation.x = (Math.PI / 180)
+    }
+
+    this.cancel()
+  })
 };
 
-}, {"three.js":2}],
-41: [function(require, module, exports) {
+},{}],72:[function(require,module,exports){
+
+'use strict'
 
 /**
- * Module dependencies
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-var three = require('three.js')
+/**
+ * The flat projection mode.
+ *
+ * @public
+ * @module axis/projection/flat
+ * @type {Function}
+ */
 
 /**
- * Creates and returns a `PlaneBufferGeometry'
- * geometry instance.
+ * Applies a flat projection to Axis frame
  *
  * @api public
  * @param {Axis} axis
  */
 
-module.exports = function plane (axis) {
-  var width = axis.width();
-  var height = axis.height();
-  var segments = 4;
-  return new three.PlaneBufferGeometry(width,
-                                       height,
-                                       segments);
+module.exports = flat
+function flat (axis) {
+  // this projection requires an already initialized
+  // camera on the `Axis' instance
+  var camera = axis.camera
+
+  // bail if camera not initialized
+  if (camera == null) { return false }
+
+  // bail if not ready
+  if (!this.isReady()) { return false }
+
+  // bail if geometry is a cylinder because a flat
+  // projection is only supported in a spherical geometry
+  if (axis.geometry() === 'cylinder') { return false }
+
+  // apply equilinear projection
+  this.apply('equilinear')
+
+  this.constraints = {
+    keys: {up: true, down: true, left: true, right: true},
+    panoramic: true,
+    x: true, y: true
+  }
+
+  // update camera lens
+  camera.setLens(80)
+
+  // update current fov
+  axis.fov(camera.fov)
+
+  // position in center (90) around equator (0)
+  axis.coords(90, 0)
 };
 
-}, {"three.js":2}],
-42: [function(require, module, exports) {
-'use strict';
+},{}],73:[function(require,module,exports){
+
+'use strict'
+
+/**
+ * @license
+ * Copyright Little Star Media Inc. and other contributors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * 'Software'), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the
+ * following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+ * USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * The tiny planet projection mode.
+ *
+ * @public
+ * @module scope/projection/tinyplanet
+ * @type {Function}
+ */
 
 /**
  * Module dependencies
+ * @private
  */
 
-var three = require('three.js')
+var three = require('three')
 
 /**
- * Creates and returns a `BoxGeometry'
- * geometry instance.
- *
- * @api public
- * @param {Axis} axis
+ * Local dependencies
+ * @private
  */
 
-module.exports = function box (axis) {
-  return new three.BoxGeometry(400, 400, 400);
+var constants = require('../constants')
+
+// max camera lens value
+var TINY_PLANET_CAMERA_LENS_VALUE = constants.TINY_PLANET_CAMERA_LENS_VALUE
+
+// min/max x/y coordinates
+var MIN_X_COORDINATE = constants.MIN_X_COORDINATE
+
+/**
+ * Applies a tinyplanet projection to scope frame
+ *
+ * @api public
+ * @param {Axis} scope
+ */
+
+module.exports = tinyplanet
+function tinyplanet (scope) {
+  var camera = scope.camera
+  var rotation = new three.Vector3(0, 0, 0)
+
+  // bail if camera not initialized
+  if (!camera) { return false }
+
+  // bail if not ready
+  if (!this.isReady()) { return false }
+
+  // bail if geometry is a cylinder because tiny planet
+  // projection is only supported in a spherical geometry
+  if (scope.geometry() === 'cylinder') { return false }
+
+  // prevent duplicate tiny planet rotation requests
+  if (this.current === 'tinyplanet') { return false }
+
+  this.constraints = {
+    x: true,
+    cache: true,
+    keys: {left: true, right: true, h: true, l: true}
+  }
+
+  if (scope.geometry() === 'cylinder') {
+    scope.orientation.x = 0
+    this.constraints.y = false
+    this.constraints.x = true
+  }
+
+  this.constraints.x = false
+  this.constraints.y = true
+
+  camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE)
+  scope.fov(Math.min(scope.state.originalfov * 2, 130))
+  scope.debug('animate: TINY_PLANET begin')
+  rotation.x = camera.target.x || 0
+  rotation.y = camera.target.y || 0
+  rotation.z = camera.target.z || -1
+  this.animate(function () {
+    var y = rotation.y
+    scope.debug('animate: TINY_PLANET y=%d', y)
+    rotation.x = MIN_X_COORDINATE
+    rotation.y = -180
+    scope.lookAt(rotation.x, rotation.y, rotation.z)
+    scope.orientation.x = -Infinity
+    this.constraints.x = true
+    this.constraints.y = false
+    scope.debug('animate: TINY_PLANET end')
+    this.cancel()
+  })
 };
 
-}, {"three.js":2}],
-16: [function(require, module, exports) {
+},{"../constants":2,"three":63}],74:[function(require,module,exports){
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -45972,14 +58251,12 @@ module.exports = function box (axis) {
  * @private
  */
 
-var EventEmitter = require('emitter')
-  , fullscreen = require('fullscreen')
-  , keycode = require('keycode')
-  , hasWebGL = require('has-webgl')
-  , events = require('events')
-  , three = require('three.js')
-  , merge = require('merge')
-  , path = require('path')
+var EventEmitter = require('component-emitter')
+var fullscreen = require('@littlstar/fullscreen')
+var hasWebGL = require('has-webgl')
+var events = require('component-events')
+var three = require('three')
+var merge = require('merge')
 
 /**
  * Local dependencies
@@ -45987,19 +58264,19 @@ var EventEmitter = require('emitter')
  */
 
 var getVRDevices = require('./util').getVRDevices
-  , isVRPossible = require('./util').isVRPossible
-  , constants = require('./constants')
+var isVRPossible = require('./util').isVRPossible
+var constants = require('./constants')
 
-var VR_POLL_TIMEOUT = constants.VR_POLL_TIMEOUT;
+var VR_POLL_TIMEOUT = constants.VR_POLL_TIMEOUT
 
 // defaults
-var DEFAULT_FRICTION = constants.DEFAULT_FRICTION;
-var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
-var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY;
-var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS;
-var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
-var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
-var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
+var DEFAULT_FRICTION = constants.DEFAULT_FRICTION
+var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION
+var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY
+var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS
+var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR
+var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION
+var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIMEOUT
 
 /**
  * State constructor
@@ -46047,271 +58324,270 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * south poles (-PI/2, PI/2).
  */
 
-module.exports = State;
+module.exports = State
 function State (scope, opts) {
   // ensure instance
   if (!(this instanceof State)) {
-    return new State(scope, opts);
-  } else if ('object' != typeof scope) {
-    throw new TypeError("State expects scope to be an object.");
+    return new State(scope, opts)
+  } else if (typeof scope !== 'object') {
+    throw new TypeError('State expects scope to be an object.')
   }
 
   // event delegation
-  var windowEvents = events(window, this);
-  var documentEvents = events(document, this);
+  var documentEvents = events(document, this)
 
   // initialize document events
-  documentEvents.bind('touch', 'onmousedown');
-  documentEvents.bind('mousedown');
+  documentEvents.bind('touch', 'onmousedown')
+  documentEvents.bind('mousedown')
 
   // ensure options can't be overloaded
-  opts = Object.freeze(merge({}, opts));
+  opts = Object.freeze(merge({}, opts))
   this.__defineGetter__('options', function () {
-    return opts;
-  });
+    return opts
+  })
 
   /** Current scope for the instance. */
-  this.scope = scope;
+  this.scope = scope
 
   /** VR polling ID. */
-  this.vrPollID = 0;
+  this.vrPollID = 0
 
   /**
    * Temporary values.
    */
 
-  this.tmp = {};
+  this.tmp = {}
 
   /**
    * State variables.
    */
 
   /** Original fov value. */
-  this.originalfov = 0;
+  this.originalfov = 0
 
   /** Percent of content loaded. */
-  this.percentloaded = 0;
+  this.percentloaded = 0
 
   /** Original content size. */
-  this.originalsize = {width: null, height: null};
+  this.originalsize = {width: null, height: null}
 
   /** Current device orientation. */
-  this.orientation = 0;
+  this.orientation = 0
 
   /** Current projection type. */
-  this.projection = DEFAULT_PROJECTION;
+  this.projection = DEFAULT_PROJECTION
 
   /** Last known volume level. */
-  this.lastVolume = 0;
+  this.lastVolume = 0
 
   /** Last known refresh. */
-  this.lastRefresh = Date.now();
+  this.lastRefresh = Date.now()
 
   /** Points representing a drag offset. */
-  this.dragstart = {x:0, y:0};
+  this.dragstart = {x: 0, y: 0}
 
   /** Last known mousedown interaction. */
-  this.mousedownTimestamp = 0;
+  this.mousedownTimestamp = 0
 
   /** Current geometry type. */
-  this.geometry = null;
+  this.geometry = null
 
   /** Inverted state. */
-  this.isInverted = false;
+  this.isInverted = false
 
   /** Preview frame state predicate.. */
-  this.isPreviewFrame = false;
+  this.isPreviewFrame = false
 
   /** Total duration in seconds for video. */
-  this.duration = 0;
+  this.duration = 0
 
   /** Last known size. */
-  this.lastSize = {width: null, height: null};
+  this.lastSize = {width: null, height: null}
 
   /** Last known dimensions. */
-  this.lastDimensions = {width: 0, height: 0, ratio: 0};
+  this.lastDimensions = {width: 0, height: 0, ratio: 0}
 
   /** Current geometry radius. */
-  this.radius = DEFAULT_GEOMETRY_RADIUS;
+  this.radius = DEFAULT_GEOMETRY_RADIUS
 
   /** Known center for frame of reference. */
-  this.center = {x: null, y: null, z: null};
+  this.center = {x: null, y: null, z: null}
 
   /** Known frame height. */
-  this.height = 0;
+  this.height = 0
 
   /** Known touch coordinates. */
-  this.touch = {x: 0, y: 0};
+  this.touch = {x: 0, y: 0}
 
   /** Known frame width. */
-  this.width = 0;
+  this.width = 0
 
   /** State cache. */
-  this.cache = {};
+  this.cache = {}
 
   /** Interval rotations. */
   this.intervalRotations = {
     x: {value: 0, every: 0, interval: 0},
     y: {value: 0, every: 0, invteral: 0}
-  };
+  }
 
   /** Scroll velocity. */
-  this.scrollVelocity = DEFAULT_SCROLL_VELOCITY;
+  this.scrollVelocity = DEFAULT_SCROLL_VELOCITY
 
   /** Animation frame ID. */
-  this.animationFrameID = 0;
+  this.animationFrameID = 0
 
   /** Currently played video time. */
-  this.currentTime = 0;
+  this.currentTime = 0
 
   /** Friction to apply to x and y coordinates. */
-  this.friction = DEFAULT_FRICTION;
+  this.friction = DEFAULT_FRICTION
 
   /** Friction to apply to mouse movements. */
-  this.mouseFriction = DEFAULT_MOUSE_MOVEMENT_FRICTION;
+  this.mouseFriction = DEFAULT_MOUSE_MOVEMENT_FRICTION
 
   /** Zee quaternion. */
-  this.zee = null;
+  this.zee = null
 
   /** Current euler rotation angles. */
-  this.euler = null;
+  this.euler = null
 
   /** Original quaternion. */
-  this.orientationQuaternion = null;
+  this.orientationQuaternion = null
 
   /** X axis center. */
-  this.xAxisCenter = null;
+  this.xAxisCenter = null
 
   /** Y coordinate. */
-  this.pointerY = 0;
+  this.pointerY = 0
 
   /** X coordinate. */
-  this.pointerX = 0;
+  this.pointerX = 0
 
   /** Current field of view. */
-  this.fov = 0;
+  this.fov = 0
 
   /** Current frame source. */
-  this.src = null;
+  this.src = null
 
   /** Currently connected VR HMD if applicable. */
-  this.vrHMD = null;
+  this.vrHMD = null
 
   /** Currently connected position sensor vr device. */
-  this.vrPositionSensor = null;
+  this.vrPositionSensor = null
 
   /** Interpolation factor to apply to quaternion rotations. */
-  this.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR;
+  this.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR
 
   /** Controller update timeout value. */
-  this.controllerUpdateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
+  this.controllerUpdateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT
 
   /** Last known device pixel ratio. */
-  this.lastDevicePixelRatio = window.devicePixelRatio;
+  this.lastDevicePixelRatio = window.devicePixelRatio
 
   /** Vim mode ;) */
-  this.vim = false;
+  this.vim = false
 
   /**
    * State predicates.
    */
 
   /** Allow for updates to be skippped. */
-  this.shouldUpdate = true;
+  this.shouldUpdate = true
 
   /** Predicate indicating if Axis is ready. */
-  this.isReady = false;
+  this.isReady = false
 
   /** Predicate indicating if video is muted. */
-  this.isMuted = false;
+  this.isMuted = false
 
   /** Predicate indicating if video has ended. */
-  this.isEnded = false;
+  this.isEnded = false
 
   /** Predicate indicating the use of the mouse wheel. */
-  this.allowWheel = false;
+  this.allowWheel = false
 
   /** Predicate indicating if Axis is focused. */
-  this.isFocused = false;
+  this.isFocused = false
 
   /** Predicate indicating if key is down. */
-  this.isKeydown = false;
+  this.isKeydown = false
 
   /** Predicate indicating if video is playing. */
-  this.isPlaying = false;
+  this.isPlaying = false
 
   /** Predicate indicating is video is paused. */
-  this.isPaused = false;
+  this.isPaused = false
 
   /** Predicate indicating if video was stopped. */
-  this.isStopped = false;
+  this.isStopped = false
 
   /** Predicate to indicating if Axis is clickable.*/
-  this.isClickable = true;
+  this.isClickable = true
 
   /** Predicate indicating an animation is occuring. */
-  this.isAnimating = false;
+  this.isAnimating = false
 
   /** Predicate indicating fullscreen is active. */
-  this.isFullscreen = false;
+  this.isFullscreen = false
 
   /** Predicate indicating if frame is an image. */
-  this.isImage = false;
+  this.isImage = false
 
   /** Predicate indicating if video rendering should be forced. */
-  this.forceVideo = false;
+  this.forceVideo = false
 
   /** Predicate indicating focus should be forced. */
-  this.forceFocus = false;
+  this.forceFocus = false
 
   /** Predicate indicating control are allowed. */
-  this.allowControls = true;
+  this.allowControls = true
 
   /** Predicate indicating VR support. */
-  this.isVREnabled = false;
+  this.isVREnabled = false
 
   /** Predicate indicating if an HMD device is connected. */
-  this.isHMDAvailable = false;
+  this.isHMDAvailable = false
 
   /** Predicate indicating if an HMD device sensor is connected. */
-  this.isHMDPositionSensorAvailable = false;
+  this.isHMDPositionSensorAvailable = false
 
   /** Predicate indicating axis is resizable. */
-  this.isResizable = false;
+  this.isResizable = false
 
   /** Predicate indicating the mouse is down. */
-  this.isMousedown = false;
+  this.isMousedown = false
 
   /** Predicate indicating if touching. */
-  this.isTouching = false;
+  this.isTouching = false
 
   /** Predicate indicating if WebGL is being used. */
-  this.useWebGL = true;
+  this.useWebGL = true
 
   /** Predicate indicating if a video should autoplay. */
-  this.shouldAutoplay = false;
+  this.shouldAutoplay = false
 
   /** Predicate indicating if VR display is possible. */
-  this.isVRPossible = isVRPossible();
+  this.isVRPossible = isVRPossible()
 
   /** Predicate indicating if media resource is cross origin. */
   this.isCrossOrigin = false
 
   /** Predicate indicating if north/south pole orientation should be locked. */
-  this.lockPoles = true;
+  this.lockPoles = true
 
   // listen for fullscreen changes
-  fullscreen.on('change', this.onfullscreenchange.bind(this));
+  fullscreen.on('change', this.onfullscreenchange.bind(this))
 
   // handle updates
-  this.on('update', function (e) { });
+  this.on('update', function (e) { })
 
   // init
-  this.reset();
+  this.reset()
 }
 
 // mixin `EventEmitter'
-EventEmitter(State.prototype);
+EventEmitter(State.prototype)
 
 /**
  * Resets state values
@@ -46322,102 +58598,102 @@ EventEmitter(State.prototype);
  */
 
 State.prototype.reset = function (overrides) {
-  var opts = merge(merge({}, this.options), overrides || {});
+  var opts = merge(merge({}, this.options), overrides || {})
 
   // prevent additions to the object
-  Object.seal(this);
+  Object.seal(this)
 
   // start polling for a connected VR device
-  this.pollForVRDevice();
+  this.pollForVRDevice()
 
   /**
    * Configurable variables.
    */
 
-  this.projection = opts.projection || DEFAULT_PROJECTION;
-  this.radius = opts.radius || DEFAULT_GEOMETRY_RADIUS;
-  this.height = opts.height || 0;
-  this.width = opts.width || 0;
-  this.scrollVelocity = opts.scrollVelocity || DEFAULT_SCROLL_VELOCITY;
-  this.fov = Number(opts.fov || this.fov);
-  this.src = opts.src || null;
-  this.isImage = null == opts.isImage ? false : opts.isImage;
-  this.forceVideo = null == opts.forceVideo ? false : opts.forceVideo;
-  this.isClickable = null != opts.isClickable ? opts.isClickable : true;
-  this.isInverted = opts.inverted || false;
-  this.isPreviewFrame = opts.isPreviewFrame || false;
-  this.isCrossOrigin = opts.crossorigin || false;;
-  this.forceFocus = opts.forceFocus || false;
-  this.allowControls = null != opts.allowControls ? opts.allowControls : true;
-  this.isResizable = opts.resizable || false;
-  this.shouldAutoplay = null != opts.autoplay ? opts.autoplay : false;
-  this.allowWheel = null == opts.allowWheel ? false : opts.allowWheel;
-  this.friction = opts.friction || DEFAULT_FRICTION;
-  this.mouseFriction = opts.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  this.useWebGL = opts.webgl && hasWebGL;
+  this.projection = opts.projection || DEFAULT_PROJECTION
+  this.radius = opts.radius || DEFAULT_GEOMETRY_RADIUS
+  this.height = opts.height || 0
+  this.width = opts.width || 0
+  this.scrollVelocity = opts.scrollVelocity || DEFAULT_SCROLL_VELOCITY
+  this.fov = Number(opts.fov || this.fov)
+  this.src = opts.src || null
+  this.isImage = opts.isImage == null ? false : opts.isImage
+  this.forceVideo = opts.forceVideo == null ? false : opts.forceVideo
+  this.isClickable = opts.isClickable != null ? opts.isClickable : true
+  this.isInverted = opts.inverted || false
+  this.isPreviewFrame = opts.isPreviewFrame || false
+  this.isCrossOrigin = opts.crossorigin || false
+  this.forceFocus = opts.forceFocus || false
+  this.allowControls = opts.allowControls != null ? opts.allowControls : true
+  this.isResizable = opts.resizable || false
+  this.shouldAutoplay = opts.autoplay != null ? opts.autoplay : false
+  this.allowWheel = opts.allowWheel == null ? false : opts.allowWheel
+  this.friction = opts.friction || DEFAULT_FRICTION
+  this.mouseFriction = opts.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION
+  this.useWebGL = opts.webgl && hasWebGL
   this.interpolationFactor = (
     opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR
-  );
-  this.lockPoles = Boolean(null != opts.lockPoles ? opts.lockPoles : true);
+  )
+  this.lockPoles = Boolean(opts.lockPoles != null ? opts.lockPoles : true)
 
   this.controllerUpdateTimeout = (
     opts.updateTimeout || DEFAULT_CONTROLLER_UPDATE_TIMEOUT
-  );
+  )
 
-  this.vim = null == opts.vim ? false : opts.vim;
+  this.vim = opts.vim == null ? false : opts.vim
 
   /**
    * State variables.
    */
 
-  this.originalfov = this.fov || 0;
-  this.percentloaded = 0;
-  this.originalsize = {width: null, height: null};
-  this.orientation = window.orientation || 0;
-  this.lastVolume = 0;
-  this.lastRefresh = Date.now();
-  this.dragstart = {x:0, y:0};
-  this.mousedownTimestamp = 0;
-  this.geometry = null;
-  this.duration = 0;
-  this.lastSize = {width: null, height: null};
-  this.center = {x: null, y: null, z:null};
-  this.touch = {x: 0, y: 0};
-  this.cache = {};
-  this.animationFrameID = null;
-  this.currentTime = 0;
-  this.pointerX = 0;
-  this.pointerY = 0;
-  this.orientationQuaternion = new three.Quaternion();;
-  this.xAxisCenter = new three.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
-  this.zee = new three.Vector3(0, 0, 1);
-  this.euler = new three.Euler();
-  this.lastDevicePixelRatio = window.devicePixelRatio;
+  this.originalfov = this.fov || 0
+  this.percentloaded = 0
+  this.originalsize = {width: null, height: null}
+  this.orientation = window.orientation || 0
+  this.lastVolume = 0
+  this.lastRefresh = Date.now()
+  this.dragstart = {x: 0, y: 0}
+  this.mousedownTimestamp = 0
+  this.geometry = null
+  this.duration = 0
+  this.lastSize = {width: null, height: null}
+  this.center = {x: null, y: null, z: null}
+  this.touch = {x: 0, y: 0}
+  this.cache = {}
+  this.animationFrameID = null
+  this.currentTime = 0
+  this.pointerX = 0
+  this.pointerY = 0
+  this.orientationQuaternion = new three.Quaternion()
+  this.xAxisCenter = new three.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5))
+  this.zee = new three.Vector3(0, 0, 1)
+  this.euler = new three.Euler()
+  this.lastDevicePixelRatio = window.devicePixelRatio
 
   /**
    * State predicates.
    */
 
-  this.useWebGL = hasWebGL;
-  this.isReady = false;
-  this.isMuted = false;
-  this.isEnded = false;
-  this.isFocused = false;
-  this.isKeydown = false;
-  this.isPlaying = false;
-  this.isPaused = false;
-  this.isStopped = false;
-  this.isTouching = false;
-  this.isAnimating = false;
-  this.isFullscreen = false;
-  this.isMousedown = false;
-  this.isVREnabled = false;
-  this.isVRPossible = isVRPossible();
-  this.isHMDAvailable = false;
-  this.isHMDPositionSensorAvailable = false;
+  this.useWebGL = hasWebGL
+  this.isReady = false
+  this.isMuted = false
+  this.isEnded = false
+  this.isFocused = false
+  this.isKeydown = false
+  this.isPlaying = false
+  this.isPaused = false
+  this.isStopped = false
+  this.isTouching = false
+  this.isAnimating = false
+  this.isFullscreen = false
+  this.isMousedown = false
+  this.isVREnabled = false
+  this.isVRPossible = isVRPossible()
+  this.isHMDAvailable = false
+  this.isHMDPositionSensorAvailable = false
 
-  return this;
-};
+  return this
+}
 
 /**
  * Updates state value by key
@@ -46429,23 +58705,21 @@ State.prototype.reset = function (overrides) {
  */
 
 State.prototype.update = function (key, value) {
-  var constraints = this.scope.projections.constraints;
-  var previous = null;
-  var tmp = null;
+  var previous = null
 
   if (this.isConstrainedWith(key)) {
-    return this;
+    return this
   }
 
-  if ('undefined' != typeof key && 'undefined' != typeof value) {
-    previous = this[key];
+  if (typeof key !== 'undefined' && typeof value !== 'undefined') {
+    previous = this[key]
 
-    if (null != previous && 'object' == typeof previous) {
-      this[key] = merge(this[key], value);
-    } else if (this[key] != value) {
-      this[key] = value;
+    if (previous != null && typeof previous === 'object') {
+      this[key] = merge(this[key], value)
+    } else if (this[key] !== value) {
+      this[key] = value
     } else {
-      return this;
+      return this
     }
 
     /**
@@ -46463,11 +58737,11 @@ State.prototype.update = function (key, value) {
       key: key,
       value: value,
       previous: previous
-    });
+    })
   }
 
-  return this;
-};
+  return this
+}
 
 /**
  * Predicate to determine if state is constrained by key.
@@ -46478,7 +58752,7 @@ State.prototype.update = function (key, value) {
  */
 
 State.prototype.isConstrainedWith = function (key) {
-  var constraints = this.scope.projections.constraints;
+  var constraints = this.scope.projections.constraints
 
   /**
    * Recursively checks if key part `k[i]' is in object `o'
@@ -46491,16 +58765,15 @@ State.prototype.isConstrainedWith = function (key) {
    */
 
   function isConstrained (o, k) {
-    var keys = k.split('.');
-    if ('object' == typeof o[keys[0]]) {
-      return isConstrained(o[keys.shift()], keys.join(','));
-    } else { return true == o[keys[0]]; }
+    var keys = k.split('.')
+    if (typeof o[keys[0]] === 'object') {
+      return isConstrained(o[keys.shift()], keys.join(','))
+    } else { return o[keys[0]] === true }
   }
 
   // no constraint if `constraints' is `null'
-  return null == constraints ? false : isConstrained(constraints, key);
-};
-
+  return constraints == null ? false : isConstrained(constraints, key)
+}
 
 /**
  * Sets a ready state.
@@ -46511,8 +58784,8 @@ State.prototype.isConstrainedWith = function (key) {
  */
 
 State.prototype.ready = function () {
-  if (false == this.isReady) {
-    this.isReady = true;
+  if (!this.isReady) {
+    this.isReady = true
 
     /**
      * Ready  event.
@@ -46521,7 +58794,7 @@ State.prototype.ready = function () {
      * @event module:axis/state~State#ready
      */
 
-    this.emit('ready');
+    this.emit('ready')
 
     /**
      * Ready  event.
@@ -46530,10 +58803,10 @@ State.prototype.ready = function () {
      * @event module:axis~Axis#ready
      */
 
-    this.scope.emit('ready');
+    this.scope.emit('ready')
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Polls for a connected HMD
@@ -46544,23 +58817,23 @@ State.prototype.ready = function () {
  */
 
 State.prototype.pollForVRDevice = function () {
-  var self = this;
+  var self = this
 
   // poll if VR is enabled.
   if (isVRPossible()) {
-    this.isVREnabled = false;
+    this.isVREnabled = false
 
     // kill current poll
-    clearInterval(this.vrPollID);
+    clearInterval(this.vrPollID)
 
     // begin new poll for HMD and sensor
     this.vrPollID = setInterval(function () {
-      getVRDevices().then(onVRDevices);
-    }, VR_POLL_TIMEOUT);
+      getVRDevices().then(onVRDevices)
+    }, VR_POLL_TIMEOUT)
 
-    return true;
+    return true
   } else {
-    return false;
+    return false
   }
 
   /**
@@ -46571,51 +58844,52 @@ State.prototype.pollForVRDevice = function () {
    */
 
   function onVRDevices (devices) {
-    var device = null;
-    var sensor = null;
-    var hmd = null;
+    var device = null
+    var sensor = null
+    var hmd = null
+    var i
 
     // if HMD is connected bail
     if (self.isHMDAvailable && self.isHMDPositionSensorAvailable) {
       // if device has been unplugged
-      if (0 == devices.length) {
-        self.isHMDAvailable = false;
-        self.isHMDPositionSensorAvailable = false;
-        self.vrHMD = null;
-        self.vrPositionSensor = null;
-        self.scope.emit('vrhmdunavailable');
-        return;
+      if (devices.length === 0) {
+        self.isHMDAvailable = false
+        self.isHMDPositionSensorAvailable = false
+        self.vrHMD = null
+        self.vrPositionSensor = null
+        self.scope.emit('vrhmdunavailable')
+        return
       }
     }
 
     // detect first HMDVRDevice
-    for (var i = 0; i < devices.length; ++i) {
-      device = devices[i];
-      if (device instanceof HMDVRDevice) {
-        hmd = device;
-        self.isHMDAvailable = true;
-        break;
+    for (i = 0; i < devices.length; ++i) {
+      device = devices[i]
+      if (device instanceof window.HMDVRDevice) {
+        hmd = device
+        self.isHMDAvailable = true
+        break
       }
     }
 
     if (hmd) {
       // detect first associated PositionSensorVRDevice instance
-      for (var i = 0; i < devices.length; ++i) {
-        device = devices[i];
-        if (device instanceof PositionSensorVRDevice &&
-            device.hardwareUnitId == hmd.hardwareUnitId) {
-          sensor = device;
-          self.isHMDPositionSensorAvailable = true;
-          break;
+      for (i = 0; i < devices.length; ++i) {
+        device = devices[i]
+        if (device instanceof window.PositionSensorVRDevice &&
+            device.hardwareUnitId === hmd.hardwareUnitId) {
+          sensor = device
+          self.isHMDPositionSensorAvailable = true
+          break
         }
       }
     }
 
     if (hmd && sensor) {
-      if (null == self.vrHMD ||
-          (self.vrHMD && self.vrHMD.hardwareUnitId != hmd.hardwareUnitId)) {
-        self.vrHMD = hmd;
-        self.vrPositionSensor = sensor;
+      if (self.vrHMD == null ||
+          (self.vrHMD && self.vrHMD.hardwareUnitId !== hmd.hardwareUnitId)) {
+        self.vrHMD = hmd
+        self.vrPositionSensor = sensor
 
         /**
          * VR HMD available event.
@@ -46627,11 +58901,11 @@ State.prototype.pollForVRDevice = function () {
          * @property {PositionSensorVRDevice} sensor - Associated position sensor.
          */
 
-        self.scope.emit('vrhmdavailable', {hmd: hmd, sensor: sensor});
+        self.scope.emit('vrhmdavailable', {hmd: hmd, sensor: sensor})
       }
     }
   }
-};
+}
 
 /**
  * Handles `onmousedown' events on the windows document.
@@ -46641,13 +58915,13 @@ State.prototype.pollForVRDevice = function () {
  */
 
 State.prototype.onmousedown = function (e) {
-  var scope = this.scope;
-  if (e.target == scope.renderer.domElement) {
-    this.update('isFocused', true);
+  var scope = this.scope
+  if (e.target === scope.renderer.domElement) {
+    this.update('isFocused', true)
   } else {
-    this.update('isFocused', false);
+    this.update('isFocused', false)
   }
-};
+}
 
 /**
  * Handles `onfullscreenchange' events on window.
@@ -46658,9 +58932,9 @@ State.prototype.onmousedown = function (e) {
  */
 
 State.prototype.onfullscreenchange = function (e) {
-  this.update('isFocused', true);
-  this.update('isAnimating', false);
-  this.update('isFullscreen', e);
+  this.update('isFocused', true)
+  this.update('isAnimating', false)
+  this.update('isFullscreen', e)
 
   /**
    * Fullscreen change event.
@@ -46670,8 +58944,8 @@ State.prototype.onfullscreenchange = function (e) {
    * @type {Event}
    */
 
-  this.scope.emit('fullscreenchange', e);
-};
+  this.scope.emit('fullscreenchange', e)
+}
 
 /**
  * Converts state to a JSON serializable object.
@@ -46726,31 +59000,22 @@ State.prototype.toJSON = function () {
     isMousedown: this.isMousedown,
     isTouching: this.isTouchingj,
     isVRPossible: this.isVRPossible,
-    isCrossOrigin: this.isCrossOrigin,
-  };
-};
+    isCrossOrigin: this.isCrossOrigin
+  }
+}
 
-}, {"emitter":4,"fullscreen":8,"keycode":9,"has-webgl":7,"events":5,"three.js":2,"merge":10,"path":43,"./util":17,"./constants":18}],
-43: [function(require, module, exports) {
+},{"./constants":2,"./util":76,"@littlstar/fullscreen":17,"component-emitter":26,"component-events":28,"has-webgl":34,"merge":39,"three":63}],75:[function(require,module,exports){
+module.exports = [
+  '<section class="axis frame">',
+  '  <div class="axis container">',
+  '    <video class="axis" style="display: none; width: 100%; height: 100%;"></video>',
+  '  </div>',
+  '</section>'
+].join('')
 
-exports.basename = function(path){
-  return path.split('/').pop();
-};
+},{}],76:[function(require,module,exports){
 
-exports.dirname = function(path){
-  return path.split('/').slice(0, -1).join('/') || '.'; 
-};
-
-exports.extname = function(path){
-  var base = exports.basename(path);
-  if (!~base.indexOf('.')) return '';
-  var ext = base.split('.').pop();
-  return '.' + ext;
-};
-}, {}],
-17: [function(require, module, exports) {
-
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -46789,9 +59054,8 @@ exports.extname = function(path){
  * @private
  */
 
-var three = require('three.js')
-  , path = require('path')
-  , url = require('url')
+var path = require('path')
+var url = require('url')
 
 /**
  * Detect if file path is an image
@@ -46801,15 +59065,15 @@ var three = require('three.js')
  * @param {String} file
  */
 
-exports.isImage = isImage;
+exports.isImage = isImage
 function isImage (file) {
-  var ext = path.extname(url.parse(file).pathname).toLowerCase();
+  var ext = path.extname(url.parse(file).pathname).toLowerCase()
   switch (ext) {
     case '.png':
     case '.jpg':
     case '.jpeg':
-      return true;
-    default: return false;
+      return true
+    default: return false
   }
 }
 
@@ -46821,10 +59085,10 @@ function isImage (file) {
  * @return {Boolean}
  */
 
-exports.isVRPossible = isVRPossible;
+exports.isVRPossible = isVRPossible
 function isVRPossible () {
-  var fn = navigator.getVRDevices || navigator.mozGetVRDevices;
-  return 'function' == typeof fn;
+  var fn = navigator.getVRDevices || navigator.mozGetVRDevices
+  return typeof fn === 'function'
 }
 
 /**
@@ -46835,12 +59099,12 @@ function isVRPossible () {
  * @return {Promise}
  */
 
-exports.getVRDevices = getVRDevices;
+exports.getVRDevices = getVRDevices
 function getVRDevices (fn) {
   if (isVRPossible()) {
     return (
       navigator.getVRDevices || navigator.mozGetVRDevices
-    ).call(navigator, fn);
+    ).call(navigator, fn)
   }
 }
 
@@ -46854,7 +59118,7 @@ function getVRDevices (fn) {
  * @return {Object}
  */
 
-exports.normalizeMovements = normalizeMovements;
+exports.normalizeMovements = normalizeMovements
 function normalizeMovements (e, o) {
   o.x = (
     e.movementX ||
@@ -46864,7 +59128,7 @@ function normalizeMovements (e, o) {
     e.webkitMovementX ||
     o.x ||
     0
-  );
+  )
 
   o.y = (
     e.movementY ||
@@ -46874,6092 +59138,10 @@ function normalizeMovements (e, o) {
     e.webkitMovementY ||
     o.y ||
     0
-  );
+  )
 
-  return o;
+  return o
 }
 
-
-}, {"three.js":2,"path":43,"url":44}],
-44: [function(require, module, exports) {
-
-/**
- * Parse the given `url`.
- *
- * @param {String} str
- * @return {Object}
- * @api public
- */
-
-exports.parse = function(url){
-  var a = document.createElement('a');
-  a.href = url;
-  return {
-    href: a.href,
-    host: a.host || location.host,
-    port: ('0' === a.port || '' === a.port) ? port(a.protocol) : a.port,
-    hash: a.hash,
-    hostname: a.hostname || location.hostname,
-    pathname: a.pathname.charAt(0) != '/' ? '/' + a.pathname : a.pathname,
-    protocol: !a.protocol || ':' == a.protocol ? location.protocol : a.protocol,
-    search: a.search,
-    query: a.search.slice(1)
-  };
-};
-
-/**
- * Check if `url` is absolute.
- *
- * @param {String} url
- * @return {Boolean}
- * @api public
- */
-
-exports.isAbsolute = function(url){
-  return 0 == url.indexOf('//') || !!~url.indexOf('://');
-};
-
-/**
- * Check if `url` is relative.
- *
- * @param {String} url
- * @return {Boolean}
- * @api public
- */
-
-exports.isRelative = function(url){
-  return !exports.isAbsolute(url);
-};
-
-/**
- * Check if `url` is cross domain.
- *
- * @param {String} url
- * @return {Boolean}
- * @api public
- */
-
-exports.isCrossDomain = function(url){
-  url = exports.parse(url);
-  var location = exports.parse(window.location.href);
-  return url.hostname !== location.hostname
-    || url.port !== location.port
-    || url.protocol !== location.protocol;
-};
-
-/**
- * Return default port for `protocol`.
- *
- * @param  {String} protocol
- * @return {String}
- * @api private
- */
-function port (protocol){
-  switch (protocol) {
-    case 'http:':
-      return 80;
-    case 'https:':
-      return 443;
-    default:
-      return location.port;
-  }
-}
-
-}, {}],
-19: [function(require, module, exports) {
-
-/**
- * Add CanvasRenderer stuff to the given `THREE` instance.
- *
- * @param {Object} THREE
- * @api public
- */
-
-module.exports = function(THREE){
-  require('three-projector-renderer')(THREE);
-  /**
-   * @author mrdoob / http://mrdoob.com/
-   */
-
-  THREE.SpriteCanvasMaterial = function ( parameters ) {
-
-    THREE.Material.call( this );
-
-    this.type = 'SpriteCanvasMaterial';
-
-    this.color = new THREE.Color( 0xffffff );
-    this.program = function ( context, color ) {};
-
-    this.setValues( parameters );
-
-  };
-
-  THREE.SpriteCanvasMaterial.prototype = Object.create( THREE.Material.prototype );
-  THREE.SpriteCanvasMaterial.prototype.constructor = THREE.SpriteCanvasMaterial;
-
-  THREE.SpriteCanvasMaterial.prototype.clone = function () {
-
-    var material = new THREE.SpriteCanvasMaterial();
-
-    material.copy( this );
-    material.color.copy( this.color );
-    material.program = this.program;
-
-    return material;
-
-  };
-
-  //
-
-  THREE.CanvasRenderer = function ( parameters ) {
-
-    console.log( 'THREE.CanvasRenderer', THREE.REVISION );
-
-    parameters = parameters || {};
-
-    var _this = this,
-    _renderData, _elements, _lights,
-    _projector = new THREE.Projector(),
-
-    _canvas = parameters.canvas !== undefined
-      ? parameters.canvas
-      : document.createElement( 'canvas' ),
-
-      _canvasWidth = _canvas.width,
-      _canvasHeight = _canvas.height,
-      _canvasWidthHalf = Math.floor( _canvasWidth / 2 ),
-      _canvasHeightHalf = Math.floor( _canvasHeight / 2 ),
-
-      _viewportX = 0,
-      _viewportY = 0,
-      _viewportWidth = _canvasWidth,
-      _viewportHeight = _canvasHeight,
-
-      _pixelRatio = 1,
-
-      _context = _canvas.getContext( '2d', {
-        alpha: parameters.alpha === true
-      } ),
-
-      _clearColor = new THREE.Color( 0x000000 ),
-      _clearAlpha = parameters.alpha === true ? 0 : 1,
-
-      _contextGlobalAlpha = 1,
-      _contextGlobalCompositeOperation = 0,
-      _contextStrokeStyle = null,
-      _contextFillStyle = null,
-      _contextLineWidth = null,
-      _contextLineCap = null,
-      _contextLineJoin = null,
-      _contextLineDash = [],
-
-      _camera,
-
-      _v1, _v2, _v3, _v4,
-      _v5 = new THREE.RenderableVertex(),
-      _v6 = new THREE.RenderableVertex(),
-
-      _v1x, _v1y, _v2x, _v2y, _v3x, _v3y,
-      _v4x, _v4y, _v5x, _v5y, _v6x, _v6y,
-
-      _color = new THREE.Color(),
-      _color1 = new THREE.Color(),
-      _color2 = new THREE.Color(),
-      _color3 = new THREE.Color(),
-      _color4 = new THREE.Color(),
-
-      _diffuseColor = new THREE.Color(),
-      _emissiveColor = new THREE.Color(),
-
-      _lightColor = new THREE.Color(),
-
-      _patterns = {},
-
-      _image, _uvs,
-      _uv1x, _uv1y, _uv2x, _uv2y, _uv3x, _uv3y,
-
-      _clipBox = new THREE.Box2(),
-      _clearBox = new THREE.Box2(),
-      _elemBox = new THREE.Box2(),
-
-      _ambientLight = new THREE.Color(),
-      _directionalLights = new THREE.Color(),
-      _pointLights = new THREE.Color(),
-
-      _vector3 = new THREE.Vector3(), // Needed for PointLight
-      _centroid = new THREE.Vector3(),
-      _normal = new THREE.Vector3(),
-      _normalViewMatrix = new THREE.Matrix3();
-
-      /* TODO
-         _canvas.mozImageSmoothingEnabled = false;
-         _canvas.webkitImageSmoothingEnabled = false;
-         _canvas.msImageSmoothingEnabled = false;
-         _canvas.imageSmoothingEnabled = false;
-         */
-
-      // dash+gap fallbacks for Firefox and everything else
-
-      if ( _context.setLineDash === undefined ) {
-
-        _context.setLineDash = function () {};
-
-      }
-
-      this.domElement = _canvas;
-
-      this.autoClear = true;
-      this.sortObjects = true;
-      this.sortElements = true;
-
-      this.info = {
-
-        render: {
-
-          vertices: 0,
-          faces: 0
-
-        }
-
-      };
-
-      // WebGLRenderer compatibility
-
-      this.supportsVertexTextures = function () {};
-      this.setFaceCulling = function () {};
-
-      // API
-
-      this.getContext = function () {
-
-        return _context;
-
-      };
-
-      this.getContextAttributes = function () {
-
-        return _context.getContextAttributes();
-
-      };
-
-      this.getPixelRatio = function () {
-
-        return _pixelRatio;
-
-      };
-
-      this.setPixelRatio = function ( value ) {
-
-        if ( value !== undefined ) _pixelRatio = value;
-
-      };
-
-      this.setSize = function ( width, height, updateStyle ) {
-
-        _canvasWidth = width * _pixelRatio;
-        _canvasHeight = height * _pixelRatio;
-
-        _canvas.width = _canvasWidth;
-        _canvas.height = _canvasHeight;
-
-        _canvasWidthHalf = Math.floor( _canvasWidth / 2 );
-        _canvasHeightHalf = Math.floor( _canvasHeight / 2 );
-
-        if ( updateStyle !== false ) {
-
-          _canvas.style.width = width + 'px';
-          _canvas.style.height = height + 'px';
-
-        }
-
-        _clipBox.min.set( - _canvasWidthHalf, - _canvasHeightHalf );
-        _clipBox.max.set(   _canvasWidthHalf,   _canvasHeightHalf );
-
-        _clearBox.min.set( - _canvasWidthHalf, - _canvasHeightHalf );
-        _clearBox.max.set(   _canvasWidthHalf,   _canvasHeightHalf );
-
-        _contextGlobalAlpha = 1;
-        _contextGlobalCompositeOperation = 0;
-        _contextStrokeStyle = null;
-        _contextFillStyle = null;
-        _contextLineWidth = null;
-        _contextLineCap = null;
-        _contextLineJoin = null;
-
-        this.setViewport( 0, 0, width, height );
-
-      };
-
-      this.setViewport = function ( x, y, width, height ) {
-
-        _viewportX = x * _pixelRatio;
-        _viewportY = y * _pixelRatio;
-
-        _viewportWidth = width * _pixelRatio;
-        _viewportHeight = height * _pixelRatio;
-
-      };
-
-      this.setScissor = function () {};
-      this.setScissorTest = function () {};
-
-      this.setClearColor = function ( color, alpha ) {
-
-        _clearColor.set( color );
-        _clearAlpha = alpha !== undefined ? alpha : 1;
-
-        _clearBox.min.set( - _canvasWidthHalf, - _canvasHeightHalf );
-        _clearBox.max.set(   _canvasWidthHalf,   _canvasHeightHalf );
-
-      };
-
-      this.setClearColorHex = function ( hex, alpha ) {
-
-        console.warn( 'THREE.CanvasRenderer: .setClearColorHex() is being removed. Use .setClearColor() instead.' );
-        this.setClearColor( hex, alpha );
-
-      };
-
-      this.getClearColor = function () {
-
-        return _clearColor;
-
-      };
-
-      this.getClearAlpha = function () {
-
-        return _clearAlpha;
-
-      };
-
-      this.getMaxAnisotropy = function () {
-
-        return 0;
-
-      };
-
-      this.clear = function () {
-
-        if ( _clearBox.isEmpty() === false ) {
-
-          _clearBox.intersect( _clipBox );
-          _clearBox.expandByScalar( 2 );
-
-          _clearBox.min.x = _clearBox.min.x + _canvasWidthHalf;
-          _clearBox.min.y =  - _clearBox.min.y + _canvasHeightHalf;   // higher y value !
-          _clearBox.max.x = _clearBox.max.x + _canvasWidthHalf;
-          _clearBox.max.y =  - _clearBox.max.y + _canvasHeightHalf;   // lower y value !
-
-          if ( _clearAlpha < 1 ) {
-
-            _context.clearRect(
-              _clearBox.min.x | 0,
-              _clearBox.max.y | 0,
-              ( _clearBox.max.x - _clearBox.min.x ) | 0,
-              ( _clearBox.min.y - _clearBox.max.y ) | 0
-            );
-
-          }
-
-          if ( _clearAlpha > 0 ) {
-
-            setBlending( THREE.NormalBlending );
-            setOpacity( 1 );
-
-            setFillStyle( 'rgba(' + Math.floor( _clearColor.r * 255 ) + ',' + Math.floor( _clearColor.g * 255 ) + ',' + Math.floor( _clearColor.b * 255 ) + ',' + _clearAlpha + ')' );
-
-            _context.fillRect(
-              _clearBox.min.x | 0,
-              _clearBox.max.y | 0,
-              ( _clearBox.max.x - _clearBox.min.x ) | 0,
-              ( _clearBox.min.y - _clearBox.max.y ) | 0
-            );
-
-          }
-
-          _clearBox.makeEmpty();
-
-        }
-
-      };
-
-      // compatibility
-
-      this.clearColor = function () {};
-      this.clearDepth = function () {};
-      this.clearStencil = function () {};
-
-      this.render = function ( scene, camera ) {
-
-        if ( camera instanceof THREE.Camera === false ) {
-
-          console.error( 'THREE.CanvasRenderer.render: camera is not an instance of THREE.Camera.' );
-          return;
-
-        }
-
-        if ( this.autoClear === true ) this.clear();
-
-        _this.info.render.vertices = 0;
-        _this.info.render.faces = 0;
-
-        _context.setTransform( _viewportWidth / _canvasWidth, 0, 0, - _viewportHeight / _canvasHeight, _viewportX, _canvasHeight - _viewportY );
-        _context.translate( _canvasWidthHalf, _canvasHeightHalf );
-
-        _renderData = _projector.projectScene( scene, camera, this.sortObjects, this.sortElements );
-        _elements = _renderData.elements;
-        _lights = _renderData.lights;
-        _camera = camera;
-
-        _normalViewMatrix.getNormalMatrix( camera.matrixWorldInverse );
-
-        /* DEBUG
-           setFillStyle( 'rgba( 0, 255, 255, 0.5 )' );
-           _context.fillRect( _clipBox.min.x, _clipBox.min.y, _clipBox.max.x - _clipBox.min.x, _clipBox.max.y - _clipBox.min.y );
-           */
-
-        calculateLights();
-
-        for ( var e = 0, el = _elements.length; e < el; e ++ ) {
-
-          var element = _elements[ e ];
-
-          var material = element.material;
-
-          if ( material === undefined || material.opacity === 0 ) continue;
-
-          _elemBox.makeEmpty();
-
-          if ( element instanceof THREE.RenderableSprite ) {
-
-            _v1 = element;
-            _v1.x *= _canvasWidthHalf; _v1.y *= _canvasHeightHalf;
-
-            renderSprite( _v1, element, material );
-
-          } else if ( element instanceof THREE.RenderableLine ) {
-
-            _v1 = element.v1; _v2 = element.v2;
-
-            _v1.positionScreen.x *= _canvasWidthHalf; _v1.positionScreen.y *= _canvasHeightHalf;
-            _v2.positionScreen.x *= _canvasWidthHalf; _v2.positionScreen.y *= _canvasHeightHalf;
-
-            _elemBox.setFromPoints( [
-              _v1.positionScreen,
-              _v2.positionScreen
-            ] );
-
-            if ( _clipBox.intersectsBox( _elemBox ) === true ) {
-
-              renderLine( _v1, _v2, element, material );
-
-            }
-
-          } else if ( element instanceof THREE.RenderableFace ) {
-
-            _v1 = element.v1; _v2 = element.v2; _v3 = element.v3;
-
-            if ( _v1.positionScreen.z < - 1 || _v1.positionScreen.z > 1 ) continue;
-            if ( _v2.positionScreen.z < - 1 || _v2.positionScreen.z > 1 ) continue;
-            if ( _v3.positionScreen.z < - 1 || _v3.positionScreen.z > 1 ) continue;
-
-            _v1.positionScreen.x *= _canvasWidthHalf; _v1.positionScreen.y *= _canvasHeightHalf;
-            _v2.positionScreen.x *= _canvasWidthHalf; _v2.positionScreen.y *= _canvasHeightHalf;
-            _v3.positionScreen.x *= _canvasWidthHalf; _v3.positionScreen.y *= _canvasHeightHalf;
-
-            if ( material.overdraw > 0 ) {
-
-              expand( _v1.positionScreen, _v2.positionScreen, material.overdraw );
-              expand( _v2.positionScreen, _v3.positionScreen, material.overdraw );
-              expand( _v3.positionScreen, _v1.positionScreen, material.overdraw );
-
-            }
-
-            _elemBox.setFromPoints( [
-              _v1.positionScreen,
-              _v2.positionScreen,
-              _v3.positionScreen
-            ] );
-
-            if ( _clipBox.intersectsBox( _elemBox ) === true ) {
-
-              renderFace3( _v1, _v2, _v3, 0, 1, 2, element, material );
-
-            }
-
-          }
-
-          /* DEBUG
-             setLineWidth( 1 );
-             setStrokeStyle( 'rgba( 0, 255, 0, 0.5 )' );
-             _context.strokeRect( _elemBox.min.x, _elemBox.min.y, _elemBox.max.x - _elemBox.min.x, _elemBox.max.y - _elemBox.min.y );
-             */
-
-          _clearBox.union( _elemBox );
-
-        }
-
-        /* DEBUG
-           setLineWidth( 1 );
-           setStrokeStyle( 'rgba( 255, 0, 0, 0.5 )' );
-           _context.strokeRect( _clearBox.min.x, _clearBox.min.y, _clearBox.max.x - _clearBox.min.x, _clearBox.max.y - _clearBox.min.y );
-           */
-
-        _context.setTransform( 1, 0, 0, 1, 0, 0 );
-
-      };
-
-      //
-
-      function calculateLights() {
-
-        _ambientLight.setRGB( 0, 0, 0 );
-        _directionalLights.setRGB( 0, 0, 0 );
-        _pointLights.setRGB( 0, 0, 0 );
-
-        for ( var l = 0, ll = _lights.length; l < ll; l ++ ) {
-
-          var light = _lights[ l ];
-          var lightColor = light.color;
-
-          if ( light instanceof THREE.AmbientLight ) {
-
-            _ambientLight.add( lightColor );
-
-          } else if ( light instanceof THREE.DirectionalLight ) {
-
-            // for sprites
-
-            _directionalLights.add( lightColor );
-
-          } else if ( light instanceof THREE.PointLight ) {
-
-            // for sprites
-
-            _pointLights.add( lightColor );
-
-          }
-
-        }
-
-      }
-
-      function calculateLight( position, normal, color ) {
-
-        for ( var l = 0, ll = _lights.length; l < ll; l ++ ) {
-
-          var light = _lights[ l ];
-
-          _lightColor.copy( light.color );
-
-          if ( light instanceof THREE.DirectionalLight ) {
-
-            var lightPosition = _vector3.setFromMatrixPosition( light.matrixWorld ).normalize();
-
-            var amount = normal.dot( lightPosition );
-
-            if ( amount <= 0 ) continue;
-
-            amount *= light.intensity;
-
-            color.add( _lightColor.multiplyScalar( amount ) );
-
-          } else if ( light instanceof THREE.PointLight ) {
-
-            var lightPosition = _vector3.setFromMatrixPosition( light.matrixWorld );
-
-            var amount = normal.dot( _vector3.subVectors( lightPosition, position ).normalize() );
-
-            if ( amount <= 0 ) continue;
-
-            amount *= light.distance == 0 ? 1 : 1 - Math.min( position.distanceTo( lightPosition ) / light.distance, 1 );
-
-            if ( amount == 0 ) continue;
-
-            amount *= light.intensity;
-
-            color.add( _lightColor.multiplyScalar( amount ) );
-
-          }
-
-        }
-
-      }
-
-      function renderSprite( v1, element, material ) {
-
-        setOpacity( material.opacity );
-        setBlending( material.blending );
-
-        var scaleX = element.scale.x * _canvasWidthHalf;
-        var scaleY = element.scale.y * _canvasHeightHalf;
-
-        var dist = 0.5 * Math.sqrt( scaleX * scaleX + scaleY * scaleY ); // allow for rotated sprite
-        _elemBox.min.set( v1.x - dist, v1.y - dist );
-        _elemBox.max.set( v1.x + dist, v1.y + dist );
-
-        if ( material instanceof THREE.SpriteMaterial ) {
-
-          var texture = material.map;
-
-          if ( texture !== null ) {
-
-            var pattern = _patterns[ texture.id ];
-
-            if ( pattern === undefined || pattern.version !== texture.version ) {
-
-              pattern = textureToPattern( texture );
-              _patterns[ texture.id ] = pattern;
-
-            }
-
-            if ( pattern.canvas !== undefined ) {
-
-              setFillStyle( pattern.canvas );
-
-              var bitmap = texture.image;
-
-              var ox = bitmap.width * texture.offset.x;
-              var oy = bitmap.height * texture.offset.y;
-
-              var sx = bitmap.width * texture.repeat.x;
-              var sy = bitmap.height * texture.repeat.y;
-
-              var cx = scaleX / sx;
-              var cy = scaleY / sy;
-
-              _context.save();
-              _context.translate( v1.x, v1.y );
-              if ( material.rotation !== 0 ) _context.rotate( material.rotation );
-              _context.translate( - scaleX / 2, - scaleY / 2 );
-              _context.scale( cx, cy );
-              _context.translate( - ox, - oy );
-              _context.fillRect( ox, oy, sx, sy );
-              _context.restore();
-
-            }
-
-          } else {
-
-            // no texture
-
-            setFillStyle( material.color.getStyle() );
-
-            _context.save();
-            _context.translate( v1.x, v1.y );
-            if ( material.rotation !== 0 ) _context.rotate( material.rotation );
-            _context.scale( scaleX, - scaleY );
-            _context.fillRect( - 0.5, - 0.5, 1, 1 );
-            _context.restore();
-
-          }
-
-        } else if ( material instanceof THREE.SpriteCanvasMaterial ) {
-
-          setStrokeStyle( material.color.getStyle() );
-          setFillStyle( material.color.getStyle() );
-
-          _context.save();
-          _context.translate( v1.x, v1.y );
-          if ( material.rotation !== 0 ) _context.rotate( material.rotation );
-          _context.scale( scaleX, scaleY );
-
-          material.program( _context );
-
-          _context.restore();
-
-        }
-
-        /* DEBUG
-           setStrokeStyle( 'rgb(255,255,0)' );
-           _context.beginPath();
-           _context.moveTo( v1.x - 10, v1.y );
-           _context.lineTo( v1.x + 10, v1.y );
-           _context.moveTo( v1.x, v1.y - 10 );
-           _context.lineTo( v1.x, v1.y + 10 );
-           _context.stroke();
-           */
-
-      }
-
-      function renderLine( v1, v2, element, material ) {
-
-        setOpacity( material.opacity );
-        setBlending( material.blending );
-
-        _context.beginPath();
-        _context.moveTo( v1.positionScreen.x, v1.positionScreen.y );
-        _context.lineTo( v2.positionScreen.x, v2.positionScreen.y );
-
-        if ( material instanceof THREE.LineBasicMaterial ) {
-
-          setLineWidth( material.linewidth );
-          setLineCap( material.linecap );
-          setLineJoin( material.linejoin );
-
-          if ( material.vertexColors !== THREE.VertexColors ) {
-
-            setStrokeStyle( material.color.getStyle() );
-
-          } else {
-
-            var colorStyle1 = element.vertexColors[ 0 ].getStyle();
-            var colorStyle2 = element.vertexColors[ 1 ].getStyle();
-
-            if ( colorStyle1 === colorStyle2 ) {
-
-              setStrokeStyle( colorStyle1 );
-
-            } else {
-
-              try {
-
-                var grad = _context.createLinearGradient(
-                  v1.positionScreen.x,
-                  v1.positionScreen.y,
-                  v2.positionScreen.x,
-                  v2.positionScreen.y
-                );
-                grad.addColorStop( 0, colorStyle1 );
-                grad.addColorStop( 1, colorStyle2 );
-
-              } catch ( exception ) {
-
-                grad = colorStyle1;
-
-              }
-
-              setStrokeStyle( grad );
-
-            }
-
-          }
-
-          _context.stroke();
-          _elemBox.expandByScalar( material.linewidth * 2 );
-
-        } else if ( material instanceof THREE.LineDashedMaterial ) {
-
-          setLineWidth( material.linewidth );
-          setLineCap( material.linecap );
-          setLineJoin( material.linejoin );
-          setStrokeStyle( material.color.getStyle() );
-          setLineDash( [ material.dashSize, material.gapSize ] );
-
-          _context.stroke();
-
-          _elemBox.expandByScalar( material.linewidth * 2 );
-
-          setLineDash( [] );
-
-        }
-
-      }
-
-      function renderFace3( v1, v2, v3, uv1, uv2, uv3, element, material ) {
-
-        _this.info.render.vertices += 3;
-        _this.info.render.faces ++;
-
-        setOpacity( material.opacity );
-        setBlending( material.blending );
-
-        _v1x = v1.positionScreen.x; _v1y = v1.positionScreen.y;
-        _v2x = v2.positionScreen.x; _v2y = v2.positionScreen.y;
-        _v3x = v3.positionScreen.x; _v3y = v3.positionScreen.y;
-
-        drawTriangle( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y );
-
-        if ( ( material instanceof THREE.MeshLambertMaterial || material instanceof THREE.MeshPhongMaterial ) && material.map === null ) {
-
-          _diffuseColor.copy( material.color );
-          _emissiveColor.copy( material.emissive );
-
-          if ( material.vertexColors === THREE.FaceColors ) {
-
-            _diffuseColor.multiply( element.color );
-
-          }
-
-          _color.copy( _ambientLight );
-
-          _centroid.copy( v1.positionWorld ).add( v2.positionWorld ).add( v3.positionWorld ).divideScalar( 3 );
-
-          calculateLight( _centroid, element.normalModel, _color );
-
-          _color.multiply( _diffuseColor ).add( _emissiveColor );
-
-          material.wireframe === true
-            ? strokePath( _color, material.wireframeLinewidth, material.wireframeLinecap, material.wireframeLinejoin )
-            : fillPath( _color );
-
-        } else if ( material instanceof THREE.MeshBasicMaterial ||
-                   material instanceof THREE.MeshLambertMaterial ||
-                     material instanceof THREE.MeshPhongMaterial ) {
-
-          if ( material.map !== null ) {
-
-            var mapping = material.map.mapping;
-
-            if ( mapping === THREE.UVMapping ) {
-
-              _uvs = element.uvs;
-              patternPath( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y, _uvs[ uv1 ].x, _uvs[ uv1 ].y, _uvs[ uv2 ].x, _uvs[ uv2 ].y, _uvs[ uv3 ].x, _uvs[ uv3 ].y, material.map );
-
-            }
-
-          } else if ( material.envMap !== null ) {
-
-            if ( material.envMap.mapping === THREE.SphericalReflectionMapping ) {
-
-              _normal.copy( element.vertexNormalsModel[ uv1 ] ).applyMatrix3( _normalViewMatrix );
-              _uv1x = 0.5 * _normal.x + 0.5;
-              _uv1y = 0.5 * _normal.y + 0.5;
-
-              _normal.copy( element.vertexNormalsModel[ uv2 ] ).applyMatrix3( _normalViewMatrix );
-              _uv2x = 0.5 * _normal.x + 0.5;
-              _uv2y = 0.5 * _normal.y + 0.5;
-
-              _normal.copy( element.vertexNormalsModel[ uv3 ] ).applyMatrix3( _normalViewMatrix );
-              _uv3x = 0.5 * _normal.x + 0.5;
-              _uv3y = 0.5 * _normal.y + 0.5;
-
-              patternPath( _v1x, _v1y, _v2x, _v2y, _v3x, _v3y, _uv1x, _uv1y, _uv2x, _uv2y, _uv3x, _uv3y, material.envMap );
-
-            }
-
-          } else {
-
-            _color.copy( material.color );
-
-            if ( material.vertexColors === THREE.FaceColors ) {
-
-              _color.multiply( element.color );
-
-            }
-
-            material.wireframe === true
-              ? strokePath( _color, material.wireframeLinewidth, material.wireframeLinecap, material.wireframeLinejoin )
-              : fillPath( _color );
-
-          }
-
-        } else if ( material instanceof THREE.MeshNormalMaterial ) {
-
-          _normal.copy( element.normalModel ).applyMatrix3( _normalViewMatrix );
-
-          _color.setRGB( _normal.x, _normal.y, _normal.z ).multiplyScalar( 0.5 ).addScalar( 0.5 );
-
-          material.wireframe === true
-            ? strokePath( _color, material.wireframeLinewidth, material.wireframeLinecap, material.wireframeLinejoin )
-            : fillPath( _color );
-
-        } else {
-
-          _color.setRGB( 1, 1, 1 );
-
-          material.wireframe === true
-            ? strokePath( _color, material.wireframeLinewidth, material.wireframeLinecap, material.wireframeLinejoin )
-            : fillPath( _color );
-
-        }
-
-      }
-
-      //
-
-      function drawTriangle( x0, y0, x1, y1, x2, y2 ) {
-
-        _context.beginPath();
-        _context.moveTo( x0, y0 );
-        _context.lineTo( x1, y1 );
-        _context.lineTo( x2, y2 );
-        _context.closePath();
-
-      }
-
-      function strokePath( color, linewidth, linecap, linejoin ) {
-
-        setLineWidth( linewidth );
-        setLineCap( linecap );
-        setLineJoin( linejoin );
-        setStrokeStyle( color.getStyle() );
-
-        _context.stroke();
-
-        _elemBox.expandByScalar( linewidth * 2 );
-
-      }
-
-      function fillPath( color ) {
-
-        setFillStyle( color.getStyle() );
-        _context.fill();
-
-      }
-
-      function textureToPattern( texture ) {
-
-        if ( texture.version === 0 ||
-            texture instanceof THREE.CompressedTexture ||
-              texture instanceof THREE.DataTexture ) {
-
-          return {
-            canvas: undefined,
-            version: texture.version
-          };
-
-        }
-
-        var image = texture.image;
-
-        if ( image.complete === false ) {
-
-          return {
-            canvas: undefined,
-            version: 0
-          };
-
-        }
-
-        var canvas = document.createElement( 'canvas' );
-        canvas.width = image.width;
-        canvas.height = image.height;
-
-        var context = canvas.getContext( '2d' );
-        context.setTransform( 1, 0, 0, - 1, 0, image.height );
-        context.drawImage( image, 0, 0 );
-
-        var repeatX = texture.wrapS === THREE.RepeatWrapping;
-        var repeatY = texture.wrapT === THREE.RepeatWrapping;
-
-        var repeat = 'no-repeat';
-
-        if ( repeatX === true && repeatY === true ) {
-
-          repeat = 'repeat';
-
-        } else if ( repeatX === true ) {
-
-          repeat = 'repeat-x';
-
-        } else if ( repeatY === true ) {
-
-          repeat = 'repeat-y';
-
-        }
-
-        var pattern = _context.createPattern( canvas, repeat );
-
-        if ( texture.onUpdate ) texture.onUpdate( texture );
-
-        return {
-          canvas: pattern,
-          version: texture.version
-        };
-
-      }
-
-      function patternPath( x0, y0, x1, y1, x2, y2, u0, v0, u1, v1, u2, v2, texture ) {
-
-        var pattern = _patterns[ texture.id ];
-
-        if ( pattern === undefined || pattern.version !== texture.version ) {
-
-          pattern = textureToPattern( texture );
-          _patterns[ texture.id ] = pattern;
-
-        }
-
-        if ( pattern.canvas !== undefined ) {
-
-          setFillStyle( pattern.canvas );
-
-        } else {
-
-          setFillStyle( 'rgba( 0, 0, 0, 1)' );
-          _context.fill();
-          return;
-
-        }
-
-        // http://extremelysatisfactorytotalitarianism.com/blog/?p=2120
-
-        var a, b, c, d, e, f, det, idet,
-        offsetX = texture.offset.x / texture.repeat.x,
-        offsetY = texture.offset.y / texture.repeat.y,
-        width = texture.image.width * texture.repeat.x,
-        height = texture.image.height * texture.repeat.y;
-
-        u0 = ( u0 + offsetX ) * width;
-        v0 = ( v0 + offsetY ) * height;
-
-        u1 = ( u1 + offsetX ) * width;
-        v1 = ( v1 + offsetY ) * height;
-
-        u2 = ( u2 + offsetX ) * width;
-        v2 = ( v2 + offsetY ) * height;
-
-        x1 -= x0; y1 -= y0;
-        x2 -= x0; y2 -= y0;
-
-        u1 -= u0; v1 -= v0;
-        u2 -= u0; v2 -= v0;
-
-        det = u1 * v2 - u2 * v1;
-
-        if ( det === 0 ) return;
-
-        idet = 1 / det;
-
-        a = ( v2 * x1 - v1 * x2 ) * idet;
-        b = ( v2 * y1 - v1 * y2 ) * idet;
-        c = ( u1 * x2 - u2 * x1 ) * idet;
-        d = ( u1 * y2 - u2 * y1 ) * idet;
-
-        e = x0 - a * u0 - c * v0;
-        f = y0 - b * u0 - d * v0;
-
-        _context.save();
-        _context.transform( a, b, c, d, e, f );
-        _context.fill();
-        _context.restore();
-
-      }
-
-      function clipImage( x0, y0, x1, y1, x2, y2, u0, v0, u1, v1, u2, v2, image ) {
-
-        // http://extremelysatisfactorytotalitarianism.com/blog/?p=2120
-
-        var a, b, c, d, e, f, det, idet,
-        width = image.width - 1,
-        height = image.height - 1;
-
-        u0 *= width; v0 *= height;
-        u1 *= width; v1 *= height;
-        u2 *= width; v2 *= height;
-
-        x1 -= x0; y1 -= y0;
-        x2 -= x0; y2 -= y0;
-
-        u1 -= u0; v1 -= v0;
-        u2 -= u0; v2 -= v0;
-
-        det = u1 * v2 - u2 * v1;
-
-        idet = 1 / det;
-
-        a = ( v2 * x1 - v1 * x2 ) * idet;
-        b = ( v2 * y1 - v1 * y2 ) * idet;
-        c = ( u1 * x2 - u2 * x1 ) * idet;
-        d = ( u1 * y2 - u2 * y1 ) * idet;
-
-        e = x0 - a * u0 - c * v0;
-        f = y0 - b * u0 - d * v0;
-
-        _context.save();
-        _context.transform( a, b, c, d, e, f );
-        _context.clip();
-        _context.drawImage( image, 0, 0 );
-        _context.restore();
-
-      }
-
-      // Hide anti-alias gaps
-
-      function expand( v1, v2, pixels ) {
-
-        var x = v2.x - v1.x, y = v2.y - v1.y,
-        det = x * x + y * y, idet;
-
-        if ( det === 0 ) return;
-
-        idet = pixels / Math.sqrt( det );
-
-        x *= idet; y *= idet;
-
-        v2.x += x; v2.y += y;
-        v1.x -= x; v1.y -= y;
-
-      }
-
-      // Context cached methods.
-
-      function setOpacity( value ) {
-
-        if ( _contextGlobalAlpha !== value ) {
-
-          _context.globalAlpha = value;
-          _contextGlobalAlpha = value;
-
-        }
-
-      }
-
-      function setBlending( value ) {
-
-        if ( _contextGlobalCompositeOperation !== value ) {
-
-          if ( value === THREE.NormalBlending ) {
-
-            _context.globalCompositeOperation = 'source-over';
-
-          } else if ( value === THREE.AdditiveBlending ) {
-
-            _context.globalCompositeOperation = 'lighter';
-
-          } else if ( value === THREE.SubtractiveBlending ) {
-
-            _context.globalCompositeOperation = 'darker';
-
-          }
-
-          _contextGlobalCompositeOperation = value;
-
-        }
-
-      }
-
-      function setLineWidth( value ) {
-
-        if ( _contextLineWidth !== value ) {
-
-          _context.lineWidth = value;
-          _contextLineWidth = value;
-
-        }
-
-      }
-
-      function setLineCap( value ) {
-
-        // "butt", "round", "square"
-
-        if ( _contextLineCap !== value ) {
-
-          _context.lineCap = value;
-          _contextLineCap = value;
-
-        }
-
-      }
-
-      function setLineJoin( value ) {
-
-        // "round", "bevel", "miter"
-
-        if ( _contextLineJoin !== value ) {
-
-          _context.lineJoin = value;
-          _contextLineJoin = value;
-
-        }
-
-      }
-
-      function setStrokeStyle( value ) {
-
-        if ( _contextStrokeStyle !== value ) {
-
-          _context.strokeStyle = value;
-          _contextStrokeStyle = value;
-
-        }
-
-      }
-
-      function setFillStyle( value ) {
-
-        if ( _contextFillStyle !== value ) {
-
-          _context.fillStyle = value;
-          _contextFillStyle = value;
-
-        }
-
-      }
-
-      function setLineDash( value ) {
-
-        if ( _contextLineDash.length !== value.length ) {
-
-          _context.setLineDash( value );
-          _contextLineDash = value;
-
-        }
-
-      }
-
-  };
-  return THREE.CanvasRenderer;
-};
-
-}, {"three-projector-renderer":45}],
-45: [function(require, module, exports) {
-
-module.exports = function (THREE) {
-  /**
-   * @author mrdoob / http://mrdoob.com/
-   * @author supereggbert / http://www.paulbrunt.co.uk/
-   * @author julianwa / https://github.com/julianwa
-   */
-
-  THREE.RenderableObject = function () {
-
-    this.id = 0;
-
-    this.object = null;
-    this.z = 0;
-    this.renderOrder = 0;
-
-  };
-
-  //
-
-  THREE.RenderableFace = function () {
-
-    this.id = 0;
-
-    this.v1 = new THREE.RenderableVertex();
-    this.v2 = new THREE.RenderableVertex();
-    this.v3 = new THREE.RenderableVertex();
-
-    this.normalModel = new THREE.Vector3();
-
-    this.vertexNormalsModel = [ new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3() ];
-    this.vertexNormalsLength = 0;
-
-    this.color = new THREE.Color();
-    this.material = null;
-    this.uvs = [ new THREE.Vector2(), new THREE.Vector2(), new THREE.Vector2() ];
-
-    this.z = 0;
-    this.renderOrder = 0;
-
-  };
-
-  //
-
-  THREE.RenderableVertex = function () {
-
-    this.position = new THREE.Vector3();
-    this.positionWorld = new THREE.Vector3();
-    this.positionScreen = new THREE.Vector4();
-
-    this.visible = true;
-
-  };
-
-  THREE.RenderableVertex.prototype.copy = function ( vertex ) {
-
-    this.positionWorld.copy( vertex.positionWorld );
-    this.positionScreen.copy( vertex.positionScreen );
-
-  };
-
-  //
-
-  THREE.RenderableLine = function () {
-
-    this.id = 0;
-
-    this.v1 = new THREE.RenderableVertex();
-    this.v2 = new THREE.RenderableVertex();
-
-    this.vertexColors = [ new THREE.Color(), new THREE.Color() ];
-    this.material = null;
-
-    this.z = 0;
-    this.renderOrder = 0;
-
-  };
-
-  //
-
-  THREE.RenderableSprite = function () {
-
-    this.id = 0;
-
-    this.object = null;
-
-    this.x = 0;
-    this.y = 0;
-    this.z = 0;
-
-    this.rotation = 0;
-    this.scale = new THREE.Vector2();
-
-    this.material = null;
-    this.renderOrder = 0;
-
-  };
-
-  //
-
-  THREE.Projector = function () {
-
-    var _object, _objectCount, _objectPool = [], _objectPoolLength = 0,
-    _vertex, _vertexCount, _vertexPool = [], _vertexPoolLength = 0,
-    _face, _faceCount, _facePool = [], _facePoolLength = 0,
-    _line, _lineCount, _linePool = [], _linePoolLength = 0,
-    _sprite, _spriteCount, _spritePool = [], _spritePoolLength = 0,
-
-    _renderData = { objects: [], lights: [], elements: [] },
-
-    _vector3 = new THREE.Vector3(),
-    _vector4 = new THREE.Vector4(),
-
-    _clipBox = new THREE.Box3( new THREE.Vector3( - 1, - 1, - 1 ), new THREE.Vector3( 1, 1, 1 ) ),
-    _boundingBox = new THREE.Box3(),
-    _points3 = new Array( 3 ),
-    _points4 = new Array( 4 ),
-
-    _viewMatrix = new THREE.Matrix4(),
-    _viewProjectionMatrix = new THREE.Matrix4(),
-
-    _modelMatrix,
-    _modelViewProjectionMatrix = new THREE.Matrix4(),
-
-    _normalMatrix = new THREE.Matrix3(),
-
-    _frustum = new THREE.Frustum(),
-
-    _clippedVertex1PositionScreen = new THREE.Vector4(),
-    _clippedVertex2PositionScreen = new THREE.Vector4();
-
-    //
-
-    this.projectVector = function ( vector, camera ) {
-
-      console.warn( 'THREE.Projector: .projectVector() is now vector.project().' );
-      vector.project( camera );
-
-    };
-
-    this.unprojectVector = function ( vector, camera ) {
-
-      console.warn( 'THREE.Projector: .unprojectVector() is now vector.unproject().' );
-      vector.unproject( camera );
-
-    };
-
-    this.pickingRay = function ( vector, camera ) {
-
-      console.error( 'THREE.Projector: .pickingRay() is now raycaster.setFromCamera().' );
-
-    };
-
-    //
-
-    var RenderList = function () {
-
-      var normals = [];
-      var uvs = [];
-
-      var object = null;
-      var material = null;
-
-      var normalMatrix = new THREE.Matrix3();
-
-      function setObject( value ) {
-
-        object = value;
-        material = object.material;
-
-        normalMatrix.getNormalMatrix( object.matrixWorld );
-
-        normals.length = 0;
-        uvs.length = 0;
-
-      }
-
-      function projectVertex( vertex ) {
-
-        var position = vertex.position;
-        var positionWorld = vertex.positionWorld;
-        var positionScreen = vertex.positionScreen;
-
-        positionWorld.copy( position ).applyMatrix4( _modelMatrix );
-        positionScreen.copy( positionWorld ).applyMatrix4( _viewProjectionMatrix );
-
-        var invW = 1 / positionScreen.w;
-
-        positionScreen.x *= invW;
-        positionScreen.y *= invW;
-        positionScreen.z *= invW;
-
-        vertex.visible = positionScreen.x >= - 1 && positionScreen.x <= 1 &&
-          positionScreen.y >= - 1 && positionScreen.y <= 1 &&
-          positionScreen.z >= - 1 && positionScreen.z <= 1;
-
-      }
-
-      function pushVertex( x, y, z ) {
-
-        _vertex = getNextVertexInPool();
-        _vertex.position.set( x, y, z );
-
-        projectVertex( _vertex );
-
-      }
-
-      function pushNormal( x, y, z ) {
-
-        normals.push( x, y, z );
-
-      }
-
-      function pushUv( x, y ) {
-
-        uvs.push( x, y );
-
-      }
-
-      function checkTriangleVisibility( v1, v2, v3 ) {
-
-        if ( v1.visible === true || v2.visible === true || v3.visible === true ) return true;
-
-        _points3[ 0 ] = v1.positionScreen;
-        _points3[ 1 ] = v2.positionScreen;
-        _points3[ 2 ] = v3.positionScreen;
-
-        return _clipBox.intersectsBox( _boundingBox.setFromPoints( _points3 ) );
-
-      }
-
-      function checkBackfaceCulling( v1, v2, v3 ) {
-
-        return ( ( v3.positionScreen.x - v1.positionScreen.x ) *
-                ( v2.positionScreen.y - v1.positionScreen.y ) -
-                ( v3.positionScreen.y - v1.positionScreen.y ) *
-                ( v2.positionScreen.x - v1.positionScreen.x ) ) < 0;
-
-      }
-
-      function pushLine( a, b ) {
-
-        var v1 = _vertexPool[ a ];
-        var v2 = _vertexPool[ b ];
-
-        _line = getNextLineInPool();
-
-        _line.id = object.id;
-        _line.v1.copy( v1 );
-        _line.v2.copy( v2 );
-        _line.z = ( v1.positionScreen.z + v2.positionScreen.z ) / 2;
-        _line.renderOrder = object.renderOrder;
-
-        _line.material = object.material;
-
-        _renderData.elements.push( _line );
-
-      }
-
-      function pushTriangle( a, b, c ) {
-
-        var v1 = _vertexPool[ a ];
-        var v2 = _vertexPool[ b ];
-        var v3 = _vertexPool[ c ];
-
-        if ( checkTriangleVisibility( v1, v2, v3 ) === false ) return;
-
-        if ( material.side === THREE.DoubleSide || checkBackfaceCulling( v1, v2, v3 ) === true ) {
-
-          _face = getNextFaceInPool();
-
-          _face.id = object.id;
-          _face.v1.copy( v1 );
-          _face.v2.copy( v2 );
-          _face.v3.copy( v3 );
-          _face.z = ( v1.positionScreen.z + v2.positionScreen.z + v3.positionScreen.z ) / 3;
-          _face.renderOrder = object.renderOrder;
-
-          // use first vertex normal as face normal
-
-          _face.normalModel.fromArray( normals, a * 3 );
-          _face.normalModel.applyMatrix3( normalMatrix ).normalize();
-
-          for ( var i = 0; i < 3; i ++ ) {
-
-            var normal = _face.vertexNormalsModel[ i ];
-            normal.fromArray( normals, arguments[ i ] * 3 );
-            normal.applyMatrix3( normalMatrix ).normalize();
-
-            var uv = _face.uvs[ i ];
-            uv.fromArray( uvs, arguments[ i ] * 2 );
-
-          }
-
-          _face.vertexNormalsLength = 3;
-
-          _face.material = object.material;
-
-          _renderData.elements.push( _face );
-
-        }
-
-      }
-
-      return {
-        setObject: setObject,
-        projectVertex: projectVertex,
-        checkTriangleVisibility: checkTriangleVisibility,
-        checkBackfaceCulling: checkBackfaceCulling,
-        pushVertex: pushVertex,
-        pushNormal: pushNormal,
-        pushUv: pushUv,
-        pushLine: pushLine,
-        pushTriangle: pushTriangle
-      }
-
-    };
-
-    var renderList = new RenderList();
-
-    this.projectScene = function ( scene, camera, sortObjects, sortElements ) {
-
-      _faceCount = 0;
-      _lineCount = 0;
-      _spriteCount = 0;
-
-      _renderData.elements.length = 0;
-
-      if ( scene.autoUpdate === true ) scene.updateMatrixWorld();
-      if ( camera.parent === null ) camera.updateMatrixWorld();
-
-      _viewMatrix.copy( camera.matrixWorldInverse.getInverse( camera.matrixWorld ) );
-      _viewProjectionMatrix.multiplyMatrices( camera.projectionMatrix, _viewMatrix );
-
-      _frustum.setFromMatrix( _viewProjectionMatrix );
-
-      //
-
-      _objectCount = 0;
-
-      _renderData.objects.length = 0;
-      _renderData.lights.length = 0;
-
-      scene.traverseVisible( function ( object ) {
-
-        if ( object instanceof THREE.Light ) {
-
-          _renderData.lights.push( object );
-
-        } else if ( object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Sprite ) {
-
-          var material = object.material;
-
-          if ( material.visible === false ) return;
-
-          if ( object.frustumCulled === false || _frustum.intersectsObject( object ) === true ) {
-
-            _object = getNextObjectInPool();
-            _object.id = object.id;
-            _object.object = object;
-
-            _vector3.setFromMatrixPosition( object.matrixWorld );
-            _vector3.applyProjection( _viewProjectionMatrix );
-            _object.z = _vector3.z;
-            _object.renderOrder = object.renderOrder;
-
-            _renderData.objects.push( _object );
-
-          }
-
-        }
-
-      } );
-
-      if ( sortObjects === true ) {
-
-        _renderData.objects.sort( painterSort );
-
-      }
-
-      //
-
-      for ( var o = 0, ol = _renderData.objects.length; o < ol; o ++ ) {
-
-        var object = _renderData.objects[ o ].object;
-        var geometry = object.geometry;
-
-        renderList.setObject( object );
-
-        _modelMatrix = object.matrixWorld;
-
-        _vertexCount = 0;
-
-        if ( object instanceof THREE.Mesh ) {
-
-          if ( geometry instanceof THREE.BufferGeometry ) {
-
-            var attributes = geometry.attributes;
-            var groups = geometry.groups;
-
-            if ( attributes.position === undefined ) continue;
-
-            var positions = attributes.position.array;
-
-            for ( var i = 0, l = positions.length; i < l; i += 3 ) {
-
-              renderList.pushVertex( positions[ i ], positions[ i + 1 ], positions[ i + 2 ] );
-
-            }
-
-            if ( attributes.normal !== undefined ) {
-
-              var normals = attributes.normal.array;
-
-              for ( var i = 0, l = normals.length; i < l; i += 3 ) {
-
-                renderList.pushNormal( normals[ i ], normals[ i + 1 ], normals[ i + 2 ] );
-
-              }
-
-            }
-
-            if ( attributes.uv !== undefined ) {
-
-              var uvs = attributes.uv.array;
-
-              for ( var i = 0, l = uvs.length; i < l; i += 2 ) {
-
-                renderList.pushUv( uvs[ i ], uvs[ i + 1 ] );
-
-              }
-
-            }
-
-            if ( geometry.index !== null ) {
-
-              var indices = geometry.index.array;
-
-              if ( groups.length > 0 ) {
-
-                for ( var o = 0; o < groups.length; o ++ ) {
-
-                  var group = groups[ o ];
-
-                  for ( var i = group.start, l = group.start + group.count; i < l; i += 3 ) {
-
-                    renderList.pushTriangle( indices[ i ], indices[ i + 1 ], indices[ i + 2 ] );
-
-                  }
-
-                }
-
-              } else {
-
-                for ( var i = 0, l = indices.length; i < l; i += 3 ) {
-
-                  renderList.pushTriangle( indices[ i ], indices[ i + 1 ], indices[ i + 2 ] );
-
-                }
-
-              }
-
-            } else {
-
-              for ( var i = 0, l = positions.length / 3; i < l; i += 3 ) {
-
-                renderList.pushTriangle( i, i + 1, i + 2 );
-
-              }
-
-            }
-
-          } else if ( geometry instanceof THREE.Geometry ) {
-
-            var vertices = geometry.vertices;
-            var faces = geometry.faces;
-            var faceVertexUvs = geometry.faceVertexUvs[ 0 ];
-
-            _normalMatrix.getNormalMatrix( _modelMatrix );
-
-            var material = object.material;
-
-            var isFaceMaterial = material instanceof THREE.MultiMaterial;
-            var objectMaterials = isFaceMaterial === true ? object.material : null;
-
-            for ( var v = 0, vl = vertices.length; v < vl; v ++ ) {
-
-              var vertex = vertices[ v ];
-
-              _vector3.copy( vertex );
-
-              if ( material.morphTargets === true ) {
-
-                var morphTargets = geometry.morphTargets;
-                var morphInfluences = object.morphTargetInfluences;
-
-                for ( var t = 0, tl = morphTargets.length; t < tl; t ++ ) {
-
-                  var influence = morphInfluences[ t ];
-
-                  if ( influence === 0 ) continue;
-
-                  var target = morphTargets[ t ];
-                  var targetVertex = target.vertices[ v ];
-
-                  _vector3.x += ( targetVertex.x - vertex.x ) * influence;
-                  _vector3.y += ( targetVertex.y - vertex.y ) * influence;
-                  _vector3.z += ( targetVertex.z - vertex.z ) * influence;
-
-                }
-
-              }
-
-              renderList.pushVertex( _vector3.x, _vector3.y, _vector3.z );
-
-            }
-
-            for ( var f = 0, fl = faces.length; f < fl; f ++ ) {
-
-              var face = faces[ f ];
-
-              material = isFaceMaterial === true
-                ? objectMaterials.materials[ face.materialIndex ]
-                : object.material;
-
-                if ( material === undefined ) continue;
-
-                var side = material.side;
-
-                var v1 = _vertexPool[ face.a ];
-                var v2 = _vertexPool[ face.b ];
-                var v3 = _vertexPool[ face.c ];
-
-                if ( renderList.checkTriangleVisibility( v1, v2, v3 ) === false ) continue;
-
-                var visible = renderList.checkBackfaceCulling( v1, v2, v3 );
-
-                if ( side !== THREE.DoubleSide ) {
-
-                  if ( side === THREE.FrontSide && visible === false ) continue;
-                  if ( side === THREE.BackSide && visible === true ) continue;
-
-                }
-
-                _face = getNextFaceInPool();
-
-                _face.id = object.id;
-                _face.v1.copy( v1 );
-                _face.v2.copy( v2 );
-                _face.v3.copy( v3 );
-
-                _face.normalModel.copy( face.normal );
-
-                if ( visible === false && ( side === THREE.BackSide || side === THREE.DoubleSide ) ) {
-
-                  _face.normalModel.negate();
-
-                }
-
-                _face.normalModel.applyMatrix3( _normalMatrix ).normalize();
-
-                var faceVertexNormals = face.vertexNormals;
-
-                for ( var n = 0, nl = Math.min( faceVertexNormals.length, 3 ); n < nl; n ++ ) {
-
-                  var normalModel = _face.vertexNormalsModel[ n ];
-                  normalModel.copy( faceVertexNormals[ n ] );
-
-                  if ( visible === false && ( side === THREE.BackSide || side === THREE.DoubleSide ) ) {
-
-                    normalModel.negate();
-
-                  }
-
-                  normalModel.applyMatrix3( _normalMatrix ).normalize();
-
-                }
-
-                _face.vertexNormalsLength = faceVertexNormals.length;
-
-                var vertexUvs = faceVertexUvs[ f ];
-
-                if ( vertexUvs !== undefined ) {
-
-                  for ( var u = 0; u < 3; u ++ ) {
-
-                    _face.uvs[ u ].copy( vertexUvs[ u ] );
-
-                  }
-
-                }
-
-                _face.color = face.color;
-                _face.material = material;
-
-                _face.z = ( v1.positionScreen.z + v2.positionScreen.z + v3.positionScreen.z ) / 3;
-                _face.renderOrder = object.renderOrder;
-
-                _renderData.elements.push( _face );
-
-            }
-
-          }
-
-        } else if ( object instanceof THREE.Line ) {
-
-          if ( geometry instanceof THREE.BufferGeometry ) {
-
-            var attributes = geometry.attributes;
-
-            if ( attributes.position !== undefined ) {
-
-              var positions = attributes.position.array;
-
-              for ( var i = 0, l = positions.length; i < l; i += 3 ) {
-
-                renderList.pushVertex( positions[ i ], positions[ i + 1 ], positions[ i + 2 ] );
-
-              }
-
-              if ( geometry.index !== null ) {
-
-                var indices = geometry.index.array;
-
-                for ( var i = 0, l = indices.length; i < l; i += 2 ) {
-
-                  renderList.pushLine( indices[ i ], indices[ i + 1 ] );
-
-                }
-
-              } else {
-
-                var step = object instanceof THREE.LineSegments ? 2 : 1;
-
-                for ( var i = 0, l = ( positions.length / 3 ) - 1; i < l; i += step ) {
-
-                  renderList.pushLine( i, i + 1 );
-
-                }
-
-              }
-
-            }
-
-          } else if ( geometry instanceof THREE.Geometry ) {
-
-            _modelViewProjectionMatrix.multiplyMatrices( _viewProjectionMatrix, _modelMatrix );
-
-            var vertices = object.geometry.vertices;
-
-            if ( vertices.length === 0 ) continue;
-
-            v1 = getNextVertexInPool();
-            v1.positionScreen.copy( vertices[ 0 ] ).applyMatrix4( _modelViewProjectionMatrix );
-
-            var step = object instanceof THREE.LineSegments ? 2 : 1;
-
-            for ( var v = 1, vl = vertices.length; v < vl; v ++ ) {
-
-              v1 = getNextVertexInPool();
-              v1.positionScreen.copy( vertices[ v ] ).applyMatrix4( _modelViewProjectionMatrix );
-
-              if ( ( v + 1 ) % step > 0 ) continue;
-
-              v2 = _vertexPool[ _vertexCount - 2 ];
-
-              _clippedVertex1PositionScreen.copy( v1.positionScreen );
-              _clippedVertex2PositionScreen.copy( v2.positionScreen );
-
-              if ( clipLine( _clippedVertex1PositionScreen, _clippedVertex2PositionScreen ) === true ) {
-
-                // Perform the perspective divide
-                _clippedVertex1PositionScreen.multiplyScalar( 1 / _clippedVertex1PositionScreen.w );
-                _clippedVertex2PositionScreen.multiplyScalar( 1 / _clippedVertex2PositionScreen.w );
-
-                _line = getNextLineInPool();
-
-                _line.id = object.id;
-                _line.v1.positionScreen.copy( _clippedVertex1PositionScreen );
-                _line.v2.positionScreen.copy( _clippedVertex2PositionScreen );
-
-                _line.z = Math.max( _clippedVertex1PositionScreen.z, _clippedVertex2PositionScreen.z );
-                _line.renderOrder = object.renderOrder;
-
-                _line.material = object.material;
-
-                if ( object.material.vertexColors === THREE.VertexColors ) {
-
-                  _line.vertexColors[ 0 ].copy( object.geometry.colors[ v ] );
-                  _line.vertexColors[ 1 ].copy( object.geometry.colors[ v - 1 ] );
-
-                }
-
-                _renderData.elements.push( _line );
-
-              }
-
-            }
-
-          }
-
-        } else if ( object instanceof THREE.Sprite ) {
-
-          _vector4.set( _modelMatrix.elements[ 12 ], _modelMatrix.elements[ 13 ], _modelMatrix.elements[ 14 ], 1 );
-          _vector4.applyMatrix4( _viewProjectionMatrix );
-
-          var invW = 1 / _vector4.w;
-
-          _vector4.z *= invW;
-
-          if ( _vector4.z >= - 1 && _vector4.z <= 1 ) {
-
-            _sprite = getNextSpriteInPool();
-            _sprite.id = object.id;
-            _sprite.x = _vector4.x * invW;
-            _sprite.y = _vector4.y * invW;
-            _sprite.z = _vector4.z;
-            _sprite.renderOrder = object.renderOrder;
-            _sprite.object = object;
-
-            _sprite.rotation = object.rotation;
-
-            _sprite.scale.x = object.scale.x * Math.abs( _sprite.x - ( _vector4.x + camera.projectionMatrix.elements[ 0 ] ) / ( _vector4.w + camera.projectionMatrix.elements[ 12 ] ) );
-            _sprite.scale.y = object.scale.y * Math.abs( _sprite.y - ( _vector4.y + camera.projectionMatrix.elements[ 5 ] ) / ( _vector4.w + camera.projectionMatrix.elements[ 13 ] ) );
-
-            _sprite.material = object.material;
-
-            _renderData.elements.push( _sprite );
-
-          }
-
-        }
-
-      }
-
-      if ( sortElements === true ) {
-
-        _renderData.elements.sort( painterSort );
-
-      }
-
-      return _renderData;
-
-    };
-
-    // Pools
-
-    function getNextObjectInPool() {
-
-      if ( _objectCount === _objectPoolLength ) {
-
-        var object = new THREE.RenderableObject();
-        _objectPool.push( object );
-        _objectPoolLength ++;
-        _objectCount ++;
-        return object;
-
-      }
-
-      return _objectPool[ _objectCount ++ ];
-
-    }
-
-    function getNextVertexInPool() {
-
-      if ( _vertexCount === _vertexPoolLength ) {
-
-        var vertex = new THREE.RenderableVertex();
-        _vertexPool.push( vertex );
-        _vertexPoolLength ++;
-        _vertexCount ++;
-        return vertex;
-
-      }
-
-      return _vertexPool[ _vertexCount ++ ];
-
-    }
-
-    function getNextFaceInPool() {
-
-      if ( _faceCount === _facePoolLength ) {
-
-        var face = new THREE.RenderableFace();
-        _facePool.push( face );
-        _facePoolLength ++;
-        _faceCount ++;
-        return face;
-
-      }
-
-      return _facePool[ _faceCount ++ ];
-
-
-    }
-
-    function getNextLineInPool() {
-
-      if ( _lineCount === _linePoolLength ) {
-
-        var line = new THREE.RenderableLine();
-        _linePool.push( line );
-        _linePoolLength ++;
-        _lineCount ++;
-        return line;
-
-      }
-
-      return _linePool[ _lineCount ++ ];
-
-    }
-
-    function getNextSpriteInPool() {
-
-      if ( _spriteCount === _spritePoolLength ) {
-
-        var sprite = new THREE.RenderableSprite();
-        _spritePool.push( sprite );
-        _spritePoolLength ++;
-        _spriteCount ++;
-        return sprite;
-
-      }
-
-      return _spritePool[ _spriteCount ++ ];
-
-    }
-
-    //
-
-    function painterSort( a, b ) {
-
-      if ( a.renderOrder !== b.renderOrder ) {
-
-        return a.renderOrder - b.renderOrder;
-
-      } else if ( a.z !== b.z ) {
-
-        return b.z - a.z;
-
-      } else if ( a.id !== b.id ) {
-
-        return a.id - b.id;
-
-      } else {
-
-        return 0;
-
-      }
-
-    }
-
-    function clipLine( s1, s2 ) {
-
-      var alpha1 = 0, alpha2 = 1,
-
-      // Calculate the boundary coordinate of each vertex for the near and far clip planes,
-      // Z = -1 and Z = +1, respectively.
-      bc1near =  s1.z + s1.w,
-      bc2near =  s2.z + s2.w,
-      bc1far =  - s1.z + s1.w,
-      bc2far =  - s2.z + s2.w;
-
-      if ( bc1near >= 0 && bc2near >= 0 && bc1far >= 0 && bc2far >= 0 ) {
-
-        // Both vertices lie entirely within all clip planes.
-        return true;
-
-      } else if ( ( bc1near < 0 && bc2near < 0 ) || ( bc1far < 0 && bc2far < 0 ) ) {
-
-        // Both vertices lie entirely outside one of the clip planes.
-        return false;
-
-      } else {
-
-        // The line segment spans at least one clip plane.
-
-        if ( bc1near < 0 ) {
-
-          // v1 lies outside the near plane, v2 inside
-          alpha1 = Math.max( alpha1, bc1near / ( bc1near - bc2near ) );
-
-        } else if ( bc2near < 0 ) {
-
-          // v2 lies outside the near plane, v1 inside
-          alpha2 = Math.min( alpha2, bc1near / ( bc1near - bc2near ) );
-
-        }
-
-        if ( bc1far < 0 ) {
-
-          // v1 lies outside the far plane, v2 inside
-          alpha1 = Math.max( alpha1, bc1far / ( bc1far - bc2far ) );
-
-        } else if ( bc2far < 0 ) {
-
-          // v2 lies outside the far plane, v2 inside
-          alpha2 = Math.min( alpha2, bc1far / ( bc1far - bc2far ) );
-
-        }
-
-        if ( alpha2 < alpha1 ) {
-
-          // The line segment spans two boundaries, but is outside both of them.
-          // (This can't happen when we're only clipping against just near/far but good
-          //  to leave the check here for future usage if other clip planes are added.)
-          return false;
-
-        } else {
-
-          // Update the s1 and s2 vertices to match the clipped line segment.
-          s1.lerp( s2, alpha1 );
-          s2.lerp( s1, 1 - alpha2 );
-
-          return true;
-
-        }
-
-      }
-
-    }
-
-  };
-  return THREE.Projector;
-};
-
-}, {}],
-20: [function(require, module, exports) {
-
-module.exports = function (THREE) {
-  /**
-   * @author dmarcos / https://github.com/dmarcos
-   * @author mrdoob / http://mrdoob.com
-   *
-   * WebVR Spec: http://mozvr.github.io/webvr-spec/webvr.html
-   *
-   * Firefox: http://mozvr.com/downloads/
-   * Chromium: https://drive.google.com/folderview?id=0BzudLt22BqGRbW9WTHMtOWMzNjQ&usp=sharing#list
-   *
-   */
-
-  THREE.VREffect = function ( renderer, onError ) {
-
-    var self = this;
-    var vrHMD;
-    var vrSensor;
-    var eyeTranslationL, eyeFOVL;
-    var eyeTranslationR, eyeFOVR;
-
-    function gotVRDevices( devices ) {
-
-      for ( var i = 0; i < devices.length; i ++ ) {
-
-        if (null == vrHMD && devices[ i ] instanceof HMDVRDevice ) {
-
-          vrHMD = devices[ i ];
-
-          if ( vrHMD.getEyeParameters !== undefined ) {
-
-            var eyeParamsL = vrHMD.getEyeParameters( 'left' );
-            var eyeParamsR = vrHMD.getEyeParameters( 'right' );
-
-            eyeTranslationL = eyeParamsL.eyeTranslation;
-            eyeTranslationR = eyeParamsR.eyeTranslation;
-            eyeFOVL = eyeParamsL.recommendedFieldOfView;
-            eyeFOVR = eyeParamsR.recommendedFieldOfView;
-
-          } else {
-
-            // TODO: This is an older code path and not spec compliant.
-            // It should be removed at some point in the near future.
-            eyeTranslationL = vrHMD.getEyeTranslation( 'left' );
-            eyeTranslationR = vrHMD.getEyeTranslation( 'right' );
-            eyeFOVL = vrHMD.getRecommendedEyeFieldOfView( 'left' );
-            eyeFOVR = vrHMD.getRecommendedEyeFieldOfView( 'right' );
-
-          }
-
-        } else if (null == vrSensor && devices[i] instanceof PositionSensorVRDevice) {
-          vrSensor = devices[i];
-        } else {
-          break;
-        }
-      }
-
-      if ( vrHMD === undefined ) {
-
-        if ( onError ) onError( 'HMD not available' );
-
-      }
-
-      self._vrHMD = vrHMD;
-      self._sensor = vrSensor;
-    }
-
-    if ( navigator.getVRDevices ) {
-
-      navigator.getVRDevices().then( gotVRDevices );
-
-    }
-
-    //
-
-    this.scale = 1;
-
-    this.setSize = function( width, height ) {
-
-      renderer.setSize( width, height );
-
-    };
-
-    // fullscreen
-
-    var isFullscreen = false;
-
-    var canvas = renderer.domElement;
-    var fullscreenchange = canvas.mozRequestFullScreen ? 'mozfullscreenchange' : 'webkitfullscreenchange';
-
-    document.addEventListener( fullscreenchange, function ( event ) {
-
-      isFullscreen = document.mozFullScreenElement || document.webkitFullscreenElement;
-
-    }, false );
-
-    this.setFullScreen = function ( boolean ) {
-
-      if ( vrHMD === undefined ) return;
-      if ( isFullscreen === boolean ) return;
-
-      if ( canvas.mozRequestFullScreen ) {
-
-        canvas.mozRequestFullScreen( { vrDisplay: vrHMD } );
-
-      } else if ( canvas.webkitRequestFullscreen ) {
-
-        canvas.webkitRequestFullscreen( { vrDisplay: vrHMD } );
-
-      }
-
-    };
-
-    // render
-
-    var cameraL = new THREE.PerspectiveCamera();
-    var cameraR = new THREE.PerspectiveCamera();
-
-    this.render = function ( scene, camera ) {
-
-      if ( vrHMD ) {
-
-        var sceneL, sceneR;
-
-        if ( scene instanceof Array ) {
-
-          sceneL = scene[ 0 ];
-          sceneR = scene[ 1 ];
-
-        } else {
-
-          sceneL = scene;
-          sceneR = scene;
-
-        }
-
-        var size = {width: renderer.domElement.width, height: renderer.domElement.height};
-        size.width /= 2;
-
-        renderer.enableScissorTest( true );
-        renderer.clear();
-
-        if ( camera.parent === undefined ) camera.updateMatrixWorld();
-
-        cameraL.projectionMatrix = fovToProjection( eyeFOVL, true, camera.near, camera.far );
-        cameraR.projectionMatrix = fovToProjection( eyeFOVR, true, camera.near, camera.far );
-
-        camera.matrixWorld.decompose( cameraL.position, cameraL.quaternion, cameraL.scale );
-        camera.matrixWorld.decompose( cameraR.position, cameraR.quaternion, cameraR.scale );
-
-        cameraL.translateX( eyeTranslationL.x * this.scale );
-        cameraR.translateX( eyeTranslationR.x * this.scale );
-
-        // render left eye
-        renderer.setViewport( 0, 0, size.width, size.height );
-        renderer.setScissor( 0, 0, size.width, size.height );
-        renderer.render( sceneL, cameraL );
-
-        // render right eye
-        renderer.setViewport( size.width, 0, size.width, size.height );
-        renderer.setScissor( size.width, 0, size.width, size.height );
-        renderer.render( sceneR, cameraR );
-
-        renderer.enableScissorTest( false );
-
-        return;
-
-      }
-
-      // Regular render mode if not HMD
-
-      if ( scene instanceof Array ) scene = scene[ 0 ];
-
-      renderer.render( scene, camera );
-
-    };
-
-    //
-
-    function fovToNDCScaleOffset( fov ) {
-
-      var pxscale = 2.0 / (fov.leftTan + fov.rightTan);
-      var pxoffset = (fov.leftTan - fov.rightTan) * pxscale * 0.5;
-      var pyscale = 2.0 / (fov.upTan + fov.downTan);
-      var pyoffset = (fov.upTan - fov.downTan) * pyscale * 0.5;
-      return { scale: [ pxscale, pyscale ], offset: [ pxoffset, pyoffset ] };
-
-    }
-
-    function fovPortToProjection( fov, rightHanded, zNear, zFar ) {
-
-      rightHanded = rightHanded === undefined ? true : rightHanded;
-      zNear = zNear === undefined ? 0.01 : zNear;
-      zFar = zFar === undefined ? 10000.0 : zFar;
-
-      var handednessScale = rightHanded ? -1.0 : 1.0;
-
-      // start with an identity matrix
-      var mobj = new THREE.Matrix4();
-      var m = mobj.elements;
-
-      // and with scale/offset info for normalized device coords
-      var scaleAndOffset = fovToNDCScaleOffset(fov);
-
-      // X result, map clip edges to [-w,+w]
-      m[0 * 4 + 0] = scaleAndOffset.scale[0];
-      m[0 * 4 + 1] = 0.0;
-      m[0 * 4 + 2] = scaleAndOffset.offset[0] * handednessScale;
-      m[0 * 4 + 3] = 0.0;
-
-      // Y result, map clip edges to [-w,+w]
-      // Y offset is negated because this proj matrix transforms from world coords with Y=up,
-      // but the NDC scaling has Y=down (thanks D3D?)
-      m[1 * 4 + 0] = 0.0;
-      m[1 * 4 + 1] = scaleAndOffset.scale[1];
-      m[1 * 4 + 2] = -scaleAndOffset.offset[1] * handednessScale;
-      m[1 * 4 + 3] = 0.0;
-
-      // Z result (up to the app)
-      m[2 * 4 + 0] = 0.0;
-      m[2 * 4 + 1] = 0.0;
-      m[2 * 4 + 2] = zFar / (zNear - zFar) * -handednessScale;
-      m[2 * 4 + 3] = (zFar * zNear) / (zNear - zFar);
-
-      // W result (= Z in)
-      m[3 * 4 + 0] = 0.0;
-      m[3 * 4 + 1] = 0.0;
-      m[3 * 4 + 2] = handednessScale;
-      m[3 * 4 + 3] = 0.0;
-
-      mobj.transpose();
-
-      return mobj;
-    }
-
-    function fovToProjection( fov, rightHanded, zNear, zFar ) {
-
-      var DEG2RAD = Math.PI / 180.0;
-
-      var fovPort = {
-        upTan: Math.tan( fov.upDegrees * DEG2RAD ),
-        downTan: Math.tan( fov.downDegrees * DEG2RAD ),
-        leftTan: Math.tan( fov.leftDegrees * DEG2RAD ),
-        rightTan: Math.tan( fov.rightDegrees * DEG2RAD )
-      };
-
-      return fovPortToProjection( fovPort, rightHanded, zNear, zFar );
-
-    }
-
-  };
-};
-
-}, {}],
-21: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The flat projection mode.
- *
- * @public
- * @module axis/projection/flat
- * @type {Function}
- */
-
-/**
- * Applies a flat projection to Axis frame
- *
- * @api public
- * @param {Axis} axis
- */
-
-module.exports = flat;
-function flat (axis) {
-
-  // this projection requires an already initialized
-  // camera on the `Axis' instance
-  var camera = axis.camera;
-
-  // bail if camera not initialized
-  if (null == camera) { return false; }
-
-  // bail if not ready
-  if (false == this.isReady()) { return false; }
-
-  // bail if geometry is a cylinder because a flat
-  // projection is only supported in a spherical geometry
-  if ('cylinder' == axis.geometry()) { return false; }
-
-  // apply equilinear projection
-  this.apply('equilinear');
-
-  this.constraints = {
-    keys: {up: true, down: true, left: true, right: true},
-    panoramic: true,
-    x: true, y: true
-  };
-
-  // update camera lens
-  camera.setLens(80);
-
-  // update current fov
-  axis.fov(camera.fov);
-
-  // position in center (90) around equator (0)
-  axis.coords(90, 0);
-};
-
-}, {}],
-22: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The fisheye projection mode.
- *
- * @public
- * @module scope/projection/fisheye
- * @type {Function}
- */
-
-/**
- * Module dependencies
- * @private
- */
-
-var three = require('three.js')
-
-/**
- * Local dependencies
- * @private
- */
-
-var constants = require('../constants')
-
-// animation factor
-var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
-
-/**
- * Fisheye projection constraints.
- *
- * @public
- * @type {Object}
- */
-
-var constraints = fisheye.constraints = {};
-
-/**
- * Applies a fisheye projection to scope frame
- *
- * @api public
- * @param {Axis} scope
- */
-
-module.exports = fisheye;
-function fisheye (scope) {
-
-  // this projection requires an already initialized
-  // camera on the `scope' instance
-  var camera = scope.camera;
-
-  // bail if camera not initialized
-  if (null == camera) { return false; }
-
-  // bail if not ready
-  if (false == this.isReady()) { return false; }
-
-  // bail if geometry is a cylinder because fisheye
-  // projection is only supported in a spherical geometry
-  if ('cylinder' == scope.geometry()) { return false; }
-
-  // max Z and fov
-  var maxZ = (scope.height() / 100) | 0;
-  var current = this.current;
-
-  scope.fov(scope.state.originalfov + 20);
-  this.constraints = {};
-
-  if ('cylinder' == scope.geometry()) {
-    scope.orientation.x = 0;
-    this.constraints.y = true;
-    this.constraints.x = false;
-  }
-
-  // begin animation
-  scope.debug("animate: FISHEYE begin");
-  this.animate(function () {
-    scope.camera.position.z = maxZ;
-
-    if ('tinyplanet' == current) {
-      scope.orientation.x = 0;
-      scope.lookAt(0, 0, 0);
-    } else if ('equilinear' != current) {
-      scope.orientation.x = (Math.PI/180);
-    }
-
-    this.cancel();
-  });
-};
-
-}, {"three.js":2,"../constants":18}],
-23: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The equilinear projection mode.
- *
- * @public
- * @module scope/projection/equilinear
- * @type {Function}
- */
-
-/**
- * Module dependencies
- * @private
- */
-
-var raf = require('raf')
-  , three = require('three.js')
-
-/**
- * Local dependencies
- * @private
- */
-
-var constants = require('../constants')
-  , createCamera = require('../camera')
-  , createPlane = require('../geometry/plane')
-  , createSphere = require('../geometry/sphere')
-  , createCylinder = require('../geometry/cylinder')
-
-// animation factor
-var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
-
-/**
- * Applies an equilinear projection to scope frame
- *
- * @public
- * @param {Axis} scope
- */
-
-module.exports = equilinear;
-function equilinear (scope) {
-
-  // this projection requires an already initialized
-  // camera on the `scope' instance
-  var camera = scope.camera;
-
-  // bail if camera not present
-  if (null == camera) { return; }
-
-  // bail if not ready
-  if (false == this.isReady()) { return; }
-
-  // bail if content sizing is incorrect
-  if (false == this.contentHasCorrectSizing()) { return; }
-
-  var rotation = new three.Vector3(0, 0, 0);
-  var current = this.current;
-  var targetX = Math.PI / 180;
-  var factor = targetX *.8999;
-
-  this.constraints = {};
-
-  if ('cylinder' == scope.geometry()) {
-    scope.orientation.x = 0;
-    this.constraints.y = true;
-    this.constraints.x = false;
-  }
-
-  // apply zoom to cylinder geometry type
-  if ('cylinder' == scope.geometry()) {
-    this.constraints.y = true;
-    this.constraints.x = false;
-    scope.orientation.x = 0;
-  } else {
-    this.constraints.y = false;
-    this.constraints.x = false;
-  }
-
-  // animate
-  scope.debug("animate: EQUILINEAR begin");
-
-  scope.fov(scope.state.originalfov || scope.state.fov);
-
-  if ('cylinder' == scope.geometry()) {
-    scope.orientation.x = targetX;
-    this.cancel();
-  } else {
-    this.animate(function () {
-      var x = scope.orientation.x;
-
-      if ('tinyplanet' == current) {
-        scope.lookAt(0, 0, 0);
-        scope.orientation.x = 0;
-        return this.cancel();
-      }
-
-      if (current == 'fisheye') {
-        return this.cancel();
-      }
-
-      if (x > targetX) {
-        scope.orientation.x -= factor;
-      } else {
-        scope.orientation.x = targetX;
-      }
-
-      if (x < targetX) {
-        scope.orientation.x += factor;
-      } else {
-        scope.orientation.x = targetX;
-      }
-
-      if (scope.orientation.x == targetX) {
-        return this.cancel();
-      }
-    });
-  }
-};
-
-}, {"raf":6,"three.js":2,"../constants":18,"../camera":14,"../geometry/plane":41,"../geometry/sphere":40,"../geometry/cylinder":39}],
-24: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The tiny planet projection mode.
- *
- * @public
- * @module scope/projection/tinyplanet
- * @type {Function}
- */
-
-/**
- * Module dependencies
- * @private
- */
-
-var three = require('three.js')
-
-/**
- * Local dependencies
- * @private
- */
-
-var constants = require('../constants')
-
-// max camera lens value
-var TINY_PLANET_CAMERA_LENS_VALUE = constants.TINY_PLANET_CAMERA_LENS_VALUE;
-
-// animation factor
-var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
-
-// min/max x/y coordinates
-var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
-
-/**
- * Applies a tinyplanet projection to scope frame
- *
- * @api public
- * @param {Axis} scope
- */
-
-module.exports = tinyplanet;
-function tinyplanet (scope) {
-
-  var camera = scope.camera;
-  var rotation = new three.Vector3(0, 0, 0);
-
-  // bail if camera not initialized
-  if (null == camera) { return false; }
-
-  // bail if not ready
-  if (false == this.isReady()) { return false; }
-
-  // bail if geometry is a cylinder because tiny planet
-  // projection is only supported in a spherical geometry
-  if ('cylinder' == scope.geometry()) { return false; }
-
-  // prevent duplicate tiny planet rotation requests
-  if ('tinyplanet' == this.current) { return false; }
-
-  this.constraints = {
-    x: true,
-    cache: true,
-    keys: {left: true, right: true, h: true, l: true}
-  };
-
-  if ('cylinder' == scope.geometry()) {
-    scope.orientation.x = 0;
-    this.constraints.y = false;
-    this.constraints.x = true;
-  }
-
-  this.constraints.x = false;
-  this.constraints.y = true;
-
-  camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
-  scope.fov(Math.min(scope.state.originalfov * 2, 130));
-  scope.debug("animate: TINY_PLANET begin");
-  rotation.x = camera.target.x || 0;
-  rotation.y = camera.target.y || 0;
-  rotation.z = camera.target.z || -1;
-  this.animate(function () {
-    var y = rotation.y;
-    var x = rotation.x;
-    scope.debug("animate: TINY_PLANET y=%d", y);
-    rotation.x = MIN_X_COORDINATE;
-    rotation.y = -180;
-    scope.lookAt(rotation.x, rotation.y, rotation.z);
-    scope.orientation.x = -Infinity;
-    this.constraints.x = true;
-    this.constraints.y = false;
-    scope.debug("animate: TINY_PLANET end");
-    this.cancel();
-  });
-};
-
-}, {"three.js":2,"../constants":18}],
-25: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The vr controls module.
- *
- * @module axis/controls/vr
- * @type {Function}
- */
-
-void module.exports;
-
-/**
- * Module dependencies.
- * @private
- */
-
-var three = require('three.js')
-  , inherits = require('inherits')
-  , createCamera = require('../camera')
-
-/**
- * Local dependencies.
- * @private
- */
-
-var AxisController = require('./controller')
-
-/**
- * Converts a field of view tangent object with
- * up, down, left, and right values in degrees
- * to X and Y scales and offsets.
- *
- * @private
- * @param {Object} tangent - Field of view tangent object.
- * @param {Number} tangent.up - Field of view up tangent.
- * @param {Number} tangent.right - Field of view right tangent.
- * @param {Number} tangent.down - Field of view down tangent.
- * @param {Number} tangent.left - Field of view left tangent.
- * @return {Object}
- */
-
-function fieldOfViewTangentToScaleAndOffset (tangent) {
-  var scale = {x: 0, y: 0};
-  var offset = {x: 0, y: 0};
-
-  // build scale
-  scale.x = 2 / (tangent.left + tangent.right);
-  scale.y = 2 / (tangent.up + tangent.down);
-
-  // build offset
-  offset.x = (tangent.left - tangent.right) * scale.x * 0.5;
-  offset.y = (tangent.up - tangent.down) * scale.y * 0.5;
-
-  return {scale: scale, offset: offset};
-}
-
-/**
- * Creates a projection matrix from an eye translation
- * object containing directional values in degrees.
- *
- * @private
- * @param {EyeTranslation} eye - Eye translation
- * @param {Number} near - Current camera near frustum plane value.
- * @param {Number} far - Current camera far frustum plane value.
- * @return {THREE.Matrix4}
- */
-
-function eyeTranslationToProjection (eye, near, far) {
-  var dtor = Math.PI / 180.0;
-  var scale = -1;
-  var matrix = new three.Matrix4();
-  var m = matrix.elements;
-  var tangent = {};
-  var scaleAndOffset = null;
-
-  tangent.up = Math.tan(eye.upDegrees * dtor);
-  tangent.down = Math.tan(eye.downDegrees * dtor);
-  tangent.left = Math.tan(eye.leftDegrees * dtor);
-  tangent.right = Math.tan(eye.rightDegrees * dtor);
-
-  scaleAndOffset = fieldOfViewTangentToScaleAndOffset(tangent);
-
-  near = null == near ? 0.01 : near;
-  far = null == far ? 10000 : far;
-
-  // X result, map clip edges to [-w,+w]
-  m[0 * 4 + 0] = scaleAndOffset.scale.x
-  m[0 * 4 + 1] = 0;
-  m[0 * 4 + 2] = scaleAndOffset.offset.x * scale;
-  m[0 * 4 + 3] = 0;
-
-  // Y result, map clip edges to [-w,+w]
-  // Y offset is negated because this proj matrix transforms from world coords with Y=up,
-  // but the NDC scaling has Y=down (thanks D3D?)
-  m[1 * 4 + 0] = 0;
-  m[1 * 4 + 1] = scaleAndOffset.scale.y;
-  m[1 * 4 + 2] = -scaleAndOffset.offset.y * scale;
-  m[1 * 4 + 3] = 0;
-
-  // Z result (up to the app)
-  m[2 * 4 + 0] = 0;
-  m[2 * 4 + 1] = 0;
-  m[2 * 4 + 2] = far / (near - far) * -scale;
-  m[2 * 4 + 3] = (far * near) / (near - far);
-
-  // W result (= Z in)
-  m[3 * 4 + 0] = 0;
-  m[3 * 4 + 1] = 0;
-  m[3 * 4 + 2] = scale;
-  m[3 * 4 + 3] = 0;
-
-  matrix.transpose();
-
-  return matrix;
-}
-
-/**
- * EyeFieldOfView constructor
- *
- * @private
- * @class EyeFieldOfView
- * @constructor
- * @param {Number} up - Up degrees offset.
- * @param {Number} right - Right degrees offset.
- * @param {Number} down - Down degrees offset.
- * @param {Number} left - Left degrees offset.
- */
-
-function EyeFieldOfView (up, right, down, left) {
-  if (!(this instanceof EyeFieldOfView)) {
-    return new EyeFieldOfView(up, right, down, left);
-  }
-  this.set(up, right, down, left);
-}
-
-/**
- * Set degrees for eye field of view.
- *
- * @public
- * @param {Number} up - Up degrees offset.
- * @param {Number} right - Right degrees offset.
- * @param {Number} down - Down degrees offset.
- * @param {Number} left - Left degrees offset.
- */
-
-EyeFieldOfView.prototype.set = function (up, right, down, left) {
-  this.upDegrees = up || 0;
-  this.rightDegrees = right || 0;
-  this.downDegrees = down || 0;
-  this.leftDegrees = left || 0;
-  return this;
-};
-
-/**
- * EyeTranslation constructor
- *
- * @private
- * @class EyeTranslation
- * @constructor
- * @extends THREE.Quaternion
- * @param {Number} x - X coordinate.
- * @param {Number} y - Y coordinate.
- * @param {Number} z - Z coordinate.
- * @param {Number} w - W coordinate.
- */
-
-inherits(EyeTranslation, three.Quaternion);
-function EyeTranslation (x, y, z, w) {
-  if (!(this instanceof EyeTranslation)) {
-    return new EyeTranslation(x, y, z, w);
-  }
-  three.Quaternion.call(this, x, y, z, w);
-}
-
-/**
- * Initialize vr controls on Axis.
- *
- * @public
- * @param {Axis} scope - The axis instance
- * @return {VRController}
- */
-
-module.exports = function vr (axis) {
-  return VRController(axis)
-  .target(axis.camera)
-  .enable()
-  .update();
-};
-
-/**
- * VRController constructor
- *
- * @public
- * @constructor
- * @class VRController
- * @extends AxisController
- * @see {@link module:axis/controls/controller~AxisController}
- * @param {Axis} scope - The axis instance
- */
-
-module.exports.VRController = VRController;
-inherits(VRController, AxisController);
-function VRController (scope) {
-
-  // ensure instance
-  if (!(this instanceof VRController)) {
-    return new VRController(scope);
-  }
-
-  // inherit from `AxisController'
-  AxisController.call(this, scope);
-
-  /**
-   * Reference to this instance.
-   *
-   * @private
-   * @type {VRController}
-   */
-
-  var self = this;
-
-  /**
-   * Current connected HMD.
-   *
-   * @public
-   * @type {HMDVRDevice}
-   * @name state.hmd
-   */
-
-  this.state.hmd = null;
-
-  /**
-   * Current connected HMD position sensor.
-   *
-   * @public
-   * @type {PositionSensorVRDevice}
-   * @name state.sensor
-   */
-
-  this.state.sensor = null;
-
-  /**
-   * Translation scale factor
-   *
-   * @public
-   * @type {Number}
-   * @name state.scale
-   */
-
-  this.state.scale = 1;
-
-  /**
-   * VR cameras.
-   *
-   * @public
-   * @type {Object}
-   * @name state.cameras
-   */
-  this.state.cameras = {
-    left: new three.PerspectiveCamera(),
-    right: new three.PerspectiveCamera()
-  };
-
-  /**
-   * VR Scenes.
-   *
-   * @public
-   * @type {Object}
-   * @name state.scenes
-   */
-
-  this.state.scenes = {
-
-    /**
-     * Left VR scene.
-     *
-     * @public
-     * @type {THREE.Scene}
-     * @name state.scenes.left
-     */
-
-    left_: null,
-    get left () { return this.left_ || self.scope.scene; },
-    set left (scene) { this.left_ = scene; },
-
-    /**
-     * Right VR scene.
-     *
-     * @public
-     * @type {THREE.Scene}
-     * @name state.scenes.right
-     */
-
-    right_: null,
-    get right () { return this.right_ || self.scope.scene; },
-    set right (scene) { this.right_ = scene; }
-  };
-
-  /**
-   * Eye states.
-   *
-   * @public
-   * @type {Object}
-   * @name state.eyes
-   */
-
-  this.state.eyes = {
-
-    /**
-     * Eye field of view states.
-     *
-     * @public
-     * @type {Object}
-     * @name state.eyes.fov
-     */
-
-    fov: {
-
-      /**
-       * Right field of view state.
-       *
-       * @public
-       * @type {EyeFieldOfView}
-       * @name state.eyes.fov.right
-       */
-
-      right: new EyeFieldOfView(),
-
-      /**
-       * Leftfield of view state.
-       *
-       * @public
-       * @type {EyeFieldOfView}
-       * @name state.eyes.fov.left
-       */
-
-      left: new EyeFieldOfView(),
-    },
-
-    /**
-     * Current eye translation states.
-     *
-     * @public
-     * @type {Object}
-     * @name state.eyes.translations
-     */
-
-    translation: {
-
-      /**
-       * Left eye translation state.
-       *
-       * @public
-       * @type {EyeTranslation}
-       * @name state.eyes.translation.left
-       */
-
-      left: new EyeTranslation(),
-
-      /**
-       * Right eye translation state.
-       *
-       * @public
-       * @type {EyeTranslation}
-       * @name state.eyes.translation.right
-       */
-
-      right: new EyeTranslation()
-    }
-  };
-}
-
-/**
- * Update vr controller state.
- *
- * @public
- */
-
-VRController.prototype.update = function () {
-  var renderer = this.scope.renderer;
-  var camera = this.scope.camera;
-  var sensor = this.scope.state.vrPositionSensor;
-  var height = renderer.domElement.height;
-  var width = renderer.domElement.width / 2;
-  var scene = this.scope.scene;
-  var right = this.state.scenes.right;
-  var left = this.state.scenes.left;
-  var eyes = this.state.eyes;
-  var near = camera.near;
-  var far = camera.far;
-  var hmd = this.scope.state.vrHMD;
-
-  if (false == this.scope.state.isVREnabled) {
-    this.target(createCamera(this.scope));
-    return this;
-  }
-
-  renderer.enableScissorTest(true);
-  renderer.clear();
-
-  if (null == camera.parent) {
-    camera.updateMatrixWorld();
-  }
-
-  function setHMDEyeParamaters (which) {
-    var eyeParams = null;
-    var eyeTranslation = null;
-    var eyeFov = null;
-
-    if ('function' == typeof hmd.getEyeParameters) {
-      eyeParams = hmd.getEyeParameters(which);
-      eyeTranslation = eyeParams.eyeTranslation;
-      eyeFov = eyeParams.recommendedFieldOfView;
-    } else {
-      eyeTranslation = hmd.getEyeTranslation(which);
-      eyeFov = hmd.getRecommendedEyeFieldOfView(which);
-    }
-
-    eyes.translation[which].set(eyeTranslation.x,
-                                eyeTranslation.y,
-                                eyeTranslation.z,
-                                eyeTranslation.w);
-
-    eyes.fov[which].set(eyeFov.upDegrees,
-                        eyeFov.rightDegrees,
-                        eyeFov.downDegrees,
-                        eyeFov.leftDegrees);
-  }
-
-  if (null != hmd && null != sensor) {
-    // set eye translations and field of views
-    setHMDEyeParamaters('left');
-    setHMDEyeParamaters('right');
-
-    this.state.cameras.left.projectionMatrix = (
-      eyeTranslationToProjection(eyes.fov.left, near, far)
-    );
-
-    this.state.cameras.right.projectionMatrix = (
-      eyeTranslationToProjection(eyes.fov.right, near, far)
-    );
-
-    this.state.cameras.left.translateX(
-      eyes.translation.left.x * this.state.scale);
-
-    this.state.cameras.right.translateX(
-      eyes.translation.right.x * this.state.scale);
-  }
-
-  // decompose left camera into current camera matrix
-  camera.matrixWorld.decompose(this.state.cameras.left.position,
-                               this.state.cameras.left.quaternion,
-                               this.state.cameras.left.scale);
-
-  // decompose right camera into current camera matrix
-  camera.matrixWorld.decompose(this.state.cameras.right.position,
-                               this.state.cameras.right.quaternion,
-                               this.state.cameras.right.scale);
-
-
-  // left eye
-  renderer.setViewport(0, 0, width, height);
-  renderer.setScissor(0, 0, width, height);
-  renderer.render(left, this.state.cameras.left);
-
-  // right eye
-  renderer.setViewport(width, 0, width, height);
-  renderer.setScissor(width, 0, width, height);
-  renderer.render(right, this.state.cameras.right);
-
-  renderer.enableScissorTest(false);
-
-  return this;
-};
-
-}, {"three.js":2,"inherits":46,"../camera":14,"./controller":32}],
-46: [function(require, module, exports) {
-if (typeof Object.create === 'function') {
-  // implementation from standard node.js 'util' module
-  module.exports = function inherits(ctor, superCtor) {
-    ctor.super_ = superCtor
-    ctor.prototype = Object.create(superCtor.prototype, {
-      constructor: {
-        value: ctor,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
-  };
-} else {
-  // old school shim for old browsers
-  module.exports = function inherits(ctor, superCtor) {
-    ctor.super_ = superCtor
-    var TempCtor = function () {}
-    TempCtor.prototype = superCtor.prototype
-    ctor.prototype = new TempCtor()
-    ctor.prototype.constructor = ctor
-  }
-}
-
-}, {}],
-32: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The axis controller module.
- *
- * @module axis/controls/controller
- * @type {Function}
- */
-
-void module.exports;
-
-/**
- * Module dependencies.
- * @private
- */
-
-var three = require('three.js')
-  , events = require('events')
-  , Emitter = require('emitter')
-
-/**
- * Tiny planet interpolation factor
- *
- * @private
- * @type {Number}
- */
-
-var TINY_PLANET_INTERPOLATION_FACTOR = 0.13;
-
-/**
- * AxisController constructor
- *
- * @public
- * @constructor
- * @class AxisController
- * @param {Axis} scope - An Axis instance.
- * @param {Element} [domElement] - Optional DOM Element to bind events to.
- */
-
-module.exports = AxisController;
-function AxisController (scope, domElement) {
-
-  // ensure instance
-  if (!(this instanceof AxisController)) {
-    return new AxisController(scope, domElement);
-  }
-
-  /**
-   * Reference to this instance.
-   *
-   * @private
-   * @type {AxisController}
-   */
-
-  var self = this;
-
-  /**
-   * Axis scope instance.
-   *
-   * @public
-   * @type {Axis}
-   */
-
-  this.scope = scope;
-
-  /**
-   * Current state of the controller.
-   *
-   * @public
-   * @type {Object}
-   */
-
-  this.state = {
-
-    /**
-     * Defines a getter for a state property.
-     *
-     * @public
-     * @name state.define
-     * @type {Function}
-     * @param {String} key - Property name.
-     * @param {Function} getter - Accessor function.
-     */
-
-    define: function (key, getter) {
-      this.__defineGetter__(key, getter);
-      return this;
-    },
-
-    /**
-     * Predicate indicating if controller is enabled.
-     *
-     * @public
-     * @name state.isEnabled
-     * @type {Boolean}
-     */
-
-    isEnabled: false,
-
-    /**
-     * Predicate indicating if controller should force update.
-     *
-     * @public
-     * @name state.forceUpdate
-     * @type {Boolean}
-     */
-
-    forceUpdate: false,
-
-    /**
-     * Target quaternion to perform
-     * rotations on.
-     *
-     * @public
-     * @type {THREE.Object3D}
-     */
-
-    target: new three.Object3D(),
-
-    /**
-     * Theta value
-     *
-     * @public
-     * @type {Number}
-     */
-
-    get theta () {
-      var x = self.state.orientation.x;
-      return x * (Math.PI / 180);
-    },
-
-    /**
-     * Phi value
-     *
-     * @public
-     * @type {Number}
-     */
-
-    get phi () {
-      var y = self.state.orientation.y;
-      return (90 - y) * (Math.PI / 180);
-    },
-
-    /**
-     * Theta delta value
-     *
-     * @public
-     * @type {Number}
-     */
-
-    thetaDelta: 0,
-
-    /**
-     * Phi delta value
-     *
-     * @public
-     * @type {Number}
-     */
-
-    phiDelta: 0,
-
-    /**
-     * Scale value
-     *
-     * @public
-     * @type {Number}
-     */
-
-    scale: 1,
-
-    /**
-     * Minimum azimuth angle.
-     *
-     * @public
-     * @type {Number}
-     */
-
-    minAzimuthAngle: -Infinity,
-
-    /**
-     * Maximum azimuth angle.
-     *
-     * @public
-     * @type {Number}
-     */
-
-    maxAzimuthAngle: Infinity,
-
-    /**
-     * Minimum polar angle.
-     *
-     * @public
-     * @type {Number}
-     */
-
-    minPolarAngle: 0,
-
-    /**
-     * Maximum polar angle.
-     *
-     * @public
-     * @type {Number}
-     */
-
-    maxPolarAngle: Math.PI,
-
-    /**
-     * Minimum radius distance.
-     *
-     * @public
-     * @type {Number}
-     */
-
-    minDistance: 0,
-
-    /**
-     * Maximum radius distance.
-     *
-     * @public
-     * @type {Number}
-     */
-
-    maxDistance: Infinity,
-
-    /**
-     * Rotation vectors.
-     *
-     * @public
-     * @type {Object}
-     */
-
-    rotation: {
-
-      /**
-       * Start rotation vector.
-       *
-       * @public
-       * @type {THREE.Vector2}
-       */
-
-      start: new three.Vector2(0, 0),
-
-      /**
-       * End rotation vector.
-       *
-       * @public
-       * @type {THREE.Vector2}
-       */
-
-      end: new three.Vector2(0, 0),
-
-      /**
-       * Delta  rotation vector.
-       *
-       * @public
-       * @type {THREE.Vector2}
-       */
-
-      delta: new three.Vector2(0, 0)
-    },
-
-    /**
-     * Controller vectors
-     *
-     * @public
-     * @name state.vectors
-     * @type {Object}
-     */
-
-    vectors : {
-
-      /**
-       * X vector.
-       *
-       * @public
-       * @name state.vectors.x
-       * @type {THREE.Vector3}
-       */
-
-      x: new three.Vector3(1, 0, 0),
-
-      /**
-       * Y vector.
-       *
-       * @public
-       * @name state.vectors.y
-       * @type {THREE.Vector3}
-       */
-
-      y: new three.Vector3(0, 1, 0),
-
-      /**
-       * Z vector.
-       *
-       * @public
-       * @name state.vectors.z
-       * @type {THREE.Vector3}
-       */
-
-      z: new three.Vector3(0, 0, 1),
-
-      /**
-       * Target vector.
-       *
-       * @public
-       * @name state.vectors.target
-       * @type {THREE.Vector3}
-       */
-
-      target: new three.Vector3(0, 0, 0),
-
-      /**
-       * Current offset vector.
-       *
-       * @public
-       * @name state.vectors.offset
-       * @type {THREE.Vector3}
-       */
-
-      offset: new three.Vector3(0, 0, 0),
-
-      /**
-       * Position vector.
-       *
-       * @public
-       * @name state.vectors.position
-       * @type {THREE.Vector3}
-       */
-
-      position: new three.Vector3(0, 0, 0),
-
-      /**
-       * Last known position vector.
-       *
-       * @public
-       * @name state.vectors.lastPosition
-       * @type {THREE.Vector3}
-       */
-
-      lastPosition: new three.Vector3(0, 0, 0)
-    },
-
-    /**
-     * Controller quaternions.
-     *
-     * @public
-     * @name state.quaternions
-     * @type {Object}
-     */
-
-    quaternions : {
-
-      /**
-       * X quaternion.
-       *
-       * @public
-       * @name state.quaternions.x
-       * @type {THREE.Quaternion}
-       */
-
-      x: new three.Quaternion(),
-
-      /**
-       * Y quaternion.
-       *
-       * @public
-       * @name state.quaternions.y
-       * @type {THREE.Quaternion}
-       */
-
-      y: new three.Quaternion(),
-
-      /**
-       * Directional quaternion.
-       *
-       * @public
-       * @name state.quaternions.direction
-       * @type {THREE.Quaternion}
-       */
-
-      direction: new three.Quaternion(),
-
-      /**
-       * Last known quaternion state
-       *
-       * @public
-       * @name state.quaternions.last
-       */
-
-      last: new three.Quaternion(),
-    },
-
-    /**
-     * Named Euler angles.
-     *
-     * @public
-     * @name state.eulers
-     * @type {Object}
-     */
-
-    eulers: {
-
-      /**
-       * Current device Euler angle.
-       *
-       * @public
-       * @name state.eulers.device
-       * @type {THREE.Euler}
-       */
-
-      device: new three.Euler(),
-    }
-  };
-
-  /**
-   * Controller orientation.
-   *
-   * @public
-   * @name state.orientation
-   * @type {Object}
-   */
-
-  this.state.orientation = this.scope.orientation || {
-
-    /**
-     * X orientation coordinate.
-     *
-     * @public
-     * @name state.orientation.x
-     * @type {Number}
-     */
-
-    x: 0,
-
-    /**
-     * Y orientation coordinate.
-     *
-     * @public
-     * @name state.orientation.y
-     * @type {Number}
-     */
-
-    y: 0,
-
-    /**
-     * Z orientation coordinate.
-     *
-     * @public
-     * @name state.orientation.z
-     * @type {Number}
-     */
-
-    z: 0
-  };
-
-  /**
-   * Controllers DOM Element.
-   *
-   * @public
-   * @name domElement
-   * @type {Element}
-   */
-
-  this.domElement = domElement || scope.domElement;
-
-  /**
-   * Event delegation for the controller. Event delegation.
-   *
-   * @public
-   * @name events
-   * @type {Object}
-   */
-
-  this.events = events(this.domElement, this);
-
-  // Update controller before rendering occurs on scope.
-  this.onbeforedraw = this.onbeforedraw.bind(this);
-  scope.on('beforedraw', this.onbeforedraw);
-}
-
-// Inherit `EventEmitter'
-Emitter(AxisController.prototype);
-
-/**
- * Handles `before:render' event.
- *
- * @private
- */
-
-AxisController.prototype.onbeforedraw = function () {
-  // update only if enabled.
-  if (false == this.state.forceUpdate &&
-      false == this.state.isEnabled) {
-    return this;
-  }
-
-  this.update();
-};
-
-/**
- * Enables this controller.
- *
- * @public
- * @method
- * @name enable
- * @return {AxisController}
- */
-
-AxisController.prototype.enable = function () {
-  this.scope.debug("enable %s", this.constructor.name);
-  this.state.isEnabled = true;
-  return this;
-};
-
-/**
- * Disables this controller.
- *
- * @public
- * @method
- * @name disable
- * @return {AxisController}
- */
-
-AxisController.prototype.disable = function () {
-  this.scope.debug("disable %s", this.constructor.name);
-  this.state.isEnabled = false;
-  return this;
-};
-
-/**
- * Updates controller state.
- *
- * @public
- * @method
- * @name update
- * @return {AxisController}
- */
-
-AxisController.prototype.update = function () {
-  var quaternions = this.state.quaternions;
-  var orientation = this.state.orientation;
-  var vectors = this.state.vectors;
-  var target = this.state.target;
-  var quat = new three.Quaternion().copy(target.quaternion);
-  var interpolationFactor = this.scope.state.interpolationFactor;
-  var ratio = this.scope.dimensions().ratio;
-  var geo = this.scope.geometry();
-
-  // update only if enabled.
-  if (false == this.state.forceUpdate &&
-      false == this.state.isEnabled) {
-    return this;
-  }
-
-  if (orientation.x != orientation.x) {
-    orientation.x = 0;
-  }
-
-  if (orientation.y != orientation.y) {
-    orientation.y = 0;
-  }
-
-  if ('tinyplanet' == this.scope.projections.current) {
-    interpolationFactor = TINY_PLANET_INTERPOLATION_FACTOR;
-  }
-
-  if ('cylinder' == geo) {
-    orientation.x = 0;
-  } else if (false != this.scope.state.lockPoles) {
-    // normalize x orientation
-    orientation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, orientation.x));
-  } else {
-    interpolationFactor = 1;
-  }
-
-  // update controller quaternions
-  quaternions.y.setFromAxisAngle(vectors.y, orientation.y);
-  quaternions.x.setFromAxisAngle(vectors.x, orientation.x * interpolationFactor);
-
-  // update target quaternion
-  quat.slerp(quaternions.y, interpolationFactor);
-
-  // avoid NaN
-  target.quaternion.set(quat.x || 0,
-                        quat.y || 0,
-                        quat.z || 0,
-                        quat.w || 0);
-
-  quat.multiply(quaternions.x);
-
-  // avoid NaN
-  target.quaternion.set(quat.x || 0,
-                        quat.y || 0,
-                        quat.z || 0,
-                        quat.w || 0);
-
-  return this;
-};
-
-/**
- * Resets controller state. By default this will set
- * all properties on the state object to `null`
- *
- * @public
- * @abstract
- * @method
- * @name reset
- * @return {AxisController}
- */
-
-AxisController.prototype.reset = function () {
-  this.state.quaternions.x.set(0, 0, 0, 0);
-  this.state.quaternions.y.set(0, 0, 0, 0);
-  this.state.vectors.x.set(1, 0, 0);
-  this.state.vectors.y.set(0, 1, 0);
-  this.state.forceUpdate = false;
-  return this;
-};
-
-/**
- * Freezes state object from being modified. Only the
- * properties that exist may have their values changed.
- * Once state is frozen, it cannot be unfrozen.
- *
- * @public
- * @method
- * @name freeze
- * @return {AxisController}
- */
-
-AxisController.prototype.freeze = function () {
-  Object.freeze(this.state);
-  return this;
-};
-
-/**
- * Sets target quaternion on instance.
- *
- * @public
- * @method
- * @name target
- * @param {THREE.Object3D} target
- * @return {AxisController}
- */
-
-AxisController.prototype.target = function (target) {
-  var up = target.up;
-  var y = new three.Vector3(0, 1, 0);
-  this.state.target = target;
-  // initialize direction quaternion from targets up vector
-  this.state.quaternions.direction.setFromUnitVectors(up, y);
-  this.state.quaternions.directionInverse = (
-    this.state.quaternions.direction.clone().inverse()
-  );
-  return this;
-};
-
-/**
- * Rotate controller target with x and y radian rotations.
- *
- * @public
- * @method
- * @name rotate
- * @param {Object} delta - X and Y deltas in radians.
- * @param {Number} delta.x - X delta value in radians.
- * @param {Number} delta.y - Y delta value in radians.
- * @throws TypeError
- * @return {AxisController}
- */
-
-AxisController.prototype.rotate = function (delta) {
-  if (false == this.state.isEnabled) { return this; }
-  if ('object' != typeof delta) {
-    throw new TypeError("Expecting object.");
-  }
-
-  var orientation = this.state.orientation;
-  var friction = this.scope.state.friction;
-
-  delta.x = Math.min(delta.x, 1);
-  delta.y = Math.min(delta.y, 1);
-
-  // update controller orientation
-  if (true != this.scope.state.isConstrainedWith('x')) {
-    if (this.scope.state.isInverted) {
-      orientation.x -= delta.x * friction;
-    } else {
-      orientation.x += delta.x * friction;
-    }
-  }
-
-  if (true != this.scope.state.isConstrainedWith('y')) {
-    if (this.scope.state.isInverted) {
-      orientation.y -= delta.y * friction;
-    } else {
-      orientation.y += delta.y * friction;
-    }
-  }
-
-  return this;
-};
-
-/**
- * Cleans up controller state, etc.
- *
- * @public
- * @method
- * @name destroy
- * @return {AxisController}
- */
-
-AxisController.prototype.destroy = function () {
-  this.reset();
-  this.events.unbind();
-  this.scope.off('beforedraw', this.onbeforedraw);
-  return this;
-};
-
-/**
- * Returns current camera aspect ratio. If not available
- * 1 is returned.
- *
- * @public
- * @method
- * @name getAspectRatio
- * @return {Number}
- */
-
-AxisController.prototype.getAspectRatio = function () {
-  var scope = this.scope;
-  var camera = scope.camera;
-  var aspect = camera ? camera.aspect : 1;
-  return aspect;
-};
-
-}, {"three.js":2,"events":5,"emitter":4}],
-26: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The mouse controls module.
- *
- * @module axis/controls/mouse
- * @type {Function}
- */
-
-void module.exports;
-
-/**
- * Module dependencies.
- * @private
- */
-
-var inherits = require('inherits')
-
-/**
- * Local dependencies.
- * @private
- */
-
-var AxisController = require('./controller')
-  , constants = require('../constants')
-  , util = require('../util')
-
-// default mouse friction value
-var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
-
-/**
- * Initializes mouse controls on Axis.
- *
- * @public
- * @param {Axis} axis - The Axis instance.
- * @return {MouseController}
- */
-
-module.exports = function mouse (axis) {
-  return MouseController(axis)
-  .target(axis.camera)
-  .enable();
-};
-
-/**
- * MouseController constructor
- *
- * @public
- * @constructor
- * @class MouseController
- * @extends AxisController
- * @see {@link module:axis/controls/controller~AxisController}
- * @param {Axis} scope - The axis instance
- */
-
-module.exports.MouseController = MouseController;
-inherits(MouseController, AxisController);
-function MouseController (scope) {
-  if (!(this instanceof MouseController)) {
-    return new MouseController(scope);
-  }
-
-  // inherit from `AxisController'
-  AxisController.call(this, scope);
-
-  /**
-   * Mouse controller movements.
-   *
-   * @public
-   * @name state.movements
-   * @type {Object}
-   */
-
-  this.state.movements = {
-
-    /**
-     * X movement coordinate value.
-     *
-     * @public
-     * @name state.movement.x
-     * @type {Number}
-     */
-
-    x: 0,
-
-    /**
-     * Y movement coordinate value.
-     *
-     * @public
-     * @name state.movement.y
-     * @type {Number}
-     */
-
-    y: 0
-  };
-
-  /**
-   * Initial mouse controller movement.
-   *
-   * @public
-   * @name state.movementsStart
-   * @type {Object}
-   */
-
-  this.state.movementsStart = {
-
-    /**
-     * X movement start value.
-     *
-     * @public
-     * @name state.movementsStart.x
-     * @type {Object}
-     */
-
-    x: 0,
-
-    /**
-     * Y movement start value.
-     *
-     * @public
-     * @name state.movementsStart.y
-     * @type {Object}
-     */
-
-    y: 0
-  };
-
-  /**
-   * Is mousedown predicate.
-   *
-   * @public
-   * @name state.isMousedown
-   * @type {Boolean}
-   */
-
-  this.state.isMousedown = false;
-
-  /**
-   * Mouseup timeout ID
-   *
-   * @public
-   * @name state.mouseupTimeout
-   * @type {Number}
-   */
-
-  this.state.mouseupTimeout = 0;
-
-  // initialize event delegation.
-  this.events.bind('mouseleave');
-  this.events.bind('mousedown');
-  this.events.bind('mousemove');
-  this.events.bind('mouseup');
-}
-
-/**
- * Handles 'onmousedown' events.
- *
- * @private
- * @name onmousedown
- * @param {Event} e - Event object.
- */
-
-MouseController.prototype.onmousedown = function (e) {
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  clearTimeout(this.state.mouseupTimeout);
-  this.state.forceUpdate = false;
-  this.state.isMousedown = true;
-  this.state.movementsStart.x = e.screenX * friction;
-  this.state.movementsStart.y = e.screenY * friction;
-};
-
-/**
- * Handles 'onmouseup' events.
- *
- * @private
- * @name onmouseup
- * @param {Event} e - Event object.
- */
-
-MouseController.prototype.onmouseup = function (e) {
-  this.state.forceUpdate = true;
-  this.state.isMousedown = false;
-  clearTimeout(this.state.mouseupTimeout);
-  this.state.mouseupTimeout = setTimeout(function () {
-    this.state.forceUpdate = false;
-    this.state.movementsStart.x = 0;
-    this.state.movementsStart.y = 0;
-  }.bind(this), this.scope.state.controllerUpdateTimeout);
-};
-
-/**
- * Handles 'onmousemove' events.
- *
- * @private
- * @name onmousemove
- * @param {Event} e - Event object.
- */
-
-MouseController.prototype.onmousemove = function (e) {
-  var movements = this.state.movements;
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  var tmp = 0;
-
-  // handle mouse movements only if the mouse controller is enabled
-  if (false == this.state.isEnabled || false == this.state.isMousedown) {
-    return;
-  }
-
-  movements.x = (e.screenX * friction) - this.state.movementsStart.x;
-  movements.y = (e.screenY * friction) - this.state.movementsStart.y;
-
-  // normalized movements from event
-  util.normalizeMovements(e, movements);
-
-  // apply friction
-  movements.y *= friction/2;
-  movements.x *= friction;
-
-  // swap for rotation
-  tmp = movements.y;
-  movements.y = movements.x;
-  movements.x = tmp;
-
-  this.rotate(movements);
-  this.state.movementsStart.x = e.screenX * friction;
-  this.state.movementsStart.y = e.screenY * friction;
-};
-
-/**
- * Handles 'onmousemove' events.
- *
- * @private
- * @name onmousemove
- * @param {Event} e - Event object.
- */
-
-MouseController.prototype.onmouseleave = function () {
-  this.onmouseup();
-};
-
-/**
- * Resets mouse controller state.
- *
- * @public
- * @method
- * @name reset
- * @return {MouseController}
- */
-
-MouseController.prototype.reset = function () {
-  clearTimeout(this.state.mouseupTimeout);
-  AxisController.prototype.reset.call(this);
-  this.state.isMousedown = false;
-  this.state.mouseupTimeout = 0;
-  this.state.movementsStart.x = 0;
-  this.state.movementsStart.y = 0;
-  this.state.movements.x = 0;
-  this.state.movements.y = 0;
-  return this;
-};
-
-/**
- * Implements AxisController#update() method.
- *
- * @public
- * @method
- * @name update
- * @return {MouseController}
- */
-
-MouseController.prototype.update = function () {
-  if (false == this.state.isMousedown) { return this; }
-  AxisController.prototype.update.call(this);
-  return this;
-};
-
-}, {"inherits":46,"./controller":32,"../constants":18,"../util":17}],
-27: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The touch controls module.
- *
- * @module axis/controls/touch
- * @type {Function}
- */
-
-void module.exports;
-
-/**
- * Module dependencies.
- * @private
- */
-
-var inherits = require('inherits')
-  , three = require('three.js')
-
-/**
- * Local dependencies.
- * @private
- */
-
-var AxisController = require('./controller')
-  , constants = require('../constants')
-
-/**
- * Initializes touch controls on Axis.
- *
- * @public
- * @param {Axis} scope - The axis instance
- * @return {TouchController}
- */
-
-module.exports = function touch (axis) {
-  return TouchController(axis)
-  .target(axis.camera)
-  .enable()
-  .update();
-};
-
-/**
- * TouchController constructor
- *
- * @public
- * @constructor
- * @class TouchController
- * @extends AxisController
- * @see {@link module:axis/controls/controller~AxisController}
- * @param {Axis} scope - The axis instance
- */
-
-module.exports.TouchController = TouchController;
-inherits(TouchController, AxisController);
-function TouchController (scope) {
-
-  // ensure instance
-  if (!(this instanceof TouchController)) {
-    return new TouchController(scope);
-  }
-
-  // inherit from `AxisController'
-  AxisController.call(this, scope, document);
-
-  /**
-   * Reference to this instance.
-   *
-   * @private
-   * @type {TouchController}
-   */
-
-  var self = this;
-
-  /**
-   * Predicate indicating if touching.
-   *
-   * @public
-   * @name state.isTouching
-   * @type {Boolean}
-   */
-
-  this.state.isTouching = false;
-
-  /**
-   * Drag state
-   *
-   * @public
-   * @name state.drag
-   * @type {Object}
-   */
-
-  this.state.drag = {
-
-    /**
-     * X coordinate drag state
-     *
-     * @public
-     * @name state.drag.x
-     * @type {Number}
-     */
-
-    x: 0,
-
-    /**
-     * Y coordinate drag state
-     *
-     * @public
-     * @name state.drag.y
-     * @type {Number}
-     */
-
-    y: 0
-  };
-
-  /**
-   * Current touchs
-   *
-   * @public
-   * @name state.touches
-   * @type {Array}
-   */
-
-  this.state.touches = [];
-
-  /**
-   * Current touch quaternion
-   *
-   * @public
-   * @name state.quaternions.touch
-   * @type {THREE.Quaternion}
-   */
-
-  this.state.quaternions.touch = new three.Quaternion();
-
-  // initialize event delegation
-  this.events.bind('touchstart');
-  this.events.bind('touchmove');
-  this.events.bind('touchend');
-  this.events.bind('touch');
-}
-
-/**
- * Handle 'ontouchstart' event.
- *
- * @private
- * @param {Event} e
- */
-
-TouchController.prototype.ontouchstart = function (e) {
-  var touch = e.touches[0];
-  this.state.isTouching = true;
-  this.state.touches = e.touches;
-  this.state.drag.x = touch.pageX;
-  this.state.drag.y = touch.pageY;
-};
-
-/**
- * Handle 'ontouchmove' event.
- *
- * @private
- * @param {Event} e
- */
-
-TouchController.prototype.ontouchmove = function (e) {
-  var touch = e.touches[0];
-  var x = touch.pageX - this.state.drag.x;
-  var y = touch.pageY - this.state.drag.y;
-  if (this.scope.domElement.contains(e.target)) {
-    this.state.drag.x = touch.pageX;
-    this.state.drag.y = touch.pageY;
-    this.rotate({x: x, y: y});
-  }
-};
-
-/**
- * Handle 'ontouchend' event.
- *
- * @private
- * @param {Event} e
- */
-
-TouchController.prototype.ontouchend = function (e) {
-  this.state.isTouching = false;
-};
-
-/**
- * Update touch controller state.
- *
- * @public
- */
-
-TouchController.prototype.update = function () {
-  if (false == this.state.isTouching) { return this; }
-  AxisController.prototype.update.call(this);
-  this.state.quaternions.touch.copy(this.state.target.quaternion)
-  return this;
-};
-
-}, {"inherits":46,"three.js":2,"./controller":32,"../constants":18}],
-28: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The keyboard controls module.
- *
- * @module axis/controls/keyboard
- * @type {Function}
- */
-
-void module.exports;
-
-/**
- * Module dependencies.
- * @private
- */
-
-var keycode = require('keycode')
-  , inherits = require('inherits')
-
-/**
- * Local dependencies.
- * @private
- */
-
-var AxisController = require('./controller')
-  , constants = require('../constants')
-
-// default key rotatening speed in pixels
-var DEFAULT_KEY_ROTATE_SPEED = constants.DEFAULT_KEY_ROTATE_SPEED;
-
-/**
- * Initialize keyboard controls on Axis.
- *
- * @public
- * @param {Axis} scope - The axis instance
- * @return {KeyboardController}
- */
-
-module.exports = function keyboard (axis) {
-  return KeyboardController(axis)
-  .target(axis.camera)
-  .enable()
-  .update();
-};
-
-/**
- * Key code map
- *
- * @public
- * @type {Object}
- */
-
-var keycodes = module.exports.keycodes = {
-  'esc': 27,
-  'space': 32,
-  'left': 37,
-  'up': 38,
-  'right': 39,
-  'down': 40,
-  'k': keycode('k'), // up
-  'j': keycode('j'), // down
-  'h': keycode('h'), // left
-  'l': keycode('l'), // right
-
-  'w': keycode('w'), // up
-  's': keycode('s'), // down
-  'a': keycode('a'), // left
-  'd': keycode('d'), // right
-};
-
-/**
- * Derive keyname from keycode
- *
- * @private
- * @param {Number} code
- * @return {String}
- */
-
-function keyname (code) {
-  for (var name in keycodes) {
-    if (code == keycodes[name]) { return name; }
-  }
-  return null;
-}
-
-/**
- * KeyboardController constructor
- *
- * @public
- * @constructor
- * @class KeyboardController
- * @extends AxisController
- * @see {@link module:axis/controls/controller~AxisController}
- * @param {Axis} scope - The axis instance
- */
-
-module.exports.KeyboardController = KeyboardController;
-inherits(KeyboardController, AxisController);
-function KeyboardController (scope) {
-
-  // ensure instance
-  if (!(this instanceof KeyboardController)) {
-    return new KeyboardController(scope);
-  }
-
-  // inherit from `AxisController'
-  AxisController.call(this, scope, document);
-
-  /**
-   * Reference to this instance.
-   *
-   * @private
-   * @type {KeyboardController}
-   */
-
-  var self = this;
-
-  /**
-   * Function handles for key presses.
-   *
-   * @public
-   * @name state.handlers
-   * @type {Object}
-   */
-
-  this.state.handlers = {};
-
-  /**
-   * Supported keys names.
-   *
-   * @public
-   * @name state.keynames
-   * @type {Array}
-   */
-
-  this.state.keynames = Object.keys(module.exports.keycodes);
-
-  /**
-   * Supported keys codes.
-   *
-   * @public
-   * @name state.supported
-   * @type {Array}
-   */
-
-  this.state.define('supported', function () {
-    return self.state.keynames.map(keycode);
-  });
-
-  /**
-   * Key state.
-   *
-   * @public
-   * @name keycode
-   * @type {Array}
-   */
-
-  this.state.define('keycodes', function () {
-    return self.state.keynames.map(keycode);
-  });
-
-  /**
-   * Key state map
-   *
-   * @public
-   * @name keystate
-   * @type {Object}
-   */
-
-  this.state.keystate = {};
-
-  /**
-   * Predicate indicating if a key is down
-   *
-   * @public
-   * @name state.isKeydown
-   * @type {Boolean}
-   * @default false
-   */
-
-  this.state.define('isKeydown', function () {
-    return Object.keys(self.state.keystate).some(function (code) {
-      return true == self.state.keystate[code];
-    });
-  });
-
-  /**
-   * Key rotatening speed in pixels
-   *
-   * @public
-   * @name state.rotateSpeed
-   * @type {Number}
-   * @default DEFAULT_KEY_ROTATE_SPEED
-   */
-
-  this.state.rotateSpeed = DEFAULT_KEY_ROTATE_SPEED;
-
-
-  // initialize event delegation
-  this.events.bind('mousedown');
-  this.events.bind('keydown');
-  this.events.bind('keyup');
-
-  // reset state
-  this.reset();
-
-  this.use('up', up);
-  this.use('down', down);
-  this.use('left', left);
-  this.use('right', right);
-
-  this.use('w', up);
-  this.use('s', down);
-  this.use('a', left);
-  this.use('d', right);
-
-  if (this.scope.state.vim) {
-    this.use('k', up);
-    this.use('j', down);
-    this.use('h', left);
-    this.use('l', right);
-  }
-
-  function up (data) {
-    this.rotate({x: self.state.rotateSpeed, y: 0});
-  }
-
-  function down (data) {
-    this.rotate({x: -self.state.rotateSpeed, y: 0});
-  }
-
-  function left (data) {
-    this.rotate({x: 0, y: self.state.rotateSpeed});
-  }
-
- function right (data) {
-    this.rotate({x: 0, y: -self.state.rotateSpeed});
-  }
-}
-
-/**
- * Resets controller state.
- *
- * @public
- * @method
- * @name reset
- * @return {KeyboardController}
- */
-
-KeyboardController.prototype.reset = function () {
-  clearTimeout(this.state.keyupTimeout);
-  AxisController.prototype.reset.call(this);
-  Object.keys(this.state.keystate).forEach(function (code) {
-    this.state.keystate[code] = false;
-  }, this);
-  return this;
-};
-
-/**
- * Updates controller state.
- *
- * @public
- * @method
- * @name update
- * @return {KeyboardController}
- */
-
-KeyboardController.prototype.update = function () {
-  var lastQuaternion = this.state.quaternions.last;
-  var lastPosition = this.state.vectors.lastPosition;
-  var isKeydown = this.state.isKeydown;
-  var isFocused = this.scope.state.isFocused;
-  var keystate = this.state.keystate;
-  var handlers = this.state.handlers;
-  var position = this.state.target.position;
-  var offset = this.state.vectors.offset;
-
-  if (false == isKeydown || false == isFocused) { return this; }
-  // call registered keycode handlers
-  this.state.keycodes.forEach(function (code) {
-    if (null == handlers[code]) { return; }
-    handlers[code].forEach(function (handle) {
-      var name = keyname(code);
-      if (this.state.keystate[code]) {
-        if ('function' == typeof handle) {
-          handle.call(this, {name: name, code: code});
-        }
-      }
-    }, this);
-  }, this);
-
-  return AxisController.prototype.update.call(this);
-};
-
-/**
- * Installs a key handle by name.
- *
- * @public
- * @method
- * @name use
- * @param {String|Number} key - Key by name or key code
- * @param {Function} fn - Function handler
- * @throws TypeError
- * @return {KeyboardController}
- */
-
-KeyboardController.prototype.use = function (key, fn) {
-  var handlers = this.state.handlers;
-  key = 'string' == typeof key ? keycode(key) : key;
-  if ('number' != typeof key) {
-    throw new TypeError("Expecting string or number.");
-  }
-  if (null == handlers[key]) { handlers[key] = []; }
-  handlers[key].push(fn);
-  return this;
-};
-
-
-/**
- * Detects if key name or key code is supported and
- * not constrained.
- *
- * @public
- * @method
- * @name isKeySupported
- * @param {String|Number} key - Key name or key code.
- * @return {Boolean}
- */
-
-KeyboardController.prototype.isKeySupported = function (key) {
-  var constraints = this.scope.projections.constraints;
-
-  // normalize key into keycode
-  key = 'string' == typeof key ? keycode(key) : key;
-
-  // only keycode numbers are supported
-  if ('number' != typeof key) { return false; }
-
-  // false if there are any implicit constraints
-  // despite explicit support
-  if (constraints && constraints.keys) {
-    if (true == constraints.keys[key]) {
-      return false;
-    }
-  }
-
-  // check if key is in supported array
-  if (-1 == this.state.supported.indexOf(key)) {
-    return false;
-  }
-
-  return true;
-};
-
-/**
- * Handle 'onkeydown' events.
- *
- * @private
- * @name onkeydown
- * @param {Event} - Event object.
- */
-
-KeyboardController.prototype.onkeydown = function (e) {
-  var constraints = this.scope.projections.constraints;
-  var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused;
-  var handlers = this.state.handlers;
-  var ctrlKey = e.ctrlKey;
-  var metaKey = e.metaKey;
-  var altKey = e.altKey;
-  var scope = this.scope;
-  var code = e.which;
-  var self = this;
-
-  /**
-   * Key down event.
-   *
-   * @public
-   * @event module:axis~Axis#keydown
-   * @type {Event}
-   */
-
-  this.scope.emit('keydown', e);
-
-  // ignore control keys
-  if (ctrlKey || metaKey || altKey) { return; }
-
-  if (false == this.state.isEnabled) {
-    return;
-  }
-
-  if (isFocused) {
-    // only supported keys
-    if (false == this.isKeySupported(code)) {
-      return;
-    }
-
-    this.state.keystate[code] = true;
-
-    // prevent default actions
-    e.preventDefault();
-  }
-};
-
-/**
- * Handle 'onkeyup' events.
- *
- * @private
- * @name onkeyup
- * @param {Event} - Event object.
- */
-
-KeyboardController.prototype.onkeyup = function (e) {
-  var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused;
-  var code = e.which;
-  this.state.keystate[code] = false;
-  this.scope.emit('keyup', e);
-  if (isFocused) {
-    e.preventDefault();
-    this.state.forceUpdate = true;
-    clearTimeout(this.state.keyupTimeout);
-    this.state.keyupTimeout = setTimeout(function () {
-      this.state.forceUpdate = false;
-    }.bind(this), this.scope.state.controllerUpdateTimeout);
-  }
-
-};
-
-/**
- * Handle `onmousedown' events.
- *
- * @private
- * @name onmousedown
- * @param {Event} - Event object.
- */
-
-KeyboardController.prototype.onmousedown = function (e) {
-  if (e.target == this.scope.domElement ||
-      this.scope.domElement.contains(e.target)) {
-    this.scope.state.update('isFocused', true);
-  } else {
-    this.scope.state.update('isFocused', false);
-  }
-}
-
-}, {"keycode":9,"inherits":46,"./controller":32,"../constants":18}],
-29: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The orientation controls module.
- *
- * @module axis/controls/orientation
- * @type {Function}
- */
-
-void module.exports;
-
-/**
- * Module dependencies.
- * @private
- */
-
-var keycode = require('keycode')
-  , inherits = require('inherits')
-
-/**
- * Local dependencies.
- * @private
- */
-
-var AxisController = require('./controller')
-  , constants = require('../constants')
-
-/**
- * Converts degrees to radians
- *
- * @private
- * @param {Number} degrees
- */
-
-function dtor (degrees) {
-  return 'number' == typeof degrees && degrees == degrees ?
-    (Math.PI / 180) * degrees : 0;
-}
-
-/**
- * Initialize orientation controls on Axis.
- *
- * @public
- * @param {Axis} scope - The axis instance
- * @return {OrientationController}
- */
-
-module.exports = function orientation (axis) {
-  return OrientationController(axis)
-  .target(axis.camera)
-  .enable()
-  .update();
-};
-
-/**
- * OrientationController constructor
- *
- * @public
- * @constructor
- * @class OrientationController
- * @extends AxisController
- * @see {@link module:axis/controls/controller~AxisController}
- * @param {Axis} scope - The axis instance
- */
-
-module.exports.OrientationController = OrientationController;
-inherits(OrientationController, AxisController);
-function OrientationController (scope) {
-
-  // ensure instance
-  if (!(this instanceof OrientationController)) {
-    return new OrientationController(scope);
-  }
-
-  // inherit from `AxisController'
-  AxisController.call(this, scope, window);
-
-  /**
-   * Reference to this instance.
-   *
-   * @private
-   * @type {OrientationController}
-   */
-
-  var self = this;
-
-  /**
-   * The current device orientation angle in
-   * degrees.
-   *
-   * @public
-   * @name state.deviceOrientation
-   * @type {Number}
-   */
-
-  this.state.define('deviceOrientation', function () {
-    var angle = 0;
-    var type = null;
-    var orientation = (
-      screen.ourOrientation || // our injected orientation
-      screen.orientation    || // webkit orientation
-      screen.mozOrientation || // firefox orientation
-      screen.msOrientation  || // internet explorer orientation
-      null // unable to determine orientation object
-    );
-
-
-    if (orientation && orientation.type) {
-      type = orientation.type;
-    }
-
-    if (orientation && orientation.angle) {
-      angle = orientation.angle;
-    }
-
-    // attempt to polyfil angle falling back to 0
-    switch (type) {
-      case 'landscape-primary': return angle || 90;
-      case 'landscape-secondary': return angle || -90;
-      case 'portrait-secondary': return angle || 180;
-      case 'portrait-primary': return angle || 0;
-      default: return angle || window.orientation || 0;
-    }
-  });
-
-  /**
-   * The current alpha angle rotation
-   *
-   * @public
-   * @name state.alpha
-   * @type {Number}
-   */
-
-  this.state.alpha = 0;
-
-  /**
-   * The current beta angle rotation
-   *
-   * @public
-   * @name state.beta
-   * @type {Number}
-   */
-
-  this.state.beta = 0;
-
-  /**
-   * The current gamma angle rotation
-   *
-   * @public
-   * @name state.gamma
-   * @type {Number}
-   */
-
-  this.state.gamma = 0;
-
-  // Initialize event delegation
-  this.events.bind('deviceorientation');
-}
-
-/**
- * Handle 'ondeviceorientation' event.
- *
- * @private
- * @param {Event} e
- */
-
-OrientationController.prototype.ondeviceorientation = function (e) {
-  this.state.alpha = e.alpha;
-  this.state.beta = e.beta;
-  this.state.gamma = e.gamma;
-};
-
-/**
- * Update orientation controller state.
- *
- * @public
- */
-
-OrientationController.prototype.update = function () {
-  var interpolationFactor = this.scope.state.interpolationFactor;
-  var orientation = dtor(this.state.deviceOrientation);
-  var alpha = dtor(this.state.alpha);
-  var beta = dtor(this.state.beta);
-  var gamma = dtor(this.state.gamma);
-  var angle = 0;
-
-  if (0 != alpha && 0 != beta && 0 != gamma) {
-    angle = - (this.state.deviceOrientation / 2);
-    this.state.eulers.device.set(beta, alpha, -gamma, 'YXZ');
-    this.state.quaternions.direction.setFromEuler(
-      this.state.eulers.device
-    );
-
-    if (this.scope.controls.touch) {
-      this.state.quaternions.direction.multiply(
-        this.scope.controls.touch.state.quaternions.touch
-      );
-    }
-    //this.state.quaternions.direction.multiply(this.state.quaternions.device);
-    //this.state.quaternions.direction.multiply(this.state.quaternions.world);
-    //AxisController.prototype.update.call(this);
-    this.state.target.quaternion.slerp(this.state.quaternions.direction,
-                                       interpolationFactor);
-  }
-  return this;
-};
-
-}, {"keycode":9,"inherits":46,"./controller":32,"../constants":18}],
-30: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The pointer controls module.
- *
- * @module axis/controls/pointer
- * @type {Function}
- */
-
-void module.exports;
-
-/**
- * Module dependencies.
- * @private
- */
-
-var inherits = require('inherits')
-  , three = require('three.js')
-  , lock = require('pointer-lock')
-
-/**
- * Local dependencies.
- * @private
- */
-
-var MouseController = require('./mouse').MouseController
-  , AxisController = require('./controller')
-  , constants = require('../constants')
-
-/**
- * Initializes pointer controls on Axis.
- *
- * @public
- * @param {Axis} scope - The axis instance
- * @return {PointerController}
- */
-
-module.exports = function pointer (axis) {
-  return PointerController(axis).target(axis.camera)
-};
-
-/**
- * PointerController constructor
- *
- * @public
- * @constructor
- * @class PointerController
- * @extends MouseController
- * @see {@link module:axis/controls/controller~MouseController}
- * @param {Axis} scope - The axis instance
- */
-
-module.exports.PointerController = PointerController;
-inherits(PointerController, MouseController);
-function PointerController (scope) {
-
-  // ensure instance
-  if (!(this instanceof PointerController)) {
-    return new PointerController(scope);
-  }
-
-  // inherit from `MouseController'
-  MouseController.call(this, scope);
-
-  /**
-   * Reference to this instance.
-   *
-   * @private
-   * @type {PointerController}
-   */
-
-  var self = this;
-
-  /**
-   * Pointer lock on scopes DOM Element
-   *
-   * @public
-   * @name state.lock
-   * @type {EventEmitter}
-   */
-
-  this.state.lock = null;
-}
-
-/**
- * Enables mouse pointer lock
- *
- * @public
- * @method
- * @name enable
- * @return {PointerController}
- */
-
-PointerController.prototype.enable = function () {
-  // init lock if not created
-  if (null == this.state.lock) {
-    this.state.lock = lock(this.scope.domElement);
-  }
-
-  return MouseController.prototype.enable.call(this);;
-};
-
-/**
- * Disables mouse pointer lock
- *
- * @public
- * @method
- * @name disable
- * @return {PointerController}
- */
-
-PointerController.prototype.disable = function () {
-  // init lock if not created
-  if (null != this.state.lock) {
-    this.state.isMousedown = false;
-    this.state.lock.destroy();
-  }
-  return MouseController.prototype.disable.call(this);;
-};
-
-/**
- * Request mouse pointer lock.
- *
- * @private
- * @method
- * @name request
- * @return {PointerController}
- */
-
-PointerController.prototype.request = function () {
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  var scope = this.scope;
-  var self = this;
-
-  // request lock from user
-  this.state.lock.request();
-
-  // handle updates when attained
-  this.state.lock.on('attain', function () {
-    var movements = self.state.movements;
-    self.state.isMousedown = true;
-    // update movements when lock has been attained
-    self.state.lock.on('data', function (e) {
-      self.state.isMousedown = true;
-      movements.x += e.x;
-      movements.y += e.y;
-      // apply friction
-      movements.y *= (friction/4);
-      movements.x *= (friction/4);
-    });
-
-    // reset state when released
-    self.state.lock.on('release', function () {
-      self.state.isMousedown = false;
-      if (self.state.lock) {
-        self.state.lock.destroy();
-      }
-    });
-  });
-
-  return this;
-};
-
-/**
- * Overloads MouseController#update() method.
- *
- * @public
- * @method
- * @name update
- * @return {PointerController}
- */
-
-PointerController.prototype.update = function () {
-  AxisController.prototype.update.call(this);
-  return this;
-};
-
-/**
- * Overloads MouseController#disable() method.
- *
- * @public
- * @method
- * @name disable
- * @return {PointerController}
- */
-
-PointerController.prototype.disable = function () {
-  MouseController.prototype.disable.call(this);
-  if (null != this.state.lock) {
-    this.state.lock.release();
-    this.state.lock.destroy();
-  }
-  this.state.lock = null;
-  return this;
-};
-
-}, {"inherits":46,"three.js":2,"pointer-lock":47,"./mouse":26,"./controller":32,"../constants":18}],
-47: [function(require, module, exports) {
-module.exports = pointer
-
-pointer.available = available
-
-try {
-var EE = require('events').EventEmitter
-  , Stream = require('stream').Stream
-} catch (e) {
-  var EE = require('emitter')
-    , Stream = require('stream')
-}
-
-function available() {
-  return !!shim(document.body)
-}
-
-function pointer(el) {
-  var ael = el.addEventListener || el.attachEvent
-    , rel = el.removeEventListener || el.detachEvent
-    , doc = el.ownerDocument
-    , body = doc.body
-    , rpl = shim(el) 
-    , out = {dx: 0, dy: 0, dt: 0}
-    , ee = new EE
-    , stream = null
-    , lastPageX, lastPageY
-    , needsFullscreen = false
-    , mouseDownMS
-
-  ael.call(el, 'mousedown', onmousedown, false)
-  ael.call(el, 'mouseup', onmouseup, false)
-  ael.call(body, 'mousemove', onmove, false)
-
-  var vendors = ['', 'webkit', 'moz', 'ms', 'o']
-
-  for(var i = 0, len = vendors.length; i < len; ++i) {
-    ael.call(doc, vendors[i]+'pointerlockchange', onpointerlockchange)
-    ael.call(doc, vendors[i]+'pointerlockerror', onpointerlockerror)
-  }
-
-  ee.release = release
-  ee.target = pointerlockelement
-  ee.request = onmousedown
-  ee.destroy = function() {
-    rel.call(el, 'mouseup', onmouseup, false)
-    rel.call(el, 'mousedown', onmousedown, false)
-    rel.call(el, 'mousemove', onmove, false)
-  }
-
-  if(!shim) {
-    setTimeout(function() {
-      ee.emit('error', new Error('pointer lock is not supported'))
-    }, 0)
-  }
-  return ee
-
-  function onmousedown(ev) {
-    if(pointerlockelement()) {
-      return
-    }
-    mouseDownMS = +new Date
-    rpl.call(el)
-  }
-
-  function onmouseup(ev) {
-    if(!needsFullscreen) {
-      return
-    }
-
-    ee.emit('needs-fullscreen')
-    needsFullscreen = false
-  }
-
-  function onpointerlockchange(ev) {
-    if(!pointerlockelement()) {
-      if(stream) release()
-      return
-    }
-
-    stream = new Stream
-    stream.readable = true
-    stream.initial = {x: lastPageX, y: lastPageY, t: Date.now()}
-
-    ee.emit('attain', stream)
-  }
-
-  function onpointerlockerror(ev) {
-    var dt = +(new Date) - mouseDownMS
-    if(dt < 100) {
-      // we errored immediately, we need to do fullscreen first.
-      needsFullscreen = true
-      return
-    }
-
-    ee.emit('error')
-    if(stream) {
-      stream.emit('error', ev)
-    }
-    stream = null
-  }
-
-  function release() {
-    ee.emit('release')
-
-    if(stream) {
-      stream.emit('end')
-      stream.readable = false
-      stream.emit('close')
-      stream = null
-    }
-
-    var pel = pointerlockelement()
-    if(!pel) {
-      return
-    }
-
-    (doc.exitPointerLock ||
-    doc.mozExitPointerLock ||
-    doc.webkitExitPointerLock ||
-    doc.msExitPointerLock ||
-    doc.oExitPointerLock).call(doc)
-  }
-
-  function onmove(ev) {
-    lastPageX = ev.pageX
-    lastPageY = ev.pageY
-
-    if(!stream) return
-
-    // we're reusing a single object
-    // because I'd like to avoid piling up
-    // a ton of objects for the garbage
-    // collector.
-    out.dx =
-      ev.movementX || ev.webkitMovementX ||
-      ev.mozMovementX || ev.msMovementX ||
-      ev.oMovementX || 0
-
-    out.dy = 
-      ev.movementY || ev.webkitMovementY ||
-      ev.mozMovementY || ev.msMovementY ||
-      ev.oMovementY || 0
-
-    out.dt = Date.now() - stream.initial.t
-
-    ee.emit('data', out)
-    stream.emit('data', out)
-  }
-
-  function pointerlockelement() {
-    return 0 ||
-      doc.pointerLockElement ||
-      doc.mozPointerLockElement ||
-      doc.webkitPointerLockElement ||
-      doc.msPointerLockElement ||
-      doc.oPointerLockElement ||
-      null
-  }
-}
-
-function shim(el) {
-  return el.requestPointerLock ||
-    el.webkitRequestPointerLock ||
-    el.mozRequestPointerLock ||
-    el.msRequestPointerLock ||
-    el.oRequestPointerLock ||
-    null
-}
-
-}, {"stream":48,"emitter":38}],
-48: [function(require, module, exports) {
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-var Emitter = require('emitter');
-
-function Stream() {
-  Emitter.call(this);
-}
-Stream.prototype = new Emitter();
-module.exports = Stream;
-// Backwards-compat with node 0.4.x
-Stream.Stream = Stream;
-
-Stream.prototype.pipe = function(dest, options) {
-  var source = this;
-
-  function ondata(chunk) {
-    if (dest.writable) {
-      if (false === dest.write(chunk) && source.pause) {
-        source.pause();
-      }
-    }
-  }
-
-  source.on('data', ondata);
-
-  function ondrain() {
-    if (source.readable && source.resume) {
-      source.resume();
-    }
-  }
-
-  dest.on('drain', ondrain);
-
-  // If the 'end' option is not supplied, dest.end() will be called when
-  // source gets the 'end' or 'close' events.  Only dest.end() once.
-  if (!dest._isStdio && (!options || options.end !== false)) {
-    source.on('end', onend);
-    source.on('close', onclose);
-  }
-
-  var didOnEnd = false;
-  function onend() {
-    if (didOnEnd) return;
-    didOnEnd = true;
-
-    dest.end();
-  }
-
-
-  function onclose() {
-    if (didOnEnd) return;
-    didOnEnd = true;
-
-    if (typeof dest.destroy === 'function') dest.destroy();
-  }
-
-  // don't leave dangling pipes when there are errors.
-  function onerror(er) {
-    cleanup();
-    if (!this.hasListeners('error')) {
-      throw er; // Unhandled stream error in pipe.
-    }
-  }
-
-  source.on('error', onerror);
-  dest.on('error', onerror);
-
-  // remove all the event listeners that were added.
-  function cleanup() {
-    source.off('data', ondata);
-    dest.off('drain', ondrain);
-
-    source.off('end', onend);
-    source.off('close', onclose);
-
-    source.off('error', onerror);
-    dest.off('error', onerror);
-
-    source.off('end', cleanup);
-    source.off('close', cleanup);
-
-    dest.off('end', cleanup);
-    dest.off('close', cleanup);
-  }
-
-  source.on('end', cleanup);
-  source.on('close', cleanup);
-
-  dest.on('end', cleanup);
-  dest.on('close', cleanup);
-
-  dest.emit('pipe', source);
-
-  // Allow for unix-like usage: A.pipe(B).pipe(C)
-  return dest;
-}
-
-}, {"emitter":38}],
-31: [function(require, module, exports) {
-
-'use strict';
-
-/**
- * @license
- * Copyright Little Star Media Inc. and other contributors.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the
- * 'Software'), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to permit
- * persons to whom the Software is furnished to do so, subject to the
- * following conditions:
- *
- * The above copyright notice and this permission notice shall be included
- * in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
- * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
- * USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-/**
- * The movement controls module.
- *
- * @module axis/controls/movement
- * @type {Function}
- */
-
-void module.exports;
-
-/**
- * Module dependencies.
- * @private
- */
-
-var inherits = require('inherits')
-  , three = require('three.js')
-
-/**
- * Local dependencies.
- * @private
- */
-
-var MouseController = require('./mouse').MouseController
-  , AxisController = require('./controller')
-  , constants = require('../constants')
-  , util = require('../util')
-
-/**
- * Initializes movement controls on Axis.
- *
- * @public
- * @param {Axis} scope - The axis instance
- * @return {MovementController}
- */
-
-module.exports = function movement (axis) {
-  return MovementController(axis).target(axis.camera)
-};
-
-/**
- * MovementController constructor
- *
- * @public
- * @constructor
- * @class MovementController
- * @extends MouseController
- * @see {@link module:axis/controls/controller~MouseController}
- * @param {Axis} scope - The axis instance
- */
-
-module.exports.MovementController = MovementController;
-inherits(MovementController, MouseController);
-function MovementController (scope) {
-
-  // ensure instance
-  if (!(this instanceof MovementController)) {
-    return new MovementController(scope);
-  }
-
-  // inherit from `MouseController'
-  MouseController.call(this, scope);
-
-  /**
-   * Reference to this instance.
-   *
-   * @private
-   * @type {MovementController}
-   */
-
-  var self = this;
-}
-
-/**
- * Overloads MouseController#update() method.
- *
- * @public
- * @method
- * @name update
- * @return {PointerController}
- */
-
-MovementController.prototype.update = function () {
-  if (false == this.state.isMousedown) { return this; }
-  var movements = this.state.movements;
-  this.rotate(movements);
-  AxisController.prototype.update.call(this);
-  return this;
-};
-
-/**
- * Overloads MouseController#onmousedown
- *
- * @private
- * @name onmousedown
- * @param {Event} e - Event object.
- */
-
-MovementController.prototype.onmousedown = function (e) {
-  this.state.movements.x = 0;
-  this.state.movements.y = 0;
-  this.state.movementsStart.x = 0;
-  this.state.movementsStart.y = 0;
-  MouseController.prototype.onmousedown.call(this, e);
-};
-
-/**
- * Overloads MouseController#onmousemove
- *
- * @private
- * @name onmousemove
- * @param {Event} e - Event object.
- */
-
-MovementController.prototype.onmousemove = function (e) {
-  var movements = this.state.movements;
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  var tmp = 0;
-
-  // handle mouse movements only if the mouse controller is enabled
-  if (false == this.state.isEnabled || false == this.state.isMousedown) {
-    return;
-  }
-
-  movements.x = (e.screenX * friction) - this.state.movementsStart.x;
-  movements.y = (e.screenY * friction) - this.state.movementsStart.y;
-
-  // apply friction
-  movements.y *= (friction);
-  movements.x *= (friction);
-
-  // swap for rotation
-  tmp = movements.y;
-  movements.y = movements.x;
-  movements.x = tmp;
-
-
-  // invert for true directional movement
-  movements.x *= -1;
-  movements.y *= -1;
-};
-
-/**
- * Overloads MouseController#onmousemove
- *
- * @private
- * @name onmousemove
- * @param {Event} e - Event object.
- */
-
-MovementController.prototype.onmouseup = function (e) {
-  clearTimeout(this.state.mouseupTimeout);
-  this.state.isMousedown = false;
-  this.state.movementsStart.x = 0;
-  this.state.movementsStart.y = 0;
-};
-
-}, {"inherits":46,"three.js":2,"./mouse":26,"./controller":32,"../constants":18,"../util":17}]}, {}, {"1":""}));
+},{"path":40,"url":64}]},{},[16])(16)
+});

@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -34,110 +34,86 @@
  */
 
 /**
- * Module dependencies
- * @private
- */
-
-var raf = require('raf')
-  , three = require('three')
-
-/**
- * Local dependencies
- * @private
- */
-
-var constants = require('../constants')
-  , createCamera = require('../camera')
-  , createPlane = require('../geometry/plane')
-  , createSphere = require('../geometry/sphere')
-  , createCylinder = require('../geometry/cylinder')
-
-// animation factor
-var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
-
-/**
  * Applies an equilinear projection to scope frame
  *
  * @public
  * @param {Axis} scope
  */
 
-module.exports = equilinear;
+module.exports = equilinear
 function equilinear (scope) {
-
   // this projection requires an already initialized
   // camera on the `scope' instance
-  var camera = scope.camera;
+  var camera = scope.camera
 
   // bail if camera not present
-  if (null == camera) { return; }
+  if (camera == null) { return }
 
   // bail if not ready
-  if (false == this.isReady()) { return; }
+  if (!this.isReady()) { return }
 
   // bail if content sizing is incorrect
-  if (false == this.contentHasCorrectSizing()) { return; }
+  if (!this.contentHasCorrectSizing()) { return }
 
-  var rotation = new three.Vector3(0, 0, 0);
-  var current = this.current;
-  var targetX = Math.PI / 180;
-  var factor = targetX *.8999;
+  var current = this.current
+  var targetX = Math.PI / 180
+  var factor = targetX * 0.8999
 
-  this.constraints = {};
+  this.constraints = {}
 
-  if ('cylinder' == scope.geometry()) {
-    scope.orientation.x = 0;
-    this.constraints.y = true;
-    this.constraints.x = false;
+  if (scope.geometry() === 'cylinder') {
+    scope.orientation.x = 0
+    this.constraints.y = true
+    this.constraints.x = false
   }
 
   // apply zoom to cylinder geometry type
-  if ('cylinder' == scope.geometry()) {
-    this.constraints.y = true;
-    this.constraints.x = false;
-    scope.orientation.x = 0;
+  if (scope.geometry() === 'cylinder') {
+    this.constraints.y = true
+    this.constraints.x = false
+    scope.orientation.x = 0
   } else {
-    this.constraints.y = false;
-    this.constraints.x = false;
+    this.constraints.y = false
+    this.constraints.x = false
   }
 
   // animate
-  scope.debug("animate: EQUILINEAR begin");
+  scope.debug('animate: EQUILINEAR begin')
 
-  scope.fov(scope.state.originalfov || scope.state.fov);
+  scope.fov(scope.state.originalfov || scope.state.fov)
 
-  if ('cylinder' == scope.geometry()) {
-    scope.orientation.x = targetX;
-    this.cancel();
+  if (scope.geometry() === 'cylinder') {
+    scope.orientation.x = targetX
+    this.cancel()
   } else {
     this.animate(function () {
-      var x = scope.orientation.x;
+      var x = scope.orientation.x
 
-      if ('tinyplanet' == current) {
-        scope.lookAt(0, 0, 0);
-        scope.orientation.x = 0;
-        return this.cancel();
+      if (current === 'tinyplanet') {
+        scope.lookAt(0, 0, 0)
+        scope.orientation.x = 0
+        return this.cancel()
       }
 
-      if (current == 'fisheye') {
-        return this.cancel();
+      if (current === 'fisheye') {
+        return this.cancel()
       }
 
       if (x > targetX) {
-        scope.orientation.x -= factor;
+        scope.orientation.x -= factor
       } else {
-        scope.orientation.x = targetX;
+        scope.orientation.x = targetX
       }
 
       if (x < targetX) {
-        scope.orientation.x += factor;
+        scope.orientation.x += factor
       } else {
-        scope.orientation.x = targetX;
+        scope.orientation.x = targetX
       }
 
-      if (scope.orientation.x == targetX) {
-        return this.cancel();
+      if (scope.orientation.x === targetX) {
+        return this.cancel()
       }
-    });
+    })
   }
 };
