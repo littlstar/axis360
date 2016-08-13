@@ -39,6 +39,7 @@
  */
 
 var three = require('three')
+  , debug = require('debug')('axis:projection:fisheye')
 
 /**
  * Local dependencies
@@ -97,7 +98,7 @@ function fisheye (scope) {
   }
 
   // begin animation
-  scope.debug("animate: FISHEYE begin");
+  debug("animate: FISHEYE begin");
   this.animate(function () {
     scope.camera.position.z = maxZ;
 

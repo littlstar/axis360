@@ -32,6 +32,7 @@
     "autoprefixer": "^6.4.0",
     "component-emitter": "^1.2.1",
     "component-events": "^1.0.10",
+    "debug": "^2.2.0",
     "domify": "^1.4.0",
     "has-webgl": "0.0.1",
     "inherits": "^2.0.1",

@@ -42,6 +42,7 @@ void module.exports;
 var three = require('three')
   , events = require('component-events')
   , Emitter = require('component-emitter')
+  , debug = require('debug')('axis:controller')
 
 /**
  * Tiny planet interpolation factor
@@ -532,7 +533,7 @@ AxisController.prototype.onbeforedraw = function () {
  */
 
 AxisController.prototype.enable = function () {
-  this.scope.debug("enable %s", this.constructor.name);
+  debug("enable %s", this.constructor.name);
   this.state.isEnabled = true;
   return this;
 };
@@ -547,7 +548,7 @@ AxisController.prototype.enable = function () {
  */
 
 AxisController.prototype.disable = function () {
-  this.scope.debug("disable %s", this.constructor.name);
+  debug("disable %s", this.constructor.name);
   this.state.isEnabled = false;
   return this;
 };

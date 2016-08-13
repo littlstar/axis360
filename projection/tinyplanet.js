@@ -39,6 +39,7 @@
  */
 
 var three = require('three')
+  , debug = require('debug')('axis:projection:tinyplanet')
 
 /**
  * Local dependencies
@@ -99,21 +100,21 @@ function tinyplanet (scope) {
 
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
   scope.fov(Math.min(scope.state.originalfov * 2, 130));
-  scope.debug("animate: TINY_PLANET begin");
+  debug("animate: TINY_PLANET begin");
   rotation.x = camera.target.x || 0;
   rotation.y = camera.target.y || 0;
   rotation.z = camera.target.z || -1;
   this.animate(function () {
     var y = rotation.y;
     var x = rotation.x;
-    scope.debug("animate: TINY_PLANET y=%d", y);
+    debug("animate: TINY_PLANET y=%d", y);
     rotation.x = MIN_X_COORDINATE;
     rotation.y = -180;
     scope.lookAt(rotation.x, rotation.y, rotation.z);
     scope.orientation.x = -Infinity;
     this.constraints.x = true;
     this.constraints.y = false;
-    scope.debug("animate: TINY_PLANET end");
+    debug("animate: TINY_PLANET end");
     this.cancel();
   });
 };
