@@ -46,6 +46,7 @@ var three = require('three')
   , fullscreen = require('@littlstar/fullscreen')
   , keycode = require('yields-keycode')
   , merge = require('merge')
+  , debug = require('debug')('axis')
   , pkg = require('./package.json')
 
 /**
@@ -284,7 +285,7 @@ function Axis (parent, opts) {
 
   // setup default state when ready
   this.once('ready', function () {
-    this.debug('ready');
+    debug('ready');
 
     if (opts.time || opts.t) {
       self.video.currentTime = parseFloat(opts.time) || parseFloat(opts.t) || 0;
@@ -427,7 +428,7 @@ function Axis (parent, opts) {
 
   // handle fullscreen changing
   this.on('fullscreenchange', function () {
-    this.debug('fullscreenchange');
+    debug('fullscreenchange');
     this.state.update('isFocused', true);
     this.state.update('isAnimating', false);
 
@@ -469,7 +470,7 @@ emitter(Axis.prototype);
  */
 
 Axis.prototype.onclick = function (e) {
-  this.debug('onclick');
+  debug('onclick');
   var now = Date.now();
   var timestamp = this.state.mousedownTimestamp;
   var isClickable = this.state.isClickable;
@@ -512,7 +513,7 @@ Axis.prototype.onclick = function (e) {
 Axis.prototype.oncanplaythrough = function (e) {
   var ratio = this.dimensions().ratio;
   var r2 = Math.sqrt(ratio);
-  this.debug('oncanplaythrough');
+  debug('oncanplaythrough');
   this.state.duration = this.video.duration;
   this.emit('canplaythrough', e);
   this.emit('load');
@@ -550,7 +551,7 @@ Axis.prototype.oncanplaythrough = function (e) {
 Axis.prototype.onloadeddata = function (e) {
   var percent = 0;
   var video = this.video;
-  this.debug('loadeddata');
+  debug('loadeddata');
 };
 
 /**
@@ -561,7 +562,7 @@ Axis.prototype.onloadeddata = function (e) {
  */
 
 Axis.prototype.onplay = function (e) {
-  this.debug('onplay');
+  debug('onplay');
   this.state.update('isPaused', false);
   this.state.update('isStopped', false);
   this.state.update('isEnded', false);
@@ -577,7 +578,7 @@ Axis.prototype.onplay = function (e) {
  */
 
 Axis.prototype.onpause = function (e) {
-  this.debug('onpause');
+  debug('onpause');
   this.state.update('isPaused', true);
   this.state.update('isPlaying', false);
   this.emit('pause', e);
@@ -591,7 +592,7 @@ Axis.prototype.onpause = function (e) {
  */
 
 Axis.prototype.onplaying = function (e) {
-  this.debug('onplaying');
+  debug('onplaying');
   this.state.update('isPaused', false);
   this.state.update('isPlaying', true);
   this.emit('playing', e);
@@ -605,7 +606,7 @@ Axis.prototype.onplaying = function (e) {
  */
 
 Axis.prototype.onwaiting = function (e) {
-  this.debug('onwaiting');
+  debug('onwaiting');
   this.emit('wait', e);
 };
 
@@ -617,7 +618,7 @@ Axis.prototype.onwaiting = function (e) {
  */
 
 Axis.prototype.onloadstart = function (e) {
-  this.debug('onloadstart');
+  debug('onloadstart');
   this.emit('loadstart', e);
 };
 
@@ -633,7 +634,7 @@ Axis.prototype.onprogress = function (e) {
   var percent = this.getPercentLoaded();
   e.percent = percent;
   this.state.update('percentloaded', percent);
-  this.debug('onprogress');
+  debug('onprogress');
   this.emit('progress', e);
 };
 
@@ -645,7 +646,7 @@ Axis.prototype.onprogress = function (e) {
  */
 
 Axis.prototype.ontimeupdate = function (e) {
-  this.debug('ontimeupdate');
+  debug('ontimeupdate');
   e.percent = this.video.currentTime / this.video.duration * 100;
   this.state.update('duration', this.video.duration);
   this.state.update('currentTime', this.video.currentTime);
@@ -660,7 +661,7 @@ Axis.prototype.ontimeupdate = function (e) {
  */
 
 Axis.prototype.onended = function (e) {
-  this.debug('onended');
+  debug('onended');
   this.state.update('isEnded', true);
   this.state.update('isPlaying', false);
   this.state.update('isPlaying', false);
@@ -677,7 +678,7 @@ Axis.prototype.onended = function (e) {
  */
 
 Axis.prototype.onmousedown = function (e) {
-  this.debug('onmousedown');
+  debug('onmousedown');
   this.state.update('mousedownTimestamp', Date.now());
   this.state.update('isAnimating', false);
   this.state.update('dragstart', {x: e.pageX, y: e.pageY});
@@ -693,7 +694,7 @@ Axis.prototype.onmousedown = function (e) {
  */
 
 Axis.prototype.onmouseup = function (e) {
-  this.debug('onmouseup');
+  debug('onmouseup');
   this.state.update('isMousedown', false);
   this.emit('mouseup', e);
 };
@@ -706,7 +707,7 @@ Axis.prototype.onmouseup = function (e) {
  */
 
 Axis.prototype.onmouseleave = function (e) {
-  this.debug('onmouseleave');
+  debug('onmouseleave');
   this.state.update('isMousedown', false);
   this.emit('mouseleave', e);
 };
@@ -720,7 +721,7 @@ Axis.prototype.onmouseleave = function (e) {
 
 Axis.prototype.ontouchstart = function (e) {
   var touch = e.touches[0];
-  this.debug('ontouchstart');
+  debug('ontouchstart');
   this.state.update('mousedownTimestamp', Date.now());
   this.state.update('isAnimating', false);
   this.state.update('dragstart', {x: touch.pageX, y: touch.pageY});
@@ -736,7 +737,7 @@ Axis.prototype.ontouchstart = function (e) {
  */
 
 Axis.prototype.ontouchend = function(e) {
-  this.debug('ontouchend');
+  debug('ontouchend');
   this.state.update('isTouching', false);
   this.emit('touchend', e);
 };
@@ -749,7 +750,7 @@ Axis.prototype.ontouchend = function(e) {
  */
 
 Axis.prototype.onresize = function (e) {
-  this.debug('onresize');
+  debug('onresize');
   var isResizable = this.state.isResizable;
   var isFullscreen = this.state.isFullscreen;
   var containerStyle = getComputedStyle(this.domElement);
@@ -818,7 +819,7 @@ Axis.prototype.onblur = function () {
  */
 
 Axis.prototype.onmousemove = function (e) {
-  this.debug('onmousemove');
+  debug('onmousemove');
   var constraints = this.projections.constraints;
   var xOffset = 0;
   var yOffset = 0;
@@ -858,7 +859,7 @@ Axis.prototype.onmousemove = function (e) {
  */
 
 Axis.prototype.ontouchmove = function(e) {
-  this.debug('ontouchmove');
+  debug('ontouchmove');
   var constraints = this.projections.constraints;
   var xOffset = 0;
   var yOffset = 0;
@@ -898,7 +899,7 @@ Axis.prototype.ontouchmove = function(e) {
  */
 
 Axis.prototype.onmousewheel = function (e) {
-  this.debug('onmousewheel');
+  debug('onmousewheel');
   var velocity = this.state.scrollVelocity;
   var min = MIN_WHEEL_DISTANCE;
   var max = MAX_WHEEL_DISTANCE;
@@ -936,7 +937,7 @@ Axis.prototype.onmousewheel = function (e) {
  */
 
 Axis.prototype.size = function (width, height) {
-  this.debug('size', width, height);
+  debug('size', width, height);
 
   if (null == width) width = this.state.width
   if (null == height) height = this.state.height
@@ -995,7 +996,7 @@ Axis.prototype.src = function (src, preservePreviewFrame) {
   }
 
   if (src) {
-    this.debug('src', src);
+    debug('src', src);
     this.state.update('src', src);
     this.state.update('isReady', false);
     this.state.update('lastDimensions', this.dimensions());
@@ -1060,7 +1061,7 @@ Axis.prototype.play = function () {
     if (true == this.state.isEnded) {
       video.currentTime = 0;
     }
-    this.debug('play');
+    debug('play');
     video.play();
   }
   return this;
@@ -1074,7 +1075,7 @@ Axis.prototype.play = function () {
 
 Axis.prototype.pause = function () {
   if (false == this.state.isImage) {
-    this.debug('pause');
+    debug('pause');
     this.state.update('isPlaying', false);
     this.state.update('isPaused', true);
     this.video.pause();
@@ -1108,7 +1109,7 @@ Axis.prototype.fullscreen = function (el) {
     this.size(window.screen.width, window.screen.height);
   }
 
-  this.debug('fullscreen');
+  debug('fullscreen');
   this.state.update('isFullscreen', true);
   fullscreen(el || this.domElement, opts);
 };
@@ -1125,7 +1126,7 @@ Axis.prototype.volume = function (volume) {
     if (null == volume) {
       return this.video.volume;
     }
-    this.debug('volume', volume);
+    debug('volume', volume);
     this.state.update('lastVolume', this.video.volume);
     this.video.volume = volume
     this.emit('volume', volume);
@@ -1141,7 +1142,7 @@ Axis.prototype.volume = function (volume) {
  */
 
 Axis.prototype.mute = function (mute) {
-  this.debug('mute', mute);
+  debug('mute', mute);
   if (false == mute) {
     this.video.muted = false;
     this.state.update('isMuted', false);
@@ -1183,7 +1184,7 @@ Axis.prototype.refresh = function () {
   var x = this.state.pointerX;
   var y = this.state.pointerY;
 
-  this.debug('refresh');
+  debug('refresh');
 
   if (false == this.state.isImage) {
     if (video.readyState >= video.HAVE_ENOUGH_DATA) {
@@ -1277,15 +1278,15 @@ Axis.prototype.seek = function (seconds, emit) {
     if (false != emit) self.emit('seek', seconds);
 
     setTimeout(function () {
-      self.debug('Attempting seeking correction');
+      debug('Attempting seeking correction');
       if (video.readyState < video.HAVE_ENOUGH_DATA) {
-        self.debug('Video state does not have enough data.');
-        self.debug('Reloading video...');
+        debug('Video state does not have enough data.');
+        debug('Reloading video...');
         video.load();
-        self.debug('Seeking video to %d...', seconds);
+        debug('Seeking video to %d...', seconds);
         video.currentTime = seconds;
         if (isPlaying) {
-          self.debug('Playing video at %d...', seconds);
+          debug('Playing video at %d...', seconds);
           video.play();
         }
       }
@@ -1673,17 +1674,16 @@ Axis.prototype.cache = function (o) {
 };
 
 /**
- * Outputs debug info if `window.DEBUG' is
- * defined
+ * Outputs debug info if `window.localStorage.debug`' is
+ * defined with a value matching /axis/.
  *
  * @public
+ * @deprecated
  * @param {Mixed} ...arguments - optional
  */
 
-Axis.prototype.debug = function debug () {
-  if (window.DEBUG) {
-    console.debug.apply(console, arguments);
-  }
+Axis.prototype.debug = function () {
+  debug.apply(debug, arguments)
   return this;
 }
 
@@ -1795,11 +1795,11 @@ Axis.prototype.getPercentLoaded = function (trackIndex) {
     try {
       percent = video.buffered.end(trackIndex || 0) / video.duration;
     } catch (e) {
-      this.debug('error', e);
+      debug('error', e);
       try {
         percent = video.bufferedBytes / video.bytesTotal;
       } catch (e) {
-        this.debug('error', e);
+        debug('error', e);
       }
     }
 

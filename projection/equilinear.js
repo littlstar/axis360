@@ -40,6 +40,7 @@
 
 var raf = require('raf')
   , three = require('three')
+  , debug = require('debug')('axis:projection:equilinear')
 
 /**
  * Local dependencies
@@ -102,7 +103,7 @@ function equilinear (scope) {
   }
 
   // animate
-  scope.debug("animate: EQUILINEAR begin");
+  debug("animate: EQUILINEAR begin");
 
   scope.fov(scope.state.originalfov || scope.state.fov);
 
