@@ -45,6 +45,8 @@ Debug builds are now available in the `build/` directory.
 
 ## Example
 
+For an interactive example, `make example` and navigate to http://localhost:9966/ in your browser =)
+
 ```js
 const axis = requre('@littlstar/axis')
 const domElement = document.querySelector('#video');
