@@ -24,11 +24,6 @@ Axis is available through *npm*
 $ npm install @littlstar/axis --save
 ```
 
-### Distribution build
-
-Axis is pre-built and available for download in the `dist/` directory of
-this repository.
-
 ### Source
 
 Axis uses [browserify](http://browserify.org/) internally for installing and
