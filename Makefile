@@ -20,6 +20,11 @@ BROWSERIFY := $(BIN)/browserify
 POSTCSS := $(BIN)/postcss
 
 ##
+# Path to `budo`
+#
+BUDO := $(BIN)/budo
+
+##
 # CSS source files
 #
 CSS := *.css
@@ -108,6 +113,13 @@ node_modules: package.json
 #
 doc: node_modules $(SRC)
 	./scripts/generate_documentation.sh $(CWD) public/doc
+
+##
+# Starts the "example" server
+#
+.PHONY: example
+example:
+	$(BUDO) example/index.js --dir example --dir public/assets --live
 
 ##
 # Cleans all built files

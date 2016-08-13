@@ -18,6 +18,7 @@
   ],
   "devDependencies": {
     "browserify": "^13.1.0",
+    "budo": "^8.3.0",
     "jsdoc": "^3.3.0",
     "postcss-cli": "^2.5.2"
   },
