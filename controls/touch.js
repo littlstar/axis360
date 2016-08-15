@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -32,7 +32,7 @@
  * @type {Function}
  */
 
-void module.exports;
+void module.exports
 
 /**
  * Module dependencies.
@@ -40,7 +40,7 @@ void module.exports;
  */
 
 var inherits = require('inherits')
-  , three = require('three')
+var three = require('three')
 
 /**
  * Local dependencies.
@@ -48,7 +48,6 @@ var inherits = require('inherits')
  */
 
 var AxisController = require('./controller')
-  , constants = require('../constants')
 
 /**
  * Initializes touch controls on Axis.
@@ -62,8 +61,8 @@ module.exports = function touch (axis) {
   return TouchController(axis)
   .target(axis.camera)
   .enable()
-  .update();
-};
+  .update()
+}
 
 /**
  * TouchController constructor
@@ -76,26 +75,16 @@ module.exports = function touch (axis) {
  * @param {Axis} scope - The axis instance
  */
 
-module.exports.TouchController = TouchController;
-inherits(TouchController, AxisController);
+module.exports.TouchController = TouchController
+inherits(TouchController, AxisController)
 function TouchController (scope) {
-
   // ensure instance
   if (!(this instanceof TouchController)) {
-    return new TouchController(scope);
+    return new TouchController(scope)
   }
 
   // inherit from `AxisController'
-  AxisController.call(this, scope, document);
-
-  /**
-   * Reference to this instance.
-   *
-   * @private
-   * @type {TouchController}
-   */
-
-  var self = this;
+  AxisController.call(this, scope, document)
 
   /**
    * Predicate indicating if touching.
@@ -105,7 +94,7 @@ function TouchController (scope) {
    * @type {Boolean}
    */
 
-  this.state.isTouching = false;
+  this.state.isTouching = false
 
   /**
    * Drag state
@@ -136,7 +125,7 @@ function TouchController (scope) {
      */
 
     y: 0
-  };
+  }
 
   /**
    * Current touchs
@@ -146,7 +135,7 @@ function TouchController (scope) {
    * @type {Array}
    */
 
-  this.state.touches = [];
+  this.state.touches = []
 
   /**
    * Current touch quaternion
@@ -156,13 +145,13 @@ function TouchController (scope) {
    * @type {THREE.Quaternion}
    */
 
-  this.state.quaternions.touch = new three.Quaternion();
+  this.state.quaternions.touch = new three.Quaternion()
 
   // initialize event delegation
-  this.events.bind('touchstart');
-  this.events.bind('touchmove');
-  this.events.bind('touchend');
-  this.events.bind('touch');
+  this.events.bind('touchstart')
+  this.events.bind('touchmove')
+  this.events.bind('touchend')
+  this.events.bind('touch')
 }
 
 /**
@@ -173,12 +162,12 @@ function TouchController (scope) {
  */
 
 TouchController.prototype.ontouchstart = function (e) {
-  var touch = e.touches[0];
-  this.state.isTouching = true;
-  this.state.touches = e.touches;
-  this.state.drag.x = touch.pageX;
-  this.state.drag.y = touch.pageY;
-};
+  var touch = e.touches[0]
+  this.state.isTouching = true
+  this.state.touches = e.touches
+  this.state.drag.x = touch.pageX
+  this.state.drag.y = touch.pageY
+}
 
 /**
  * Handle 'ontouchmove' event.
@@ -188,15 +177,15 @@ TouchController.prototype.ontouchstart = function (e) {
  */
 
 TouchController.prototype.ontouchmove = function (e) {
-  var touch = e.touches[0];
-  var x = touch.pageX - this.state.drag.x;
-  var y = touch.pageY - this.state.drag.y;
+  var touch = e.touches[0]
+  var x = touch.pageX - this.state.drag.x
+  var y = touch.pageY - this.state.drag.y
   if (this.scope.domElement.contains(e.target)) {
-    this.state.drag.x = touch.pageX;
-    this.state.drag.y = touch.pageY;
-    this.rotate({x: x, y: y});
+    this.state.drag.x = touch.pageX
+    this.state.drag.y = touch.pageY
+    this.rotate({x: x, y: y})
   }
-};
+}
 
 /**
  * Handle 'ontouchend' event.
@@ -206,8 +195,8 @@ TouchController.prototype.ontouchmove = function (e) {
  */
 
 TouchController.prototype.ontouchend = function (e) {
-  this.state.isTouching = false;
-};
+  this.state.isTouching = false
+}
 
 /**
  * Update touch controller state.
@@ -216,8 +205,8 @@ TouchController.prototype.ontouchend = function (e) {
  */
 
 TouchController.prototype.update = function () {
-  if (false == this.state.isTouching) { return this; }
-  AxisController.prototype.update.call(this);
+  if (!this.state.isTouching) { return this }
+  AxisController.prototype.update.call(this)
   this.state.quaternions.touch.copy(this.state.target.quaternion)
-  return this;
-};
+  return this
+}

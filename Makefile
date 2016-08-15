@@ -25,6 +25,11 @@ POSTCSS := $(BIN)/postcss
 BUDO := $(BIN)/budo
 
 ##
+# Path to `standard`
+#
+STANDARD := $(BIN)/standard
+
+##
 # CSS source files
 #
 CSS := *.css
@@ -128,3 +133,10 @@ example:
 clean:
 	rm -rf build
 	rm -rf components
+
+##
+# Run standard against the codebase
+#
+.PHONY: lint
+lint: node_modules
+	$(STANDARD)

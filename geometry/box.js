@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 
 /**
  * Module dependencies
@@ -15,5 +15,5 @@ var three = require('three')
  */
 
 module.exports = function box (axis) {
-  return new three.BoxGeometry(400, 400, 400);
-};
+  return new three.BoxGeometry(400, 400, 400)
+}

@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -32,7 +32,7 @@
  * @type {Function}
  */
 
-void module.exports;
+void module.exports
 
 /**
  * Module dependencies.
@@ -40,8 +40,7 @@ void module.exports;
  */
 
 var inherits = require('inherits')
-  , three = require('three')
-  , lock = require('pointer-lock')
+var lock = require('pointer-lock')
 
 /**
  * Local dependencies.
@@ -49,8 +48,8 @@ var inherits = require('inherits')
  */
 
 var MouseController = require('./mouse').MouseController
-  , AxisController = require('./controller')
-  , constants = require('../constants')
+var AxisController = require('./controller')
+var constants = require('../constants')
 
 /**
  * Initializes pointer controls on Axis.
@@ -62,7 +61,7 @@ var MouseController = require('./mouse').MouseController
 
 module.exports = function pointer (axis) {
   return PointerController(axis).target(axis.camera)
-};
+}
 
 /**
  * PointerController constructor
@@ -75,26 +74,16 @@ module.exports = function pointer (axis) {
  * @param {Axis} scope - The axis instance
  */
 
-module.exports.PointerController = PointerController;
-inherits(PointerController, MouseController);
+module.exports.PointerController = PointerController
+inherits(PointerController, MouseController)
 function PointerController (scope) {
-
   // ensure instance
   if (!(this instanceof PointerController)) {
-    return new PointerController(scope);
+    return new PointerController(scope)
   }
 
   // inherit from `MouseController'
-  MouseController.call(this, scope);
-
-  /**
-   * Reference to this instance.
-   *
-   * @private
-   * @type {PointerController}
-   */
-
-  var self = this;
+  MouseController.call(this, scope)
 
   /**
    * Pointer lock on scopes DOM Element
@@ -104,7 +93,7 @@ function PointerController (scope) {
    * @type {EventEmitter}
    */
 
-  this.state.lock = null;
+  this.state.lock = null
 }
 
 /**
@@ -118,12 +107,12 @@ function PointerController (scope) {
 
 PointerController.prototype.enable = function () {
   // init lock if not created
-  if (null == this.state.lock) {
-    this.state.lock = lock(this.scope.domElement);
+  if (this.state.lock == null) {
+    this.state.lock = lock(this.scope.domElement)
   }
 
-  return MouseController.prototype.enable.call(this);;
-};
+  return MouseController.prototype.enable.call(this)
+}
 
 /**
  * Disables mouse pointer lock
@@ -136,12 +125,12 @@ PointerController.prototype.enable = function () {
 
 PointerController.prototype.disable = function () {
   // init lock if not created
-  if (null != this.state.lock) {
-    this.state.isMousedown = false;
-    this.state.lock.destroy();
+  if (this.state.lock != null) {
+    this.state.isMousedown = false
+    this.state.lock.destroy()
   }
-  return MouseController.prototype.disable.call(this);;
-};
+  return MouseController.prototype.disable.call(this)
+}
 
 /**
  * Request mouse pointer lock.
@@ -153,38 +142,37 @@ PointerController.prototype.disable = function () {
  */
 
 PointerController.prototype.request = function () {
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  var scope = this.scope;
-  var self = this;
+  var friction = this.scope.state.mouseFriction || constants.DEFAULT_MOUSE_MOVEMENT_FRICTION
+  var self = this
 
   // request lock from user
-  this.state.lock.request();
+  this.state.lock.request()
 
   // handle updates when attained
   this.state.lock.on('attain', function () {
-    var movements = self.state.movements;
-    self.state.isMousedown = true;
+    var movements = self.state.movements
+    self.state.isMousedown = true
     // update movements when lock has been attained
     self.state.lock.on('data', function (e) {
-      self.state.isMousedown = true;
-      movements.x += e.x;
-      movements.y += e.y;
+      self.state.isMousedown = true
+      movements.x += e.x
+      movements.y += e.y
       // apply friction
-      movements.y *= (friction/4);
-      movements.x *= (friction/4);
-    });
+      movements.y *= (friction / 4)
+      movements.x *= (friction / 4)
+    })
 
     // reset state when released
     self.state.lock.on('release', function () {
-      self.state.isMousedown = false;
+      self.state.isMousedown = false
       if (self.state.lock) {
-        self.state.lock.destroy();
+        self.state.lock.destroy()
       }
-    });
-  });
+    })
+  })
 
-  return this;
-};
+  return this
+}
 
 /**
  * Overloads MouseController#update() method.
@@ -196,9 +184,9 @@ PointerController.prototype.request = function () {
  */
 
 PointerController.prototype.update = function () {
-  AxisController.prototype.update.call(this);
-  return this;
-};
+  AxisController.prototype.update.call(this)
+  return this
+}
 
 /**
  * Overloads MouseController#disable() method.
@@ -210,11 +198,11 @@ PointerController.prototype.update = function () {
  */
 
 PointerController.prototype.disable = function () {
-  MouseController.prototype.disable.call(this);
-  if (null != this.state.lock) {
-    this.state.lock.release();
-    this.state.lock.destroy();
+  MouseController.prototype.disable.call(this)
+  if (this.state.lock != null) {
+    this.state.lock.release()
+    this.state.lock.destroy()
   }
-  this.state.lock = null;
-  return this;
-};
+  this.state.lock = null
+  return this
+}
