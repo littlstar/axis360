@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -32,7 +32,7 @@
  * @type {Function}
  */
 
-void module.exports;
+void module.exports
 
 /**
  * Module dependencies.
@@ -40,7 +40,7 @@ void module.exports;
  */
 
 var keycode = require('yields-keycode')
-  , inherits = require('inherits')
+var inherits = require('inherits')
 
 /**
  * Local dependencies.
@@ -48,10 +48,10 @@ var keycode = require('yields-keycode')
  */
 
 var AxisController = require('./controller')
-  , constants = require('../constants')
+var constants = require('../constants')
 
 // default key rotatening speed in pixels
-var DEFAULT_KEY_ROTATE_SPEED = constants.DEFAULT_KEY_ROTATE_SPEED;
+var DEFAULT_KEY_ROTATE_SPEED = constants.DEFAULT_KEY_ROTATE_SPEED
 
 /**
  * Initialize keyboard controls on Axis.
@@ -65,8 +65,8 @@ module.exports = function keyboard (axis) {
   return KeyboardController(axis)
   .target(axis.camera)
   .enable()
-  .update();
-};
+  .update()
+}
 
 /**
  * Key code map
@@ -90,8 +90,8 @@ var keycodes = module.exports.keycodes = {
   'w': keycode('w'), // up
   's': keycode('s'), // down
   'a': keycode('a'), // left
-  'd': keycode('d'), // right
-};
+  'd': keycode('d') // right
+}
 
 /**
  * Derive keyname from keycode
@@ -103,9 +103,9 @@ var keycodes = module.exports.keycodes = {
 
 function keyname (code) {
   for (var name in keycodes) {
-    if (code == keycodes[name]) { return name; }
+    if (code === keycodes[name]) { return name }
   }
-  return null;
+  return null
 }
 
 /**
@@ -119,17 +119,16 @@ function keyname (code) {
  * @param {Axis} scope - The axis instance
  */
 
-module.exports.KeyboardController = KeyboardController;
-inherits(KeyboardController, AxisController);
+module.exports.KeyboardController = KeyboardController
+inherits(KeyboardController, AxisController)
 function KeyboardController (scope) {
-
   // ensure instance
   if (!(this instanceof KeyboardController)) {
-    return new KeyboardController(scope);
+    return new KeyboardController(scope)
   }
 
   // inherit from `AxisController'
-  AxisController.call(this, scope, document);
+  AxisController.call(this, scope, document)
 
   /**
    * Reference to this instance.
@@ -138,7 +137,7 @@ function KeyboardController (scope) {
    * @type {KeyboardController}
    */
 
-  var self = this;
+  var self = this
 
   /**
    * Function handles for key presses.
@@ -148,7 +147,7 @@ function KeyboardController (scope) {
    * @type {Object}
    */
 
-  this.state.handlers = {};
+  this.state.handlers = {}
 
   /**
    * Supported keys names.
@@ -158,7 +157,7 @@ function KeyboardController (scope) {
    * @type {Array}
    */
 
-  this.state.keynames = Object.keys(module.exports.keycodes);
+  this.state.keynames = Object.keys(module.exports.keycodes)
 
   /**
    * Supported keys codes.
@@ -169,8 +168,8 @@ function KeyboardController (scope) {
    */
 
   this.state.define('supported', function () {
-    return self.state.keynames.map(keycode);
-  });
+    return self.state.keynames.map(keycode)
+  })
 
   /**
    * Key state.
@@ -181,8 +180,8 @@ function KeyboardController (scope) {
    */
 
   this.state.define('keycodes', function () {
-    return self.state.keynames.map(keycode);
-  });
+    return self.state.keynames.map(keycode)
+  })
 
   /**
    * Key state map
@@ -192,7 +191,7 @@ function KeyboardController (scope) {
    * @type {Object}
    */
 
-  this.state.keystate = {};
+  this.state.keystate = {}
 
   /**
    * Predicate indicating if a key is down
@@ -205,9 +204,9 @@ function KeyboardController (scope) {
 
   this.state.define('isKeydown', function () {
     return Object.keys(self.state.keystate).some(function (code) {
-      return true == self.state.keystate[code];
-    });
-  });
+      return self.state.keystate[code]
+    })
+  })
 
   /**
    * Key rotatening speed in pixels
@@ -218,48 +217,47 @@ function KeyboardController (scope) {
    * @default DEFAULT_KEY_ROTATE_SPEED
    */
 
-  this.state.rotateSpeed = DEFAULT_KEY_ROTATE_SPEED;
-
+  this.state.rotateSpeed = DEFAULT_KEY_ROTATE_SPEED
 
   // initialize event delegation
-  this.events.bind('mousedown');
-  this.events.bind('keydown');
-  this.events.bind('keyup');
+  this.events.bind('mousedown')
+  this.events.bind('keydown')
+  this.events.bind('keyup')
 
   // reset state
-  this.reset();
+  this.reset()
 
-  this.use('up', up);
-  this.use('down', down);
-  this.use('left', left);
-  this.use('right', right);
+  this.use('up', up)
+  this.use('down', down)
+  this.use('left', left)
+  this.use('right', right)
 
-  this.use('w', up);
-  this.use('s', down);
-  this.use('a', left);
-  this.use('d', right);
+  this.use('w', up)
+  this.use('s', down)
+  this.use('a', left)
+  this.use('d', right)
 
   if (this.scope.state.vim) {
-    this.use('k', up);
-    this.use('j', down);
-    this.use('h', left);
-    this.use('l', right);
+    this.use('k', up)
+    this.use('j', down)
+    this.use('h', left)
+    this.use('l', right)
   }
 
   function up (data) {
-    this.rotate({x: self.state.rotateSpeed, y: 0});
+    this.rotate({x: self.state.rotateSpeed, y: 0})
   }
 
   function down (data) {
-    this.rotate({x: -self.state.rotateSpeed, y: 0});
+    this.rotate({x: -self.state.rotateSpeed, y: 0})
   }
 
   function left (data) {
-    this.rotate({x: 0, y: self.state.rotateSpeed});
+    this.rotate({x: 0, y: self.state.rotateSpeed})
   }
 
- function right (data) {
-    this.rotate({x: 0, y: -self.state.rotateSpeed});
+  function right (data) {
+    this.rotate({x: 0, y: -self.state.rotateSpeed})
   }
 }
 
@@ -273,13 +271,13 @@ function KeyboardController (scope) {
  */
 
 KeyboardController.prototype.reset = function () {
-  clearTimeout(this.state.keyupTimeout);
-  AxisController.prototype.reset.call(this);
+  clearTimeout(this.state.keyupTimeout)
+  AxisController.prototype.reset.call(this)
   Object.keys(this.state.keystate).forEach(function (code) {
-    this.state.keystate[code] = false;
-  }, this);
-  return this;
-};
+    this.state.keystate[code] = false
+  }, this)
+  return this
+}
 
 /**
  * Updates controller state.
@@ -291,31 +289,26 @@ KeyboardController.prototype.reset = function () {
  */
 
 KeyboardController.prototype.update = function () {
-  var lastQuaternion = this.state.quaternions.last;
-  var lastPosition = this.state.vectors.lastPosition;
-  var isKeydown = this.state.isKeydown;
-  var isFocused = this.scope.state.isFocused;
-  var keystate = this.state.keystate;
-  var handlers = this.state.handlers;
-  var position = this.state.target.position;
-  var offset = this.state.vectors.offset;
+  var isKeydown = this.state.isKeydown
+  var isFocused = this.scope.state.isFocused
+  var handlers = this.state.handlers
 
-  if (false == isKeydown || false == isFocused) { return this; }
+  if (!isKeydown || !isFocused) { return this }
   // call registered keycode handlers
   this.state.keycodes.forEach(function (code) {
-    if (null == handlers[code]) { return; }
+    if (handlers[code] == null) { return }
     handlers[code].forEach(function (handle) {
-      var name = keyname(code);
+      var name = keyname(code)
       if (this.state.keystate[code]) {
-        if ('function' == typeof handle) {
-          handle.call(this, {name: name, code: code});
+        if (typeof handle === 'function') {
+          handle.call(this, {name: name, code: code})
         }
       }
-    }, this);
-  }, this);
+    }, this)
+  }, this)
 
-  return AxisController.prototype.update.call(this);
-};
+  return AxisController.prototype.update.call(this)
+}
 
 /**
  * Installs a key handle by name.
@@ -330,16 +323,15 @@ KeyboardController.prototype.update = function () {
  */
 
 KeyboardController.prototype.use = function (key, fn) {
-  var handlers = this.state.handlers;
-  key = 'string' == typeof key ? keycode(key) : key;
-  if ('number' != typeof key) {
-    throw new TypeError("Expecting string or number.");
+  var handlers = this.state.handlers
+  key = typeof key === 'string' ? keycode(key) : key
+  if (typeof key !== 'number') {
+    throw new TypeError('Expecting string or number.')
   }
-  if (null == handlers[key]) { handlers[key] = []; }
-  handlers[key].push(fn);
-  return this;
-};
-
+  if (handlers[key] == null) { handlers[key] = [] }
+  handlers[key].push(fn)
+  return this
+}
 
 /**
  * Detects if key name or key code is supported and
@@ -353,29 +345,29 @@ KeyboardController.prototype.use = function (key, fn) {
  */
 
 KeyboardController.prototype.isKeySupported = function (key) {
-  var constraints = this.scope.projections.constraints;
+  var constraints = this.scope.projections.constraints
 
   // normalize key into keycode
-  key = 'string' == typeof key ? keycode(key) : key;
+  key = typeof key === 'string' ? keycode(key) : key
 
   // only keycode numbers are supported
-  if ('number' != typeof key) { return false; }
+  if (typeof key !== 'number') { return false }
 
   // false if there are any implicit constraints
   // despite explicit support
   if (constraints && constraints.keys) {
-    if (true == constraints.keys[key]) {
-      return false;
+    if (constraints.keys[key]) {
+      return false
     }
   }
 
   // check if key is in supported array
-  if (-1 == this.state.supported.indexOf(key)) {
-    return false;
+  if (this.state.supported.indexOf(key) === -1) {
+    return false
   }
 
-  return true;
-};
+  return true
+}
 
 /**
  * Handle 'onkeydown' events.
@@ -386,15 +378,11 @@ KeyboardController.prototype.isKeySupported = function (key) {
  */
 
 KeyboardController.prototype.onkeydown = function (e) {
-  var constraints = this.scope.projections.constraints;
-  var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused;
-  var handlers = this.state.handlers;
-  var ctrlKey = e.ctrlKey;
-  var metaKey = e.metaKey;
-  var altKey = e.altKey;
-  var scope = this.scope;
-  var code = e.which;
-  var self = this;
+  var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused
+  var ctrlKey = e.ctrlKey
+  var metaKey = e.metaKey
+  var altKey = e.altKey
+  var code = e.which
 
   /**
    * Key down event.
@@ -404,27 +392,27 @@ KeyboardController.prototype.onkeydown = function (e) {
    * @type {Event}
    */
 
-  this.scope.emit('keydown', e);
+  this.scope.emit('keydown', e)
 
   // ignore control keys
-  if (ctrlKey || metaKey || altKey) { return; }
+  if (ctrlKey || metaKey || altKey) { return }
 
-  if (false == this.state.isEnabled) {
-    return;
+  if (!this.state.isEnabled) {
+    return
   }
 
   if (isFocused) {
     // only supported keys
-    if (false == this.isKeySupported(code)) {
-      return;
+    if (!this.isKeySupported(code)) {
+      return
     }
 
-    this.state.keystate[code] = true;
+    this.state.keystate[code] = true
 
     // prevent default actions
-    e.preventDefault();
+    e.preventDefault()
   }
-};
+}
 
 /**
  * Handle 'onkeyup' events.
@@ -435,20 +423,19 @@ KeyboardController.prototype.onkeydown = function (e) {
  */
 
 KeyboardController.prototype.onkeyup = function (e) {
-  var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused;
-  var code = e.which;
-  this.state.keystate[code] = false;
-  this.scope.emit('keyup', e);
+  var isFocused = this.scope.state.forceFocus || this.scope.state.isFocused
+  var code = e.which
+  this.state.keystate[code] = false
+  this.scope.emit('keyup', e)
   if (isFocused) {
-    e.preventDefault();
-    this.state.forceUpdate = true;
-    clearTimeout(this.state.keyupTimeout);
+    e.preventDefault()
+    this.state.forceUpdate = true
+    clearTimeout(this.state.keyupTimeout)
     this.state.keyupTimeout = setTimeout(function () {
-      this.state.forceUpdate = false;
-    }.bind(this), this.scope.state.controllerUpdateTimeout);
+      this.state.forceUpdate = false
+    }.bind(this), this.scope.state.controllerUpdateTimeout)
   }
-
-};
+}
 
 /**
  * Handle `onmousedown' events.
@@ -459,10 +446,10 @@ KeyboardController.prototype.onkeyup = function (e) {
  */
 
 KeyboardController.prototype.onmousedown = function (e) {
-  if (e.target == this.scope.domElement ||
+  if (e.target === this.scope.domElement ||
       this.scope.domElement.contains(e.target)) {
-    this.scope.state.update('isFocused', true);
+    this.scope.state.update('isFocused', true)
   } else {
-    this.scope.state.update('isFocused', false);
+    this.scope.state.update('isFocused', false)
   }
 }

@@ -20,6 +20,11 @@ BROWSERIFY := $(BIN)/browserify
 POSTCSS := $(BIN)/postcss
 
 ##
+# Path to `standard`
+#
+STANDARD := $(BIN)/standard
+
+##
 # CSS source files
 #
 CSS := *.css
@@ -116,3 +121,10 @@ doc: node_modules $(SRC)
 clean:
 	rm -rf build
 	rm -rf components
+
+##
+# Run standard against the codebase
+#
+.PHONY: lint
+lint: node_modules
+	$(STANDARD)

@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -34,30 +34,13 @@
  */
 
 /**
- * Module dependencies
- * @private
- */
-
-var three = require('three')
-
-/**
- * Local dependencies
- * @private
- */
-
-var constants = require('../constants')
-
-// animation factor
-var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
-
-/**
  * Fisheye projection constraints.
  *
  * @public
  * @type {Object}
  */
 
-var constraints = fisheye.constraints = {};
+fisheye.constraints = {}
 
 /**
  * Applies a fisheye projection to scope frame
@@ -66,48 +49,47 @@ var constraints = fisheye.constraints = {};
  * @param {Axis} scope
  */
 
-module.exports = fisheye;
+module.exports = fisheye
 function fisheye (scope) {
-
   // this projection requires an already initialized
   // camera on the `scope' instance
-  var camera = scope.camera;
+  var camera = scope.camera
 
   // bail if camera not initialized
-  if (null == camera) { return false; }
+  if (camera == null) { return false }
 
   // bail if not ready
-  if (false == this.isReady()) { return false; }
+  if (!this.isReady()) { return false }
 
   // bail if geometry is a cylinder because fisheye
   // projection is only supported in a spherical geometry
-  if ('cylinder' == scope.geometry()) { return false; }
+  if (scope.geometry() === 'cylinder') { return false }
 
   // max Z and fov
-  var maxZ = (scope.height() / 100) | 0;
-  var current = this.current;
+  var maxZ = (scope.height() / 100) | 0
+  var current = this.current
 
-  scope.fov(scope.state.originalfov + 20);
-  this.constraints = {};
+  scope.fov(scope.state.originalfov + 20)
+  this.constraints = {}
 
-  if ('cylinder' == scope.geometry()) {
-    scope.orientation.x = 0;
-    this.constraints.y = true;
-    this.constraints.x = false;
+  if (scope.geometry() === 'cylinder') {
+    scope.orientation.x = 0
+    this.constraints.y = true
+    this.constraints.x = false
   }
 
   // begin animation
-  scope.debug("animate: FISHEYE begin");
+  scope.debug('animate: FISHEYE begin')
   this.animate(function () {
-    scope.camera.position.z = maxZ;
+    scope.camera.position.z = maxZ
 
-    if ('tinyplanet' == current) {
-      scope.orientation.x = 0;
-      scope.lookAt(0, 0, 0);
-    } else if ('equilinear' != current) {
-      scope.orientation.x = (Math.PI/180);
+    if (current === 'tinyplanet') {
+      scope.orientation.x = 0
+      scope.lookAt(0, 0, 0)
+    } else if (current !== 'equilinear') {
+      scope.orientation.x = (Math.PI / 180)
     }
 
-    this.cancel();
-  });
+    this.cancel()
+  })
 };

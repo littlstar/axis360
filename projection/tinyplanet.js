@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -48,13 +48,10 @@ var three = require('three')
 var constants = require('../constants')
 
 // max camera lens value
-var TINY_PLANET_CAMERA_LENS_VALUE = constants.TINY_PLANET_CAMERA_LENS_VALUE;
-
-// animation factor
-var ANIMATION_FACTOR = constants.ANIMATION_FACTOR;
+var TINY_PLANET_CAMERA_LENS_VALUE = constants.TINY_PLANET_CAMERA_LENS_VALUE
 
 // min/max x/y coordinates
-var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
+var MIN_X_COORDINATE = constants.MIN_X_COORDINATE
 
 /**
  * Applies a tinyplanet projection to scope frame
@@ -63,57 +60,55 @@ var MIN_X_COORDINATE = constants.MIN_X_COORDINATE;
  * @param {Axis} scope
  */
 
-module.exports = tinyplanet;
+module.exports = tinyplanet
 function tinyplanet (scope) {
-
-  var camera = scope.camera;
-  var rotation = new three.Vector3(0, 0, 0);
+  var camera = scope.camera
+  var rotation = new three.Vector3(0, 0, 0)
 
   // bail if camera not initialized
-  if (null == camera) { return false; }
+  if (!camera) { return false }
 
   // bail if not ready
-  if (false == this.isReady()) { return false; }
+  if (!this.isReady()) { return false }
 
   // bail if geometry is a cylinder because tiny planet
   // projection is only supported in a spherical geometry
-  if ('cylinder' == scope.geometry()) { return false; }
+  if (scope.geometry() === 'cylinder') { return false }
 
   // prevent duplicate tiny planet rotation requests
-  if ('tinyplanet' == this.current) { return false; }
+  if (this.current === 'tinyplanet') { return false }
 
   this.constraints = {
     x: true,
     cache: true,
     keys: {left: true, right: true, h: true, l: true}
-  };
-
-  if ('cylinder' == scope.geometry()) {
-    scope.orientation.x = 0;
-    this.constraints.y = false;
-    this.constraints.x = true;
   }
 
-  this.constraints.x = false;
-  this.constraints.y = true;
+  if (scope.geometry() === 'cylinder') {
+    scope.orientation.x = 0
+    this.constraints.y = false
+    this.constraints.x = true
+  }
 
-  camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE);
-  scope.fov(Math.min(scope.state.originalfov * 2, 130));
-  scope.debug("animate: TINY_PLANET begin");
-  rotation.x = camera.target.x || 0;
-  rotation.y = camera.target.y || 0;
-  rotation.z = camera.target.z || -1;
+  this.constraints.x = false
+  this.constraints.y = true
+
+  camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE)
+  scope.fov(Math.min(scope.state.originalfov * 2, 130))
+  scope.debug('animate: TINY_PLANET begin')
+  rotation.x = camera.target.x || 0
+  rotation.y = camera.target.y || 0
+  rotation.z = camera.target.z || -1
   this.animate(function () {
-    var y = rotation.y;
-    var x = rotation.x;
-    scope.debug("animate: TINY_PLANET y=%d", y);
-    rotation.x = MIN_X_COORDINATE;
-    rotation.y = -180;
-    scope.lookAt(rotation.x, rotation.y, rotation.z);
-    scope.orientation.x = -Infinity;
-    this.constraints.x = true;
-    this.constraints.y = false;
-    scope.debug("animate: TINY_PLANET end");
-    this.cancel();
-  });
+    var y = rotation.y
+    scope.debug('animate: TINY_PLANET y=%d', y)
+    rotation.x = MIN_X_COORDINATE
+    rotation.y = -180
+    scope.lookAt(rotation.x, rotation.y, rotation.z)
+    scope.orientation.x = -Infinity
+    this.constraints.x = true
+    this.constraints.y = false
+    scope.debug('animate: TINY_PLANET end')
+    this.cancel()
+  })
 };
