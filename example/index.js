@@ -20,7 +20,7 @@ const vrToggle = document.getElementById('toggle-vr-mode')
 const enableLock = document.getElementById('enable-pointer-lock')
 const mouseToggle = document.getElementById('toggle-mouse-movement-control')
 const player = document.getElementById('player')
-const preview = document.getElementById('preview')
+// const preview = document.getElementById('preview')
 
 /**
  * State.
@@ -54,9 +54,9 @@ frame.on('vrhmdavailable', function (e) {
 
 frame.once('ready', function () {
   frame.focus()
-  //frame.rotate('y', {value: 0.005, every: 100})
-  //updatePreview()
-  //setInterval(updatePreview, 2000)
+  // frame.rotate('y', {value: 0.005, every: 100})
+  // updatePreview()
+  // setInterval(updatePreview, 2000)
   //
   // function updatePreview () {
   //   frame.toImage(preview)
