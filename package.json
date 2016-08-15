@@ -18,6 +18,7 @@
     "webgl"
   ],
   "devDependencies": {
+    "autoprefixer": "^6.4.0",
     "browserify": "^13.1.0",
     "budo": "^8.3.0",
     "jsdoc": "^3.3.0",
@@ -32,7 +33,6 @@
     "@littlstar/fullscreen": "^2.0.0",
     "@littlstar/three-canvas-renderer": "^1.0.0",
     "@littlstar/three-vr-effect": "^1.0.0",
-    "autoprefixer": "^6.4.0",
     "component-emitter": "^1.2.1",
     "component-events": "^1.0.10",
     "domify": "^1.4.0",
