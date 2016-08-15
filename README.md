@@ -62,7 +62,6 @@ frame.once('ready', () => {
 
 ## TODO
 
-* [ ] - Rewrite in ES6
 * [ ] - Deprecate and start new project without THREE.js dependency.
 
 ## Screenshots
