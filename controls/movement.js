@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -32,7 +32,7 @@
  * @type {Function}
  */
 
-void module.exports;
+void module.exports
 
 /**
  * Module dependencies.
@@ -40,7 +40,6 @@ void module.exports;
  */
 
 var inherits = require('inherits')
-  , three = require('three')
 
 /**
  * Local dependencies.
@@ -48,9 +47,8 @@ var inherits = require('inherits')
  */
 
 var MouseController = require('./mouse').MouseController
-  , AxisController = require('./controller')
-  , constants = require('../constants')
-  , util = require('../util')
+var AxisController = require('./controller')
+var constants = require('../constants')
 
 /**
  * Initializes movement controls on Axis.
@@ -62,7 +60,7 @@ var MouseController = require('./mouse').MouseController
 
 module.exports = function movement (axis) {
   return MovementController(axis).target(axis.camera)
-};
+}
 
 /**
  * MovementController constructor
@@ -75,26 +73,16 @@ module.exports = function movement (axis) {
  * @param {Axis} scope - The axis instance
  */
 
-module.exports.MovementController = MovementController;
-inherits(MovementController, MouseController);
+module.exports.MovementController = MovementController
+inherits(MovementController, MouseController)
 function MovementController (scope) {
-
   // ensure instance
   if (!(this instanceof MovementController)) {
-    return new MovementController(scope);
+    return new MovementController(scope)
   }
 
   // inherit from `MouseController'
-  MouseController.call(this, scope);
-
-  /**
-   * Reference to this instance.
-   *
-   * @private
-   * @type {MovementController}
-   */
-
-  var self = this;
+  MouseController.call(this, scope)
 }
 
 /**
@@ -107,12 +95,12 @@ function MovementController (scope) {
  */
 
 MovementController.prototype.update = function () {
-  if (false == this.state.isMousedown) { return this; }
-  var movements = this.state.movements;
-  this.rotate(movements);
-  AxisController.prototype.update.call(this);
-  return this;
-};
+  if (!this.state.isMousedown) { return this }
+  var movements = this.state.movements
+  this.rotate(movements)
+  AxisController.prototype.update.call(this)
+  return this
+}
 
 /**
  * Overloads MouseController#onmousedown
@@ -123,12 +111,12 @@ MovementController.prototype.update = function () {
  */
 
 MovementController.prototype.onmousedown = function (e) {
-  this.state.movements.x = 0;
-  this.state.movements.y = 0;
-  this.state.movementsStart.x = 0;
-  this.state.movementsStart.y = 0;
-  MouseController.prototype.onmousedown.call(this, e);
-};
+  this.state.movements.x = 0
+  this.state.movements.y = 0
+  this.state.movementsStart.x = 0
+  this.state.movementsStart.y = 0
+  MouseController.prototype.onmousedown.call(this, e)
+}
 
 /**
  * Overloads MouseController#onmousemove
@@ -139,32 +127,31 @@ MovementController.prototype.onmousedown = function (e) {
  */
 
 MovementController.prototype.onmousemove = function (e) {
-  var movements = this.state.movements;
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  var tmp = 0;
+  var movements = this.state.movements
+  var friction = this.scope.state.mouseFriction || constants.DEFAULT_MOUSE_MOVEMENT_FRICTION
+  var tmp = 0
 
   // handle mouse movements only if the mouse controller is enabled
-  if (false == this.state.isEnabled || false == this.state.isMousedown) {
-    return;
+  if (!this.state.isEnabled || !this.state.isMousedown) {
+    return
   }
 
-  movements.x = (e.screenX * friction) - this.state.movementsStart.x;
-  movements.y = (e.screenY * friction) - this.state.movementsStart.y;
+  movements.x = (e.screenX * friction) - this.state.movementsStart.x
+  movements.y = (e.screenY * friction) - this.state.movementsStart.y
 
   // apply friction
-  movements.y *= (friction);
-  movements.x *= (friction);
+  movements.y *= (friction)
+  movements.x *= (friction)
 
   // swap for rotation
-  tmp = movements.y;
-  movements.y = movements.x;
-  movements.x = tmp;
-
+  tmp = movements.y
+  movements.y = movements.x
+  movements.x = tmp
 
   // invert for true directional movement
-  movements.x *= -1;
-  movements.y *= -1;
-};
+  movements.x *= -1
+  movements.y *= -1
+}
 
 /**
  * Overloads MouseController#onmousemove
@@ -175,8 +162,8 @@ MovementController.prototype.onmousemove = function (e) {
  */
 
 MovementController.prototype.onmouseup = function (e) {
-  clearTimeout(this.state.mouseupTimeout);
-  this.state.isMousedown = false;
-  this.state.movementsStart.x = 0;
-  this.state.movementsStart.y = 0;
-};
+  clearTimeout(this.state.mouseupTimeout)
+  this.state.isMousedown = false
+  this.state.movementsStart.x = 0
+  this.state.movementsStart.y = 0
+}

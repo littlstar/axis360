@@ -14,10 +14,10 @@ var three = require('three')
  */
 
 module.exports = function plane (axis) {
-  var width = axis.width();
-  var height = axis.height();
-  var segments = 4;
+  var width = axis.width()
+  var height = axis.height()
+  var segments = 4
   return new three.PlaneBufferGeometry(width,
                                        height,
-                                       segments);
-};
+                                       segments)
+}

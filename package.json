@@ -19,7 +19,8 @@
   "devDependencies": {
     "browserify": "^13.1.0",
     "jsdoc": "^3.3.0",
-    "postcss-cli": "^2.5.2"
+    "postcss-cli": "^2.5.2",
+    "standard": "^7.1.2"
   },
   "bugs": {
     "url": "https://github.com/littlstar/axis/issues",
@@ -41,5 +42,12 @@
     "three": "^0.79.0",
     "three-projector-renderer": "^1.0.1",
     "yields-keycode": "^1.1.0"
+  },
+  "standard": {
+    "ignore": [
+      "public",
+      "dist",
+      "build"
+    ]
   }
 }

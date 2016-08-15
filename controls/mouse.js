@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -32,7 +32,7 @@
  * @type {Function}
  */
 
-void module.exports;
+void module.exports
 
 /**
  * Module dependencies.
@@ -47,11 +47,11 @@ var inherits = require('inherits')
  */
 
 var AxisController = require('./controller')
-  , constants = require('../constants')
-  , util = require('../util')
+var constants = require('../constants')
+var util = require('../util')
 
 // default mouse friction value
-var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
+var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION
 
 /**
  * Initializes mouse controls on Axis.
@@ -64,8 +64,8 @@ var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
 module.exports = function mouse (axis) {
   return MouseController(axis)
   .target(axis.camera)
-  .enable();
-};
+  .enable()
+}
 
 /**
  * MouseController constructor
@@ -78,15 +78,15 @@ module.exports = function mouse (axis) {
  * @param {Axis} scope - The axis instance
  */
 
-module.exports.MouseController = MouseController;
-inherits(MouseController, AxisController);
+module.exports.MouseController = MouseController
+inherits(MouseController, AxisController)
 function MouseController (scope) {
   if (!(this instanceof MouseController)) {
-    return new MouseController(scope);
+    return new MouseController(scope)
   }
 
   // inherit from `AxisController'
-  AxisController.call(this, scope);
+  AxisController.call(this, scope)
 
   /**
    * Mouse controller movements.
@@ -117,7 +117,7 @@ function MouseController (scope) {
      */
 
     y: 0
-  };
+  }
 
   /**
    * Initial mouse controller movement.
@@ -148,7 +148,7 @@ function MouseController (scope) {
      */
 
     y: 0
-  };
+  }
 
   /**
    * Is mousedown predicate.
@@ -158,7 +158,7 @@ function MouseController (scope) {
    * @type {Boolean}
    */
 
-  this.state.isMousedown = false;
+  this.state.isMousedown = false
 
   /**
    * Mouseup timeout ID
@@ -168,13 +168,13 @@ function MouseController (scope) {
    * @type {Number}
    */
 
-  this.state.mouseupTimeout = 0;
+  this.state.mouseupTimeout = 0
 
   // initialize event delegation.
-  this.events.bind('mouseleave');
-  this.events.bind('mousedown');
-  this.events.bind('mousemove');
-  this.events.bind('mouseup');
+  this.events.bind('mouseleave')
+  this.events.bind('mousedown')
+  this.events.bind('mousemove')
+  this.events.bind('mouseup')
 }
 
 /**
@@ -186,13 +186,13 @@ function MouseController (scope) {
  */
 
 MouseController.prototype.onmousedown = function (e) {
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  clearTimeout(this.state.mouseupTimeout);
-  this.state.forceUpdate = false;
-  this.state.isMousedown = true;
-  this.state.movementsStart.x = e.screenX * friction;
-  this.state.movementsStart.y = e.screenY * friction;
-};
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION
+  clearTimeout(this.state.mouseupTimeout)
+  this.state.forceUpdate = false
+  this.state.isMousedown = true
+  this.state.movementsStart.x = e.screenX * friction
+  this.state.movementsStart.y = e.screenY * friction
+}
 
 /**
  * Handles 'onmouseup' events.
@@ -203,15 +203,15 @@ MouseController.prototype.onmousedown = function (e) {
  */
 
 MouseController.prototype.onmouseup = function (e) {
-  this.state.forceUpdate = true;
-  this.state.isMousedown = false;
-  clearTimeout(this.state.mouseupTimeout);
+  this.state.forceUpdate = true
+  this.state.isMousedown = false
+  clearTimeout(this.state.mouseupTimeout)
   this.state.mouseupTimeout = setTimeout(function () {
-    this.state.forceUpdate = false;
-    this.state.movementsStart.x = 0;
-    this.state.movementsStart.y = 0;
-  }.bind(this), this.scope.state.controllerUpdateTimeout);
-};
+    this.state.forceUpdate = false
+    this.state.movementsStart.x = 0
+    this.state.movementsStart.y = 0
+  }.bind(this), this.scope.state.controllerUpdateTimeout)
+}
 
 /**
  * Handles 'onmousemove' events.
@@ -222,34 +222,34 @@ MouseController.prototype.onmouseup = function (e) {
  */
 
 MouseController.prototype.onmousemove = function (e) {
-  var movements = this.state.movements;
-  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  var tmp = 0;
+  var movements = this.state.movements
+  var friction = this.scope.state.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION
+  var tmp = 0
 
   // handle mouse movements only if the mouse controller is enabled
-  if (false == this.state.isEnabled || false == this.state.isMousedown) {
-    return;
+  if (!this.state.isEnabled || !this.state.isMousedown) {
+    return
   }
 
-  movements.x = (e.screenX * friction) - this.state.movementsStart.x;
-  movements.y = (e.screenY * friction) - this.state.movementsStart.y;
+  movements.x = (e.screenX * friction) - this.state.movementsStart.x
+  movements.y = (e.screenY * friction) - this.state.movementsStart.y
 
   // normalized movements from event
-  util.normalizeMovements(e, movements);
+  util.normalizeMovements(e, movements)
 
   // apply friction
-  movements.y *= friction/2;
-  movements.x *= friction;
+  movements.y *= friction / 2
+  movements.x *= friction
 
   // swap for rotation
-  tmp = movements.y;
-  movements.y = movements.x;
-  movements.x = tmp;
+  tmp = movements.y
+  movements.y = movements.x
+  movements.x = tmp
 
-  this.rotate(movements);
-  this.state.movementsStart.x = e.screenX * friction;
-  this.state.movementsStart.y = e.screenY * friction;
-};
+  this.rotate(movements)
+  this.state.movementsStart.x = e.screenX * friction
+  this.state.movementsStart.y = e.screenY * friction
+}
 
 /**
  * Handles 'onmousemove' events.
@@ -260,8 +260,8 @@ MouseController.prototype.onmousemove = function (e) {
  */
 
 MouseController.prototype.onmouseleave = function () {
-  this.onmouseup();
-};
+  this.onmouseup()
+}
 
 /**
  * Resets mouse controller state.
@@ -273,16 +273,16 @@ MouseController.prototype.onmouseleave = function () {
  */
 
 MouseController.prototype.reset = function () {
-  clearTimeout(this.state.mouseupTimeout);
-  AxisController.prototype.reset.call(this);
-  this.state.isMousedown = false;
-  this.state.mouseupTimeout = 0;
-  this.state.movementsStart.x = 0;
-  this.state.movementsStart.y = 0;
-  this.state.movements.x = 0;
-  this.state.movements.y = 0;
-  return this;
-};
+  clearTimeout(this.state.mouseupTimeout)
+  AxisController.prototype.reset.call(this)
+  this.state.isMousedown = false
+  this.state.mouseupTimeout = 0
+  this.state.movementsStart.x = 0
+  this.state.movementsStart.y = 0
+  this.state.movements.x = 0
+  this.state.movements.y = 0
+  return this
+}
 
 /**
  * Implements AxisController#update() method.
@@ -294,7 +294,7 @@ MouseController.prototype.reset = function () {
  */
 
 MouseController.prototype.update = function () {
-  if (false == this.state.isMousedown) { return this; }
-  AxisController.prototype.update.call(this);
-  return this;
-};
+  if (!this.state.isMousedown) { return this }
+  AxisController.prototype.update.call(this)
+  return this
+}

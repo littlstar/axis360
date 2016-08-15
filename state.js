@@ -1,5 +1,5 @@
 
-'use strict';
+'use strict'
 
 /**
  * @license
@@ -40,13 +40,11 @@
  */
 
 var EventEmitter = require('component-emitter')
-  , fullscreen = require('@littlstar/fullscreen')
-  , keycode = require('yields-keycode')
-  , hasWebGL = require('has-webgl')
-  , events = require('component-events')
-  , three = require('three')
-  , merge = require('merge')
-  , path = require('path')
+var fullscreen = require('@littlstar/fullscreen')
+var hasWebGL = require('has-webgl')
+var events = require('component-events')
+var three = require('three')
+var merge = require('merge')
 
 /**
  * Local dependencies
@@ -54,19 +52,19 @@ var EventEmitter = require('component-emitter')
  */
 
 var getVRDevices = require('./util').getVRDevices
-  , isVRPossible = require('./util').isVRPossible
-  , constants = require('./constants')
+var isVRPossible = require('./util').isVRPossible
+var constants = require('./constants')
 
-var VR_POLL_TIMEOUT = constants.VR_POLL_TIMEOUT;
+var VR_POLL_TIMEOUT = constants.VR_POLL_TIMEOUT
 
 // defaults
-var DEFAULT_FRICTION = constants.DEFAULT_FRICTION;
-var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION;
-var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY;
-var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS;
-var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR;
-var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION;
-var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
+var DEFAULT_FRICTION = constants.DEFAULT_FRICTION
+var DEFAULT_PROJECTION = constants.DEFAULT_PROJECTION
+var DEFAULT_SCROLL_VELOCITY = constants.DEFAULT_SCROLL_VELOCITY
+var DEFAULT_GEOMETRY_RADIUS = constants.DEFAULT_GEOMETRY_RADIUS
+var DEFAULT_INTERPOLATION_FACTOR = constants.DEFAULT_INTERPOLATION_FACTOR
+var DEFAULT_MOUSE_MOVEMENT_FRICTION = constants.DEFAULT_MOUSE_MOVEMENT_FRICTION
+var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIMEOUT
 
 /**
  * State constructor
@@ -114,271 +112,270 @@ var DEFAULT_CONTROLLER_UPDATE_TIMEOUT = constants.DEFAULT_CONTROLLER_UPDATE_TIME
  * south poles (-PI/2, PI/2).
  */
 
-module.exports = State;
+module.exports = State
 function State (scope, opts) {
   // ensure instance
   if (!(this instanceof State)) {
-    return new State(scope, opts);
-  } else if ('object' != typeof scope) {
-    throw new TypeError("State expects scope to be an object.");
+    return new State(scope, opts)
+  } else if (typeof scope !== 'object') {
+    throw new TypeError('State expects scope to be an object.')
   }
 
   // event delegation
-  var windowEvents = events(window, this);
-  var documentEvents = events(document, this);
+  var documentEvents = events(document, this)
 
   // initialize document events
-  documentEvents.bind('touch', 'onmousedown');
-  documentEvents.bind('mousedown');
+  documentEvents.bind('touch', 'onmousedown')
+  documentEvents.bind('mousedown')
 
   // ensure options can't be overloaded
-  opts = Object.freeze(merge({}, opts));
+  opts = Object.freeze(merge({}, opts))
   this.__defineGetter__('options', function () {
-    return opts;
-  });
+    return opts
+  })
 
   /** Current scope for the instance. */
-  this.scope = scope;
+  this.scope = scope
 
   /** VR polling ID. */
-  this.vrPollID = 0;
+  this.vrPollID = 0
 
   /**
    * Temporary values.
    */
 
-  this.tmp = {};
+  this.tmp = {}
 
   /**
    * State variables.
    */
 
   /** Original fov value. */
-  this.originalfov = 0;
+  this.originalfov = 0
 
   /** Percent of content loaded. */
-  this.percentloaded = 0;
+  this.percentloaded = 0
 
   /** Original content size. */
-  this.originalsize = {width: null, height: null};
+  this.originalsize = {width: null, height: null}
 
   /** Current device orientation. */
-  this.orientation = 0;
+  this.orientation = 0
 
   /** Current projection type. */
-  this.projection = DEFAULT_PROJECTION;
+  this.projection = DEFAULT_PROJECTION
 
   /** Last known volume level. */
-  this.lastVolume = 0;
+  this.lastVolume = 0
 
   /** Last known refresh. */
-  this.lastRefresh = Date.now();
+  this.lastRefresh = Date.now()
 
   /** Points representing a drag offset. */
-  this.dragstart = {x:0, y:0};
+  this.dragstart = {x: 0, y: 0}
 
   /** Last known mousedown interaction. */
-  this.mousedownTimestamp = 0;
+  this.mousedownTimestamp = 0
 
   /** Current geometry type. */
-  this.geometry = null;
+  this.geometry = null
 
   /** Inverted state. */
-  this.isInverted = false;
+  this.isInverted = false
 
   /** Preview frame state predicate.. */
-  this.isPreviewFrame = false;
+  this.isPreviewFrame = false
 
   /** Total duration in seconds for video. */
-  this.duration = 0;
+  this.duration = 0
 
   /** Last known size. */
-  this.lastSize = {width: null, height: null};
+  this.lastSize = {width: null, height: null}
 
   /** Last known dimensions. */
-  this.lastDimensions = {width: 0, height: 0, ratio: 0};
+  this.lastDimensions = {width: 0, height: 0, ratio: 0}
 
   /** Current geometry radius. */
-  this.radius = DEFAULT_GEOMETRY_RADIUS;
+  this.radius = DEFAULT_GEOMETRY_RADIUS
 
   /** Known center for frame of reference. */
-  this.center = {x: null, y: null, z: null};
+  this.center = {x: null, y: null, z: null}
 
   /** Known frame height. */
-  this.height = 0;
+  this.height = 0
 
   /** Known touch coordinates. */
-  this.touch = {x: 0, y: 0};
+  this.touch = {x: 0, y: 0}
 
   /** Known frame width. */
-  this.width = 0;
+  this.width = 0
 
   /** State cache. */
-  this.cache = {};
+  this.cache = {}
 
   /** Interval rotations. */
   this.intervalRotations = {
     x: {value: 0, every: 0, interval: 0},
     y: {value: 0, every: 0, invteral: 0}
-  };
+  }
 
   /** Scroll velocity. */
-  this.scrollVelocity = DEFAULT_SCROLL_VELOCITY;
+  this.scrollVelocity = DEFAULT_SCROLL_VELOCITY
 
   /** Animation frame ID. */
-  this.animationFrameID = 0;
+  this.animationFrameID = 0
 
   /** Currently played video time. */
-  this.currentTime = 0;
+  this.currentTime = 0
 
   /** Friction to apply to x and y coordinates. */
-  this.friction = DEFAULT_FRICTION;
+  this.friction = DEFAULT_FRICTION
 
   /** Friction to apply to mouse movements. */
-  this.mouseFriction = DEFAULT_MOUSE_MOVEMENT_FRICTION;
+  this.mouseFriction = DEFAULT_MOUSE_MOVEMENT_FRICTION
 
   /** Zee quaternion. */
-  this.zee = null;
+  this.zee = null
 
   /** Current euler rotation angles. */
-  this.euler = null;
+  this.euler = null
 
   /** Original quaternion. */
-  this.orientationQuaternion = null;
+  this.orientationQuaternion = null
 
   /** X axis center. */
-  this.xAxisCenter = null;
+  this.xAxisCenter = null
 
   /** Y coordinate. */
-  this.pointerY = 0;
+  this.pointerY = 0
 
   /** X coordinate. */
-  this.pointerX = 0;
+  this.pointerX = 0
 
   /** Current field of view. */
-  this.fov = 0;
+  this.fov = 0
 
   /** Current frame source. */
-  this.src = null;
+  this.src = null
 
   /** Currently connected VR HMD if applicable. */
-  this.vrHMD = null;
+  this.vrHMD = null
 
   /** Currently connected position sensor vr device. */
-  this.vrPositionSensor = null;
+  this.vrPositionSensor = null
 
   /** Interpolation factor to apply to quaternion rotations. */
-  this.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR;
+  this.interpolationFactor = DEFAULT_INTERPOLATION_FACTOR
 
   /** Controller update timeout value. */
-  this.controllerUpdateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT;
+  this.controllerUpdateTimeout = DEFAULT_CONTROLLER_UPDATE_TIMEOUT
 
   /** Last known device pixel ratio. */
-  this.lastDevicePixelRatio = window.devicePixelRatio;
+  this.lastDevicePixelRatio = window.devicePixelRatio
 
   /** Vim mode ;) */
-  this.vim = false;
+  this.vim = false
 
   /**
    * State predicates.
    */
 
   /** Allow for updates to be skippped. */
-  this.shouldUpdate = true;
+  this.shouldUpdate = true
 
   /** Predicate indicating if Axis is ready. */
-  this.isReady = false;
+  this.isReady = false
 
   /** Predicate indicating if video is muted. */
-  this.isMuted = false;
+  this.isMuted = false
 
   /** Predicate indicating if video has ended. */
-  this.isEnded = false;
+  this.isEnded = false
 
   /** Predicate indicating the use of the mouse wheel. */
-  this.allowWheel = false;
+  this.allowWheel = false
 
   /** Predicate indicating if Axis is focused. */
-  this.isFocused = false;
+  this.isFocused = false
 
   /** Predicate indicating if key is down. */
-  this.isKeydown = false;
+  this.isKeydown = false
 
   /** Predicate indicating if video is playing. */
-  this.isPlaying = false;
+  this.isPlaying = false
 
   /** Predicate indicating is video is paused. */
-  this.isPaused = false;
+  this.isPaused = false
 
   /** Predicate indicating if video was stopped. */
-  this.isStopped = false;
+  this.isStopped = false
 
   /** Predicate to indicating if Axis is clickable.*/
-  this.isClickable = true;
+  this.isClickable = true
 
   /** Predicate indicating an animation is occuring. */
-  this.isAnimating = false;
+  this.isAnimating = false
 
   /** Predicate indicating fullscreen is active. */
-  this.isFullscreen = false;
+  this.isFullscreen = false
 
   /** Predicate indicating if frame is an image. */
-  this.isImage = false;
+  this.isImage = false
 
   /** Predicate indicating if video rendering should be forced. */
-  this.forceVideo = false;
+  this.forceVideo = false
 
   /** Predicate indicating focus should be forced. */
-  this.forceFocus = false;
+  this.forceFocus = false
 
   /** Predicate indicating control are allowed. */
-  this.allowControls = true;
+  this.allowControls = true
 
   /** Predicate indicating VR support. */
-  this.isVREnabled = false;
+  this.isVREnabled = false
 
   /** Predicate indicating if an HMD device is connected. */
-  this.isHMDAvailable = false;
+  this.isHMDAvailable = false
 
   /** Predicate indicating if an HMD device sensor is connected. */
-  this.isHMDPositionSensorAvailable = false;
+  this.isHMDPositionSensorAvailable = false
 
   /** Predicate indicating axis is resizable. */
-  this.isResizable = false;
+  this.isResizable = false
 
   /** Predicate indicating the mouse is down. */
-  this.isMousedown = false;
+  this.isMousedown = false
 
   /** Predicate indicating if touching. */
-  this.isTouching = false;
+  this.isTouching = false
 
   /** Predicate indicating if WebGL is being used. */
-  this.useWebGL = true;
+  this.useWebGL = true
 
   /** Predicate indicating if a video should autoplay. */
-  this.shouldAutoplay = false;
+  this.shouldAutoplay = false
 
   /** Predicate indicating if VR display is possible. */
-  this.isVRPossible = isVRPossible();
+  this.isVRPossible = isVRPossible()
 
   /** Predicate indicating if media resource is cross origin. */
   this.isCrossOrigin = false
 
   /** Predicate indicating if north/south pole orientation should be locked. */
-  this.lockPoles = true;
+  this.lockPoles = true
 
   // listen for fullscreen changes
-  fullscreen.on('change', this.onfullscreenchange.bind(this));
+  fullscreen.on('change', this.onfullscreenchange.bind(this))
 
   // handle updates
-  this.on('update', function (e) { });
+  this.on('update', function (e) { })
 
   // init
-  this.reset();
+  this.reset()
 }
 
 // mixin `EventEmitter'
-EventEmitter(State.prototype);
+EventEmitter(State.prototype)
 
 /**
  * Resets state values
@@ -389,102 +386,102 @@ EventEmitter(State.prototype);
  */
 
 State.prototype.reset = function (overrides) {
-  var opts = merge(merge({}, this.options), overrides || {});
+  var opts = merge(merge({}, this.options), overrides || {})
 
   // prevent additions to the object
-  Object.seal(this);
+  Object.seal(this)
 
   // start polling for a connected VR device
-  this.pollForVRDevice();
+  this.pollForVRDevice()
 
   /**
    * Configurable variables.
    */
 
-  this.projection = opts.projection || DEFAULT_PROJECTION;
-  this.radius = opts.radius || DEFAULT_GEOMETRY_RADIUS;
-  this.height = opts.height || 0;
-  this.width = opts.width || 0;
-  this.scrollVelocity = opts.scrollVelocity || DEFAULT_SCROLL_VELOCITY;
-  this.fov = Number(opts.fov || this.fov);
-  this.src = opts.src || null;
-  this.isImage = null == opts.isImage ? false : opts.isImage;
-  this.forceVideo = null == opts.forceVideo ? false : opts.forceVideo;
-  this.isClickable = null != opts.isClickable ? opts.isClickable : true;
-  this.isInverted = opts.inverted || false;
-  this.isPreviewFrame = opts.isPreviewFrame || false;
-  this.isCrossOrigin = opts.crossorigin || false;;
-  this.forceFocus = opts.forceFocus || false;
-  this.allowControls = null != opts.allowControls ? opts.allowControls : true;
-  this.isResizable = opts.resizable || false;
-  this.shouldAutoplay = null != opts.autoplay ? opts.autoplay : false;
-  this.allowWheel = null == opts.allowWheel ? false : opts.allowWheel;
-  this.friction = opts.friction || DEFAULT_FRICTION;
-  this.mouseFriction = opts.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION;
-  this.useWebGL = opts.webgl && hasWebGL;
+  this.projection = opts.projection || DEFAULT_PROJECTION
+  this.radius = opts.radius || DEFAULT_GEOMETRY_RADIUS
+  this.height = opts.height || 0
+  this.width = opts.width || 0
+  this.scrollVelocity = opts.scrollVelocity || DEFAULT_SCROLL_VELOCITY
+  this.fov = Number(opts.fov || this.fov)
+  this.src = opts.src || null
+  this.isImage = opts.isImage == null ? false : opts.isImage
+  this.forceVideo = opts.forceVideo == null ? false : opts.forceVideo
+  this.isClickable = opts.isClickable != null ? opts.isClickable : true
+  this.isInverted = opts.inverted || false
+  this.isPreviewFrame = opts.isPreviewFrame || false
+  this.isCrossOrigin = opts.crossorigin || false
+  this.forceFocus = opts.forceFocus || false
+  this.allowControls = opts.allowControls != null ? opts.allowControls : true
+  this.isResizable = opts.resizable || false
+  this.shouldAutoplay = opts.autoplay != null ? opts.autoplay : false
+  this.allowWheel = opts.allowWheel == null ? false : opts.allowWheel
+  this.friction = opts.friction || DEFAULT_FRICTION
+  this.mouseFriction = opts.mouseFriction || DEFAULT_MOUSE_MOVEMENT_FRICTION
+  this.useWebGL = opts.webgl && hasWebGL
   this.interpolationFactor = (
     opts.interpolationFactor || DEFAULT_INTERPOLATION_FACTOR
-  );
-  this.lockPoles = Boolean(null != opts.lockPoles ? opts.lockPoles : true);
+  )
+  this.lockPoles = Boolean(opts.lockPoles != null ? opts.lockPoles : true)
 
   this.controllerUpdateTimeout = (
     opts.updateTimeout || DEFAULT_CONTROLLER_UPDATE_TIMEOUT
-  );
+  )
 
-  this.vim = null == opts.vim ? false : opts.vim;
+  this.vim = opts.vim == null ? false : opts.vim
 
   /**
    * State variables.
    */
 
-  this.originalfov = this.fov || 0;
-  this.percentloaded = 0;
-  this.originalsize = {width: null, height: null};
-  this.orientation = window.orientation || 0;
-  this.lastVolume = 0;
-  this.lastRefresh = Date.now();
-  this.dragstart = {x:0, y:0};
-  this.mousedownTimestamp = 0;
-  this.geometry = null;
-  this.duration = 0;
-  this.lastSize = {width: null, height: null};
-  this.center = {x: null, y: null, z:null};
-  this.touch = {x: 0, y: 0};
-  this.cache = {};
-  this.animationFrameID = null;
-  this.currentTime = 0;
-  this.pointerX = 0;
-  this.pointerY = 0;
-  this.orientationQuaternion = new three.Quaternion();;
-  this.xAxisCenter = new three.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
-  this.zee = new three.Vector3(0, 0, 1);
-  this.euler = new three.Euler();
-  this.lastDevicePixelRatio = window.devicePixelRatio;
+  this.originalfov = this.fov || 0
+  this.percentloaded = 0
+  this.originalsize = {width: null, height: null}
+  this.orientation = window.orientation || 0
+  this.lastVolume = 0
+  this.lastRefresh = Date.now()
+  this.dragstart = {x: 0, y: 0}
+  this.mousedownTimestamp = 0
+  this.geometry = null
+  this.duration = 0
+  this.lastSize = {width: null, height: null}
+  this.center = {x: null, y: null, z: null}
+  this.touch = {x: 0, y: 0}
+  this.cache = {}
+  this.animationFrameID = null
+  this.currentTime = 0
+  this.pointerX = 0
+  this.pointerY = 0
+  this.orientationQuaternion = new three.Quaternion()
+  this.xAxisCenter = new three.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5))
+  this.zee = new three.Vector3(0, 0, 1)
+  this.euler = new three.Euler()
+  this.lastDevicePixelRatio = window.devicePixelRatio
 
   /**
    * State predicates.
    */
 
-  this.useWebGL = hasWebGL;
-  this.isReady = false;
-  this.isMuted = false;
-  this.isEnded = false;
-  this.isFocused = false;
-  this.isKeydown = false;
-  this.isPlaying = false;
-  this.isPaused = false;
-  this.isStopped = false;
-  this.isTouching = false;
-  this.isAnimating = false;
-  this.isFullscreen = false;
-  this.isMousedown = false;
-  this.isVREnabled = false;
-  this.isVRPossible = isVRPossible();
-  this.isHMDAvailable = false;
-  this.isHMDPositionSensorAvailable = false;
+  this.useWebGL = hasWebGL
+  this.isReady = false
+  this.isMuted = false
+  this.isEnded = false
+  this.isFocused = false
+  this.isKeydown = false
+  this.isPlaying = false
+  this.isPaused = false
+  this.isStopped = false
+  this.isTouching = false
+  this.isAnimating = false
+  this.isFullscreen = false
+  this.isMousedown = false
+  this.isVREnabled = false
+  this.isVRPossible = isVRPossible()
+  this.isHMDAvailable = false
+  this.isHMDPositionSensorAvailable = false
 
-  return this;
-};
+  return this
+}
 
 /**
  * Updates state value by key
@@ -496,23 +493,21 @@ State.prototype.reset = function (overrides) {
  */
 
 State.prototype.update = function (key, value) {
-  var constraints = this.scope.projections.constraints;
-  var previous = null;
-  var tmp = null;
+  var previous = null
 
   if (this.isConstrainedWith(key)) {
-    return this;
+    return this
   }
 
-  if ('undefined' != typeof key && 'undefined' != typeof value) {
-    previous = this[key];
+  if (typeof key !== 'undefined' && typeof value !== 'undefined') {
+    previous = this[key]
 
-    if (null != previous && 'object' == typeof previous) {
-      this[key] = merge(this[key], value);
-    } else if (this[key] != value) {
-      this[key] = value;
+    if (previous != null && typeof previous === 'object') {
+      this[key] = merge(this[key], value)
+    } else if (this[key] !== value) {
+      this[key] = value
     } else {
-      return this;
+      return this
     }
 
     /**
@@ -530,11 +525,11 @@ State.prototype.update = function (key, value) {
       key: key,
       value: value,
       previous: previous
-    });
+    })
   }
 
-  return this;
-};
+  return this
+}
 
 /**
  * Predicate to determine if state is constrained by key.
@@ -545,7 +540,7 @@ State.prototype.update = function (key, value) {
  */
 
 State.prototype.isConstrainedWith = function (key) {
-  var constraints = this.scope.projections.constraints;
+  var constraints = this.scope.projections.constraints
 
   /**
    * Recursively checks if key part `k[i]' is in object `o'
@@ -558,16 +553,15 @@ State.prototype.isConstrainedWith = function (key) {
    */
 
   function isConstrained (o, k) {
-    var keys = k.split('.');
-    if ('object' == typeof o[keys[0]]) {
-      return isConstrained(o[keys.shift()], keys.join(','));
-    } else { return true == o[keys[0]]; }
+    var keys = k.split('.')
+    if (typeof o[keys[0]] === 'object') {
+      return isConstrained(o[keys.shift()], keys.join(','))
+    } else { return o[keys[0]] === true }
   }
 
   // no constraint if `constraints' is `null'
-  return null == constraints ? false : isConstrained(constraints, key);
-};
-
+  return constraints == null ? false : isConstrained(constraints, key)
+}
 
 /**
  * Sets a ready state.
@@ -578,8 +572,8 @@ State.prototype.isConstrainedWith = function (key) {
  */
 
 State.prototype.ready = function () {
-  if (false == this.isReady) {
-    this.isReady = true;
+  if (!this.isReady) {
+    this.isReady = true
 
     /**
      * Ready  event.
@@ -588,7 +582,7 @@ State.prototype.ready = function () {
      * @event module:axis/state~State#ready
      */
 
-    this.emit('ready');
+    this.emit('ready')
 
     /**
      * Ready  event.
@@ -597,10 +591,10 @@ State.prototype.ready = function () {
      * @event module:axis~Axis#ready
      */
 
-    this.scope.emit('ready');
+    this.scope.emit('ready')
   }
-  return this;
-};
+  return this
+}
 
 /**
  * Polls for a connected HMD
@@ -611,23 +605,23 @@ State.prototype.ready = function () {
  */
 
 State.prototype.pollForVRDevice = function () {
-  var self = this;
+  var self = this
 
   // poll if VR is enabled.
   if (isVRPossible()) {
-    this.isVREnabled = false;
+    this.isVREnabled = false
 
     // kill current poll
-    clearInterval(this.vrPollID);
+    clearInterval(this.vrPollID)
 
     // begin new poll for HMD and sensor
     this.vrPollID = setInterval(function () {
-      getVRDevices().then(onVRDevices);
-    }, VR_POLL_TIMEOUT);
+      getVRDevices().then(onVRDevices)
+    }, VR_POLL_TIMEOUT)
 
-    return true;
+    return true
   } else {
-    return false;
+    return false
   }
 
   /**
@@ -638,51 +632,52 @@ State.prototype.pollForVRDevice = function () {
    */
 
   function onVRDevices (devices) {
-    var device = null;
-    var sensor = null;
-    var hmd = null;
+    var device = null
+    var sensor = null
+    var hmd = null
+    var i
 
     // if HMD is connected bail
     if (self.isHMDAvailable && self.isHMDPositionSensorAvailable) {
       // if device has been unplugged
-      if (0 == devices.length) {
-        self.isHMDAvailable = false;
-        self.isHMDPositionSensorAvailable = false;
-        self.vrHMD = null;
-        self.vrPositionSensor = null;
-        self.scope.emit('vrhmdunavailable');
-        return;
+      if (devices.length === 0) {
+        self.isHMDAvailable = false
+        self.isHMDPositionSensorAvailable = false
+        self.vrHMD = null
+        self.vrPositionSensor = null
+        self.scope.emit('vrhmdunavailable')
+        return
       }
     }
 
     // detect first HMDVRDevice
-    for (var i = 0; i < devices.length; ++i) {
-      device = devices[i];
-      if (device instanceof HMDVRDevice) {
-        hmd = device;
-        self.isHMDAvailable = true;
-        break;
+    for (i = 0; i < devices.length; ++i) {
+      device = devices[i]
+      if (device instanceof window.HMDVRDevice) {
+        hmd = device
+        self.isHMDAvailable = true
+        break
       }
     }
 
     if (hmd) {
       // detect first associated PositionSensorVRDevice instance
-      for (var i = 0; i < devices.length; ++i) {
-        device = devices[i];
-        if (device instanceof PositionSensorVRDevice &&
-            device.hardwareUnitId == hmd.hardwareUnitId) {
-          sensor = device;
-          self.isHMDPositionSensorAvailable = true;
-          break;
+      for (i = 0; i < devices.length; ++i) {
+        device = devices[i]
+        if (device instanceof window.PositionSensorVRDevice &&
+            device.hardwareUnitId === hmd.hardwareUnitId) {
+          sensor = device
+          self.isHMDPositionSensorAvailable = true
+          break
         }
       }
     }
 
     if (hmd && sensor) {
-      if (null == self.vrHMD ||
-          (self.vrHMD && self.vrHMD.hardwareUnitId != hmd.hardwareUnitId)) {
-        self.vrHMD = hmd;
-        self.vrPositionSensor = sensor;
+      if (self.vrHMD == null ||
+          (self.vrHMD && self.vrHMD.hardwareUnitId !== hmd.hardwareUnitId)) {
+        self.vrHMD = hmd
+        self.vrPositionSensor = sensor
 
         /**
          * VR HMD available event.
@@ -694,11 +689,11 @@ State.prototype.pollForVRDevice = function () {
          * @property {PositionSensorVRDevice} sensor - Associated position sensor.
          */
 
-        self.scope.emit('vrhmdavailable', {hmd: hmd, sensor: sensor});
+        self.scope.emit('vrhmdavailable', {hmd: hmd, sensor: sensor})
       }
     }
   }
-};
+}
 
 /**
  * Handles `onmousedown' events on the windows document.
@@ -708,13 +703,13 @@ State.prototype.pollForVRDevice = function () {
  */
 
 State.prototype.onmousedown = function (e) {
-  var scope = this.scope;
-  if (e.target == scope.renderer.domElement) {
-    this.update('isFocused', true);
+  var scope = this.scope
+  if (e.target === scope.renderer.domElement) {
+    this.update('isFocused', true)
   } else {
-    this.update('isFocused', false);
+    this.update('isFocused', false)
   }
-};
+}
 
 /**
  * Handles `onfullscreenchange' events on window.
@@ -725,9 +720,9 @@ State.prototype.onmousedown = function (e) {
  */
 
 State.prototype.onfullscreenchange = function (e) {
-  this.update('isFocused', true);
-  this.update('isAnimating', false);
-  this.update('isFullscreen', e);
+  this.update('isFocused', true)
+  this.update('isAnimating', false)
+  this.update('isFullscreen', e)
 
   /**
    * Fullscreen change event.
@@ -737,8 +732,8 @@ State.prototype.onfullscreenchange = function (e) {
    * @type {Event}
    */
 
-  this.scope.emit('fullscreenchange', e);
-};
+  this.scope.emit('fullscreenchange', e)
+}
 
 /**
  * Converts state to a JSON serializable object.
@@ -793,6 +788,6 @@ State.prototype.toJSON = function () {
     isMousedown: this.isMousedown,
     isTouching: this.isTouchingj,
     isVRPossible: this.isVRPossible,
-    isCrossOrigin: this.isCrossOrigin,
-  };
-};
+    isCrossOrigin: this.isCrossOrigin
+  }
+}
