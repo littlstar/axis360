@@ -3,6 +3,7 @@
   "version": "1.22.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
   "main": "index.js",
+  "style": "index.css",
   "scripts": {
     "prepublish": "make dist"
   },
