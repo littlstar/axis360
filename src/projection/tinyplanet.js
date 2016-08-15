@@ -39,7 +39,7 @@
   */
 
 import Debug from 'debug'
-import three from 'three'
+import { Vector3 } from 'three'
 import { TINY_PLANET_CAMERA_LENS_VALUE, MIN_X_COORDINATE } from '../constants'
 
 const debug = new Debug('axis:projection:tinyplanet')
@@ -53,7 +53,7 @@ const debug = new Debug('axis:projection:tinyplanet')
 
 export default function tinyplanet (scope) {
   const { camera } = scope
-  const rotation = new three.Vector3(0, 0, 0)
+  const rotation = new Vector3(0, 0, 0)
 
   // bail if camera not initialized
   if (!camera) { return false }

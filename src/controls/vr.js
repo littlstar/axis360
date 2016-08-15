@@ -39,7 +39,7 @@ void module.exports
  * @private
  */
 
-import three from 'three'
+import { Quaternion, PerspectiveCamera, Matrix4 } from 'three'
 import createCamera from '../camera'
 import AxisController from './controller'
 
@@ -86,7 +86,7 @@ function fieldOfViewTangentToScaleAndOffset (tangent) {
 function eyeTranslationToProjection (eye, near, far) {
   const dtor = Math.PI / 180.0
   const scale = -1
-  const matrix = new three.Matrix4()
+  const matrix = new Matrix4()
   const m = matrix.elements
   const tangent = {}
   let scaleAndOffset = null
@@ -171,7 +171,7 @@ class EyeFieldOfView {
  * @param {Number} w - W coordinate.
  */
 
-class EyeTranslation extends three.Quaternion {}
+class EyeTranslation extends Quaternion {}
 
 /**
  * VRController.
@@ -235,8 +235,8 @@ export class VRController extends AxisController {
       * @name state.cameras
       */
     this.state.cameras = {
-      left: new three.PerspectiveCamera(),
-      right: new three.PerspectiveCamera()
+      left: new PerspectiveCamera(),
+      right: new PerspectiveCamera()
     }
 
      /**

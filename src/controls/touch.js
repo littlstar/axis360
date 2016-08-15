@@ -39,7 +39,7 @@ void module.exports
  * @private
  */
 
-import three from 'three'
+import { Quaternion } from 'three'
 import AxisController from './controller'
 
 /**
@@ -116,7 +116,7 @@ export default class TouchController extends AxisController {
         * @type {THREE.Quaternion}
         */
 
-    this.state.quaternions.touch = new three.Quaternion()
+    this.state.quaternions.touch = new Quaternion()
 
        // initialize event delegation
     this.events.bind('touchstart')

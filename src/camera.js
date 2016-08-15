@@ -3,7 +3,7 @@
  * Module dependencies
  */
 
-import three from 'three'
+import { Vector3, PerspectiveCamera } from 'three'
 import { DEFAULT_FOV } from './constants'
 
 /**
@@ -27,9 +27,9 @@ export default function createCamera (scope, force) {
   let target = null
   const fov = state.opts ? state.opts.fov || DEFAULT_FOV : DEFAULT_FOV
   if (scope.camera == null || force) {
-    vector = new three.Vector3(0, 0, 0)
+    vector = new Vector3(0, 0, 0)
     target = camera && camera.target ? camera.target : vector
-    scope.camera = new three.PerspectiveCamera(fov, ratio, 0.01, 1000)
+    scope.camera = new PerspectiveCamera(fov, ratio, 0.01, 1000)
     scope.camera.target = target
     scope.camera.rotation.reorder('YXZ')
   }

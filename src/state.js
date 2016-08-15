@@ -43,7 +43,7 @@ import EventEmitter from 'component-emitter'
 import fullscreen from '@littlstar/fullscreen'
 import hasWebGL from 'has-webgl'
 import events from 'component-events'
-import three from 'three'
+import { Quaternion, Vector3, Euler } from 'three'
 import { getVRDevices, isVRPossible } from './util'
 import {
   VR_POLL_TIMEOUT,
@@ -441,10 +441,10 @@ export default class State extends EventEmitter {
     this.currentTime = 0
     this.pointerX = 0
     this.pointerY = 0
-    this.orientationQuaternion = new three.Quaternion()
-    this.xAxisCenter = new three.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5))
-    this.zee = new three.Vector3(0, 0, 1)
-    this.euler = new three.Euler()
+    this.orientationQuaternion = new Quaternion()
+    this.xAxisCenter = new Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5))
+    this.zee = new Vector3(0, 0, 1)
+    this.euler = new Euler()
     this.lastDevicePixelRatio = window.devicePixelRatio
 
     /**

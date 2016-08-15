@@ -39,7 +39,7 @@ void module.exports
  * @private
  */
 
-import three from 'three'
+import { Vector2, Vector3, Quaternion, Euler, Object3D } from 'three'
 import events from 'component-events'
 import EventEmitter from 'component-emitter'
 import Debug from 'debug'
@@ -139,7 +139,7 @@ export default class AxisController extends EventEmitter {
        * @type {THREE.Object3D}
        */
 
-      target: new three.Object3D(),
+      target: new Object3D(),
 
       /**
        * Theta value
@@ -262,7 +262,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Vector2}
          */
 
-        start: new three.Vector2(0, 0),
+        start: new Vector2(0, 0),
 
         /**
          * End rotation vector.
@@ -271,7 +271,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Vector2}
          */
 
-        end: new three.Vector2(0, 0),
+        end: new Vector2(0, 0),
 
         /**
          * Delta  rotation vector.
@@ -280,7 +280,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Vector2}
          */
 
-        delta: new three.Vector2(0, 0)
+        delta: new Vector2(0, 0)
       },
 
       /**
@@ -301,7 +301,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Vector3}
          */
 
-        x: new three.Vector3(1, 0, 0),
+        x: new Vector3(1, 0, 0),
 
         /**
          * Y vector.
@@ -311,7 +311,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Vector3}
          */
 
-        y: new three.Vector3(0, 1, 0),
+        y: new Vector3(0, 1, 0),
 
         /**
          * Z vector.
@@ -321,7 +321,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Vector3}
          */
 
-        z: new three.Vector3(0, 0, 1),
+        z: new Vector3(0, 0, 1),
 
         /**
          * Target vector.
@@ -331,7 +331,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Vector3}
          */
 
-        target: new three.Vector3(0, 0, 0),
+        target: new Vector3(0, 0, 0),
 
         /**
          * Current offset vector.
@@ -341,7 +341,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Vector3}
          */
 
-        offset: new three.Vector3(0, 0, 0),
+        offset: new Vector3(0, 0, 0),
 
         /**
          * Position vector.
@@ -351,7 +351,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Vector3}
          */
 
-        position: new three.Vector3(0, 0, 0),
+        position: new Vector3(0, 0, 0),
 
         /**
          * Last known position vector.
@@ -361,7 +361,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Vector3}
          */
 
-        lastPosition: new three.Vector3(0, 0, 0)
+        lastPosition: new Vector3(0, 0, 0)
       },
 
       /**
@@ -382,7 +382,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Quaternion}
          */
 
-        x: new three.Quaternion(),
+        x: new Quaternion(),
 
         /**
          * Y quaternion.
@@ -392,7 +392,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Quaternion}
          */
 
-        y: new three.Quaternion(),
+        y: new Quaternion(),
 
         /**
          * Directional quaternion.
@@ -402,7 +402,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Quaternion}
          */
 
-        direction: new three.Quaternion(),
+        direction: new Quaternion(),
 
         /**
          * Last known quaternion state
@@ -411,7 +411,7 @@ export default class AxisController extends EventEmitter {
          * @name state.quaternions.last
          */
 
-        last: new three.Quaternion()
+        last: new Quaternion()
       },
 
       /**
@@ -432,7 +432,7 @@ export default class AxisController extends EventEmitter {
          * @type {THREE.Euler}
          */
 
-        device: new three.Euler()
+        device: new Euler()
       }
     }
 
@@ -562,7 +562,7 @@ export default class AxisController extends EventEmitter {
     const orientation = this.state.orientation
     const vectors = this.state.vectors
     const target = this.state.target
-    const quat = new three.Quaternion().copy(target.quaternion)
+    const quat = new Quaternion().copy(target.quaternion)
     let interpolationFactor = this.scope.state.interpolationFactor
     const geo = this.scope.geometry()
 
@@ -665,7 +665,7 @@ export default class AxisController extends EventEmitter {
 
   target (target) {
     const up = target.up
-    const y = new three.Vector3(0, 1, 0)
+    const y = new Vector3(0, 1, 0)
     this.state.target = target
     // initialize direction quaternion from targets up vector
     this.state.quaternions.direction.setFromUnitVectors(up, y)
