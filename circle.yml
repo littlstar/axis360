@@ -12,11 +12,13 @@ dependencies:
 
 test:
   override:
+    - make lib
     - make lint
 
 deployment:
   publish:
     tag: /[0-9]+(\.[0-9]+)*(-.+)?/
     commands:
+      - make lib
       - make dist
       - npm publish
