@@ -38,8 +38,10 @@
  * @private
  */
 
-var path = require('path')
-var url = require('url')
+import { extname } from 'path'
+import { parse } from 'url'
+import hasWebGL from 'has-webgl'
+import { WebGLRenderer, CanvasRenderer, Texture, RGBFormat, LinearFilter } from 'three'
 
 /**
  * Detect if file path is an image
@@ -49,9 +51,8 @@ var url = require('url')
  * @param {String} file
  */
 
-exports.isImage = isImage
-function isImage (file) {
-  var ext = path.extname(url.parse(file).pathname).toLowerCase()
+export function isImage (file) {
+  const ext = extname(parse(file).pathname).toLowerCase()
   switch (ext) {
     case '.png':
     case '.jpg':
@@ -69,9 +70,8 @@ function isImage (file) {
  * @return {Boolean}
  */
 
-exports.isVRPossible = isVRPossible
-function isVRPossible () {
-  var fn = navigator.getVRDevices || navigator.mozGetVRDevices
+export function isVRPossible () {
+  const fn = navigator.getVRDevices || navigator.mozGetVRDevices
   return typeof fn === 'function'
 }
 
@@ -83,8 +83,7 @@ function isVRPossible () {
  * @return {Promise}
  */
 
-exports.getVRDevices = getVRDevices
-function getVRDevices (fn) {
+export function getVRDevices (fn) {
   if (isVRPossible()) {
     return (
       navigator.getVRDevices || navigator.mozGetVRDevices
@@ -102,8 +101,7 @@ function getVRDevices (fn) {
  * @return {Object}
  */
 
-exports.normalizeMovements = normalizeMovements
-function normalizeMovements (e, o) {
+export function normalizeMovements (e, o) {
   o.x = (
     e.movementX ||
     e.oMovementX ||
@@ -125,4 +123,81 @@ function normalizeMovements (e, o) {
   )
 
   return o
+}
+
+/**
+ * Creates the correct geometry for
+ * the current content in axis
+ *
+ * @private
+ * @param {Axis} axis
+ * @param {String} override
+ */
+
+export function getCorrectGeometry (axis, override) {
+  const dimensions = axis.dimensions()
+  const ratio = dimensions.ratio
+  let geo = null
+  const m = Math.sqrt(ratio)
+
+  if (override) {
+    geo = axis.geometry(override)
+  } else if (axis.state.options.box) {
+    geo = axis.geometry('box')
+  } else if (axis.state.projectionrequested === 'flat') {
+    geo = axis.geometry('plane')
+  } else if (m <= 2) {
+    geo = axis.geometry('sphere')
+  } else if (!isNaN(ratio)) {
+    geo = axis.geometry('cylinder')
+  }
+
+  return geo
+}
+
+/**
+ * Creates a renderer based on options
+ *
+ * @private
+ * @param {Object} opts
+ * @return {Object}
+ */
+
+export function createRenderer (opts = {}) {
+  const useWebgl = !opts.webgl && hasWebGL
+
+  if (typeof opts.renderer === 'object') {
+    return opts.renderer
+  }
+
+  if (useWebgl) {
+    return new WebGLRenderer({
+      // antialias: true,
+    })
+  } else {
+    return new CanvasRenderer()
+  }
+}
+
+/**
+ * Creates a texture from a video DOM Element
+ *
+ * @private
+ * @param {Element} video
+ * @return {THREE.Texture}
+ */
+
+export function createVideoTexture (video) {
+  let texture = null
+  video.width = video.videoWidth
+  video.height = video.videoHeight
+  texture = new Texture(video)
+
+  texture.format = RGBFormat
+  texture.minFilter = LinearFilter
+  texture.magFilter = LinearFilter
+  texture.image.width = video.videoWidth
+  texture.image.height = video.videoHeight
+
+  return texture
 }

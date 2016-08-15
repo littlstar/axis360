@@ -20,6 +20,11 @@ BROWSERIFY := $(BIN)/browserify
 POSTCSS := $(BIN)/postcss
 
 ##
+# Path to `babel`
+#
+BABEL := $(BIN)/babel
+
+##
 # Path to `budo`
 #
 BUDO := $(BIN)/budo
@@ -32,30 +37,32 @@ STANDARD := $(BIN)/standard
 ##
 # CSS source files
 #
-CSS := *.css
+CSS := $(wildcard src/*.css src/*/*.css)
 
 ##
 # Module source (js)
 #
-SRC := $(wildcard *.js)
-SRC += $(wildcard projection/*.js)
-SRC += $(wildcard geometry/*.js)
-SRC += $(wildcard controls/*.js)
+SRC := $(wildcard src/*.js src/*/*.js)
 
 ##
 # Main javascript entry
 #
-MAIN = index.js
+MAIN = src/index.js
 
 ##
 # Main css entry
 #
-MAINCSS := index.css
+MAINCSS := src/index.css
 
 ##
 # Global namespace target
 #
 GLOBAL_NAMESPACE = Axis
+
+##
+# Babel ENV
+#
+BABEL_ENV ?= commonjs
 
 ##
 # Ensures parent directory is built
@@ -67,26 +74,21 @@ endef
 ##
 # Builds everything
 #
-all: build dist doc
+all: lib dist doc
 
 ##
 # Builds all files
 #
-build: build/build.js build/build.css
+lib: $(SRC) | lib/index.css node_modules
+	BABEL_ENV=$(BABEL_ENV) $(BABEL) src --out-dir $@ --source-maps inline
+	touch $@
 
 ##
-# Builds javascript and html templates
+# Preprocess css through postcss
 #
-build/build.js: node_modules $(SRC)
+lib/index.css: $(CSS) node_modules
 	$(BUILD_PARENT_DIRECTORY)
-	$(BROWSERIFY) --standalone $(GLOBAL_NAMESPACE) $(MAIN) > $@
-
-##
-# Builds CSS source files
-#
-build/build.css: node_modules $(CSS)
-	$(BUILD_PARENT_DIRECTORY)
-	$(POSTCSS) --use autoprefixer --output $@ $(MAINCSS)
+	$(POSTCSS) -u autoprefixer $(MAINCSS) -o $@
 
 ##
 # Builds all dist files
@@ -131,8 +133,8 @@ example:
 #
 .PHONY: clean
 clean:
-	rm -rf build
-	rm -rf components
+	rm -rf lib
+	rm -rf dist
 
 ##
 # Run standard against the codebase

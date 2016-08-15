@@ -33,6 +33,15 @@
  * @type {Function}
  */
 
+ /**
+  * Module dependencies
+  * @private
+  */
+
+import Debug from 'debug'
+
+const debug = new Debug('axis:projection:fisheye')
+
 /**
  * Fisheye projection constraints.
  *
@@ -49,11 +58,10 @@ fisheye.constraints = {}
  * @param {Axis} scope
  */
 
-module.exports = fisheye
-function fisheye (scope) {
+export default function fisheye (scope) {
   // this projection requires an already initialized
   // camera on the `scope' instance
-  var camera = scope.camera
+  const { camera } = scope
 
   // bail if camera not initialized
   if (camera == null) { return false }
@@ -66,8 +74,8 @@ function fisheye (scope) {
   if (scope.geometry() === 'cylinder') { return false }
 
   // max Z and fov
-  var maxZ = (scope.height() / 100) | 0
-  var current = this.current
+  const maxZ = (scope.height() / 100) | 0
+  const current = this.current
 
   scope.fov(scope.state.originalfov + 20)
   this.constraints = {}
@@ -79,8 +87,8 @@ function fisheye (scope) {
   }
 
   // begin animation
-  scope.debug('animate: FISHEYE begin')
-  this.animate(function () {
+  debug('animate: FISHEYE begin')
+  this.animate(() => {
     scope.camera.position.z = maxZ
 
     if (current === 'tinyplanet') {
@@ -92,4 +100,4 @@ function fisheye (scope) {
 
     this.cancel()
   })
-};
+}

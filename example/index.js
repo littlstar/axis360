@@ -3,7 +3,7 @@
  * Module dependencies.
  */
 
-const Axis = require('..')
+import { createAxisFrame } from '../src'
 
 /**
  * Debugging.
@@ -33,7 +33,7 @@ let isVREnabled = false
  * Create player.
  */
 
-const frame = new Axis(player, {
+const frame = createAxisFrame(player, {
   crossorigin: true,
   resizable: true,
   preload: true,
