@@ -40,11 +40,10 @@
  * @param {Axis} axis
  */
 
-module.exports = flat
-function flat (axis) {
+export default function flat (axis) {
   // this projection requires an already initialized
   // camera on the `Axis' instance
-  var camera = axis.camera
+  const { camera } = axis
 
   // bail if camera not initialized
   if (camera == null) { return false }
@@ -60,9 +59,15 @@ function flat (axis) {
   this.apply('equilinear')
 
   this.constraints = {
-    keys: {up: true, down: true, left: true, right: true},
+    keys: {
+      up: true,
+      down: true,
+      left: true,
+      right: true
+    },
     panoramic: true,
-    x: true, y: true
+    x: true,
+    y: true
   }
 
   // update camera lens
@@ -73,4 +78,4 @@ function flat (axis) {
 
   // position in center (90) around equator (0)
   axis.coords(90, 0)
-};
+}

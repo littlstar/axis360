@@ -43,7 +43,7 @@ void module.exports
  * @type {Number}
  */
 
-exports.DEFAULT_FOV = Math.PI / 3 * 180 / Math.PI
+export const DEFAULT_FOV = Math.PI / 3 * 180 / Math.PI
 
 /**
  * Cylinder field of view value in degrees.
@@ -54,7 +54,7 @@ exports.DEFAULT_FOV = Math.PI / 3 * 180 / Math.PI
  * @type {Number}
  */
 
-exports.CYLINDER_FOV = 60
+export const CYLINDER_FOV = 60
 
 /**
  * Max calculated field of view in degrees.
@@ -65,7 +65,7 @@ exports.CYLINDER_FOV = 60
  * @type {Number}
  */
 
-exports.MAX_CALC_FOV = 75
+export const MAX_CALC_FOV = 75
 
 /**
  * Default interpolation factor.
@@ -76,7 +76,7 @@ exports.MAX_CALC_FOV = 75
  * @type {Number}
  */
 
-exports.DEFAULT_INTERPOLATION_FACTOR = 0.1
+export const DEFAULT_INTERPOLATION_FACTOR = 0.1
 
 /**
  * Default frame projection
@@ -87,7 +87,7 @@ exports.DEFAULT_INTERPOLATION_FACTOR = 0.1
  * @type {String}
  */
 
-exports.DEFAULT_PROJECTION = 'equilinear'
+export const DEFAULT_PROJECTION = 'equilinear'
 
 /**
  * Default scroll velocity
@@ -98,7 +98,7 @@ exports.DEFAULT_PROJECTION = 'equilinear'
  * @type {Number}
  */
 
-exports.DEFAULT_SCROLL_VELOCITY = 0.09
+export const DEFAULT_SCROLL_VELOCITY = 0.09
 
 /**
  * Default geometry radius
@@ -109,7 +109,7 @@ exports.DEFAULT_SCROLL_VELOCITY = 0.09
  * @type {Number}
  */
 
-exports.DEFAULT_GEOMETRY_RADIUS = 400
+export const DEFAULT_GEOMETRY_RADIUS = 400
 
 /**
  * Default friction to apply to x and y
@@ -121,7 +121,7 @@ exports.DEFAULT_GEOMETRY_RADIUS = 400
  * @type {Number}
  */
 
-exports.DEFAULT_FRICTION = 0.075
+export const DEFAULT_FRICTION = 0.075
 
 /**
  * Default key rotate speed
@@ -132,7 +132,7 @@ exports.DEFAULT_FRICTION = 0.075
  * @type {Number}
  */
 
-exports.DEFAULT_KEY_ROTATE_SPEED = 0.75
+export const DEFAULT_KEY_ROTATE_SPEED = 0.75
 
 /**
  * Default controller update timeout.
@@ -143,7 +143,7 @@ exports.DEFAULT_KEY_ROTATE_SPEED = 0.75
  * @type {Number}
  */
 
-exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600
+export const DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600
 
 /**
  * Default mouse movement friction factor.
@@ -154,7 +154,7 @@ exports.DEFAULT_CONTROLLER_UPDATE_TIMEOUT = 600
  * @type {Number}
  */
 
-exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.05
+export const DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.05
 
 /**
  * Animation factor unit applied to changes in
@@ -167,7 +167,7 @@ exports.DEFAULT_MOUSE_MOVEMENT_FRICTION = 0.05
  * @type {Number}
  */
 
-exports.ANIMATION_FACTOR = 24
+export const ANIMATION_FACTOR = 24
 
 /**
  * Max tiny planet projection camera lens value.
@@ -178,7 +178,7 @@ exports.ANIMATION_FACTOR = 24
  * @type {Number}
  */
 
-exports.TINY_PLANET_CAMERA_LENS_VALUE = 7.5
+export const TINY_PLANET_CAMERA_LENS_VALUE = 7.5
 
 /**
  * Frame click threshold in milliseconds used
@@ -191,7 +191,7 @@ exports.TINY_PLANET_CAMERA_LENS_VALUE = 7.5
  * @type {Number}
  */
 
-exports.FRAME_CLICK_THRESHOLD = 50
+export const FRAME_CLICK_THRESHOLD = 50
 
 /**
  * Minimum wheel distance used to fence scrolling
@@ -203,7 +203,7 @@ exports.FRAME_CLICK_THRESHOLD = 50
  * @type {Number}
  */
 
-exports.MIN_WHEEL_DISTANCE = 20
+export const MIN_WHEEL_DISTANCE = 20
 
 /**
  * Minimum wheel distance used to fence scrolling
@@ -215,7 +215,7 @@ exports.MIN_WHEEL_DISTANCE = 20
  * @type {Number}
  */
 
-exports.MAX_WHEEL_DISTANCE = 150
+export const MAX_WHEEL_DISTANCE = 150
 
 /**
  * Minimum possible y coordinate
@@ -226,7 +226,7 @@ exports.MAX_WHEEL_DISTANCE = 150
  * @type {Number}
  */
 
-exports.MIN_Y_COORDINATE = -85
+export const MIN_Y_COORDINATE = -85
 
 /**
  * Maximum possible y coordinate
@@ -237,7 +237,7 @@ exports.MIN_Y_COORDINATE = -85
  * @type {Number}
  */
 
-exports.MAX_Y_COORDINATE = 85
+export const MAX_Y_COORDINATE = 85
 
 /**
  * Minimum possible x coordinate
@@ -248,7 +248,7 @@ exports.MAX_Y_COORDINATE = 85
  * @type {Number}
  */
 
-exports.MIN_X_COORDINATE = 0
+export const MIN_X_COORDINATE = 0
 
 /**
  * Maximum possible x coordinate
@@ -259,7 +259,7 @@ exports.MIN_X_COORDINATE = 0
  * @type {Number}
  */
 
-exports.MAX_X_COORDINATE = 360
+export const MAX_X_COORDINATE = 360
 
 /**
  * VR device poll timeout
@@ -270,4 +270,4 @@ exports.MAX_X_COORDINATE = 360
  * @type {Number}
  */
 
-exports.VR_POLL_TIMEOUT = 3000
+export const VR_POLL_TIMEOUT = 3000

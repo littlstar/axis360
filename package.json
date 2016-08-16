@@ -2,11 +2,8 @@
   "name": "@littlstar/axis",
   "version": "1.22.0",
   "description": "Axis is a panoramic rendering engine. It supports the rendering of equirectangular, cylindrical, and panoramic textures.",
-  "main": "index.js",
-  "style": "index.css",
-  "scripts": {
-    "prepublish": "make dist"
-  },
+  "main": "lib/index.js",
+  "style": "lib/index.css",
   "keywords": [
     "panoramic",
     "video",
@@ -19,6 +16,10 @@
   ],
   "devDependencies": {
     "autoprefixer": "^6.4.0",
+    "babel-cli": "^6.11.4",
+    "babel-preset-es2015": "^6.13.2",
+    "babel-preset-stage-0": "^6.5.0",
+    "babelify": "^7.3.0",
     "browserify": "^13.1.0",
     "budo": "^8.3.0",
     "jsdoc": "^3.3.0",
@@ -35,10 +36,10 @@
     "@littlstar/three-vr-effect": "^1.0.0",
     "component-emitter": "^1.2.1",
     "component-events": "^1.0.10",
+    "debug": "^2.2.0",
     "domify": "^1.4.0",
     "has-webgl": "0.0.1",
     "inherits": "^2.0.1",
-    "merge": "^1.2.0",
     "pointer-lock": "0.0.4",
     "raf": "^3.2.0",
     "three": "^0.79.0",
@@ -49,7 +50,8 @@
     "ignore": [
       "public",
       "dist",
-      "build"
+      "build",
+      "lib"
     ]
   }
 }

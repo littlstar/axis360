@@ -43,9 +43,9 @@ Debug builds are now available in the `build/` directory.
 For an interactive example, `make example` and navigate to http://localhost:9966/ in your browser =)
 
 ```js
-const axis = requre('@littlstar/axis')
+const { createAxisFrame } = requre('@littlstar/axis')
 const domElement = document.querySelector('#video');
-const frame = axis(domElement, {
+const frame = createAxisFrame(domElement, {
   src: '/path/to/video.mp4'
 });
 
@@ -62,7 +62,6 @@ frame.once('ready', () => {
 
 ## TODO
 
-* [ ] - Rewrite in ES6
 * [ ] - Deprecate and start new project without THREE.js dependency.
 
 ## Screenshots

@@ -2,4 +2,5 @@ build/
 components/
 node_modules/
 cube-map.mp4
+lib/
 dist/

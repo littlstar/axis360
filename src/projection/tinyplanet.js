@@ -33,25 +33,16 @@
  * @type {Function}
  */
 
-/**
- * Module dependencies
- * @private
- */
+ /**
+  * Module dependencies
+  * @private
+  */
 
-var three = require('three')
+import Debug from 'debug'
+import { Vector3 } from 'three'
+import { TINY_PLANET_CAMERA_LENS_VALUE, MIN_X_COORDINATE } from '../constants'
 
-/**
- * Local dependencies
- * @private
- */
-
-var constants = require('../constants')
-
-// max camera lens value
-var TINY_PLANET_CAMERA_LENS_VALUE = constants.TINY_PLANET_CAMERA_LENS_VALUE
-
-// min/max x/y coordinates
-var MIN_X_COORDINATE = constants.MIN_X_COORDINATE
+const debug = new Debug('axis:projection:tinyplanet')
 
 /**
  * Applies a tinyplanet projection to scope frame
@@ -60,10 +51,9 @@ var MIN_X_COORDINATE = constants.MIN_X_COORDINATE
  * @param {Axis} scope
  */
 
-module.exports = tinyplanet
-function tinyplanet (scope) {
-  var camera = scope.camera
-  var rotation = new three.Vector3(0, 0, 0)
+export default function tinyplanet (scope) {
+  const { camera } = scope
+  const rotation = new Vector3(0, 0, 0)
 
   // bail if camera not initialized
   if (!camera) { return false }
@@ -81,7 +71,12 @@ function tinyplanet (scope) {
   this.constraints = {
     x: true,
     cache: true,
-    keys: {left: true, right: true, h: true, l: true}
+    keys: {
+      left: true,
+      right: true,
+      h: true,
+      l: true
+    }
   }
 
   if (scope.geometry() === 'cylinder') {
@@ -95,20 +90,20 @@ function tinyplanet (scope) {
 
   camera.setLens(TINY_PLANET_CAMERA_LENS_VALUE)
   scope.fov(Math.min(scope.state.originalfov * 2, 130))
-  scope.debug('animate: TINY_PLANET begin')
+  debug('animate: TINY_PLANET begin')
   rotation.x = camera.target.x || 0
   rotation.y = camera.target.y || 0
   rotation.z = camera.target.z || -1
-  this.animate(function () {
-    var y = rotation.y
-    scope.debug('animate: TINY_PLANET y=%d', y)
+  this.animate(() => {
+    const { y } = rotation
+    debug('animate: TINY_PLANET y=%d', y)
     rotation.x = MIN_X_COORDINATE
     rotation.y = -180
     scope.lookAt(rotation.x, rotation.y, rotation.z)
     scope.orientation.x = -Infinity
     this.constraints.x = true
     this.constraints.y = false
-    scope.debug('animate: TINY_PLANET end')
+    debug('animate: TINY_PLANET end')
     this.cancel()
   })
-};
+}

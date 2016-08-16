@@ -3,10 +3,8 @@
  * Module dependencies
  */
 
-var three = require('three')
-
-// default field of view
-var DEFAULT_FOV = require('./constants').DEFAULT_FOV
+import { Vector3, PerspectiveCamera } from 'three'
+import { DEFAULT_FOV } from './constants'
 
 /**
  * Creates an instance of THREE.PerspectiveCamera
@@ -19,19 +17,19 @@ var DEFAULT_FOV = require('./constants').DEFAULT_FOV
  * @return {THREE.PerspectiveCamera}
  */
 
-module.exports = function createCamera (scope, force) {
-  var height = scope.height()
-  var width = scope.width()
-  var ratio = width / height
-  var camera = scope.camera
-  var state = scope.state
-  var vector = null
-  var target = null
-  var fov = state.opts ? state.opts.fov || DEFAULT_FOV : DEFAULT_FOV
+export default function createCamera (scope, force) {
+  const height = scope.height()
+  const width = scope.width()
+  const ratio = width / height
+  const camera = scope.camera
+  const state = scope.state
+  let vector = null
+  let target = null
+  const fov = state.opts ? state.opts.fov || DEFAULT_FOV : DEFAULT_FOV
   if (scope.camera == null || force) {
-    vector = new three.Vector3(0, 0, 0)
+    vector = new Vector3(0, 0, 0)
     target = camera && camera.target ? camera.target : vector
-    scope.camera = new three.PerspectiveCamera(fov, ratio, 0.01, 1000)
+    scope.camera = new PerspectiveCamera(fov, ratio, 0.01, 1000)
     scope.camera.target = target
     scope.camera.rotation.reorder('YXZ')
   }

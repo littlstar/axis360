@@ -33,6 +33,19 @@
  * @type {Function}
  */
 
+ /**
+  * Module dependencies
+  * @private
+  */
+
+import Debug from 'debug'
+
+/**
+ * Debug.
+ */
+
+const debug = new Debug('axis:projection:equilinear')
+
 /**
  * Applies an equilinear projection to scope frame
  *
@@ -40,11 +53,10 @@
  * @param {Axis} scope
  */
 
-module.exports = equilinear
-function equilinear (scope) {
+export default function equilinear (scope) {
   // this projection requires an already initialized
   // camera on the `scope' instance
-  var camera = scope.camera
+  const { camera } = scope
 
   // bail if camera not present
   if (camera == null) { return }
@@ -55,17 +67,11 @@ function equilinear (scope) {
   // bail if content sizing is incorrect
   if (!this.contentHasCorrectSizing()) { return }
 
-  var current = this.current
-  var targetX = Math.PI / 180
-  var factor = targetX * 0.8999
+  const { current } = this
+  const targetX = Math.PI / 180
+  const factor = targetX * 0.8999
 
   this.constraints = {}
-
-  if (scope.geometry() === 'cylinder') {
-    scope.orientation.x = 0
-    this.constraints.y = true
-    this.constraints.x = false
-  }
 
   // apply zoom to cylinder geometry type
   if (scope.geometry() === 'cylinder') {
@@ -78,7 +84,7 @@ function equilinear (scope) {
   }
 
   // animate
-  scope.debug('animate: EQUILINEAR begin')
+  debug('animate: EQUILINEAR begin')
 
   scope.fov(scope.state.originalfov || scope.state.fov)
 
@@ -86,8 +92,8 @@ function equilinear (scope) {
     scope.orientation.x = targetX
     this.cancel()
   } else {
-    this.animate(function () {
-      var x = scope.orientation.x
+    this.animate(() => {
+      const { x } = scope.orientation
 
       if (current === 'tinyplanet') {
         scope.lookAt(0, 0, 0)
@@ -116,4 +122,4 @@ function equilinear (scope) {
       }
     })
   }
-};
+}
