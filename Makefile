@@ -79,7 +79,7 @@ endef
 ##
 # Builds everything
 #
-all: lib dist doc
+all: lib dist
 
 ##
 # Builds all files
@@ -124,6 +124,7 @@ node_modules: package.json
 # Builds documentation
 #
 doc: node_modules $(SRC)
+	$(error 'make doc disabled during the es6 migration')
 	./scripts/generate_documentation.sh $(CWD) public/doc
 
 ##
