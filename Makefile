@@ -65,6 +65,11 @@ GLOBAL_NAMESPACE = Axis
 BABEL_ENV ?= commonjs
 
 ##
+# Browserify transform
+#
+BROWSERIFY_TRANSFORM := --transform babelify
+
+##
 # Ensures parent directory is built
 #
 define BUILD_PARENT_DIRECTORY
@@ -100,7 +105,7 @@ dist: dist/axis.js dist/axis.css
 #
 dist/axis.js: node_modules $(SRC)
 	$(BUILD_PARENT_DIRECTORY)
-	$(BROWSERIFY) --standalone $(GLOBAL_NAMESPACE) $(MAIN) > $@
+	$(BROWSERIFY) $(BROWSERIFY_TRANSFORM) --standalone $(GLOBAL_NAMESPACE) $(MAIN) > $@
 
 ##
 # Builds CSS dist file
@@ -126,7 +131,7 @@ doc: node_modules $(SRC)
 #
 .PHONY: example
 example:
-	$(BUDO) example/index.js --dir example --dir public/assets --live
+	$(BUDO) example/index.js --dir example --dir public/assets --live -- $(BROWSERIFY_TRANSFORM)
 
 ##
 # Cleans all built files
