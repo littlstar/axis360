@@ -38,14 +38,17 @@
  */
 
 import three from 'three'
+import { Omnitone as omnitone } from 'omnitone'
 import dom from 'domify'
 import EventEmitter from 'component-emitter'
 import events from 'component-events'
 import raf from 'raf'
+import mat3 from 'gl-mat3'
 import fullscreen from '@littlstar/fullscreen'
 import addCanvasRenderer from '@littlstar/three-canvas-renderer'
 import addVREffect from '@littlstar/three-vr-effect'
 import Debug from 'debug'
+//import audioContext from 'audio-context'
 import pkg from '../package.json'
 import tpl from './template'
 import Projection from './projection'
@@ -76,6 +79,7 @@ import TouchController from './controls/touch'
 import MouseController from './controls/mouse'
 import VRController from './controls/vr'
 
+window.Omnitone = omnitone
 const debug = new Debug('axis')
 
 addCanvasRenderer(three)
@@ -154,6 +158,8 @@ export default class Axis extends EventEmitter {
 
     /** Axis' renderer instance.*/
     this.renderer = createRenderer(opts)
+
+          window.frame = this
 
     if (opts.allowPreviewFrame && !isImage(opts.src)) {
       delete opts.allowPreviewFrame
@@ -905,13 +911,27 @@ export default class Axis extends EventEmitter {
           this.state.options.loader(this, src, this.video)
         } else {
           this.video.src = src
-          this.video.load()
-          this.video.onload = function () {
+          //this.video.load()
+          this.video.onload =  () => {
             this.onload = null
             if (self.texture) {
               self.texture.needsUpdate = true
             }
           }
+                this.audioContext = new AudioContext()
+                this.foa = omnitone.createFOADecoder(this.audioContext, this.video, {
+                  channelMap: [0, 1, 2, 3]
+                })
+                this.foa.initialize()
+                .then(() => {
+                  this.on('refresh', () => {
+                    const cq = this.camera.quaternion
+                    const q = [cq.x, cq.y, cq.z, cq.w]
+                    const mat = mat3.fromQuat([], q)
+                    this.foa.setRotationMatrix(mat)
+                  })
+                })
+                .catch((err) => console.error(err))
         }
       } else {
         this.state.update('isImage', true)
