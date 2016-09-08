@@ -79,6 +79,7 @@ import TouchController from './controls/touch'
 import MouseController from './controls/mouse'
 import VRController from './controls/vr'
 
+// WTF google...
 window.Omnitone = omnitone
 const debug = new Debug('axis')
 
@@ -158,8 +159,6 @@ export default class Axis extends EventEmitter {
 
     /** Axis' renderer instance.*/
     this.renderer = createRenderer(opts)
-
-          window.frame = this
 
     if (opts.allowPreviewFrame && !isImage(opts.src)) {
       delete opts.allowPreviewFrame
@@ -925,10 +924,28 @@ export default class Axis extends EventEmitter {
                 this.foa.initialize()
                 .then(() => {
                   this.on('refresh', () => {
-                    const cq = this.camera.quaternion
-                    const q = [cq.x, cq.y, cq.z, cq.w]
+                    const orientation = this.orientation
+                    const quat = new three.Quaternion()
+                    const x = new three.Quaternion()
+                    const y = new three.Quaternion()
+
+                    x.setFromAxisAngle(new three.Vector3(1, 0, 0),
+                                       orientation.x)
+
+                    y.setFromAxisAngle(new three.Vector3(0, 1, 0),
+                                       orientation.y)
+
+                    quat.multiply(y).multiply(x)
+
+                    const q = [quat.x, quat.y, quat.z, quat.w]
                     const mat = mat3.fromQuat([], q)
                     this.foa.setRotationMatrix(mat)
+
+                    /*const quat = new three.Quaternion().copy(this.camera.quaternion).inverse()
+                    const q = [quat.x, quat.y, quat.z, quat.w]
+                    const mat = mat3.fromQuat([], q)
+                    console.log(mat)
+                    this.foa.setRotationMatrix(mat)*/
                   })
                 })
                 .catch((err) => console.error(err))

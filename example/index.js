@@ -37,13 +37,12 @@ const frame = createAxisFrame(player, {
   crossorigin: true,
   resizable: true,
   preload: true,
-  //autoplay: true,
+  autoplay: true,
   width: window.innerWidth,
   height: window.innerHeight,
   loop: true,
   allowWheel: true,
   //muted: true,
-  src: '/amb.test.mp4'
   //src: '/paramotor.mp4' // budo magic. this is actually /public/assets/paramotor.mp4
 })
 
