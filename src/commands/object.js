@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 
+import injectDefines from 'glsl-inject-defines'
 import { Command } from './command'
 import glsl from 'glslify'
 import mat4 from 'gl-mat4'
@@ -11,9 +12,15 @@ import vec4 from 'gl-vec4'
 import vec3 from 'gl-vec3'
 import quat from 'gl-quat'
 
-const define = (a, b, c) => Object.defineProperty(a, b, {
-  ...c
-})
+/**
+ * Define property helper.
+ *
+ * @param {Object} a
+ * @param {String} b
+ * @param {Object} c
+ */
+
+const define = (a, b, c) => Object.defineProperty(a, b, { ...c })
 
 const vert = `
 uniform mat4 projection;
@@ -39,9 +46,18 @@ void main() {
 const frag = `
 precision mediump float;
 uniform vec4 color;
+varying vec2 vuv;
+
+#ifdef HAS_IMAGE
+uniform sampler2D image;
+#endif
 
 void main() {
+#ifdef HAS_IMAGE
+  gl_FragColor = vec4(texture2D(image, vuv).rgb, 1.0);
+#else
   gl_FragColor = color;
+#endif
 }
 `
 
@@ -87,6 +103,14 @@ class VectorWrap {
 }
 
 /**
+ * Current object command counter.
+ *
+ * @type {Number}
+ */
+
+let OBJECT_COMMAND_COUNTER = 0
+
+/**
  * ObjectCommand class.
  *
  * @public
@@ -97,6 +121,18 @@ class VectorWrap {
 export class ObjectCommand extends Command {
 
   /**
+   * Returns the next object ID
+   *
+   * @public
+   * @static
+   * @return {Number}
+   */
+
+  static id() {
+    return OBJECT_COMMAND_COUNTER ++
+  }
+
+  /**
    * ObjectCommand class constructor.
    *
    * @param {Context} ctx
@@ -105,41 +141,59 @@ export class ObjectCommand extends Command {
 
   constructor(ctx, opts) {
     const model = mat4.identity([])
-    const geometry = opts.geometry || null
-    const elements = geometry ? geometry.primitive.cells : undefined
     const defaults = {...opts.defaults}
-    const uniforms = {...opts.uniforms, model: () => model }
-    const attributes = {...opts.attributes}
+    let draw = opts.draw
 
-    if (geometry) {
-      if (geometry.primitive.positions) {
-        attributes.position = geometry.primitive.positions
+    if (!draw) {
+      const geometry = opts.geometry || null
+      const elements = geometry ? geometry.primitive.cells : undefined
+      const uniforms = {...opts.uniforms, model: () => model }
+      const attributes = {...opts.attributes}
+
+      if (geometry) {
+        if (geometry.primitive.positions) {
+          attributes.position = geometry.primitive.positions
+        }
+
+        if (geometry.primitive.normals) {
+          attributes.normal = geometry.primitive.normals
+        }
+
+        if (geometry.primitive.uvs) {
+          attributes.uv = geometry.primitive.uvs
+        }
       }
 
-      if (geometry.primitive.normals) {
-        attributes.normal = geometry.primitive.normals
+      if (opts.image && opts.image.texture) {
+        uniforms.image = opts.image.texture
+      } else if (opts.image) {
+        uniforms.image = opts.image
       }
 
-      if (geometry.primitive.uvs) {
-        attributes.uv = geometry.primitive.uvs
+      const reglOptions = {
+        ...opts.regl,
+        uniforms,
+        attributes,
+        vert: opts.vert || vert,
+        frag: opts.frag || frag,
+        count: opts.count || undefined,
+        elements: opts.elements || elements || undefined,
       }
+
+      if (uniforms.image) {
+        reglOptions.frag = injectDefines(reglOptions.frag, {
+          HAS_IMAGE: ''
+        })
+      }
+
+      for (let key in reglOptions) {
+        if (undefined == reglOptions[key]) {
+          delete reglOptions[key]
+        }
+      }
+
+      draw = ctx.regl(reglOptions)
     }
-
-    if (opts.image && opts.image.texture) {
-      attributes.image = opts.image.texture
-    } else if (opts.image) {
-      attributes.image = opts.image
-    }
-
-    const draw = opts.draw || ctx.regl({
-      ...opts.regl,
-      uniforms,
-      attributes,
-      vert: opts.vert || vert,
-      frag: opts.frag || frag,
-      count: opts.count || undefined,
-      elements: opts.elements || elements || undefined,
-    })
 
     const update = (state) => {
       if ('scale' in state) {
@@ -154,24 +208,55 @@ export class ObjectCommand extends Command {
         Object.assign(this.rotation, state.rotation)
       }
 
+      mat4.identity(model)
       mat4.translate(model, model, this.position)
       mat4.scale(model, model, this.scale)
       mat4.multiply(model, model, mat4.fromQuat([], this.rotation))
-      mat4.copy(this.transform, model)
 
+      if (ctx.previous && ctx.previous.id != this.id) {
+        console.log(ctx.previous.type, this.type)
+        mat4.copy(this.transform, mat4.multiply([], ctx.previous.transform, model))
+      } else {
+        mat4.copy(this.transform, model)
+      }
+
+      mat4.copy(model, this.transform)
       return true
     }
 
+    const render = opts.render || ((_, state, extra) => {
+      let args = null
+      let next = () => void 0
 
-    super((_, state) => {
-      const args = {...defaults, ...state}
-      if (opts.before) { opts.before(args) }
-      if (update(args)) {
-        draw(args)
+      ctx.push(this)
+
+      if ('function' == typeof state) {
+        args = [{...defaults}]
+        next = state
+      } else {
+        args = [{...defaults, ...state}]
       }
-      if (opts.after) { opts.after(args) }
+
+      if (opts.before) {
+        opts.before(...args)
+      }
+
+      if (update(...args)) {
+        draw(...args)
+        next(...args)
+      }
+
+      if (opts.after) {
+        opts.after(...args)
+      }
+
+      ctx.pop()
     })
 
+    super(render)
+
+    this.id = opts.id || ObjectCommand.id()
+    this.type = opts.type || 'object'
     this.scale = new VectorWrap(1, 1, 1)
     this.position = new VectorWrap(0, 0, 0)
     this.rotation = new VectorWrap(0, 0, 0, 1)

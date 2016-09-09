@@ -27,8 +27,8 @@ export class PhotoCommand extends MediaCommand {
     })
 
     this.texture = texture
-    this.onloaded = ({image}) => console.log("loaded", image)
-    this.onprogress = () => console.log("progress")
+    this.onloaded = ({image}) => void 0
+    this.onprogress = () => void 0
 
     // @TODO(werle) - handle errors better
     this.onerror = (err) => console.error(err)

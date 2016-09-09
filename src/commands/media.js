@@ -41,6 +41,13 @@ export class MediaCommand extends Command {
     super(() => { this.load() })
     raf(() => this.load())
 
+    Object.defineProperty(this, 'manifest', { get: () => manifest })
+
+    this.update = (newManifest) => {
+      Object.assign(manifest, newManifest)
+      return this
+    }
+
     this.load = () => {
       if (isLoading || hasProgress || hasError || isDone) {
         return false
@@ -74,6 +81,7 @@ export class MediaCommand extends Command {
     this.retry = () => {
       this.reset()
       this.laod()
+      return this
     }
 
     this.reset = () => {
@@ -81,6 +89,7 @@ export class MediaCommand extends Command {
       isLoading = false
       hasError = false
       isDone = false
+      return this
     }
   }
 }

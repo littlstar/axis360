@@ -10,6 +10,26 @@ import glsl from 'glslify'
 import regl from 'regl'
 
 /**
+ * Current command symbol.
+ *
+ * @public
+ * @const
+ * @type {Symbol}
+ */
+
+export const $current = Symbol('current')
+
+/**
+ * Previous command symbol.
+ *
+ * @public
+ * @const
+ * @type {Symbol}
+ */
+
+export const $previous = Symbol('previous')
+
+/**
  * Context class defaults.
  *
  * @public
@@ -57,7 +77,37 @@ export class CommandContext extends EventEmitter {
     this.setMaxListeners(Infinity)
     this.regl = regl(opts.regl)
     this.state = initialState
+    this.stack = []
     this.camera = Camera(this, this.state.camera)
+    this[$current] = null
+    this[$previous] = null
+  }
+
+  get current() {
+    return this[$current]
+  }
+
+  get previous() {
+    return this[$previous]
+  }
+
+  get depth() {
+    return this.stack.length - 1
+  }
+
+  push(command) {
+    if ('function' == typeof command) {
+      this.stack.push(command)
+      this[$previous] = this[$current]
+      this[$current] = command
+    }
+  }
+
+  pop() {
+    let command = this.stack.pop()
+    this[$current] = this[$previous]
+    this[$previous] = this.stack[this.stack.length - 1]
+    return command
   }
 
   update(scope) {

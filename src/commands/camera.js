@@ -25,6 +25,6 @@ export class CameraCommand extends ObjectCommand {
 
   constructor(ctx, opts) {
     let render = createCameraRenderer(ctx.regl, opts)
-    super(ctx, {draw: (_, ...args) => render(...args)})
+    super(ctx, {render: (_, ...args) => render(...args)})
   }
 }

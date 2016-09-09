@@ -27,6 +27,7 @@ export class SphereCommand extends ObjectCommand {
     }
 
     super(ctx, {
+      type: 'sphere',
       defaults,
       uniforms,
       geometry,

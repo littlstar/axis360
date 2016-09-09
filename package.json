@@ -27,6 +27,7 @@
     "gl-quat": "^1.0.0",
     "gl-vec3": "^1.0.3",
     "gl-vec4": "^1.0.1",
+    "glsl-inject-defines": "^1.0.3",
     "pointer-lock": "0.0.4",
     "primitive-sphere": "^2.0.0",
     "raf": "^3.3.0",
