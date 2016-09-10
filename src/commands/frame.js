@@ -7,9 +7,18 @@
 import { Command } from './command'
 
 /**
+ * FrameCommand constructor.
+ * @see FrameCommand
+ */
+
+export default (...args) => new FrameCommand(...args)
+
+/**
  * FrameCommand class.
  *
  * @public
+ * @class FrameCommand
+ * @extends Command
  */
 
 export class FrameCommand extends Command {

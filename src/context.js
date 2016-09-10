@@ -5,7 +5,6 @@
  */
 
 import { EventEmitter } from 'events'
-import { Camera } from './camera'
 import glsl from 'glslify'
 import regl from 'regl'
 
@@ -39,13 +38,9 @@ export const $previous = Symbol('previous')
 
 export const defaults = {
   clear: {
-    color: [0, 0, 0, 1],
+    color: [17/255, 17/255, 17/255, 1],
     depth: 1,
   },
-
-  camera: {
-    center: [0, 0, 0]
-  }
 }
 
 /**
@@ -78,7 +73,6 @@ export class CommandContext extends EventEmitter {
     this.regl = regl(opts.regl)
     this.state = initialState
     this.stack = []
-    this.camera = Camera(this, this.state.camera)
     this[$current] = null
     this[$previous] = null
   }
@@ -101,6 +95,7 @@ export class CommandContext extends EventEmitter {
       this[$previous] = this[$current]
       this[$current] = command
     }
+    return this
   }
 
   pop() {
@@ -110,18 +105,18 @@ export class CommandContext extends EventEmitter {
     return command
   }
 
-  update(scope) {
+  update(block) {
     let fn = () => void 0
 
-    if ('function' == typeof scope) {
-      fn = scope
-    } else if (scope && 'object' == typeof scope) {
-      Object.assign(this.state, scope)
+    if ('function' == typeof block) {
+      fn = block
+    } else if (block && 'object' == typeof block) {
+      Object.assign(this.state, block)
     }
 
     this.regl.clear(this.state.clear)
-    Object.assign(this.camera, this.state.camera)
-    this.camera(fn)
+    fn()
+    return this
   }
 }
 

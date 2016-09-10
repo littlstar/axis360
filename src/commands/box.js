@@ -4,31 +4,31 @@
  * Module dependencies.
  */
 
-import { SphereGeometry } from '../geometry/sphere'
+import { BoxGeometry } from '../geometry/box'
 import { ObjectCommand } from './object'
 import mat4 from 'gl-mat4'
 import glsl from 'glslify'
 
 /**
- * SphereCommand constructor.
- * @see SphereCommand
+ * BoxCommand constructor.
+ * @see BoxCommand
  */
 
-export default (...args) => new SphereCommand(...args)
+export default (...args) => new BoxCommand(...args)
 
 /**
- * SphereCommand class.
+ * BoxCommand class.
  *
  * @public
- * @class SphereCommand
+ * @class BoxCommand
  * @extends ObjectCommand
  */
 
-export class SphereCommand extends ObjectCommand {
+export class BoxCommand extends ObjectCommand {
   constructor(ctx, opts = {}) {
-    const geometry = new SphereGeometry(opts.geometry)
-    const defaults = {}
-    const uniforms = {}
+    const geometry = new BoxGeometry(opts.geometry)
+    const uniforms = {
+    }
 
     if (opts.image) {
       uniforms.image = opts.image && opts.image.texture ?
@@ -37,8 +37,7 @@ export class SphereCommand extends ObjectCommand {
     }
 
     super(ctx, {
-      type: 'sphere',
-      defaults,
+      type: 'box',
       uniforms,
       geometry,
     })

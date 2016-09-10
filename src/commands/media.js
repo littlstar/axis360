@@ -15,6 +15,13 @@ import raf from 'raf'
 const noop = () => void 0
 
 /**
+ * MediaCommand constructor.
+ * @see MediaCommand
+ */
+
+export default (...args) => new MediaCommand(...args)
+
+/**
  * MediaCommand class.
  *
  * @public
@@ -41,12 +48,34 @@ export class MediaCommand extends Command {
     super(() => { this.load() })
     raf(() => this.load())
 
+    /**
+     * Manifest object getter.
+     *
+     * @type {Object}
+     */
+
     Object.defineProperty(this, 'manifest', { get: () => manifest })
+
+    /**
+     * Updates media state with
+     * new manifest object. This function
+     * merges an input manifest with the existing.
+     *
+     * @param {Object} newManifest
+     * @return {MediaCommand}
+     */
 
     this.update = (newManifest) => {
       Object.assign(manifest, newManifest)
       return this
     }
+
+    /**
+     * Begins loading of resources described in
+     * the manifest object.
+     *
+     * @return {Boolean}
+     */
 
     this.load = () => {
       if (isLoading || hasProgress || hasError || isDone) {
@@ -78,11 +107,23 @@ export class MediaCommand extends Command {
       return true
     }
 
+    /**
+     * Resets state and loads resources.
+     *
+     * @return {MediaCommand}
+     */
+
     this.retry = () => {
       this.reset()
       this.laod()
       return this
     }
+
+    /**
+     * Resets state.
+     *
+     * @return {MediaCommand}
+     */
 
     this.reset = () => {
       hasProgress = false

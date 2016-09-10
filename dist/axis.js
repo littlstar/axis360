@@ -1,4 +1,5394 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Axis = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],2:[function(require,module,exports){
+module.exports = function () {
+    for (var i = 0; i < arguments.length; i++) {
+        if (arguments[i] !== undefined) return arguments[i];
+    }
+};
+
+},{}],3:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+module.exports = EventEmitter;
+
+// Backwards-compat with node 0.10.x
+EventEmitter.EventEmitter = EventEmitter;
+
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!isNumber(n) || n < 0 || isNaN(n))
+    throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var er, handler, len, args, i, listeners;
+
+  if (!this._events)
+    this._events = {};
+
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events.error ||
+        (isObject(this._events.error) && !this._events.error.length)) {
+      er = arguments[1];
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      } else {
+        // At least give some kind of context to the user
+        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+        err.context = er;
+        throw err;
+      }
+    }
+  }
+
+  handler = this._events[type];
+
+  if (isUndefined(handler))
+    return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    args = Array.prototype.slice.call(arguments, 1);
+    listeners = handler.slice();
+    len = listeners.length;
+    for (i = 0; i < len; i++)
+      listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function(type, listener) {
+  var m;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events)
+    this._events = {};
+
+  // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+  if (this._events.newListener)
+    this.emit('newListener', type,
+              isFunction(listener.listener) ?
+              listener.listener : listener);
+
+  if (!this._events[type])
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  else if (isObject(this._events[type]))
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  else
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+
+  // Check for listener leak
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+
+  return this;
+};
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener = function(type, listener) {
+  var list, position, length, i;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events || !this._events[type])
+    return this;
+
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener ||
+      (isFunction(list.listener) && list.listener === listener)) {
+    delete this._events[type];
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener)) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0)
+      return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  var key, listeners;
+
+  if (!this._events)
+    return this;
+
+  // not listening for removeListener, no need to emit
+  if (!this._events.removeListener) {
+    if (arguments.length === 0)
+      this._events = {};
+    else if (this._events[type])
+      delete this._events[type];
+    return this;
+  }
+
+  // emit removeListener for all listeners on all events
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else if (listeners) {
+    // LIFO order
+    while (listeners.length)
+      this.removeListener(type, listeners[listeners.length - 1]);
+  }
+  delete this._events[type];
+
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  var ret;
+  if (!this._events || !this._events[type])
+    ret = [];
+  else if (isFunction(this._events[type]))
+    ret = [this._events[type]];
+  else
+    ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.prototype.listenerCount = function(type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+
+    if (isFunction(evlistener))
+      return 1;
+    else if (evlistener)
+      return evlistener.length;
+  }
+  return 0;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  return emitter.listenerCount(type);
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+
+},{}],4:[function(require,module,exports){
+module.exports = create
+
+/**
+ * Creates a new identity mat3
+ *
+ * @alias mat3.create
+ * @returns {mat3} a new 3x3 matrix
+ */
+function create() {
+  var out = new Float32Array(9)
+  out[0] = 1
+  out[1] = 0
+  out[2] = 0
+  out[3] = 0
+  out[4] = 1
+  out[5] = 0
+  out[6] = 0
+  out[7] = 0
+  out[8] = 1
+  return out
+}
+
+},{}],5:[function(require,module,exports){
+module.exports = adjoint;
+
+/**
+ * Calculates the adjugate of a mat4
+ *
+ * @param {mat4} out the receiving matrix
+ * @param {mat4} a the source matrix
+ * @returns {mat4} out
+ */
+function adjoint(out, a) {
+    var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3],
+        a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7],
+        a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11],
+        a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+
+    out[0]  =  (a11 * (a22 * a33 - a23 * a32) - a21 * (a12 * a33 - a13 * a32) + a31 * (a12 * a23 - a13 * a22));
+    out[1]  = -(a01 * (a22 * a33 - a23 * a32) - a21 * (a02 * a33 - a03 * a32) + a31 * (a02 * a23 - a03 * a22));
+    out[2]  =  (a01 * (a12 * a33 - a13 * a32) - a11 * (a02 * a33 - a03 * a32) + a31 * (a02 * a13 - a03 * a12));
+    out[3]  = -(a01 * (a12 * a23 - a13 * a22) - a11 * (a02 * a23 - a03 * a22) + a21 * (a02 * a13 - a03 * a12));
+    out[4]  = -(a10 * (a22 * a33 - a23 * a32) - a20 * (a12 * a33 - a13 * a32) + a30 * (a12 * a23 - a13 * a22));
+    out[5]  =  (a00 * (a22 * a33 - a23 * a32) - a20 * (a02 * a33 - a03 * a32) + a30 * (a02 * a23 - a03 * a22));
+    out[6]  = -(a00 * (a12 * a33 - a13 * a32) - a10 * (a02 * a33 - a03 * a32) + a30 * (a02 * a13 - a03 * a12));
+    out[7]  =  (a00 * (a12 * a23 - a13 * a22) - a10 * (a02 * a23 - a03 * a22) + a20 * (a02 * a13 - a03 * a12));
+    out[8]  =  (a10 * (a21 * a33 - a23 * a31) - a20 * (a11 * a33 - a13 * a31) + a30 * (a11 * a23 - a13 * a21));
+    out[9]  = -(a00 * (a21 * a33 - a23 * a31) - a20 * (a01 * a33 - a03 * a31) + a30 * (a01 * a23 - a03 * a21));
+    out[10] =  (a00 * (a11 * a33 - a13 * a31) - a10 * (a01 * a33 - a03 * a31) + a30 * (a01 * a13 - a03 * a11));
+    out[11] = -(a00 * (a11 * a23 - a13 * a21) - a10 * (a01 * a23 - a03 * a21) + a20 * (a01 * a13 - a03 * a11));
+    out[12] = -(a10 * (a21 * a32 - a22 * a31) - a20 * (a11 * a32 - a12 * a31) + a30 * (a11 * a22 - a12 * a21));
+    out[13] =  (a00 * (a21 * a32 - a22 * a31) - a20 * (a01 * a32 - a02 * a31) + a30 * (a01 * a22 - a02 * a21));
+    out[14] = -(a00 * (a11 * a32 - a12 * a31) - a10 * (a01 * a32 - a02 * a31) + a30 * (a01 * a12 - a02 * a11));
+    out[15] =  (a00 * (a11 * a22 - a12 * a21) - a10 * (a01 * a22 - a02 * a21) + a20 * (a01 * a12 - a02 * a11));
+    return out;
+};
+},{}],6:[function(require,module,exports){
+module.exports = clone;
+
+/**
+ * Creates a new mat4 initialized with values from an existing matrix
+ *
+ * @param {mat4} a matrix to clone
+ * @returns {mat4} a new 4x4 matrix
+ */
+function clone(a) {
+    var out = new Float32Array(16);
+    out[0] = a[0];
+    out[1] = a[1];
+    out[2] = a[2];
+    out[3] = a[3];
+    out[4] = a[4];
+    out[5] = a[5];
+    out[6] = a[6];
+    out[7] = a[7];
+    out[8] = a[8];
+    out[9] = a[9];
+    out[10] = a[10];
+    out[11] = a[11];
+    out[12] = a[12];
+    out[13] = a[13];
+    out[14] = a[14];
+    out[15] = a[15];
+    return out;
+};
+},{}],7:[function(require,module,exports){
+module.exports = copy;
+
+/**
+ * Copy the values from one mat4 to another
+ *
+ * @param {mat4} out the receiving matrix
+ * @param {mat4} a the source matrix
+ * @returns {mat4} out
+ */
+function copy(out, a) {
+    out[0] = a[0];
+    out[1] = a[1];
+    out[2] = a[2];
+    out[3] = a[3];
+    out[4] = a[4];
+    out[5] = a[5];
+    out[6] = a[6];
+    out[7] = a[7];
+    out[8] = a[8];
+    out[9] = a[9];
+    out[10] = a[10];
+    out[11] = a[11];
+    out[12] = a[12];
+    out[13] = a[13];
+    out[14] = a[14];
+    out[15] = a[15];
+    return out;
+};
+},{}],8:[function(require,module,exports){
+module.exports = create;
+
+/**
+ * Creates a new identity mat4
+ *
+ * @returns {mat4} a new 4x4 matrix
+ */
+function create() {
+    var out = new Float32Array(16);
+    out[0] = 1;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 0;
+    out[5] = 1;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 0;
+    out[9] = 0;
+    out[10] = 1;
+    out[11] = 0;
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 0;
+    out[15] = 1;
+    return out;
+};
+},{}],9:[function(require,module,exports){
+module.exports = determinant;
+
+/**
+ * Calculates the determinant of a mat4
+ *
+ * @param {mat4} a the source matrix
+ * @returns {Number} determinant of a
+ */
+function determinant(a) {
+    var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3],
+        a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7],
+        a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11],
+        a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15],
+
+        b00 = a00 * a11 - a01 * a10,
+        b01 = a00 * a12 - a02 * a10,
+        b02 = a00 * a13 - a03 * a10,
+        b03 = a01 * a12 - a02 * a11,
+        b04 = a01 * a13 - a03 * a11,
+        b05 = a02 * a13 - a03 * a12,
+        b06 = a20 * a31 - a21 * a30,
+        b07 = a20 * a32 - a22 * a30,
+        b08 = a20 * a33 - a23 * a30,
+        b09 = a21 * a32 - a22 * a31,
+        b10 = a21 * a33 - a23 * a31,
+        b11 = a22 * a33 - a23 * a32;
+
+    // Calculate the determinant
+    return b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+};
+},{}],10:[function(require,module,exports){
+module.exports = fromQuat;
+
+/**
+ * Creates a matrix from a quaternion rotation.
+ *
+ * @param {mat4} out mat4 receiving operation result
+ * @param {quat4} q Rotation quaternion
+ * @returns {mat4} out
+ */
+function fromQuat(out, q) {
+    var x = q[0], y = q[1], z = q[2], w = q[3],
+        x2 = x + x,
+        y2 = y + y,
+        z2 = z + z,
+
+        xx = x * x2,
+        yx = y * x2,
+        yy = y * y2,
+        zx = z * x2,
+        zy = z * y2,
+        zz = z * z2,
+        wx = w * x2,
+        wy = w * y2,
+        wz = w * z2;
+
+    out[0] = 1 - yy - zz;
+    out[1] = yx + wz;
+    out[2] = zx - wy;
+    out[3] = 0;
+
+    out[4] = yx - wz;
+    out[5] = 1 - xx - zz;
+    out[6] = zy + wx;
+    out[7] = 0;
+
+    out[8] = zx + wy;
+    out[9] = zy - wx;
+    out[10] = 1 - xx - yy;
+    out[11] = 0;
+
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 0;
+    out[15] = 1;
+
+    return out;
+};
+},{}],11:[function(require,module,exports){
+module.exports = fromRotationTranslation;
+
+/**
+ * Creates a matrix from a quaternion rotation and vector translation
+ * This is equivalent to (but much faster than):
+ *
+ *     mat4.identity(dest);
+ *     mat4.translate(dest, vec);
+ *     var quatMat = mat4.create();
+ *     quat4.toMat4(quat, quatMat);
+ *     mat4.multiply(dest, quatMat);
+ *
+ * @param {mat4} out mat4 receiving operation result
+ * @param {quat4} q Rotation quaternion
+ * @param {vec3} v Translation vector
+ * @returns {mat4} out
+ */
+function fromRotationTranslation(out, q, v) {
+    // Quaternion math
+    var x = q[0], y = q[1], z = q[2], w = q[3],
+        x2 = x + x,
+        y2 = y + y,
+        z2 = z + z,
+
+        xx = x * x2,
+        xy = x * y2,
+        xz = x * z2,
+        yy = y * y2,
+        yz = y * z2,
+        zz = z * z2,
+        wx = w * x2,
+        wy = w * y2,
+        wz = w * z2;
+
+    out[0] = 1 - (yy + zz);
+    out[1] = xy + wz;
+    out[2] = xz - wy;
+    out[3] = 0;
+    out[4] = xy - wz;
+    out[5] = 1 - (xx + zz);
+    out[6] = yz + wx;
+    out[7] = 0;
+    out[8] = xz + wy;
+    out[9] = yz - wx;
+    out[10] = 1 - (xx + yy);
+    out[11] = 0;
+    out[12] = v[0];
+    out[13] = v[1];
+    out[14] = v[2];
+    out[15] = 1;
+    
+    return out;
+};
+},{}],12:[function(require,module,exports){
+module.exports = frustum;
+
+/**
+ * Generates a frustum matrix with the given bounds
+ *
+ * @param {mat4} out mat4 frustum matrix will be written into
+ * @param {Number} left Left bound of the frustum
+ * @param {Number} right Right bound of the frustum
+ * @param {Number} bottom Bottom bound of the frustum
+ * @param {Number} top Top bound of the frustum
+ * @param {Number} near Near bound of the frustum
+ * @param {Number} far Far bound of the frustum
+ * @returns {mat4} out
+ */
+function frustum(out, left, right, bottom, top, near, far) {
+    var rl = 1 / (right - left),
+        tb = 1 / (top - bottom),
+        nf = 1 / (near - far);
+    out[0] = (near * 2) * rl;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 0;
+    out[5] = (near * 2) * tb;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = (right + left) * rl;
+    out[9] = (top + bottom) * tb;
+    out[10] = (far + near) * nf;
+    out[11] = -1;
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = (far * near * 2) * nf;
+    out[15] = 0;
+    return out;
+};
+},{}],13:[function(require,module,exports){
+module.exports = identity;
+
+/**
+ * Set a mat4 to the identity matrix
+ *
+ * @param {mat4} out the receiving matrix
+ * @returns {mat4} out
+ */
+function identity(out) {
+    out[0] = 1;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 0;
+    out[5] = 1;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 0;
+    out[9] = 0;
+    out[10] = 1;
+    out[11] = 0;
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = 0;
+    out[15] = 1;
+    return out;
+};
+},{}],14:[function(require,module,exports){
+module.exports = {
+  create: require('./create')
+  , clone: require('./clone')
+  , copy: require('./copy')
+  , identity: require('./identity')
+  , transpose: require('./transpose')
+  , invert: require('./invert')
+  , adjoint: require('./adjoint')
+  , determinant: require('./determinant')
+  , multiply: require('./multiply')
+  , translate: require('./translate')
+  , scale: require('./scale')
+  , rotate: require('./rotate')
+  , rotateX: require('./rotateX')
+  , rotateY: require('./rotateY')
+  , rotateZ: require('./rotateZ')
+  , fromRotationTranslation: require('./fromRotationTranslation')
+  , fromQuat: require('./fromQuat')
+  , frustum: require('./frustum')
+  , perspective: require('./perspective')
+  , perspectiveFromFieldOfView: require('./perspectiveFromFieldOfView')
+  , ortho: require('./ortho')
+  , lookAt: require('./lookAt')
+  , str: require('./str')
+}
+},{"./adjoint":5,"./clone":6,"./copy":7,"./create":8,"./determinant":9,"./fromQuat":10,"./fromRotationTranslation":11,"./frustum":12,"./identity":13,"./invert":15,"./lookAt":16,"./multiply":17,"./ortho":18,"./perspective":19,"./perspectiveFromFieldOfView":20,"./rotate":21,"./rotateX":22,"./rotateY":23,"./rotateZ":24,"./scale":25,"./str":26,"./translate":27,"./transpose":28}],15:[function(require,module,exports){
+module.exports = invert;
+
+/**
+ * Inverts a mat4
+ *
+ * @param {mat4} out the receiving matrix
+ * @param {mat4} a the source matrix
+ * @returns {mat4} out
+ */
+function invert(out, a) {
+    var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3],
+        a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7],
+        a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11],
+        a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15],
+
+        b00 = a00 * a11 - a01 * a10,
+        b01 = a00 * a12 - a02 * a10,
+        b02 = a00 * a13 - a03 * a10,
+        b03 = a01 * a12 - a02 * a11,
+        b04 = a01 * a13 - a03 * a11,
+        b05 = a02 * a13 - a03 * a12,
+        b06 = a20 * a31 - a21 * a30,
+        b07 = a20 * a32 - a22 * a30,
+        b08 = a20 * a33 - a23 * a30,
+        b09 = a21 * a32 - a22 * a31,
+        b10 = a21 * a33 - a23 * a31,
+        b11 = a22 * a33 - a23 * a32,
+
+        // Calculate the determinant
+        det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+
+    if (!det) { 
+        return null; 
+    }
+    det = 1.0 / det;
+
+    out[0] = (a11 * b11 - a12 * b10 + a13 * b09) * det;
+    out[1] = (a02 * b10 - a01 * b11 - a03 * b09) * det;
+    out[2] = (a31 * b05 - a32 * b04 + a33 * b03) * det;
+    out[3] = (a22 * b04 - a21 * b05 - a23 * b03) * det;
+    out[4] = (a12 * b08 - a10 * b11 - a13 * b07) * det;
+    out[5] = (a00 * b11 - a02 * b08 + a03 * b07) * det;
+    out[6] = (a32 * b02 - a30 * b05 - a33 * b01) * det;
+    out[7] = (a20 * b05 - a22 * b02 + a23 * b01) * det;
+    out[8] = (a10 * b10 - a11 * b08 + a13 * b06) * det;
+    out[9] = (a01 * b08 - a00 * b10 - a03 * b06) * det;
+    out[10] = (a30 * b04 - a31 * b02 + a33 * b00) * det;
+    out[11] = (a21 * b02 - a20 * b04 - a23 * b00) * det;
+    out[12] = (a11 * b07 - a10 * b09 - a12 * b06) * det;
+    out[13] = (a00 * b09 - a01 * b07 + a02 * b06) * det;
+    out[14] = (a31 * b01 - a30 * b03 - a32 * b00) * det;
+    out[15] = (a20 * b03 - a21 * b01 + a22 * b00) * det;
+
+    return out;
+};
+},{}],16:[function(require,module,exports){
+var identity = require('./identity');
+
+module.exports = lookAt;
+
+/**
+ * Generates a look-at matrix with the given eye position, focal point, and up axis
+ *
+ * @param {mat4} out mat4 frustum matrix will be written into
+ * @param {vec3} eye Position of the viewer
+ * @param {vec3} center Point the viewer is looking at
+ * @param {vec3} up vec3 pointing up
+ * @returns {mat4} out
+ */
+function lookAt(out, eye, center, up) {
+    var x0, x1, x2, y0, y1, y2, z0, z1, z2, len,
+        eyex = eye[0],
+        eyey = eye[1],
+        eyez = eye[2],
+        upx = up[0],
+        upy = up[1],
+        upz = up[2],
+        centerx = center[0],
+        centery = center[1],
+        centerz = center[2];
+
+    if (Math.abs(eyex - centerx) < 0.000001 &&
+        Math.abs(eyey - centery) < 0.000001 &&
+        Math.abs(eyez - centerz) < 0.000001) {
+        return identity(out);
+    }
+
+    z0 = eyex - centerx;
+    z1 = eyey - centery;
+    z2 = eyez - centerz;
+
+    len = 1 / Math.sqrt(z0 * z0 + z1 * z1 + z2 * z2);
+    z0 *= len;
+    z1 *= len;
+    z2 *= len;
+
+    x0 = upy * z2 - upz * z1;
+    x1 = upz * z0 - upx * z2;
+    x2 = upx * z1 - upy * z0;
+    len = Math.sqrt(x0 * x0 + x1 * x1 + x2 * x2);
+    if (!len) {
+        x0 = 0;
+        x1 = 0;
+        x2 = 0;
+    } else {
+        len = 1 / len;
+        x0 *= len;
+        x1 *= len;
+        x2 *= len;
+    }
+
+    y0 = z1 * x2 - z2 * x1;
+    y1 = z2 * x0 - z0 * x2;
+    y2 = z0 * x1 - z1 * x0;
+
+    len = Math.sqrt(y0 * y0 + y1 * y1 + y2 * y2);
+    if (!len) {
+        y0 = 0;
+        y1 = 0;
+        y2 = 0;
+    } else {
+        len = 1 / len;
+        y0 *= len;
+        y1 *= len;
+        y2 *= len;
+    }
+
+    out[0] = x0;
+    out[1] = y0;
+    out[2] = z0;
+    out[3] = 0;
+    out[4] = x1;
+    out[5] = y1;
+    out[6] = z1;
+    out[7] = 0;
+    out[8] = x2;
+    out[9] = y2;
+    out[10] = z2;
+    out[11] = 0;
+    out[12] = -(x0 * eyex + x1 * eyey + x2 * eyez);
+    out[13] = -(y0 * eyex + y1 * eyey + y2 * eyez);
+    out[14] = -(z0 * eyex + z1 * eyey + z2 * eyez);
+    out[15] = 1;
+
+    return out;
+};
+},{"./identity":13}],17:[function(require,module,exports){
+module.exports = multiply;
+
+/**
+ * Multiplies two mat4's
+ *
+ * @param {mat4} out the receiving matrix
+ * @param {mat4} a the first operand
+ * @param {mat4} b the second operand
+ * @returns {mat4} out
+ */
+function multiply(out, a, b) {
+    var a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3],
+        a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7],
+        a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11],
+        a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+
+    // Cache only the current line of the second matrix
+    var b0  = b[0], b1 = b[1], b2 = b[2], b3 = b[3];  
+    out[0] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
+    out[1] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
+    out[2] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
+    out[3] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
+
+    b0 = b[4]; b1 = b[5]; b2 = b[6]; b3 = b[7];
+    out[4] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
+    out[5] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
+    out[6] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
+    out[7] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
+
+    b0 = b[8]; b1 = b[9]; b2 = b[10]; b3 = b[11];
+    out[8] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
+    out[9] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
+    out[10] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
+    out[11] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
+
+    b0 = b[12]; b1 = b[13]; b2 = b[14]; b3 = b[15];
+    out[12] = b0*a00 + b1*a10 + b2*a20 + b3*a30;
+    out[13] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
+    out[14] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
+    out[15] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
+    return out;
+};
+},{}],18:[function(require,module,exports){
+module.exports = ortho;
+
+/**
+ * Generates a orthogonal projection matrix with the given bounds
+ *
+ * @param {mat4} out mat4 frustum matrix will be written into
+ * @param {number} left Left bound of the frustum
+ * @param {number} right Right bound of the frustum
+ * @param {number} bottom Bottom bound of the frustum
+ * @param {number} top Top bound of the frustum
+ * @param {number} near Near bound of the frustum
+ * @param {number} far Far bound of the frustum
+ * @returns {mat4} out
+ */
+function ortho(out, left, right, bottom, top, near, far) {
+    var lr = 1 / (left - right),
+        bt = 1 / (bottom - top),
+        nf = 1 / (near - far);
+    out[0] = -2 * lr;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 0;
+    out[5] = -2 * bt;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 0;
+    out[9] = 0;
+    out[10] = 2 * nf;
+    out[11] = 0;
+    out[12] = (left + right) * lr;
+    out[13] = (top + bottom) * bt;
+    out[14] = (far + near) * nf;
+    out[15] = 1;
+    return out;
+};
+},{}],19:[function(require,module,exports){
+module.exports = perspective;
+
+/**
+ * Generates a perspective projection matrix with the given bounds
+ *
+ * @param {mat4} out mat4 frustum matrix will be written into
+ * @param {number} fovy Vertical field of view in radians
+ * @param {number} aspect Aspect ratio. typically viewport width/height
+ * @param {number} near Near bound of the frustum
+ * @param {number} far Far bound of the frustum
+ * @returns {mat4} out
+ */
+function perspective(out, fovy, aspect, near, far) {
+    var f = 1.0 / Math.tan(fovy / 2),
+        nf = 1 / (near - far);
+    out[0] = f / aspect;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 0;
+    out[5] = f;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 0;
+    out[9] = 0;
+    out[10] = (far + near) * nf;
+    out[11] = -1;
+    out[12] = 0;
+    out[13] = 0;
+    out[14] = (2 * far * near) * nf;
+    out[15] = 0;
+    return out;
+};
+},{}],20:[function(require,module,exports){
+module.exports = perspectiveFromFieldOfView;
+
+/**
+ * Generates a perspective projection matrix with the given field of view.
+ * This is primarily useful for generating projection matrices to be used
+ * with the still experiemental WebVR API.
+ *
+ * @param {mat4} out mat4 frustum matrix will be written into
+ * @param {number} fov Object containing the following values: upDegrees, downDegrees, leftDegrees, rightDegrees
+ * @param {number} near Near bound of the frustum
+ * @param {number} far Far bound of the frustum
+ * @returns {mat4} out
+ */
+function perspectiveFromFieldOfView(out, fov, near, far) {
+    var upTan = Math.tan(fov.upDegrees * Math.PI/180.0),
+        downTan = Math.tan(fov.downDegrees * Math.PI/180.0),
+        leftTan = Math.tan(fov.leftDegrees * Math.PI/180.0),
+        rightTan = Math.tan(fov.rightDegrees * Math.PI/180.0),
+        xScale = 2.0 / (leftTan + rightTan),
+        yScale = 2.0 / (upTan + downTan);
+
+    out[0] = xScale;
+    out[1] = 0.0;
+    out[2] = 0.0;
+    out[3] = 0.0;
+    out[4] = 0.0;
+    out[5] = yScale;
+    out[6] = 0.0;
+    out[7] = 0.0;
+    out[8] = -((leftTan - rightTan) * xScale * 0.5);
+    out[9] = ((upTan - downTan) * yScale * 0.5);
+    out[10] = far / (near - far);
+    out[11] = -1.0;
+    out[12] = 0.0;
+    out[13] = 0.0;
+    out[14] = (far * near) / (near - far);
+    out[15] = 0.0;
+    return out;
+}
+
+
+},{}],21:[function(require,module,exports){
+module.exports = rotate;
+
+/**
+ * Rotates a mat4 by the given angle
+ *
+ * @param {mat4} out the receiving matrix
+ * @param {mat4} a the matrix to rotate
+ * @param {Number} rad the angle to rotate the matrix by
+ * @param {vec3} axis the axis to rotate around
+ * @returns {mat4} out
+ */
+function rotate(out, a, rad, axis) {
+    var x = axis[0], y = axis[1], z = axis[2],
+        len = Math.sqrt(x * x + y * y + z * z),
+        s, c, t,
+        a00, a01, a02, a03,
+        a10, a11, a12, a13,
+        a20, a21, a22, a23,
+        b00, b01, b02,
+        b10, b11, b12,
+        b20, b21, b22;
+
+    if (Math.abs(len) < 0.000001) { return null; }
+    
+    len = 1 / len;
+    x *= len;
+    y *= len;
+    z *= len;
+
+    s = Math.sin(rad);
+    c = Math.cos(rad);
+    t = 1 - c;
+
+    a00 = a[0]; a01 = a[1]; a02 = a[2]; a03 = a[3];
+    a10 = a[4]; a11 = a[5]; a12 = a[6]; a13 = a[7];
+    a20 = a[8]; a21 = a[9]; a22 = a[10]; a23 = a[11];
+
+    // Construct the elements of the rotation matrix
+    b00 = x * x * t + c; b01 = y * x * t + z * s; b02 = z * x * t - y * s;
+    b10 = x * y * t - z * s; b11 = y * y * t + c; b12 = z * y * t + x * s;
+    b20 = x * z * t + y * s; b21 = y * z * t - x * s; b22 = z * z * t + c;
+
+    // Perform rotation-specific matrix multiplication
+    out[0] = a00 * b00 + a10 * b01 + a20 * b02;
+    out[1] = a01 * b00 + a11 * b01 + a21 * b02;
+    out[2] = a02 * b00 + a12 * b01 + a22 * b02;
+    out[3] = a03 * b00 + a13 * b01 + a23 * b02;
+    out[4] = a00 * b10 + a10 * b11 + a20 * b12;
+    out[5] = a01 * b10 + a11 * b11 + a21 * b12;
+    out[6] = a02 * b10 + a12 * b11 + a22 * b12;
+    out[7] = a03 * b10 + a13 * b11 + a23 * b12;
+    out[8] = a00 * b20 + a10 * b21 + a20 * b22;
+    out[9] = a01 * b20 + a11 * b21 + a21 * b22;
+    out[10] = a02 * b20 + a12 * b21 + a22 * b22;
+    out[11] = a03 * b20 + a13 * b21 + a23 * b22;
+
+    if (a !== out) { // If the source and destination differ, copy the unchanged last row
+        out[12] = a[12];
+        out[13] = a[13];
+        out[14] = a[14];
+        out[15] = a[15];
+    }
+    return out;
+};
+},{}],22:[function(require,module,exports){
+module.exports = rotateX;
+
+/**
+ * Rotates a matrix by the given angle around the X axis
+ *
+ * @param {mat4} out the receiving matrix
+ * @param {mat4} a the matrix to rotate
+ * @param {Number} rad the angle to rotate the matrix by
+ * @returns {mat4} out
+ */
+function rotateX(out, a, rad) {
+    var s = Math.sin(rad),
+        c = Math.cos(rad),
+        a10 = a[4],
+        a11 = a[5],
+        a12 = a[6],
+        a13 = a[7],
+        a20 = a[8],
+        a21 = a[9],
+        a22 = a[10],
+        a23 = a[11];
+
+    if (a !== out) { // If the source and destination differ, copy the unchanged rows
+        out[0]  = a[0];
+        out[1]  = a[1];
+        out[2]  = a[2];
+        out[3]  = a[3];
+        out[12] = a[12];
+        out[13] = a[13];
+        out[14] = a[14];
+        out[15] = a[15];
+    }
+
+    // Perform axis-specific matrix multiplication
+    out[4] = a10 * c + a20 * s;
+    out[5] = a11 * c + a21 * s;
+    out[6] = a12 * c + a22 * s;
+    out[7] = a13 * c + a23 * s;
+    out[8] = a20 * c - a10 * s;
+    out[9] = a21 * c - a11 * s;
+    out[10] = a22 * c - a12 * s;
+    out[11] = a23 * c - a13 * s;
+    return out;
+};
+},{}],23:[function(require,module,exports){
+module.exports = rotateY;
+
+/**
+ * Rotates a matrix by the given angle around the Y axis
+ *
+ * @param {mat4} out the receiving matrix
+ * @param {mat4} a the matrix to rotate
+ * @param {Number} rad the angle to rotate the matrix by
+ * @returns {mat4} out
+ */
+function rotateY(out, a, rad) {
+    var s = Math.sin(rad),
+        c = Math.cos(rad),
+        a00 = a[0],
+        a01 = a[1],
+        a02 = a[2],
+        a03 = a[3],
+        a20 = a[8],
+        a21 = a[9],
+        a22 = a[10],
+        a23 = a[11];
+
+    if (a !== out) { // If the source and destination differ, copy the unchanged rows
+        out[4]  = a[4];
+        out[5]  = a[5];
+        out[6]  = a[6];
+        out[7]  = a[7];
+        out[12] = a[12];
+        out[13] = a[13];
+        out[14] = a[14];
+        out[15] = a[15];
+    }
+
+    // Perform axis-specific matrix multiplication
+    out[0] = a00 * c - a20 * s;
+    out[1] = a01 * c - a21 * s;
+    out[2] = a02 * c - a22 * s;
+    out[3] = a03 * c - a23 * s;
+    out[8] = a00 * s + a20 * c;
+    out[9] = a01 * s + a21 * c;
+    out[10] = a02 * s + a22 * c;
+    out[11] = a03 * s + a23 * c;
+    return out;
+};
+},{}],24:[function(require,module,exports){
+module.exports = rotateZ;
+
+/**
+ * Rotates a matrix by the given angle around the Z axis
+ *
+ * @param {mat4} out the receiving matrix
+ * @param {mat4} a the matrix to rotate
+ * @param {Number} rad the angle to rotate the matrix by
+ * @returns {mat4} out
+ */
+function rotateZ(out, a, rad) {
+    var s = Math.sin(rad),
+        c = Math.cos(rad),
+        a00 = a[0],
+        a01 = a[1],
+        a02 = a[2],
+        a03 = a[3],
+        a10 = a[4],
+        a11 = a[5],
+        a12 = a[6],
+        a13 = a[7];
+
+    if (a !== out) { // If the source and destination differ, copy the unchanged last row
+        out[8]  = a[8];
+        out[9]  = a[9];
+        out[10] = a[10];
+        out[11] = a[11];
+        out[12] = a[12];
+        out[13] = a[13];
+        out[14] = a[14];
+        out[15] = a[15];
+    }
+
+    // Perform axis-specific matrix multiplication
+    out[0] = a00 * c + a10 * s;
+    out[1] = a01 * c + a11 * s;
+    out[2] = a02 * c + a12 * s;
+    out[3] = a03 * c + a13 * s;
+    out[4] = a10 * c - a00 * s;
+    out[5] = a11 * c - a01 * s;
+    out[6] = a12 * c - a02 * s;
+    out[7] = a13 * c - a03 * s;
+    return out;
+};
+},{}],25:[function(require,module,exports){
+module.exports = scale;
+
+/**
+ * Scales the mat4 by the dimensions in the given vec3
+ *
+ * @param {mat4} out the receiving matrix
+ * @param {mat4} a the matrix to scale
+ * @param {vec3} v the vec3 to scale the matrix by
+ * @returns {mat4} out
+ **/
+function scale(out, a, v) {
+    var x = v[0], y = v[1], z = v[2];
+
+    out[0] = a[0] * x;
+    out[1] = a[1] * x;
+    out[2] = a[2] * x;
+    out[3] = a[3] * x;
+    out[4] = a[4] * y;
+    out[5] = a[5] * y;
+    out[6] = a[6] * y;
+    out[7] = a[7] * y;
+    out[8] = a[8] * z;
+    out[9] = a[9] * z;
+    out[10] = a[10] * z;
+    out[11] = a[11] * z;
+    out[12] = a[12];
+    out[13] = a[13];
+    out[14] = a[14];
+    out[15] = a[15];
+    return out;
+};
+},{}],26:[function(require,module,exports){
+module.exports = str;
+
+/**
+ * Returns a string representation of a mat4
+ *
+ * @param {mat4} mat matrix to represent as a string
+ * @returns {String} string representation of the matrix
+ */
+function str(a) {
+    return 'mat4(' + a[0] + ', ' + a[1] + ', ' + a[2] + ', ' + a[3] + ', ' +
+                    a[4] + ', ' + a[5] + ', ' + a[6] + ', ' + a[7] + ', ' +
+                    a[8] + ', ' + a[9] + ', ' + a[10] + ', ' + a[11] + ', ' + 
+                    a[12] + ', ' + a[13] + ', ' + a[14] + ', ' + a[15] + ')';
+};
+},{}],27:[function(require,module,exports){
+module.exports = translate;
+
+/**
+ * Translate a mat4 by the given vector
+ *
+ * @param {mat4} out the receiving matrix
+ * @param {mat4} a the matrix to translate
+ * @param {vec3} v vector to translate by
+ * @returns {mat4} out
+ */
+function translate(out, a, v) {
+    var x = v[0], y = v[1], z = v[2],
+        a00, a01, a02, a03,
+        a10, a11, a12, a13,
+        a20, a21, a22, a23;
+
+    if (a === out) {
+        out[12] = a[0] * x + a[4] * y + a[8] * z + a[12];
+        out[13] = a[1] * x + a[5] * y + a[9] * z + a[13];
+        out[14] = a[2] * x + a[6] * y + a[10] * z + a[14];
+        out[15] = a[3] * x + a[7] * y + a[11] * z + a[15];
+    } else {
+        a00 = a[0]; a01 = a[1]; a02 = a[2]; a03 = a[3];
+        a10 = a[4]; a11 = a[5]; a12 = a[6]; a13 = a[7];
+        a20 = a[8]; a21 = a[9]; a22 = a[10]; a23 = a[11];
+
+        out[0] = a00; out[1] = a01; out[2] = a02; out[3] = a03;
+        out[4] = a10; out[5] = a11; out[6] = a12; out[7] = a13;
+        out[8] = a20; out[9] = a21; out[10] = a22; out[11] = a23;
+
+        out[12] = a00 * x + a10 * y + a20 * z + a[12];
+        out[13] = a01 * x + a11 * y + a21 * z + a[13];
+        out[14] = a02 * x + a12 * y + a22 * z + a[14];
+        out[15] = a03 * x + a13 * y + a23 * z + a[15];
+    }
+
+    return out;
+};
+},{}],28:[function(require,module,exports){
+module.exports = transpose;
+
+/**
+ * Transpose the values of a mat4
+ *
+ * @param {mat4} out the receiving matrix
+ * @param {mat4} a the source matrix
+ * @returns {mat4} out
+ */
+function transpose(out, a) {
+    // If we are transposing ourselves we can skip a few steps but have to cache some values
+    if (out === a) {
+        var a01 = a[1], a02 = a[2], a03 = a[3],
+            a12 = a[6], a13 = a[7],
+            a23 = a[11];
+
+        out[1] = a[4];
+        out[2] = a[8];
+        out[3] = a[12];
+        out[4] = a01;
+        out[6] = a[9];
+        out[7] = a[13];
+        out[8] = a02;
+        out[9] = a12;
+        out[11] = a[14];
+        out[12] = a03;
+        out[13] = a13;
+        out[14] = a23;
+    } else {
+        out[0] = a[0];
+        out[1] = a[4];
+        out[2] = a[8];
+        out[3] = a[12];
+        out[4] = a[1];
+        out[5] = a[5];
+        out[6] = a[9];
+        out[7] = a[13];
+        out[8] = a[2];
+        out[9] = a[6];
+        out[10] = a[10];
+        out[11] = a[14];
+        out[12] = a[3];
+        out[13] = a[7];
+        out[14] = a[11];
+        out[15] = a[15];
+    }
+    
+    return out;
+};
+},{}],29:[function(require,module,exports){
+/**
+ * Adds two quat's
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {quat} a the first operand
+ * @param {quat} b the second operand
+ * @returns {quat} out
+ * @function
+ */
+module.exports = require('gl-vec4/add')
+
+},{"gl-vec4/add":118}],30:[function(require,module,exports){
+module.exports = calculateW
+
+/**
+ * Calculates the W component of a quat from the X, Y, and Z components.
+ * Assumes that quaternion is 1 unit in length.
+ * Any existing W component will be ignored.
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {quat} a quat to calculate W component of
+ * @returns {quat} out
+ */
+function calculateW (out, a) {
+  var x = a[0], y = a[1], z = a[2]
+
+  out[0] = x
+  out[1] = y
+  out[2] = z
+  out[3] = Math.sqrt(Math.abs(1.0 - x * x - y * y - z * z))
+  return out
+}
+
+},{}],31:[function(require,module,exports){
+/**
+ * Creates a new quat initialized with values from an existing quaternion
+ *
+ * @param {quat} a quaternion to clone
+ * @returns {quat} a new quaternion
+ * @function
+ */
+module.exports = require('gl-vec4/clone')
+
+},{"gl-vec4/clone":119}],32:[function(require,module,exports){
+module.exports = conjugate
+
+/**
+ * Calculates the conjugate of a quat
+ * If the quaternion is normalized, this function is faster than quat.inverse and produces the same result.
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {quat} a quat to calculate conjugate of
+ * @returns {quat} out
+ */
+function conjugate (out, a) {
+  out[0] = -a[0]
+  out[1] = -a[1]
+  out[2] = -a[2]
+  out[3] = a[3]
+  return out
+}
+
+},{}],33:[function(require,module,exports){
+/**
+ * Copy the values from one quat to another
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {quat} a the source quaternion
+ * @returns {quat} out
+ * @function
+ */
+module.exports = require('gl-vec4/copy')
+
+},{"gl-vec4/copy":120}],34:[function(require,module,exports){
+module.exports = create
+
+/**
+ * Creates a new identity quat
+ *
+ * @returns {quat} a new quaternion
+ */
+function create () {
+  var out = new Float32Array(4)
+  out[0] = 0
+  out[1] = 0
+  out[2] = 0
+  out[3] = 1
+  return out
+}
+
+},{}],35:[function(require,module,exports){
+/**
+ * Calculates the dot product of two quat's
+ *
+ * @param {quat} a the first operand
+ * @param {quat} b the second operand
+ * @returns {Number} dot product of a and b
+ * @function
+ */
+module.exports = require('gl-vec4/dot')
+
+},{"gl-vec4/dot":124}],36:[function(require,module,exports){
+module.exports = fromMat3
+
+/**
+ * Creates a quaternion from the given 3x3 rotation matrix.
+ *
+ * NOTE: The resultant quaternion is not normalized, so you should be sure
+ * to renormalize the quaternion yourself where necessary.
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {mat3} m rotation matrix
+ * @returns {quat} out
+ * @function
+ */
+function fromMat3 (out, m) {
+  // Algorithm in Ken Shoemake's article in 1987 SIGGRAPH course notes
+  // article "Quaternion Calculus and Fast Animation".
+  var fTrace = m[0] + m[4] + m[8]
+  var fRoot
+
+  if (fTrace > 0.0) {
+    // |w| > 1/2, may as well choose w > 1/2
+    fRoot = Math.sqrt(fTrace + 1.0)  // 2w
+    out[3] = 0.5 * fRoot
+    fRoot = 0.5 / fRoot  // 1/(4w)
+    out[0] = (m[5] - m[7]) * fRoot
+    out[1] = (m[6] - m[2]) * fRoot
+    out[2] = (m[1] - m[3]) * fRoot
+  } else {
+    // |w| <= 1/2
+    var i = 0
+    if (m[4] > m[0]) {
+      i = 1
+    }
+    if (m[8] > m[i * 3 + i]) {
+      i = 2
+    }
+    var j = (i + 1) % 3
+    var k = (i + 2) % 3
+
+    fRoot = Math.sqrt(m[i * 3 + i] - m[j * 3 + j] - m[k * 3 + k] + 1.0)
+    out[i] = 0.5 * fRoot
+    fRoot = 0.5 / fRoot
+    out[3] = (m[j * 3 + k] - m[k * 3 + j]) * fRoot
+    out[j] = (m[j * 3 + i] + m[i * 3 + j]) * fRoot
+    out[k] = (m[k * 3 + i] + m[i * 3 + k]) * fRoot
+  }
+
+  return out
+}
+
+},{}],37:[function(require,module,exports){
+/**
+ * Creates a new quat initialized with the given values
+ *
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @param {Number} z Z component
+ * @param {Number} w W component
+ * @returns {quat} a new quaternion
+ * @function
+ */
+module.exports = require('gl-vec4/fromValues')
+
+},{"gl-vec4/fromValues":125}],38:[function(require,module,exports){
+module.exports = identity
+
+/**
+ * Set a quat to the identity quaternion
+ *
+ * @param {quat} out the receiving quaternion
+ * @returns {quat} out
+ */
+function identity (out) {
+  out[0] = 0
+  out[1] = 0
+  out[2] = 0
+  out[3] = 1
+  return out
+}
+
+},{}],39:[function(require,module,exports){
+module.exports = {
+  add: require('./add'),
+  calculateW: require('./calculateW'),
+  clone: require('./clone'),
+  conjugate: require('./conjugate'),
+  copy: require('./copy'),
+  create: require('./create'),
+  dot: require('./dot'),
+  fromMat3: require('./fromMat3'),
+  fromValues: require('./fromValues'),
+  identity: require('./identity'),
+  invert: require('./invert'),
+  length: require('./length'),
+  lerp: require('./lerp'),
+  multiply: require('./multiply'),
+  normalize: require('./normalize'),
+  rotateX: require('./rotateX'),
+  rotateY: require('./rotateY'),
+  rotateZ: require('./rotateZ'),
+  rotationTo: require('./rotationTo'),
+  scale: require('./scale'),
+  set: require('./set'),
+  setAxes: require('./setAxes'),
+  setAxisAngle: require('./setAxisAngle'),
+  slerp: require('./slerp'),
+  sqlerp: require('./sqlerp'),
+  squaredLength: require('./squaredLength')
+}
+
+},{"./add":29,"./calculateW":30,"./clone":31,"./conjugate":32,"./copy":33,"./create":34,"./dot":35,"./fromMat3":36,"./fromValues":37,"./identity":38,"./invert":40,"./length":41,"./lerp":42,"./multiply":43,"./normalize":44,"./rotateX":45,"./rotateY":46,"./rotateZ":47,"./rotationTo":48,"./scale":49,"./set":50,"./setAxes":51,"./setAxisAngle":52,"./slerp":53,"./sqlerp":54,"./squaredLength":55}],40:[function(require,module,exports){
+module.exports = invert
+
+/**
+ * Calculates the inverse of a quat
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {quat} a quat to calculate inverse of
+ * @returns {quat} out
+ */
+function invert (out, a) {
+  var a0 = a[0], a1 = a[1], a2 = a[2], a3 = a[3],
+    dot = a0 * a0 + a1 * a1 + a2 * a2 + a3 * a3,
+    invDot = dot ? 1.0 / dot : 0
+
+  // TODO: Would be faster to return [0,0,0,0] immediately if dot == 0
+
+  out[0] = -a0 * invDot
+  out[1] = -a1 * invDot
+  out[2] = -a2 * invDot
+  out[3] = a3 * invDot
+  return out
+}
+
+},{}],41:[function(require,module,exports){
+/**
+ * Calculates the length of a quat
+ *
+ * @param {quat} a vector to calculate length of
+ * @returns {Number} length of a
+ * @function
+ */
+module.exports = require('gl-vec4/length')
+
+},{"gl-vec4/length":128}],42:[function(require,module,exports){
+/**
+ * Performs a linear interpolation between two quat's
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {quat} a the first operand
+ * @param {quat} b the second operand
+ * @param {Number} t interpolation amount between the two inputs
+ * @returns {quat} out
+ * @function
+ */
+module.exports = require('gl-vec4/lerp')
+
+},{"gl-vec4/lerp":129}],43:[function(require,module,exports){
+module.exports = multiply
+
+/**
+ * Multiplies two quat's
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {quat} a the first operand
+ * @param {quat} b the second operand
+ * @returns {quat} out
+ */
+function multiply (out, a, b) {
+  var ax = a[0], ay = a[1], az = a[2], aw = a[3],
+    bx = b[0], by = b[1], bz = b[2], bw = b[3]
+
+  out[0] = ax * bw + aw * bx + ay * bz - az * by
+  out[1] = ay * bw + aw * by + az * bx - ax * bz
+  out[2] = az * bw + aw * bz + ax * by - ay * bx
+  out[3] = aw * bw - ax * bx - ay * by - az * bz
+  return out
+}
+
+},{}],44:[function(require,module,exports){
+/**
+ * Normalize a quat
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {quat} a quaternion to normalize
+ * @returns {quat} out
+ * @function
+ */
+module.exports = require('gl-vec4/normalize')
+
+},{"gl-vec4/normalize":134}],45:[function(require,module,exports){
+module.exports = rotateX
+
+/**
+ * Rotates a quaternion by the given angle about the X axis
+ *
+ * @param {quat} out quat receiving operation result
+ * @param {quat} a quat to rotate
+ * @param {number} rad angle (in radians) to rotate
+ * @returns {quat} out
+ */
+function rotateX (out, a, rad) {
+  rad *= 0.5
+
+  var ax = a[0], ay = a[1], az = a[2], aw = a[3],
+    bx = Math.sin(rad), bw = Math.cos(rad)
+
+  out[0] = ax * bw + aw * bx
+  out[1] = ay * bw + az * bx
+  out[2] = az * bw - ay * bx
+  out[3] = aw * bw - ax * bx
+  return out
+}
+
+},{}],46:[function(require,module,exports){
+module.exports = rotateY
+
+/**
+ * Rotates a quaternion by the given angle about the Y axis
+ *
+ * @param {quat} out quat receiving operation result
+ * @param {quat} a quat to rotate
+ * @param {number} rad angle (in radians) to rotate
+ * @returns {quat} out
+ */
+function rotateY (out, a, rad) {
+  rad *= 0.5
+
+  var ax = a[0], ay = a[1], az = a[2], aw = a[3],
+    by = Math.sin(rad), bw = Math.cos(rad)
+
+  out[0] = ax * bw - az * by
+  out[1] = ay * bw + aw * by
+  out[2] = az * bw + ax * by
+  out[3] = aw * bw - ay * by
+  return out
+}
+
+},{}],47:[function(require,module,exports){
+module.exports = rotateZ
+
+/**
+ * Rotates a quaternion by the given angle about the Z axis
+ *
+ * @param {quat} out quat receiving operation result
+ * @param {quat} a quat to rotate
+ * @param {number} rad angle (in radians) to rotate
+ * @returns {quat} out
+ */
+function rotateZ (out, a, rad) {
+  rad *= 0.5
+
+  var ax = a[0], ay = a[1], az = a[2], aw = a[3],
+    bz = Math.sin(rad), bw = Math.cos(rad)
+
+  out[0] = ax * bw + ay * bz
+  out[1] = ay * bw - ax * bz
+  out[2] = az * bw + aw * bz
+  out[3] = aw * bw - az * bz
+  return out
+}
+
+},{}],48:[function(require,module,exports){
+var vecDot = require('gl-vec3/dot')
+var vecCross = require('gl-vec3/cross')
+var vecLength = require('gl-vec3/length')
+var vecNormalize = require('gl-vec3/normalize')
+
+var quatNormalize = require('./normalize')
+var quatAxisAngle = require('./setAxisAngle')
+
+module.exports = rotationTo
+
+var tmpvec3 = [0, 0, 0]
+var xUnitVec3 = [1, 0, 0]
+var yUnitVec3 = [0, 1, 0]
+
+/**
+ * Sets a quaternion to represent the shortest rotation from one
+ * vector to another.
+ *
+ * Both vectors are assumed to be unit length.
+ *
+ * @param {quat} out the receiving quaternion.
+ * @param {vec3} a the initial vector
+ * @param {vec3} b the destination vector
+ * @returns {quat} out
+ */
+function rotationTo (out, a, b) {
+  var dot = vecDot(a, b)
+  if (dot < -0.999999) {
+    vecCross(tmpvec3, xUnitVec3, a)
+    if (vecLength(tmpvec3) < 0.000001) {
+      vecCross(tmpvec3, yUnitVec3, a)
+    }
+    vecNormalize(tmpvec3, tmpvec3)
+    quatAxisAngle(out, tmpvec3, Math.PI)
+    return out
+  } else if (dot > 0.999999) {
+    out[0] = 0
+    out[1] = 0
+    out[2] = 0
+    out[3] = 1
+    return out
+  } else {
+    vecCross(tmpvec3, a, b)
+    out[0] = tmpvec3[0]
+    out[1] = tmpvec3[1]
+    out[2] = tmpvec3[2]
+    out[3] = 1 + dot
+    return quatNormalize(out, out)
+  }
+}
+
+},{"./normalize":44,"./setAxisAngle":52,"gl-vec3/cross":90,"gl-vec3/dot":93,"gl-vec3/length":98,"gl-vec3/normalize":104}],49:[function(require,module,exports){
+/**
+ * Scales a quat by a scalar number
+ *
+ * @param {quat} out the receiving vector
+ * @param {quat} a the vector to scale
+ * @param {Number} b amount to scale the vector by
+ * @returns {quat} out
+ * @function
+ */
+module.exports = require('gl-vec4/scale')
+
+},{"gl-vec4/scale":136}],50:[function(require,module,exports){
+/**
+ * Set the components of a quat to the given values
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @param {Number} z Z component
+ * @param {Number} w W component
+ * @returns {quat} out
+ * @function
+ */
+module.exports = require('gl-vec4/set')
+
+},{"gl-vec4/set":138}],51:[function(require,module,exports){
+var mat3create = require('gl-mat3/create')
+var fromMat3 = require('./fromMat3')
+var normalize = require('./normalize')
+
+module.exports = setAxes
+
+var matr = mat3create()
+
+/**
+ * Sets the specified quaternion with values corresponding to the given
+ * axes. Each axis is a vec3 and is expected to be unit length and
+ * perpendicular to all other specified axes.
+ *
+ * @param {vec3} view  the vector representing the viewing direction
+ * @param {vec3} right the vector representing the local "right" direction
+ * @param {vec3} up    the vector representing the local "up" direction
+ * @returns {quat} out
+ */
+function setAxes (out, view, right, up) {
+  matr[0] = right[0]
+  matr[3] = right[1]
+  matr[6] = right[2]
+
+  matr[1] = up[0]
+  matr[4] = up[1]
+  matr[7] = up[2]
+
+  matr[2] = -view[0]
+  matr[5] = -view[1]
+  matr[8] = -view[2]
+
+  return normalize(out, fromMat3(out, matr))
+}
+
+},{"./fromMat3":36,"./normalize":44,"gl-mat3/create":4}],52:[function(require,module,exports){
+module.exports = setAxisAngle
+
+/**
+ * Sets a quat from the given angle and rotation axis,
+ * then returns it.
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {vec3} axis the axis around which to rotate
+ * @param {Number} rad the angle in radians
+ * @returns {quat} out
+ **/
+function setAxisAngle (out, axis, rad) {
+  rad = rad * 0.5
+  var s = Math.sin(rad)
+  out[0] = s * axis[0]
+  out[1] = s * axis[1]
+  out[2] = s * axis[2]
+  out[3] = Math.cos(rad)
+  return out
+}
+
+},{}],53:[function(require,module,exports){
+module.exports = slerp
+
+/**
+ * Performs a spherical linear interpolation between two quat
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {quat} a the first operand
+ * @param {quat} b the second operand
+ * @param {Number} t interpolation amount between the two inputs
+ * @returns {quat} out
+ */
+function slerp (out, a, b, t) {
+  // benchmarks:
+  //    http://jsperf.com/quaternion-slerp-implementations
+
+  var ax = a[0], ay = a[1], az = a[2], aw = a[3],
+    bx = b[0], by = b[1], bz = b[2], bw = b[3]
+
+  var omega, cosom, sinom, scale0, scale1
+
+  // calc cosine
+  cosom = ax * bx + ay * by + az * bz + aw * bw
+  // adjust signs (if necessary)
+  if (cosom < 0.0) {
+    cosom = -cosom
+    bx = -bx
+    by = -by
+    bz = -bz
+    bw = -bw
+  }
+  // calculate coefficients
+  if ((1.0 - cosom) > 0.000001) {
+    // standard case (slerp)
+    omega = Math.acos(cosom)
+    sinom = Math.sin(omega)
+    scale0 = Math.sin((1.0 - t) * omega) / sinom
+    scale1 = Math.sin(t * omega) / sinom
+  } else {
+    // "from" and "to" quaternions are very close
+    //  ... so we can do a linear interpolation
+    scale0 = 1.0 - t
+    scale1 = t
+  }
+  // calculate final values
+  out[0] = scale0 * ax + scale1 * bx
+  out[1] = scale0 * ay + scale1 * by
+  out[2] = scale0 * az + scale1 * bz
+  out[3] = scale0 * aw + scale1 * bw
+
+  return out
+}
+
+},{}],54:[function(require,module,exports){
+var slerp = require('./slerp')
+
+module.exports = sqlerp
+
+var temp1 = [0, 0, 0, 1]
+var temp2 = [0, 0, 0, 1]
+
+/**
+ * Performs a spherical linear interpolation with two control points
+ *
+ * @param {quat} out the receiving quaternion
+ * @param {quat} a the first operand
+ * @param {quat} b the second operand
+ * @param {quat} c the third operand
+ * @param {quat} d the fourth operand
+ * @param {Number} t interpolation amount
+ * @returns {quat} out
+ */
+function sqlerp (out, a, b, c, d, t) {
+  slerp(temp1, a, d, t)
+  slerp(temp2, b, c, t)
+  slerp(out, temp1, temp2, 2 * t * (1 - t))
+
+  return out
+}
+
+},{"./slerp":53}],55:[function(require,module,exports){
+/**
+ * Calculates the squared length of a quat
+ *
+ * @param {quat} a vector to calculate squared length of
+ * @returns {Number} squared length of a
+ * @function
+ */
+module.exports = require('gl-vec4/squaredLength')
+
+},{"gl-vec4/squaredLength":140}],56:[function(require,module,exports){
+module.exports = add
+
+/**
+ * Adds two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+function add(out, a, b) {
+    out[0] = a[0] + b[0]
+    out[1] = a[1] + b[1]
+    return out
+}
+},{}],57:[function(require,module,exports){
+module.exports = clone
+
+/**
+ * Creates a new vec2 initialized with values from an existing vector
+ *
+ * @param {vec2} a vector to clone
+ * @returns {vec2} a new 2D vector
+ */
+function clone(a) {
+    var out = new Float32Array(2)
+    out[0] = a[0]
+    out[1] = a[1]
+    return out
+}
+},{}],58:[function(require,module,exports){
+module.exports = copy
+
+/**
+ * Copy the values from one vec2 to another
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the source vector
+ * @returns {vec2} out
+ */
+function copy(out, a) {
+    out[0] = a[0]
+    out[1] = a[1]
+    return out
+}
+},{}],59:[function(require,module,exports){
+module.exports = create
+
+/**
+ * Creates a new, empty vec2
+ *
+ * @returns {vec2} a new 2D vector
+ */
+function create() {
+    var out = new Float32Array(2)
+    out[0] = 0
+    out[1] = 0
+    return out
+}
+},{}],60:[function(require,module,exports){
+module.exports = cross
+
+/**
+ * Computes the cross product of two vec2's
+ * Note that the cross product must by definition produce a 3D vector
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec3} out
+ */
+function cross(out, a, b) {
+    var z = a[0] * b[1] - a[1] * b[0]
+    out[0] = out[1] = 0
+    out[2] = z
+    return out
+}
+},{}],61:[function(require,module,exports){
+module.exports = distance
+
+/**
+ * Calculates the euclidian distance between two vec2's
+ *
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {Number} distance between a and b
+ */
+function distance(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1]
+    return Math.sqrt(x*x + y*y)
+}
+},{}],62:[function(require,module,exports){
+module.exports = divide
+
+/**
+ * Divides two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+function divide(out, a, b) {
+    out[0] = a[0] / b[0]
+    out[1] = a[1] / b[1]
+    return out
+}
+},{}],63:[function(require,module,exports){
+module.exports = dot
+
+/**
+ * Calculates the dot product of two vec2's
+ *
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {Number} dot product of a and b
+ */
+function dot(a, b) {
+    return a[0] * b[0] + a[1] * b[1]
+}
+},{}],64:[function(require,module,exports){
+module.exports = forEach
+
+var vec = require('./create')()
+
+/**
+ * Perform some operation over an array of vec2s.
+ *
+ * @param {Array} a the array of vectors to iterate over
+ * @param {Number} stride Number of elements between the start of each vec2. If 0 assumes tightly packed
+ * @param {Number} offset Number of elements to skip at the beginning of the array
+ * @param {Number} count Number of vec2s to iterate over. If 0 iterates over entire array
+ * @param {Function} fn Function to call for each vector in the array
+ * @param {Object} [arg] additional argument to pass to fn
+ * @returns {Array} a
+ * @function
+ */
+function forEach(a, stride, offset, count, fn, arg) {
+    var i, l
+    if(!stride) {
+        stride = 2
+    }
+
+    if(!offset) {
+        offset = 0
+    }
+    
+    if(count) {
+        l = Math.min((count * stride) + offset, a.length)
+    } else {
+        l = a.length
+    }
+
+    for(i = offset; i < l; i += stride) {
+        vec[0] = a[i]
+        vec[1] = a[i+1]
+        fn(vec, vec, arg)
+        a[i] = vec[0]
+        a[i+1] = vec[1]
+    }
+    
+    return a
+}
+},{"./create":59}],65:[function(require,module,exports){
+module.exports = fromValues
+
+/**
+ * Creates a new vec2 initialized with the given values
+ *
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @returns {vec2} a new 2D vector
+ */
+function fromValues(x, y) {
+    var out = new Float32Array(2)
+    out[0] = x
+    out[1] = y
+    return out
+}
+},{}],66:[function(require,module,exports){
+module.exports = {
+  create: require('./create')
+  , clone: require('./clone')
+  , fromValues: require('./fromValues')
+  , copy: require('./copy')
+  , set: require('./set')
+  , add: require('./add')
+  , subtract: require('./subtract')
+  , multiply: require('./multiply')
+  , divide: require('./divide')
+  , min: require('./min')
+  , max: require('./max')
+  , scale: require('./scale')
+  , scaleAndAdd: require('./scaleAndAdd')
+  , distance: require('./distance')
+  , squaredDistance: require('./squaredDistance')
+  , length: require('./length')
+  , squaredLength: require('./squaredLength')
+  , negate: require('./negate')
+  , normalize: require('./normalize')
+  , dot: require('./dot')
+  , cross: require('./cross')
+  , lerp: require('./lerp')
+  , random: require('./random')
+  , transformMat2: require('./transformMat2')
+  , transformMat2d: require('./transformMat2d')
+  , transformMat3: require('./transformMat3')
+  , transformMat4: require('./transformMat4')
+  , forEach: require('./forEach')
+}
+},{"./add":56,"./clone":57,"./copy":58,"./create":59,"./cross":60,"./distance":61,"./divide":62,"./dot":63,"./forEach":64,"./fromValues":65,"./length":67,"./lerp":68,"./max":69,"./min":70,"./multiply":71,"./negate":72,"./normalize":73,"./random":74,"./scale":75,"./scaleAndAdd":76,"./set":77,"./squaredDistance":78,"./squaredLength":79,"./subtract":80,"./transformMat2":81,"./transformMat2d":82,"./transformMat3":83,"./transformMat4":84}],67:[function(require,module,exports){
+module.exports = length
+
+/**
+ * Calculates the length of a vec2
+ *
+ * @param {vec2} a vector to calculate length of
+ * @returns {Number} length of a
+ */
+function length(a) {
+    var x = a[0],
+        y = a[1]
+    return Math.sqrt(x*x + y*y)
+}
+},{}],68:[function(require,module,exports){
+module.exports = lerp
+
+/**
+ * Performs a linear interpolation between two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @param {Number} t interpolation amount between the two inputs
+ * @returns {vec2} out
+ */
+function lerp(out, a, b, t) {
+    var ax = a[0],
+        ay = a[1]
+    out[0] = ax + t * (b[0] - ax)
+    out[1] = ay + t * (b[1] - ay)
+    return out
+}
+},{}],69:[function(require,module,exports){
+module.exports = max
+
+/**
+ * Returns the maximum of two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+function max(out, a, b) {
+    out[0] = Math.max(a[0], b[0])
+    out[1] = Math.max(a[1], b[1])
+    return out
+}
+},{}],70:[function(require,module,exports){
+module.exports = min
+
+/**
+ * Returns the minimum of two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+function min(out, a, b) {
+    out[0] = Math.min(a[0], b[0])
+    out[1] = Math.min(a[1], b[1])
+    return out
+}
+},{}],71:[function(require,module,exports){
+module.exports = multiply
+
+/**
+ * Multiplies two vec2's
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+function multiply(out, a, b) {
+    out[0] = a[0] * b[0]
+    out[1] = a[1] * b[1]
+    return out
+}
+},{}],72:[function(require,module,exports){
+module.exports = negate
+
+/**
+ * Negates the components of a vec2
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a vector to negate
+ * @returns {vec2} out
+ */
+function negate(out, a) {
+    out[0] = -a[0]
+    out[1] = -a[1]
+    return out
+}
+},{}],73:[function(require,module,exports){
+module.exports = normalize
+
+/**
+ * Normalize a vec2
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a vector to normalize
+ * @returns {vec2} out
+ */
+function normalize(out, a) {
+    var x = a[0],
+        y = a[1]
+    var len = x*x + y*y
+    if (len > 0) {
+        //TODO: evaluate use of glm_invsqrt here?
+        len = 1 / Math.sqrt(len)
+        out[0] = a[0] * len
+        out[1] = a[1] * len
+    }
+    return out
+}
+},{}],74:[function(require,module,exports){
+module.exports = random
+
+/**
+ * Generates a random vector with the given scale
+ *
+ * @param {vec2} out the receiving vector
+ * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
+ * @returns {vec2} out
+ */
+function random(out, scale) {
+    scale = scale || 1.0
+    var r = Math.random() * 2.0 * Math.PI
+    out[0] = Math.cos(r) * scale
+    out[1] = Math.sin(r) * scale
+    return out
+}
+},{}],75:[function(require,module,exports){
+module.exports = scale
+
+/**
+ * Scales a vec2 by a scalar number
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the vector to scale
+ * @param {Number} b amount to scale the vector by
+ * @returns {vec2} out
+ */
+function scale(out, a, b) {
+    out[0] = a[0] * b
+    out[1] = a[1] * b
+    return out
+}
+},{}],76:[function(require,module,exports){
+module.exports = scaleAndAdd
+
+/**
+ * Adds two vec2's after scaling the second operand by a scalar value
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @param {Number} scale the amount to scale b by before adding
+ * @returns {vec2} out
+ */
+function scaleAndAdd(out, a, b, scale) {
+    out[0] = a[0] + (b[0] * scale)
+    out[1] = a[1] + (b[1] * scale)
+    return out
+}
+},{}],77:[function(require,module,exports){
+module.exports = set
+
+/**
+ * Set the components of a vec2 to the given values
+ *
+ * @param {vec2} out the receiving vector
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @returns {vec2} out
+ */
+function set(out, x, y) {
+    out[0] = x
+    out[1] = y
+    return out
+}
+},{}],78:[function(require,module,exports){
+module.exports = squaredDistance
+
+/**
+ * Calculates the squared euclidian distance between two vec2's
+ *
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {Number} squared distance between a and b
+ */
+function squaredDistance(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1]
+    return x*x + y*y
+}
+},{}],79:[function(require,module,exports){
+module.exports = squaredLength
+
+/**
+ * Calculates the squared length of a vec2
+ *
+ * @param {vec2} a vector to calculate squared length of
+ * @returns {Number} squared length of a
+ */
+function squaredLength(a) {
+    var x = a[0],
+        y = a[1]
+    return x*x + y*y
+}
+},{}],80:[function(require,module,exports){
+module.exports = subtract
+
+/**
+ * Subtracts vector b from vector a
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the first operand
+ * @param {vec2} b the second operand
+ * @returns {vec2} out
+ */
+function subtract(out, a, b) {
+    out[0] = a[0] - b[0]
+    out[1] = a[1] - b[1]
+    return out
+}
+},{}],81:[function(require,module,exports){
+module.exports = transformMat2
+
+/**
+ * Transforms the vec2 with a mat2
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the vector to transform
+ * @param {mat2} m matrix to transform with
+ * @returns {vec2} out
+ */
+function transformMat2(out, a, m) {
+    var x = a[0],
+        y = a[1]
+    out[0] = m[0] * x + m[2] * y
+    out[1] = m[1] * x + m[3] * y
+    return out
+}
+},{}],82:[function(require,module,exports){
+module.exports = transformMat2d
+
+/**
+ * Transforms the vec2 with a mat2d
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the vector to transform
+ * @param {mat2d} m matrix to transform with
+ * @returns {vec2} out
+ */
+function transformMat2d(out, a, m) {
+    var x = a[0],
+        y = a[1]
+    out[0] = m[0] * x + m[2] * y + m[4]
+    out[1] = m[1] * x + m[3] * y + m[5]
+    return out
+}
+},{}],83:[function(require,module,exports){
+module.exports = transformMat3
+
+/**
+ * Transforms the vec2 with a mat3
+ * 3rd vector component is implicitly '1'
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the vector to transform
+ * @param {mat3} m matrix to transform with
+ * @returns {vec2} out
+ */
+function transformMat3(out, a, m) {
+    var x = a[0],
+        y = a[1]
+    out[0] = m[0] * x + m[3] * y + m[6]
+    out[1] = m[1] * x + m[4] * y + m[7]
+    return out
+}
+},{}],84:[function(require,module,exports){
+module.exports = transformMat4
+
+/**
+ * Transforms the vec2 with a mat4
+ * 3rd vector component is implicitly '0'
+ * 4th vector component is implicitly '1'
+ *
+ * @param {vec2} out the receiving vector
+ * @param {vec2} a the vector to transform
+ * @param {mat4} m matrix to transform with
+ * @returns {vec2} out
+ */
+function transformMat4(out, a, m) {
+    var x = a[0], 
+        y = a[1]
+    out[0] = m[0] * x + m[4] * y + m[12]
+    out[1] = m[1] * x + m[5] * y + m[13]
+    return out
+}
+},{}],85:[function(require,module,exports){
+module.exports = add;
+
+/**
+ * Adds two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+function add(out, a, b) {
+    out[0] = a[0] + b[0]
+    out[1] = a[1] + b[1]
+    out[2] = a[2] + b[2]
+    return out
+}
+},{}],86:[function(require,module,exports){
+module.exports = angle
+
+var fromValues = require('./fromValues')
+var normalize = require('./normalize')
+var dot = require('./dot')
+
+/**
+ * Get the angle between two 3D vectors
+ * @param {vec3} a The first operand
+ * @param {vec3} b The second operand
+ * @returns {Number} The angle in radians
+ */
+function angle(a, b) {
+    var tempA = fromValues(a[0], a[1], a[2])
+    var tempB = fromValues(b[0], b[1], b[2])
+ 
+    normalize(tempA, tempA)
+    normalize(tempB, tempB)
+ 
+    var cosine = dot(tempA, tempB)
+
+    if(cosine > 1.0){
+        return 0
+    } else {
+        return Math.acos(cosine)
+    }     
+}
+
+},{"./dot":93,"./fromValues":95,"./normalize":104}],87:[function(require,module,exports){
+module.exports = clone;
+
+/**
+ * Creates a new vec3 initialized with values from an existing vector
+ *
+ * @param {vec3} a vector to clone
+ * @returns {vec3} a new 3D vector
+ */
+function clone(a) {
+    var out = new Float32Array(3)
+    out[0] = a[0]
+    out[1] = a[1]
+    out[2] = a[2]
+    return out
+}
+},{}],88:[function(require,module,exports){
+module.exports = copy;
+
+/**
+ * Copy the values from one vec3 to another
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the source vector
+ * @returns {vec3} out
+ */
+function copy(out, a) {
+    out[0] = a[0]
+    out[1] = a[1]
+    out[2] = a[2]
+    return out
+}
+},{}],89:[function(require,module,exports){
+module.exports = create;
+
+/**
+ * Creates a new, empty vec3
+ *
+ * @returns {vec3} a new 3D vector
+ */
+function create() {
+    var out = new Float32Array(3)
+    out[0] = 0
+    out[1] = 0
+    out[2] = 0
+    return out
+}
+},{}],90:[function(require,module,exports){
+module.exports = cross;
+
+/**
+ * Computes the cross product of two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+function cross(out, a, b) {
+    var ax = a[0], ay = a[1], az = a[2],
+        bx = b[0], by = b[1], bz = b[2]
+
+    out[0] = ay * bz - az * by
+    out[1] = az * bx - ax * bz
+    out[2] = ax * by - ay * bx
+    return out
+}
+},{}],91:[function(require,module,exports){
+module.exports = distance;
+
+/**
+ * Calculates the euclidian distance between two vec3's
+ *
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {Number} distance between a and b
+ */
+function distance(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1],
+        z = b[2] - a[2]
+    return Math.sqrt(x*x + y*y + z*z)
+}
+},{}],92:[function(require,module,exports){
+module.exports = divide;
+
+/**
+ * Divides two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+function divide(out, a, b) {
+    out[0] = a[0] / b[0]
+    out[1] = a[1] / b[1]
+    out[2] = a[2] / b[2]
+    return out
+}
+},{}],93:[function(require,module,exports){
+module.exports = dot;
+
+/**
+ * Calculates the dot product of two vec3's
+ *
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {Number} dot product of a and b
+ */
+function dot(a, b) {
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+}
+},{}],94:[function(require,module,exports){
+module.exports = forEach;
+
+var vec = require('./create')()
+
+/**
+ * Perform some operation over an array of vec3s.
+ *
+ * @param {Array} a the array of vectors to iterate over
+ * @param {Number} stride Number of elements between the start of each vec3. If 0 assumes tightly packed
+ * @param {Number} offset Number of elements to skip at the beginning of the array
+ * @param {Number} count Number of vec3s to iterate over. If 0 iterates over entire array
+ * @param {Function} fn Function to call for each vector in the array
+ * @param {Object} [arg] additional argument to pass to fn
+ * @returns {Array} a
+ * @function
+ */
+function forEach(a, stride, offset, count, fn, arg) {
+        var i, l
+        if(!stride) {
+            stride = 3
+        }
+
+        if(!offset) {
+            offset = 0
+        }
+        
+        if(count) {
+            l = Math.min((count * stride) + offset, a.length)
+        } else {
+            l = a.length
+        }
+
+        for(i = offset; i < l; i += stride) {
+            vec[0] = a[i] 
+            vec[1] = a[i+1] 
+            vec[2] = a[i+2]
+            fn(vec, vec, arg)
+            a[i] = vec[0] 
+            a[i+1] = vec[1] 
+            a[i+2] = vec[2]
+        }
+        
+        return a
+}
+},{"./create":89}],95:[function(require,module,exports){
+module.exports = fromValues;
+
+/**
+ * Creates a new vec3 initialized with the given values
+ *
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @param {Number} z Z component
+ * @returns {vec3} a new 3D vector
+ */
+function fromValues(x, y, z) {
+    var out = new Float32Array(3)
+    out[0] = x
+    out[1] = y
+    out[2] = z
+    return out
+}
+},{}],96:[function(require,module,exports){
+module.exports = {
+  create: require('./create')
+  , clone: require('./clone')
+  , angle: require('./angle')
+  , fromValues: require('./fromValues')
+  , copy: require('./copy')
+  , set: require('./set')
+  , add: require('./add')
+  , subtract: require('./subtract')
+  , multiply: require('./multiply')
+  , divide: require('./divide')
+  , min: require('./min')
+  , max: require('./max')
+  , scale: require('./scale')
+  , scaleAndAdd: require('./scaleAndAdd')
+  , distance: require('./distance')
+  , squaredDistance: require('./squaredDistance')
+  , length: require('./length')
+  , squaredLength: require('./squaredLength')
+  , negate: require('./negate')
+  , inverse: require('./inverse')
+  , normalize: require('./normalize')
+  , dot: require('./dot')
+  , cross: require('./cross')
+  , lerp: require('./lerp')
+  , random: require('./random')
+  , transformMat4: require('./transformMat4')
+  , transformMat3: require('./transformMat3')
+  , transformQuat: require('./transformQuat')
+  , rotateX: require('./rotateX')
+  , rotateY: require('./rotateY')
+  , rotateZ: require('./rotateZ')
+  , forEach: require('./forEach')
+}
+},{"./add":85,"./angle":86,"./clone":87,"./copy":88,"./create":89,"./cross":90,"./distance":91,"./divide":92,"./dot":93,"./forEach":94,"./fromValues":95,"./inverse":97,"./length":98,"./lerp":99,"./max":100,"./min":101,"./multiply":102,"./negate":103,"./normalize":104,"./random":105,"./rotateX":106,"./rotateY":107,"./rotateZ":108,"./scale":109,"./scaleAndAdd":110,"./set":111,"./squaredDistance":112,"./squaredLength":113,"./subtract":114,"./transformMat3":115,"./transformMat4":116,"./transformQuat":117}],97:[function(require,module,exports){
+module.exports = inverse;
+
+/**
+ * Returns the inverse of the components of a vec3
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a vector to invert
+ * @returns {vec3} out
+ */
+function inverse(out, a) {
+  out[0] = 1.0 / a[0]
+  out[1] = 1.0 / a[1]
+  out[2] = 1.0 / a[2]
+  return out
+}
+},{}],98:[function(require,module,exports){
+module.exports = length;
+
+/**
+ * Calculates the length of a vec3
+ *
+ * @param {vec3} a vector to calculate length of
+ * @returns {Number} length of a
+ */
+function length(a) {
+    var x = a[0],
+        y = a[1],
+        z = a[2]
+    return Math.sqrt(x*x + y*y + z*z)
+}
+},{}],99:[function(require,module,exports){
+module.exports = lerp;
+
+/**
+ * Performs a linear interpolation between two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @param {Number} t interpolation amount between the two inputs
+ * @returns {vec3} out
+ */
+function lerp(out, a, b, t) {
+    var ax = a[0],
+        ay = a[1],
+        az = a[2]
+    out[0] = ax + t * (b[0] - ax)
+    out[1] = ay + t * (b[1] - ay)
+    out[2] = az + t * (b[2] - az)
+    return out
+}
+},{}],100:[function(require,module,exports){
+module.exports = max;
+
+/**
+ * Returns the maximum of two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+function max(out, a, b) {
+    out[0] = Math.max(a[0], b[0])
+    out[1] = Math.max(a[1], b[1])
+    out[2] = Math.max(a[2], b[2])
+    return out
+}
+},{}],101:[function(require,module,exports){
+module.exports = min;
+
+/**
+ * Returns the minimum of two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+function min(out, a, b) {
+    out[0] = Math.min(a[0], b[0])
+    out[1] = Math.min(a[1], b[1])
+    out[2] = Math.min(a[2], b[2])
+    return out
+}
+},{}],102:[function(require,module,exports){
+module.exports = multiply;
+
+/**
+ * Multiplies two vec3's
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+function multiply(out, a, b) {
+    out[0] = a[0] * b[0]
+    out[1] = a[1] * b[1]
+    out[2] = a[2] * b[2]
+    return out
+}
+},{}],103:[function(require,module,exports){
+module.exports = negate;
+
+/**
+ * Negates the components of a vec3
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a vector to negate
+ * @returns {vec3} out
+ */
+function negate(out, a) {
+    out[0] = -a[0]
+    out[1] = -a[1]
+    out[2] = -a[2]
+    return out
+}
+},{}],104:[function(require,module,exports){
+module.exports = normalize;
+
+/**
+ * Normalize a vec3
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a vector to normalize
+ * @returns {vec3} out
+ */
+function normalize(out, a) {
+    var x = a[0],
+        y = a[1],
+        z = a[2]
+    var len = x*x + y*y + z*z
+    if (len > 0) {
+        //TODO: evaluate use of glm_invsqrt here?
+        len = 1 / Math.sqrt(len)
+        out[0] = a[0] * len
+        out[1] = a[1] * len
+        out[2] = a[2] * len
+    }
+    return out
+}
+},{}],105:[function(require,module,exports){
+module.exports = random;
+
+/**
+ * Generates a random vector with the given scale
+ *
+ * @param {vec3} out the receiving vector
+ * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
+ * @returns {vec3} out
+ */
+function random(out, scale) {
+    scale = scale || 1.0
+
+    var r = Math.random() * 2.0 * Math.PI
+    var z = (Math.random() * 2.0) - 1.0
+    var zScale = Math.sqrt(1.0-z*z) * scale
+
+    out[0] = Math.cos(r) * zScale
+    out[1] = Math.sin(r) * zScale
+    out[2] = z * scale
+    return out
+}
+},{}],106:[function(require,module,exports){
+module.exports = rotateX;
+
+/**
+ * Rotate a 3D vector around the x-axis
+ * @param {vec3} out The receiving vec3
+ * @param {vec3} a The vec3 point to rotate
+ * @param {vec3} b The origin of the rotation
+ * @param {Number} c The angle of rotation
+ * @returns {vec3} out
+ */
+function rotateX(out, a, b, c){
+    var p = [], r=[]
+    //Translate point to the origin
+    p[0] = a[0] - b[0]
+    p[1] = a[1] - b[1]
+    p[2] = a[2] - b[2]
+
+    //perform rotation
+    r[0] = p[0]
+    r[1] = p[1]*Math.cos(c) - p[2]*Math.sin(c)
+    r[2] = p[1]*Math.sin(c) + p[2]*Math.cos(c)
+
+    //translate to correct position
+    out[0] = r[0] + b[0]
+    out[1] = r[1] + b[1]
+    out[2] = r[2] + b[2]
+
+    return out
+}
+},{}],107:[function(require,module,exports){
+module.exports = rotateY;
+
+/**
+ * Rotate a 3D vector around the y-axis
+ * @param {vec3} out The receiving vec3
+ * @param {vec3} a The vec3 point to rotate
+ * @param {vec3} b The origin of the rotation
+ * @param {Number} c The angle of rotation
+ * @returns {vec3} out
+ */
+function rotateY(out, a, b, c){
+    var p = [], r=[]
+    //Translate point to the origin
+    p[0] = a[0] - b[0]
+    p[1] = a[1] - b[1]
+    p[2] = a[2] - b[2]
+  
+    //perform rotation
+    r[0] = p[2]*Math.sin(c) + p[0]*Math.cos(c)
+    r[1] = p[1]
+    r[2] = p[2]*Math.cos(c) - p[0]*Math.sin(c)
+  
+    //translate to correct position
+    out[0] = r[0] + b[0]
+    out[1] = r[1] + b[1]
+    out[2] = r[2] + b[2]
+  
+    return out
+}
+},{}],108:[function(require,module,exports){
+module.exports = rotateZ;
+
+/**
+ * Rotate a 3D vector around the z-axis
+ * @param {vec3} out The receiving vec3
+ * @param {vec3} a The vec3 point to rotate
+ * @param {vec3} b The origin of the rotation
+ * @param {Number} c The angle of rotation
+ * @returns {vec3} out
+ */
+function rotateZ(out, a, b, c){
+    var p = [], r=[]
+    //Translate point to the origin
+    p[0] = a[0] - b[0]
+    p[1] = a[1] - b[1]
+    p[2] = a[2] - b[2]
+  
+    //perform rotation
+    r[0] = p[0]*Math.cos(c) - p[1]*Math.sin(c)
+    r[1] = p[0]*Math.sin(c) + p[1]*Math.cos(c)
+    r[2] = p[2]
+  
+    //translate to correct position
+    out[0] = r[0] + b[0]
+    out[1] = r[1] + b[1]
+    out[2] = r[2] + b[2]
+  
+    return out
+}
+},{}],109:[function(require,module,exports){
+module.exports = scale;
+
+/**
+ * Scales a vec3 by a scalar number
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the vector to scale
+ * @param {Number} b amount to scale the vector by
+ * @returns {vec3} out
+ */
+function scale(out, a, b) {
+    out[0] = a[0] * b
+    out[1] = a[1] * b
+    out[2] = a[2] * b
+    return out
+}
+},{}],110:[function(require,module,exports){
+module.exports = scaleAndAdd;
+
+/**
+ * Adds two vec3's after scaling the second operand by a scalar value
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @param {Number} scale the amount to scale b by before adding
+ * @returns {vec3} out
+ */
+function scaleAndAdd(out, a, b, scale) {
+    out[0] = a[0] + (b[0] * scale)
+    out[1] = a[1] + (b[1] * scale)
+    out[2] = a[2] + (b[2] * scale)
+    return out
+}
+},{}],111:[function(require,module,exports){
+module.exports = set;
+
+/**
+ * Set the components of a vec3 to the given values
+ *
+ * @param {vec3} out the receiving vector
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @param {Number} z Z component
+ * @returns {vec3} out
+ */
+function set(out, x, y, z) {
+    out[0] = x
+    out[1] = y
+    out[2] = z
+    return out
+}
+},{}],112:[function(require,module,exports){
+module.exports = squaredDistance;
+
+/**
+ * Calculates the squared euclidian distance between two vec3's
+ *
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {Number} squared distance between a and b
+ */
+function squaredDistance(a, b) {
+    var x = b[0] - a[0],
+        y = b[1] - a[1],
+        z = b[2] - a[2]
+    return x*x + y*y + z*z
+}
+},{}],113:[function(require,module,exports){
+module.exports = squaredLength;
+
+/**
+ * Calculates the squared length of a vec3
+ *
+ * @param {vec3} a vector to calculate squared length of
+ * @returns {Number} squared length of a
+ */
+function squaredLength(a) {
+    var x = a[0],
+        y = a[1],
+        z = a[2]
+    return x*x + y*y + z*z
+}
+},{}],114:[function(require,module,exports){
+module.exports = subtract;
+
+/**
+ * Subtracts vector b from vector a
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the first operand
+ * @param {vec3} b the second operand
+ * @returns {vec3} out
+ */
+function subtract(out, a, b) {
+    out[0] = a[0] - b[0]
+    out[1] = a[1] - b[1]
+    out[2] = a[2] - b[2]
+    return out
+}
+},{}],115:[function(require,module,exports){
+module.exports = transformMat3;
+
+/**
+ * Transforms the vec3 with a mat3.
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the vector to transform
+ * @param {mat4} m the 3x3 matrix to transform with
+ * @returns {vec3} out
+ */
+function transformMat3(out, a, m) {
+    var x = a[0], y = a[1], z = a[2]
+    out[0] = x * m[0] + y * m[3] + z * m[6]
+    out[1] = x * m[1] + y * m[4] + z * m[7]
+    out[2] = x * m[2] + y * m[5] + z * m[8]
+    return out
+}
+},{}],116:[function(require,module,exports){
+module.exports = transformMat4;
+
+/**
+ * Transforms the vec3 with a mat4.
+ * 4th vector component is implicitly '1'
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the vector to transform
+ * @param {mat4} m matrix to transform with
+ * @returns {vec3} out
+ */
+function transformMat4(out, a, m) {
+    var x = a[0], y = a[1], z = a[2],
+        w = m[3] * x + m[7] * y + m[11] * z + m[15]
+    w = w || 1.0
+    out[0] = (m[0] * x + m[4] * y + m[8] * z + m[12]) / w
+    out[1] = (m[1] * x + m[5] * y + m[9] * z + m[13]) / w
+    out[2] = (m[2] * x + m[6] * y + m[10] * z + m[14]) / w
+    return out
+}
+},{}],117:[function(require,module,exports){
+module.exports = transformQuat;
+
+/**
+ * Transforms the vec3 with a quat
+ *
+ * @param {vec3} out the receiving vector
+ * @param {vec3} a the vector to transform
+ * @param {quat} q quaternion to transform with
+ * @returns {vec3} out
+ */
+function transformQuat(out, a, q) {
+    // benchmarks: http://jsperf.com/quaternion-transform-vec3-implementations
+
+    var x = a[0], y = a[1], z = a[2],
+        qx = q[0], qy = q[1], qz = q[2], qw = q[3],
+
+        // calculate quat * vec
+        ix = qw * x + qy * z - qz * y,
+        iy = qw * y + qz * x - qx * z,
+        iz = qw * z + qx * y - qy * x,
+        iw = -qx * x - qy * y - qz * z
+
+    // calculate result * inverse quat
+    out[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy
+    out[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz
+    out[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx
+    return out
+}
+},{}],118:[function(require,module,exports){
+module.exports = add
+
+/**
+ * Adds two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+function add (out, a, b) {
+  out[0] = a[0] + b[0]
+  out[1] = a[1] + b[1]
+  out[2] = a[2] + b[2]
+  out[3] = a[3] + b[3]
+  return out
+}
+
+},{}],119:[function(require,module,exports){
+module.exports = clone
+
+/**
+ * Creates a new vec4 initialized with values from an existing vector
+ *
+ * @param {vec4} a vector to clone
+ * @returns {vec4} a new 4D vector
+ */
+function clone (a) {
+  var out = new Float32Array(4)
+  out[0] = a[0]
+  out[1] = a[1]
+  out[2] = a[2]
+  out[3] = a[3]
+  return out
+}
+
+},{}],120:[function(require,module,exports){
+module.exports = copy
+
+/**
+ * Copy the values from one vec4 to another
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the source vector
+ * @returns {vec4} out
+ */
+function copy (out, a) {
+  out[0] = a[0]
+  out[1] = a[1]
+  out[2] = a[2]
+  out[3] = a[3]
+  return out
+}
+
+},{}],121:[function(require,module,exports){
+module.exports = create
+
+/**
+ * Creates a new, empty vec4
+ *
+ * @returns {vec4} a new 4D vector
+ */
+function create () {
+  var out = new Float32Array(4)
+  out[0] = 0
+  out[1] = 0
+  out[2] = 0
+  out[3] = 0
+  return out
+}
+
+},{}],122:[function(require,module,exports){
+module.exports = distance
+
+/**
+ * Calculates the euclidian distance between two vec4's
+ *
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {Number} distance between a and b
+ */
+function distance (a, b) {
+  var x = b[0] - a[0],
+    y = b[1] - a[1],
+    z = b[2] - a[2],
+    w = b[3] - a[3]
+  return Math.sqrt(x * x + y * y + z * z + w * w)
+}
+
+},{}],123:[function(require,module,exports){
+module.exports = divide
+
+/**
+ * Divides two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+function divide (out, a, b) {
+  out[0] = a[0] / b[0]
+  out[1] = a[1] / b[1]
+  out[2] = a[2] / b[2]
+  out[3] = a[3] / b[3]
+  return out
+}
+
+},{}],124:[function(require,module,exports){
+module.exports = dot
+
+/**
+ * Calculates the dot product of two vec4's
+ *
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {Number} dot product of a and b
+ */
+function dot (a, b) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]
+}
+
+},{}],125:[function(require,module,exports){
+module.exports = fromValues
+
+/**
+ * Creates a new vec4 initialized with the given values
+ *
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @param {Number} z Z component
+ * @param {Number} w W component
+ * @returns {vec4} a new 4D vector
+ */
+function fromValues (x, y, z, w) {
+  var out = new Float32Array(4)
+  out[0] = x
+  out[1] = y
+  out[2] = z
+  out[3] = w
+  return out
+}
+
+},{}],126:[function(require,module,exports){
+module.exports = {
+  create: require('./create'),
+  clone: require('./clone'),
+  fromValues: require('./fromValues'),
+  copy: require('./copy'),
+  set: require('./set'),
+  add: require('./add'),
+  subtract: require('./subtract'),
+  multiply: require('./multiply'),
+  divide: require('./divide'),
+  min: require('./min'),
+  max: require('./max'),
+  scale: require('./scale'),
+  scaleAndAdd: require('./scaleAndAdd'),
+  distance: require('./distance'),
+  squaredDistance: require('./squaredDistance'),
+  length: require('./length'),
+  squaredLength: require('./squaredLength'),
+  negate: require('./negate'),
+  inverse: require('./inverse'),
+  normalize: require('./normalize'),
+  dot: require('./dot'),
+  lerp: require('./lerp'),
+  random: require('./random'),
+  transformMat4: require('./transformMat4'),
+  transformQuat: require('./transformQuat')
+}
+
+},{"./add":118,"./clone":119,"./copy":120,"./create":121,"./distance":122,"./divide":123,"./dot":124,"./fromValues":125,"./inverse":127,"./length":128,"./lerp":129,"./max":130,"./min":131,"./multiply":132,"./negate":133,"./normalize":134,"./random":135,"./scale":136,"./scaleAndAdd":137,"./set":138,"./squaredDistance":139,"./squaredLength":140,"./subtract":141,"./transformMat4":142,"./transformQuat":143}],127:[function(require,module,exports){
+module.exports = inverse
+
+/**
+ * Returns the inverse of the components of a vec4
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a vector to invert
+ * @returns {vec4} out
+ */
+function inverse (out, a) {
+  out[0] = 1.0 / a[0]
+  out[1] = 1.0 / a[1]
+  out[2] = 1.0 / a[2]
+  out[3] = 1.0 / a[3]
+  return out
+}
+
+},{}],128:[function(require,module,exports){
+module.exports = length
+
+/**
+ * Calculates the length of a vec4
+ *
+ * @param {vec4} a vector to calculate length of
+ * @returns {Number} length of a
+ */
+function length (a) {
+  var x = a[0],
+    y = a[1],
+    z = a[2],
+    w = a[3]
+  return Math.sqrt(x * x + y * y + z * z + w * w)
+}
+
+},{}],129:[function(require,module,exports){
+module.exports = lerp
+
+/**
+ * Performs a linear interpolation between two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @param {Number} t interpolation amount between the two inputs
+ * @returns {vec4} out
+ */
+function lerp (out, a, b, t) {
+  var ax = a[0],
+    ay = a[1],
+    az = a[2],
+    aw = a[3]
+  out[0] = ax + t * (b[0] - ax)
+  out[1] = ay + t * (b[1] - ay)
+  out[2] = az + t * (b[2] - az)
+  out[3] = aw + t * (b[3] - aw)
+  return out
+}
+
+},{}],130:[function(require,module,exports){
+module.exports = max
+
+/**
+ * Returns the maximum of two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+function max (out, a, b) {
+  out[0] = Math.max(a[0], b[0])
+  out[1] = Math.max(a[1], b[1])
+  out[2] = Math.max(a[2], b[2])
+  out[3] = Math.max(a[3], b[3])
+  return out
+}
+
+},{}],131:[function(require,module,exports){
+module.exports = min
+
+/**
+ * Returns the minimum of two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+function min (out, a, b) {
+  out[0] = Math.min(a[0], b[0])
+  out[1] = Math.min(a[1], b[1])
+  out[2] = Math.min(a[2], b[2])
+  out[3] = Math.min(a[3], b[3])
+  return out
+}
+
+},{}],132:[function(require,module,exports){
+module.exports = multiply
+
+/**
+ * Multiplies two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+function multiply (out, a, b) {
+  out[0] = a[0] * b[0]
+  out[1] = a[1] * b[1]
+  out[2] = a[2] * b[2]
+  out[3] = a[3] * b[3]
+  return out
+}
+
+},{}],133:[function(require,module,exports){
+module.exports = negate
+
+/**
+ * Negates the components of a vec4
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a vector to negate
+ * @returns {vec4} out
+ */
+function negate (out, a) {
+  out[0] = -a[0]
+  out[1] = -a[1]
+  out[2] = -a[2]
+  out[3] = -a[3]
+  return out
+}
+
+},{}],134:[function(require,module,exports){
+module.exports = normalize
+
+/**
+ * Normalize a vec4
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a vector to normalize
+ * @returns {vec4} out
+ */
+function normalize (out, a) {
+  var x = a[0],
+    y = a[1],
+    z = a[2],
+    w = a[3]
+  var len = x * x + y * y + z * z + w * w
+  if (len > 0) {
+    len = 1 / Math.sqrt(len)
+    out[0] = x * len
+    out[1] = y * len
+    out[2] = z * len
+    out[3] = w * len
+  }
+  return out
+}
+
+},{}],135:[function(require,module,exports){
+var vecNormalize = require('./normalize')
+var vecScale = require('./scale')
+
+module.exports = random
+
+/**
+ * Generates a random vector with the given scale
+ *
+ * @param {vec4} out the receiving vector
+ * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
+ * @returns {vec4} out
+ */
+function random (out, scale) {
+  scale = scale || 1.0
+
+  // TODO: This is a pretty awful way of doing this. Find something better.
+  out[0] = Math.random()
+  out[1] = Math.random()
+  out[2] = Math.random()
+  out[3] = Math.random()
+  vecNormalize(out, out)
+  vecScale(out, out, scale)
+  return out
+}
+
+},{"./normalize":134,"./scale":136}],136:[function(require,module,exports){
+module.exports = scale
+
+/**
+ * Scales a vec4 by a scalar number
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the vector to scale
+ * @param {Number} b amount to scale the vector by
+ * @returns {vec4} out
+ */
+function scale (out, a, b) {
+  out[0] = a[0] * b
+  out[1] = a[1] * b
+  out[2] = a[2] * b
+  out[3] = a[3] * b
+  return out
+}
+
+},{}],137:[function(require,module,exports){
+module.exports = scaleAndAdd
+
+/**
+ * Adds two vec4's after scaling the second operand by a scalar value
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @param {Number} scale the amount to scale b by before adding
+ * @returns {vec4} out
+ */
+function scaleAndAdd (out, a, b, scale) {
+  out[0] = a[0] + (b[0] * scale)
+  out[1] = a[1] + (b[1] * scale)
+  out[2] = a[2] + (b[2] * scale)
+  out[3] = a[3] + (b[3] * scale)
+  return out
+}
+
+},{}],138:[function(require,module,exports){
+module.exports = set
+
+/**
+ * Set the components of a vec4 to the given values
+ *
+ * @param {vec4} out the receiving vector
+ * @param {Number} x X component
+ * @param {Number} y Y component
+ * @param {Number} z Z component
+ * @param {Number} w W component
+ * @returns {vec4} out
+ */
+function set (out, x, y, z, w) {
+  out[0] = x
+  out[1] = y
+  out[2] = z
+  out[3] = w
+  return out
+}
+
+},{}],139:[function(require,module,exports){
+module.exports = squaredDistance
+
+/**
+ * Calculates the squared euclidian distance between two vec4's
+ *
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {Number} squared distance between a and b
+ */
+function squaredDistance (a, b) {
+  var x = b[0] - a[0],
+    y = b[1] - a[1],
+    z = b[2] - a[2],
+    w = b[3] - a[3]
+  return x * x + y * y + z * z + w * w
+}
+
+},{}],140:[function(require,module,exports){
+module.exports = squaredLength
+
+/**
+ * Calculates the squared length of a vec4
+ *
+ * @param {vec4} a vector to calculate squared length of
+ * @returns {Number} squared length of a
+ */
+function squaredLength (a) {
+  var x = a[0],
+    y = a[1],
+    z = a[2],
+    w = a[3]
+  return x * x + y * y + z * z + w * w
+}
+
+},{}],141:[function(require,module,exports){
+module.exports = subtract
+
+/**
+ * Subtracts vector b from vector a
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the first operand
+ * @param {vec4} b the second operand
+ * @returns {vec4} out
+ */
+function subtract (out, a, b) {
+  out[0] = a[0] - b[0]
+  out[1] = a[1] - b[1]
+  out[2] = a[2] - b[2]
+  out[3] = a[3] - b[3]
+  return out
+}
+
+},{}],142:[function(require,module,exports){
+module.exports = transformMat4
+
+/**
+ * Transforms the vec4 with a mat4.
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the vector to transform
+ * @param {mat4} m matrix to transform with
+ * @returns {vec4} out
+ */
+function transformMat4 (out, a, m) {
+  var x = a[0], y = a[1], z = a[2], w = a[3]
+  out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w
+  out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w
+  out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w
+  out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w
+  return out
+}
+
+},{}],143:[function(require,module,exports){
+module.exports = transformQuat
+
+/**
+ * Transforms the vec4 with a quat
+ *
+ * @param {vec4} out the receiving vector
+ * @param {vec4} a the vector to transform
+ * @param {quat} q quaternion to transform with
+ * @returns {vec4} out
+ */
+function transformQuat (out, a, q) {
+  var x = a[0], y = a[1], z = a[2],
+    qx = q[0], qy = q[1], qz = q[2], qw = q[3],
+
+    // calculate quat * vec
+    ix = qw * x + qy * z - qz * y,
+    iy = qw * y + qz * x - qx * z,
+    iz = qw * z + qx * y - qy * x,
+    iw = -qx * x - qy * y - qz * z
+
+  // calculate result * inverse quat
+  out[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy
+  out[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz
+  out[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx
+  out[3] = a[3]
+  return out
+}
+
+},{}],144:[function(require,module,exports){
+var tokenize = require('glsl-tokenizer')
+var stringify = require('glsl-token-string')
+var inject = require('glsl-token-inject-block')
+
+module.exports = function glslInjectDefine (source, defines) {
+  if (!defines) {
+    return source
+  }
+
+  var keys = Object.keys(defines)
+  if (keys.length === 0) {
+    return source
+  }
+
+  var tokens = tokenize(source)
+  for (var i=keys.length-1; i>=0; i--) {
+    var key = keys[i]
+    var val = String(defines[key])
+    if (val) { // allow empty value
+      val = ' ' + val
+    }
+
+    inject(tokens, {
+      type: 'preprocessor',
+      data: '#define ' + key + val
+    })
+  }
+  
+  return stringify(tokens)
+}
+
+},{"glsl-token-inject-block":145,"glsl-token-string":146,"glsl-tokenizer":153}],145:[function(require,module,exports){
+module.exports = glslTokenInject
+
+var newline = { data: '\n', type: 'whitespace' }
+var regex = /[^\r\n]$/
+
+function glslTokenInject (tokens, newTokens) {
+  if (!Array.isArray(newTokens))
+    newTokens = [ newTokens ]
+  var start = getStartIndex(tokens)
+  var last = start > 0 ? tokens[start-1] : null
+  if (last && regex.test(last.data)) {
+    tokens.splice(start++, 0, newline)
+  }
+  tokens.splice.apply(tokens, [ start, 0 ].concat(newTokens))
+  
+  var end = start + newTokens.length
+  if (tokens[end] && /[^\r\n]$/.test(tokens[end].data)) {
+    tokens.splice(end, 0, newline)
+  }
+  return tokens
+}
+
+function getStartIndex (tokens) {
+  // determine starting index for attributes
+  var start = -1
+  for (var i = 0; i < tokens.length; i++) {
+    var token = tokens[i]
+    if (token.type === 'preprocessor') {
+      if (/^#(extension|version)/.test(token.data)) {
+        start = Math.max(start, i)
+      }
+    } else if (token.type === 'keyword' && token.data === 'precision') {
+      var semi = findNextSemicolon(tokens, i)
+      if (semi === -1) {
+        throw new Error('precision statement not followed by any semicolons!')
+      }
+      start = Math.max(start, semi)
+    }
+  }
+  return start + 1
+}
+
+function findNextSemicolon (tokens, start) {
+  for (var i = start; i < tokens.length; i++) {
+    if (tokens[i].type === 'operator' && tokens[i].data === ';') {
+      return i
+    }
+  }
+  return -1
+}
+},{}],146:[function(require,module,exports){
+module.exports = toString
+
+function toString(tokens) {
+  var output = []
+
+  for (var i = 0; i < tokens.length; i++) {
+    if (tokens[i].type === 'eof') continue
+    output.push(tokens[i].data)
+  }
+
+  return output.join('')
+}
+
+},{}],147:[function(require,module,exports){
+module.exports = tokenize
+
+var literals100 = require('./lib/literals')
+  , operators = require('./lib/operators')
+  , builtins100 = require('./lib/builtins')
+  , literals300es = require('./lib/literals-300es')
+  , builtins300es = require('./lib/builtins-300es')
+
+var NORMAL = 999          // <-- never emitted
+  , TOKEN = 9999          // <-- never emitted
+  , BLOCK_COMMENT = 0
+  , LINE_COMMENT = 1
+  , PREPROCESSOR = 2
+  , OPERATOR = 3
+  , INTEGER = 4
+  , FLOAT = 5
+  , IDENT = 6
+  , BUILTIN = 7
+  , KEYWORD = 8
+  , WHITESPACE = 9
+  , EOF = 10
+  , HEX = 11
+
+var map = [
+    'block-comment'
+  , 'line-comment'
+  , 'preprocessor'
+  , 'operator'
+  , 'integer'
+  , 'float'
+  , 'ident'
+  , 'builtin'
+  , 'keyword'
+  , 'whitespace'
+  , 'eof'
+  , 'integer'
+]
+
+function tokenize(opt) {
+  var i = 0
+    , total = 0
+    , mode = NORMAL
+    , c
+    , last
+    , content = []
+    , tokens = []
+    , token_idx = 0
+    , token_offs = 0
+    , line = 1
+    , col = 0
+    , start = 0
+    , isnum = false
+    , isoperator = false
+    , input = ''
+    , len
+
+  opt = opt || {}
+  var allBuiltins = builtins100
+  var allLiterals = literals100
+  if (opt.version === '300 es') {
+    allBuiltins = builtins300es
+    allLiterals = literals300es
+  }
+
+  return function(data) {
+    tokens = []
+    if (data !== null) return write(data.replace ? data.replace(/\r\n/g, '\n') : data)
+    return end()
+  }
+
+  function token(data) {
+    if (data.length) {
+      tokens.push({
+        type: map[mode]
+      , data: data
+      , position: start
+      , line: line
+      , column: col
+      })
+    }
+  }
+
+  function write(chunk) {
+    i = 0
+    input += chunk
+    len = input.length
+
+    var last
+
+    while(c = input[i], i < len) {
+      last = i
+
+      switch(mode) {
+        case BLOCK_COMMENT: i = block_comment(); break
+        case LINE_COMMENT: i = line_comment(); break
+        case PREPROCESSOR: i = preprocessor(); break
+        case OPERATOR: i = operator(); break
+        case INTEGER: i = integer(); break
+        case HEX: i = hex(); break
+        case FLOAT: i = decimal(); break
+        case TOKEN: i = readtoken(); break
+        case WHITESPACE: i = whitespace(); break
+        case NORMAL: i = normal(); break
+      }
+
+      if(last !== i) {
+        switch(input[last]) {
+          case '\n': col = 0; ++line; break
+          default: ++col; break
+        }
+      }
+    }
+
+    total += i
+    input = input.slice(i)
+    return tokens
+  }
+
+  function end(chunk) {
+    if(content.length) {
+      token(content.join(''))
+    }
+
+    mode = EOF
+    token('(eof)')
+    return tokens
+  }
+
+  function normal() {
+    content = content.length ? [] : content
+
+    if(last === '/' && c === '*') {
+      start = total + i - 1
+      mode = BLOCK_COMMENT
+      last = c
+      return i + 1
+    }
+
+    if(last === '/' && c === '/') {
+      start = total + i - 1
+      mode = LINE_COMMENT
+      last = c
+      return i + 1
+    }
+
+    if(c === '#') {
+      mode = PREPROCESSOR
+      start = total + i
+      return i
+    }
+
+    if(/\s/.test(c)) {
+      mode = WHITESPACE
+      start = total + i
+      return i
+    }
+
+    isnum = /\d/.test(c)
+    isoperator = /[^\w_]/.test(c)
+
+    start = total + i
+    mode = isnum ? INTEGER : isoperator ? OPERATOR : TOKEN
+    return i
+  }
+
+  function whitespace() {
+    if(/[^\s]/g.test(c)) {
+      token(content.join(''))
+      mode = NORMAL
+      return i
+    }
+    content.push(c)
+    last = c
+    return i + 1
+  }
+
+  function preprocessor() {
+    if((c === '\r' || c === '\n') && last !== '\\') {
+      token(content.join(''))
+      mode = NORMAL
+      return i
+    }
+    content.push(c)
+    last = c
+    return i + 1
+  }
+
+  function line_comment() {
+    return preprocessor()
+  }
+
+  function block_comment() {
+    if(c === '/' && last === '*') {
+      content.push(c)
+      token(content.join(''))
+      mode = NORMAL
+      return i + 1
+    }
+
+    content.push(c)
+    last = c
+    return i + 1
+  }
+
+  function operator() {
+    if(last === '.' && /\d/.test(c)) {
+      mode = FLOAT
+      return i
+    }
+
+    if(last === '/' && c === '*') {
+      mode = BLOCK_COMMENT
+      return i
+    }
+
+    if(last === '/' && c === '/') {
+      mode = LINE_COMMENT
+      return i
+    }
+
+    if(c === '.' && content.length) {
+      while(determine_operator(content));
+
+      mode = FLOAT
+      return i
+    }
+
+    if(c === ';' || c === ')' || c === '(') {
+      if(content.length) while(determine_operator(content));
+      token(c)
+      mode = NORMAL
+      return i + 1
+    }
+
+    var is_composite_operator = content.length === 2 && c !== '='
+    if(/[\w_\d\s]/.test(c) || is_composite_operator) {
+      while(determine_operator(content));
+      mode = NORMAL
+      return i
+    }
+
+    content.push(c)
+    last = c
+    return i + 1
+  }
+
+  function determine_operator(buf) {
+    var j = 0
+      , idx
+      , res
+
+    do {
+      idx = operators.indexOf(buf.slice(0, buf.length + j).join(''))
+      res = operators[idx]
+
+      if(idx === -1) {
+        if(j-- + buf.length > 0) continue
+        res = buf.slice(0, 1).join('')
+      }
+
+      token(res)
+
+      start += res.length
+      content = content.slice(res.length)
+      return content.length
+    } while(1)
+  }
+
+  function hex() {
+    if(/[^a-fA-F0-9]/.test(c)) {
+      token(content.join(''))
+      mode = NORMAL
+      return i
+    }
+
+    content.push(c)
+    last = c
+    return i + 1
+  }
+
+  function integer() {
+    if(c === '.') {
+      content.push(c)
+      mode = FLOAT
+      last = c
+      return i + 1
+    }
+
+    if(/[eE]/.test(c)) {
+      content.push(c)
+      mode = FLOAT
+      last = c
+      return i + 1
+    }
+
+    if(c === 'x' && content.length === 1 && content[0] === '0') {
+      mode = HEX
+      content.push(c)
+      last = c
+      return i + 1
+    }
+
+    if(/[^\d]/.test(c)) {
+      token(content.join(''))
+      mode = NORMAL
+      return i
+    }
+
+    content.push(c)
+    last = c
+    return i + 1
+  }
+
+  function decimal() {
+    if(c === 'f') {
+      content.push(c)
+      last = c
+      i += 1
+    }
+
+    if(/[eE]/.test(c)) {
+      content.push(c)
+      last = c
+      return i + 1
+    }
+
+    if (c === '-' && /[eE]/.test(last)) {
+      content.push(c)
+      last = c
+      return i + 1
+    }
+
+    if(/[^\d]/.test(c)) {
+      token(content.join(''))
+      mode = NORMAL
+      return i
+    }
+
+    content.push(c)
+    last = c
+    return i + 1
+  }
+
+  function readtoken() {
+    if(/[^\d\w_]/.test(c)) {
+      var contentstr = content.join('')
+      if(allLiterals.indexOf(contentstr) > -1) {
+        mode = KEYWORD
+      } else if(allBuiltins.indexOf(contentstr) > -1) {
+        mode = BUILTIN
+      } else {
+        mode = IDENT
+      }
+      token(content.join(''))
+      mode = NORMAL
+      return i
+    }
+    content.push(c)
+    last = c
+    return i + 1
+  }
+}
+
+},{"./lib/builtins":149,"./lib/builtins-300es":148,"./lib/literals":151,"./lib/literals-300es":150,"./lib/operators":152}],148:[function(require,module,exports){
+// 300es builtins/reserved words that were previously valid in v100
+var v100 = require('./builtins')
+
+// The texture2D|Cube functions have been removed
+// And the gl_ features are updated
+v100 = v100.slice().filter(function (b) {
+  return !/^(gl\_|texture)/.test(b)
+})
+
+module.exports = v100.concat([
+  // the updated gl_ constants
+    'gl_VertexID'
+  , 'gl_InstanceID'
+  , 'gl_Position'
+  , 'gl_PointSize'
+  , 'gl_FragCoord'
+  , 'gl_FrontFacing'
+  , 'gl_FragDepth'
+  , 'gl_PointCoord'
+  , 'gl_MaxVertexAttribs'
+  , 'gl_MaxVertexUniformVectors'
+  , 'gl_MaxVertexOutputVectors'
+  , 'gl_MaxFragmentInputVectors'
+  , 'gl_MaxVertexTextureImageUnits'
+  , 'gl_MaxCombinedTextureImageUnits'
+  , 'gl_MaxTextureImageUnits'
+  , 'gl_MaxFragmentUniformVectors'
+  , 'gl_MaxDrawBuffers'
+  , 'gl_MinProgramTexelOffset'
+  , 'gl_MaxProgramTexelOffset'
+  , 'gl_DepthRangeParameters'
+  , 'gl_DepthRange'
+
+  // other builtins
+  , 'trunc'
+  , 'round'
+  , 'roundEven'
+  , 'isnan'
+  , 'isinf'
+  , 'floatBitsToInt'
+  , 'floatBitsToUint'
+  , 'intBitsToFloat'
+  , 'uintBitsToFloat'
+  , 'packSnorm2x16'
+  , 'unpackSnorm2x16'
+  , 'packUnorm2x16'
+  , 'unpackUnorm2x16'
+  , 'packHalf2x16'
+  , 'unpackHalf2x16'
+  , 'outerProduct'
+  , 'transpose'
+  , 'determinant'
+  , 'inverse'
+  , 'texture'
+  , 'textureSize'
+  , 'textureProj'
+  , 'textureLod'
+  , 'textureOffset'
+  , 'texelFetch'
+  , 'texelFetchOffset'
+  , 'textureProjOffset'
+  , 'textureLodOffset'
+  , 'textureProjLod'
+  , 'textureProjLodOffset'
+  , 'textureGrad'
+  , 'textureGradOffset'
+  , 'textureProjGrad'
+  , 'textureProjGradOffset'
+])
+
+},{"./builtins":149}],149:[function(require,module,exports){
+module.exports = [
+  // Keep this list sorted
+  'abs'
+  , 'acos'
+  , 'all'
+  , 'any'
+  , 'asin'
+  , 'atan'
+  , 'ceil'
+  , 'clamp'
+  , 'cos'
+  , 'cross'
+  , 'dFdx'
+  , 'dFdy'
+  , 'degrees'
+  , 'distance'
+  , 'dot'
+  , 'equal'
+  , 'exp'
+  , 'exp2'
+  , 'faceforward'
+  , 'floor'
+  , 'fract'
+  , 'gl_BackColor'
+  , 'gl_BackLightModelProduct'
+  , 'gl_BackLightProduct'
+  , 'gl_BackMaterial'
+  , 'gl_BackSecondaryColor'
+  , 'gl_ClipPlane'
+  , 'gl_ClipVertex'
+  , 'gl_Color'
+  , 'gl_DepthRange'
+  , 'gl_DepthRangeParameters'
+  , 'gl_EyePlaneQ'
+  , 'gl_EyePlaneR'
+  , 'gl_EyePlaneS'
+  , 'gl_EyePlaneT'
+  , 'gl_Fog'
+  , 'gl_FogCoord'
+  , 'gl_FogFragCoord'
+  , 'gl_FogParameters'
+  , 'gl_FragColor'
+  , 'gl_FragCoord'
+  , 'gl_FragData'
+  , 'gl_FragDepth'
+  , 'gl_FragDepthEXT'
+  , 'gl_FrontColor'
+  , 'gl_FrontFacing'
+  , 'gl_FrontLightModelProduct'
+  , 'gl_FrontLightProduct'
+  , 'gl_FrontMaterial'
+  , 'gl_FrontSecondaryColor'
+  , 'gl_LightModel'
+  , 'gl_LightModelParameters'
+  , 'gl_LightModelProducts'
+  , 'gl_LightProducts'
+  , 'gl_LightSource'
+  , 'gl_LightSourceParameters'
+  , 'gl_MaterialParameters'
+  , 'gl_MaxClipPlanes'
+  , 'gl_MaxCombinedTextureImageUnits'
+  , 'gl_MaxDrawBuffers'
+  , 'gl_MaxFragmentUniformComponents'
+  , 'gl_MaxLights'
+  , 'gl_MaxTextureCoords'
+  , 'gl_MaxTextureImageUnits'
+  , 'gl_MaxTextureUnits'
+  , 'gl_MaxVaryingFloats'
+  , 'gl_MaxVertexAttribs'
+  , 'gl_MaxVertexTextureImageUnits'
+  , 'gl_MaxVertexUniformComponents'
+  , 'gl_ModelViewMatrix'
+  , 'gl_ModelViewMatrixInverse'
+  , 'gl_ModelViewMatrixInverseTranspose'
+  , 'gl_ModelViewMatrixTranspose'
+  , 'gl_ModelViewProjectionMatrix'
+  , 'gl_ModelViewProjectionMatrixInverse'
+  , 'gl_ModelViewProjectionMatrixInverseTranspose'
+  , 'gl_ModelViewProjectionMatrixTranspose'
+  , 'gl_MultiTexCoord0'
+  , 'gl_MultiTexCoord1'
+  , 'gl_MultiTexCoord2'
+  , 'gl_MultiTexCoord3'
+  , 'gl_MultiTexCoord4'
+  , 'gl_MultiTexCoord5'
+  , 'gl_MultiTexCoord6'
+  , 'gl_MultiTexCoord7'
+  , 'gl_Normal'
+  , 'gl_NormalMatrix'
+  , 'gl_NormalScale'
+  , 'gl_ObjectPlaneQ'
+  , 'gl_ObjectPlaneR'
+  , 'gl_ObjectPlaneS'
+  , 'gl_ObjectPlaneT'
+  , 'gl_Point'
+  , 'gl_PointCoord'
+  , 'gl_PointParameters'
+  , 'gl_PointSize'
+  , 'gl_Position'
+  , 'gl_ProjectionMatrix'
+  , 'gl_ProjectionMatrixInverse'
+  , 'gl_ProjectionMatrixInverseTranspose'
+  , 'gl_ProjectionMatrixTranspose'
+  , 'gl_SecondaryColor'
+  , 'gl_TexCoord'
+  , 'gl_TextureEnvColor'
+  , 'gl_TextureMatrix'
+  , 'gl_TextureMatrixInverse'
+  , 'gl_TextureMatrixInverseTranspose'
+  , 'gl_TextureMatrixTranspose'
+  , 'gl_Vertex'
+  , 'greaterThan'
+  , 'greaterThanEqual'
+  , 'inversesqrt'
+  , 'length'
+  , 'lessThan'
+  , 'lessThanEqual'
+  , 'log'
+  , 'log2'
+  , 'matrixCompMult'
+  , 'max'
+  , 'min'
+  , 'mix'
+  , 'mod'
+  , 'normalize'
+  , 'not'
+  , 'notEqual'
+  , 'pow'
+  , 'radians'
+  , 'reflect'
+  , 'refract'
+  , 'sign'
+  , 'sin'
+  , 'smoothstep'
+  , 'sqrt'
+  , 'step'
+  , 'tan'
+  , 'texture2D'
+  , 'texture2DLod'
+  , 'texture2DProj'
+  , 'texture2DProjLod'
+  , 'textureCube'
+  , 'textureCubeLod'
+  , 'texture2DLodEXT'
+  , 'texture2DProjLodEXT'
+  , 'textureCubeLodEXT'
+  , 'texture2DGradEXT'
+  , 'texture2DProjGradEXT'
+  , 'textureCubeGradEXT'
+]
+
+},{}],150:[function(require,module,exports){
+var v100 = require('./literals')
+
+module.exports = v100.slice().concat([
+   'layout'
+  , 'centroid'
+  , 'smooth'
+  , 'case'
+  , 'mat2x2'
+  , 'mat2x3'
+  , 'mat2x4'
+  , 'mat3x2'
+  , 'mat3x3'
+  , 'mat3x4'
+  , 'mat4x2'
+  , 'mat4x3'
+  , 'mat4x4'
+  , 'uint'
+  , 'uvec2'
+  , 'uvec3'
+  , 'uvec4'
+  , 'samplerCubeShadow'
+  , 'sampler2DArray'
+  , 'sampler2DArrayShadow'
+  , 'isampler2D'
+  , 'isampler3D'
+  , 'isamplerCube'
+  , 'isampler2DArray'
+  , 'usampler2D'
+  , 'usampler3D'
+  , 'usamplerCube'
+  , 'usampler2DArray'
+  , 'coherent'
+  , 'restrict'
+  , 'readonly'
+  , 'writeonly'
+  , 'resource'
+  , 'atomic_uint'
+  , 'noperspective'
+  , 'patch'
+  , 'sample'
+  , 'subroutine'
+  , 'common'
+  , 'partition'
+  , 'active'
+  , 'filter'
+  , 'image1D'
+  , 'image2D'
+  , 'image3D'
+  , 'imageCube'
+  , 'iimage1D'
+  , 'iimage2D'
+  , 'iimage3D'
+  , 'iimageCube'
+  , 'uimage1D'
+  , 'uimage2D'
+  , 'uimage3D'
+  , 'uimageCube'
+  , 'image1DArray'
+  , 'image2DArray'
+  , 'iimage1DArray'
+  , 'iimage2DArray'
+  , 'uimage1DArray'
+  , 'uimage2DArray'
+  , 'image1DShadow'
+  , 'image2DShadow'
+  , 'image1DArrayShadow'
+  , 'image2DArrayShadow'
+  , 'imageBuffer'
+  , 'iimageBuffer'
+  , 'uimageBuffer'
+  , 'sampler1DArray'
+  , 'sampler1DArrayShadow'
+  , 'isampler1D'
+  , 'isampler1DArray'
+  , 'usampler1D'
+  , 'usampler1DArray'
+  , 'isampler2DRect'
+  , 'usampler2DRect'
+  , 'samplerBuffer'
+  , 'isamplerBuffer'
+  , 'usamplerBuffer'
+  , 'sampler2DMS'
+  , 'isampler2DMS'
+  , 'usampler2DMS'
+  , 'sampler2DMSArray'
+  , 'isampler2DMSArray'
+  , 'usampler2DMSArray'
+])
+
+},{"./literals":151}],151:[function(require,module,exports){
+module.exports = [
+  // current
+    'precision'
+  , 'highp'
+  , 'mediump'
+  , 'lowp'
+  , 'attribute'
+  , 'const'
+  , 'uniform'
+  , 'varying'
+  , 'break'
+  , 'continue'
+  , 'do'
+  , 'for'
+  , 'while'
+  , 'if'
+  , 'else'
+  , 'in'
+  , 'out'
+  , 'inout'
+  , 'float'
+  , 'int'
+  , 'void'
+  , 'bool'
+  , 'true'
+  , 'false'
+  , 'discard'
+  , 'return'
+  , 'mat2'
+  , 'mat3'
+  , 'mat4'
+  , 'vec2'
+  , 'vec3'
+  , 'vec4'
+  , 'ivec2'
+  , 'ivec3'
+  , 'ivec4'
+  , 'bvec2'
+  , 'bvec3'
+  , 'bvec4'
+  , 'sampler1D'
+  , 'sampler2D'
+  , 'sampler3D'
+  , 'samplerCube'
+  , 'sampler1DShadow'
+  , 'sampler2DShadow'
+  , 'struct'
+
+  // future
+  , 'asm'
+  , 'class'
+  , 'union'
+  , 'enum'
+  , 'typedef'
+  , 'template'
+  , 'this'
+  , 'packed'
+  , 'goto'
+  , 'switch'
+  , 'default'
+  , 'inline'
+  , 'noinline'
+  , 'volatile'
+  , 'public'
+  , 'static'
+  , 'extern'
+  , 'external'
+  , 'interface'
+  , 'long'
+  , 'short'
+  , 'double'
+  , 'half'
+  , 'fixed'
+  , 'unsigned'
+  , 'input'
+  , 'output'
+  , 'hvec2'
+  , 'hvec3'
+  , 'hvec4'
+  , 'dvec2'
+  , 'dvec3'
+  , 'dvec4'
+  , 'fvec2'
+  , 'fvec3'
+  , 'fvec4'
+  , 'sampler2DRect'
+  , 'sampler3DRect'
+  , 'sampler2DRectShadow'
+  , 'sizeof'
+  , 'cast'
+  , 'namespace'
+  , 'using'
+]
+
+},{}],152:[function(require,module,exports){
+module.exports = [
+    '<<='
+  , '>>='
+  , '++'
+  , '--'
+  , '<<'
+  , '>>'
+  , '<='
+  , '>='
+  , '=='
+  , '!='
+  , '&&'
+  , '||'
+  , '+='
+  , '-='
+  , '*='
+  , '/='
+  , '%='
+  , '&='
+  , '^^'
+  , '^='
+  , '|='
+  , '('
+  , ')'
+  , '['
+  , ']'
+  , '.'
+  , '!'
+  , '~'
+  , '*'
+  , '/'
+  , '%'
+  , '+'
+  , '-'
+  , '<'
+  , '>'
+  , '&'
+  , '^'
+  , '|'
+  , '?'
+  , ':'
+  , '='
+  , ','
+  , ';'
+  , '{'
+  , '}'
+]
+
+},{}],153:[function(require,module,exports){
+var tokenize = require('./index')
+
+module.exports = tokenizeString
+
+function tokenizeString(str, opt) {
+  var generator = tokenize(opt)
+  var tokens = []
+
+  tokens = tokens.concat(generator(str))
+  tokens = tokens.concat(generator(null))
+
+  return tokens
+}
+
+},{"./index":147}],154:[function(require,module,exports){
+module.exports = function() {
+  throw new Error(
+      "It appears that you're using glslify in browserify without "
+    + "its transform applied. Make sure that you've set up glslify as a source transform: "
+    + "https://github.com/substack/node-browserify#browserifytransform"
+  )
+}
+
+},{}],155:[function(require,module,exports){
+'use strict'
+
+module.exports = mouseListen
+
+var mouse = require('mouse-event')
+
+function mouseListen(element, callback) {
+  if(!callback) {
+    callback = element
+    element = window
+  }
+
+  var buttonState = 0
+  var x = 0
+  var y = 0
+  var mods = {
+    shift:   false,
+    alt:     false,
+    control: false,
+    meta:    false
+  }
+  var attached = false
+
+  function updateMods(ev) {
+    var changed = false
+    if('altKey' in ev) {
+      changed = changed || ev.altKey !== mods.alt
+      mods.alt = !!ev.altKey
+    }
+    if('shiftKey' in ev) {
+      changed = changed || ev.shiftKey !== mods.shift
+      mods.shift = !!ev.shiftKey
+    }
+    if('ctrlKey' in ev) {
+      changed = changed || ev.ctrlKey !== mods.control
+      mods.control = !!ev.ctrlKey
+    }
+    if('metaKey' in ev) {
+      changed = changed || ev.metaKey !== mods.meta
+      mods.meta = !!ev.metaKey
+    }
+    return changed
+  }
+
+  function handleEvent(nextButtons, ev) {
+    var nextX = mouse.x(ev)
+    var nextY = mouse.y(ev)
+    if('buttons' in ev) {
+      nextButtons = ev.buttons|0
+    }
+    if(nextButtons !== buttonState ||
+       nextX !== x ||
+       nextY !== y ||
+       updateMods(ev)) {
+      buttonState = nextButtons|0
+      x = nextX||0
+      y = nextY||0
+      callback && callback(buttonState, x, y, mods)
+    }
+  }
+
+  function clearState(ev) {
+    handleEvent(0, ev)
+  }
+
+  function handleBlur() {
+    if(buttonState ||
+      x ||
+      y ||
+      mods.shift ||
+      mods.alt ||
+      mods.meta ||
+      mods.control) {
+
+      x = y = 0
+      buttonState = 0
+      mods.shift = mods.alt = mods.control = mods.meta = false
+      callback && callback(0, 0, 0, mods)
+    }
+  }
+
+  function handleMods(ev) {
+    if(updateMods(ev)) {
+      callback && callback(buttonState, x, y, mods)
+    }
+  }
+
+  function handleMouseMove(ev) {
+    if(mouse.buttons(ev) === 0) {
+      handleEvent(0, ev)
+    } else {
+      handleEvent(buttonState, ev)
+    }
+  }
+
+  function handleMouseDown(ev) {
+    handleEvent(buttonState | mouse.buttons(ev), ev)
+  }
+
+  function handleMouseUp(ev) {
+    handleEvent(buttonState & ~mouse.buttons(ev), ev)
+  }
+
+  function attachListeners() {
+    if(attached) {
+      return
+    }
+    attached = true
+
+    element.addEventListener('mousemove', handleMouseMove)
+
+    element.addEventListener('mousedown', handleMouseDown)
+
+    element.addEventListener('mouseup', handleMouseUp)
+
+    element.addEventListener('mouseleave', clearState)
+    element.addEventListener('mouseenter', clearState)
+    element.addEventListener('mouseout', clearState)
+    element.addEventListener('mouseover', clearState)
+
+    element.addEventListener('blur', handleBlur)
+
+    element.addEventListener('keyup', handleMods)
+    element.addEventListener('keydown', handleMods)
+    element.addEventListener('keypress', handleMods)
+
+    if(element !== window) {
+      window.addEventListener('blur', handleBlur)
+
+      window.addEventListener('keyup', handleMods)
+      window.addEventListener('keydown', handleMods)
+      window.addEventListener('keypress', handleMods)
+    }
+  }
+
+  function detachListeners() {
+    if(!attached) {
+      return
+    }
+    attached = false
+
+    element.removeEventListener('mousemove', handleMouseMove)
+
+    element.removeEventListener('mousedown', handleMouseDown)
+
+    element.removeEventListener('mouseup', handleMouseUp)
+
+    element.removeEventListener('mouseleave', clearState)
+    element.removeEventListener('mouseenter', clearState)
+    element.removeEventListener('mouseout', clearState)
+    element.removeEventListener('mouseover', clearState)
+
+    element.removeEventListener('blur', handleBlur)
+
+    element.removeEventListener('keyup', handleMods)
+    element.removeEventListener('keydown', handleMods)
+    element.removeEventListener('keypress', handleMods)
+
+    if(element !== window) {
+      window.removeEventListener('blur', handleBlur)
+
+      window.removeEventListener('keyup', handleMods)
+      window.removeEventListener('keydown', handleMods)
+      window.removeEventListener('keypress', handleMods)
+    }
+  }
+
+  //Attach listeners
+  attachListeners()
+
+  var result = {
+    element: element
+  }
+
+  Object.defineProperties(result, {
+    enabled: {
+      get: function() { return attached },
+      set: function(f) {
+        if(f) {
+          attachListeners()
+        } else {
+          detachListeners
+        }
+      },
+      enumerable: true
+    },
+    buttons: {
+      get: function() { return buttonState },
+      enumerable: true
+    },
+    x: {
+      get: function() { return x },
+      enumerable: true
+    },
+    y: {
+      get: function() { return y },
+      enumerable: true
+    },
+    mods: {
+      get: function() { return mods },
+      enumerable: true
+    }
+  })
+
+  return result
+}
+
+},{"mouse-event":156}],156:[function(require,module,exports){
+'use strict'
+
+function mouseButtons(ev) {
+  if(typeof ev === 'object') {
+    if('buttons' in ev) {
+      return ev.buttons
+    } else if('which' in ev) {
+      var b = ev.which
+      if(b === 2) {
+        return 4
+      } else if(b === 3) {
+        return 2
+      } else if(b > 0) {
+        return 1<<(b-1)
+      }
+    } else if('button' in ev) {
+      var b = ev.button
+      if(b === 1) {
+        return 4
+      } else if(b === 2) {
+        return 2
+      } else if(b >= 0) {
+        return 1<<b
+      }
+    }
+  }
+  return 0
+}
+exports.buttons = mouseButtons
+
+function mouseElement(ev) {
+  return ev.target || ev.srcElement || window
+}
+exports.element = mouseElement
+
+function mouseRelativeX(ev) {
+  if(typeof ev === 'object') {
+    if('offsetX' in ev) {
+      return ev.offsetX
+    }
+    var target = mouseElement(ev)
+    var bounds = target.getBoundingClientRect()
+    return ev.clientX - bounds.left
+  }
+  return 0
+}
+exports.x = mouseRelativeX
+
+function mouseRelativeY(ev) {
+  if(typeof ev === 'object') {
+    if('offsetY' in ev) {
+      return ev.offsetY
+    }
+    var target = mouseElement(ev)
+    var bounds = target.getBoundingClientRect()
+    return ev.clientY - bounds.top
+  }
+  return 0
+}
+exports.y = mouseRelativeY
+
+},{}],157:[function(require,module,exports){
+'use strict'
+
+var toPX = require('to-px')
+
+module.exports = mouseWheelListen
+
+function mouseWheelListen(element, callback, noScroll) {
+  if(typeof element === 'function') {
+    noScroll = !!callback
+    callback = element
+    element = window
+  }
+  var lineHeight = toPX('ex', element)
+  var listener = function(ev) {
+    if(noScroll) {
+      ev.preventDefault()
+    }
+    var dx = ev.deltaX || 0
+    var dy = ev.deltaY || 0
+    var dz = ev.deltaZ || 0
+    var mode = ev.deltaMode
+    var scale = 1
+    switch(mode) {
+      case 1:
+        scale = lineHeight
+      break
+      case 2:
+        scale = window.innerHeight
+      break
+    }
+    dx *= scale
+    dy *= scale
+    dz *= scale
+    if(dx || dy || dz) {
+      return callback(dx, dy, dz, ev)
+    }
+  }
+  element.addEventListener('wheel', listener)
+  return listener
+}
+
+},{"to-px":197}],158:[function(require,module,exports){
+module.exports = function parseUnit(str, out) {
+    if (!out)
+        out = [ 0, '' ]
+
+    str = String(str)
+    var num = parseFloat(str, 10)
+    out[0] = num
+    out[1] = str.match(/[\d.\-\+]*\s*(.*)/)[1] || ''
+    return out
+}
+},{}],159:[function(require,module,exports){
+(function (process){
+// Generated by CoffeeScript 1.7.1
+(function() {
+  var getNanoSeconds, hrtime, loadTime;
+
+  if ((typeof performance !== "undefined" && performance !== null) && performance.now) {
+    module.exports = function() {
+      return performance.now();
+    };
+  } else if ((typeof process !== "undefined" && process !== null) && process.hrtime) {
+    module.exports = function() {
+      return (getNanoSeconds() - loadTime) / 1e6;
+    };
+    hrtime = process.hrtime;
+    getNanoSeconds = function() {
+      var hr;
+      hr = hrtime();
+      return hr[0] * 1e9 + hr[1];
+    };
+    loadTime = getNanoSeconds();
+  } else if (Date.now) {
+    module.exports = function() {
+      return Date.now() - loadTime;
+    };
+    loadTime = Date.now();
+  } else {
+    module.exports = function() {
+      return new Date().getTime() - loadTime;
+    };
+    loadTime = new Date().getTime();
+  }
+
+}).call(this);
+
+}).call(this,require('_process'))
+},{"_process":1}],160:[function(require,module,exports){
+var identity = require('gl-mat4/identity')
+var rotateY = require('gl-mat4/rotateY')
+var rotateZ = require('gl-mat4/rotateZ')
+
+var scale = require('gl-vec3/scale')
+var transformMat4 = require('gl-vec3/transformMat4')
+var normalize = require('gl-vec3/normalize')
+
+var matRotY = identity([])
+var matRotZ = identity([])
+var up = [0, 1, 0]
+var tmpVec3 = [0, 0, 0]
+
+module.exports = primitiveSphere
+function primitiveSphere (radius, opt) {
+  opt = opt || {}
+  radius = typeof radius !== 'undefined' ? radius : 1
+  var segments = typeof opt.segments !== 'undefined' ? opt.segments : 32
+
+  var totalZRotationSteps = 2 + segments
+  var totalYRotationSteps = 2 * totalZRotationSteps
+
+  var indices = []
+  var positions = []
+  var normals = []
+  var uvs = []
+
+  for (var zRotationStep = 0; zRotationStep <= totalZRotationSteps; zRotationStep++) {
+    var normalizedZ = zRotationStep / totalZRotationSteps
+    var angleZ = (normalizedZ * Math.PI)
+
+    for (var yRotationStep = 0; yRotationStep <= totalYRotationSteps; yRotationStep++) {
+      var normalizedY = yRotationStep / totalYRotationSteps
+      var angleY = normalizedY * Math.PI * 2
+
+      identity(matRotZ)
+      rotateZ(matRotZ, matRotZ, -angleZ)
+
+      identity(matRotY)
+      rotateY(matRotY, matRotY, angleY)
+
+      transformMat4(tmpVec3, up, matRotZ)
+      transformMat4(tmpVec3, tmpVec3, matRotY)
+
+      scale(tmpVec3, tmpVec3, -radius)
+      positions.push(tmpVec3.slice())
+
+      normalize(tmpVec3, tmpVec3)
+      normals.push(tmpVec3.slice())
+
+      uvs.push([ normalizedY, 1 - normalizedZ ])
+    }
+
+    if (zRotationStep > 0) {
+      var verticesCount = positions.length
+      var firstIndex = verticesCount - 2 * (totalYRotationSteps + 1)
+      for (; (firstIndex + totalYRotationSteps + 2) < verticesCount; firstIndex++) {
+        indices.push([
+          firstIndex,
+          firstIndex + 1,
+          firstIndex + totalYRotationSteps + 1
+        ])
+        indices.push([
+          firstIndex + totalYRotationSteps + 1,
+          firstIndex + 1,
+          firstIndex + totalYRotationSteps + 2
+        ])
+      }
+    }
+  }
+
+  return {
+    cells: indices,
+    positions: positions,
+    normals: normals,
+    uvs: uvs
+  }
+}
+
+},{"gl-mat4/identity":13,"gl-mat4/rotateY":23,"gl-mat4/rotateZ":24,"gl-vec3/normalize":104,"gl-vec3/scale":109,"gl-vec3/transformMat4":116}],161:[function(require,module,exports){
+(function (global){
+var now = require('performance-now')
+  , root = typeof window === 'undefined' ? global : window
+  , vendors = ['moz', 'webkit']
+  , suffix = 'AnimationFrame'
+  , raf = root['request' + suffix]
+  , caf = root['cancel' + suffix] || root['cancelRequest' + suffix]
+
+for(var i = 0; !raf && i < vendors.length; i++) {
+  raf = root[vendors[i] + 'Request' + suffix]
+  caf = root[vendors[i] + 'Cancel' + suffix]
+      || root[vendors[i] + 'CancelRequest' + suffix]
+}
+
+// Some versions of FF have rAF but not cAF
+if(!raf || !caf) {
+  var last = 0
+    , id = 0
+    , queue = []
+    , frameDuration = 1000 / 60
+
+  raf = function(callback) {
+    if(queue.length === 0) {
+      var _now = now()
+        , next = Math.max(0, frameDuration - (_now - last))
+      last = next + _now
+      setTimeout(function() {
+        var cp = queue.slice(0)
+        // Clear queue here to prevent
+        // callbacks from appending listeners
+        // to the current frame's queue
+        queue.length = 0
+        for(var i = 0; i < cp.length; i++) {
+          if(!cp[i].cancelled) {
+            try{
+              cp[i].callback(last)
+            } catch(e) {
+              setTimeout(function() { throw e }, 0)
+            }
+          }
+        }
+      }, Math.round(next))
+    }
+    queue.push({
+      handle: ++id,
+      callback: callback,
+      cancelled: false
+    })
+    return id
+  }
+
+  caf = function(handle) {
+    for(var i = 0; i < queue.length; i++) {
+      if(queue[i].handle === handle) {
+        queue[i].cancelled = true
+      }
+    }
+  }
+}
+
+module.exports = function(fn) {
+  // Wrap in a new function to prevent
+  // `cancel` potentially being assigned
+  // to the native rAF function
+  return raf.call(root, fn)
+}
+module.exports.cancel = function() {
+  caf.apply(root, arguments)
+}
+module.exports.polyfill = function() {
+  root.requestAnimationFrame = raf
+  root.cancelAnimationFrame = caf
+}
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"performance-now":159}],162:[function(require,module,exports){
+var mouseChange = require('mouse-change')
+var mouseWheel = require('mouse-wheel')
+var identity = require('gl-mat4/identity')
+var perspective = require('gl-mat4/perspective')
+var lookAt = require('gl-mat4/lookAt')
+
+module.exports = createCamera
+
+function createCamera (regl, props_) {
+  var props = props_ || {}
+  var cameraState = {
+    view: identity(new Float32Array(16)),
+    projection: identity(new Float32Array(16)),
+    center: new Float32Array(props.center || 3),
+    theta: props.theta || 0,
+    phi: props.phi || 0,
+    distance: Math.log(props.distance || 10.0),
+    eye: new Float32Array(3),
+    up: new Float32Array(props.up || [0, 1, 0])
+  }
+
+  var right = new Float32Array([1, 0, 0])
+  var front = new Float32Array([0, 0, 1])
+
+  var minDistance = Math.log('minDistance' in props ? props.minDistance : 0.1)
+  var maxDistance = Math.log('maxDistance' in props ? props.maxDistance : 1000)
+
+  var dtheta = 0
+  var dphi = 0
+  var ddistance = 0
+
+  var prevX = 0
+  var prevY = 0
+  mouseChange(function (buttons, x, y) {
+    if (buttons & 1) {
+      var dx = (x - prevX) / window.innerWidth
+      var dy = (y - prevY) / window.innerHeight
+      var w = Math.max(cameraState.distance, 0.5)
+
+      dtheta += w * dx
+      dphi += w * dy
+    }
+    prevX = x
+    prevY = y
+  })
+
+  mouseWheel(function (dx, dy) {
+    ddistance += dy / window.innerHeight
+  })
+
+  function damp (x) {
+    var xd = x * 0.9
+    if (xd < 0.1) {
+      return 0
+    }
+    return xd
+  }
+
+  function clamp (x, lo, hi) {
+    return Math.min(Math.max(x, lo), hi)
+  }
+
+  function updateCamera () {
+    var center = cameraState.center
+    var eye = cameraState.eye
+    var up = cameraState.up
+
+    cameraState.theta += dtheta
+    cameraState.phi = clamp(
+      cameraState.phi + dphi,
+      -Math.PI / 2.0,
+      Math.PI / 2.0)
+    cameraState.distance = clamp(
+      cameraState.distance + ddistance,
+      minDistance,
+      maxDistance)
+
+    dtheta = damp(dtheta)
+    dphi = damp(dphi)
+    ddistance = damp(ddistance)
+
+    var theta = cameraState.theta
+    var phi = cameraState.phi
+    var r = Math.exp(cameraState.distance)
+
+    var vf = r * Math.sin(theta) * Math.cos(phi)
+    var vr = r * Math.cos(theta) * Math.cos(phi)
+    var vu = r * Math.sin(phi)
+
+    for (var i = 0; i < 3; ++i) {
+      eye[i] = center[i] + vf * front[i] + vr * right[i] + vu * up[i]
+    }
+
+    lookAt(cameraState.view, eye, center, up)
+  }
+
+  var injectContext = regl({
+    context: Object.assign({}, cameraState, {
+      projection: function ({viewportWidth, viewportHeight}) {
+        return perspective(cameraState.projection,
+          Math.PI / 4.0,
+          viewportWidth / viewportHeight,
+          0.01,
+          1000.0)
+      }
+    }),
+    uniforms: Object.keys(cameraState).reduce(function (uniforms, name) {
+      uniforms[name] = regl.context(name)
+      return uniforms
+    }, {})
+  })
+
+  function setupCamera (block) {
+    updateCamera()
+    injectContext(block)
+  }
+
+  Object.keys(cameraState).forEach(function (name) {
+    setupCamera[name] = cameraState[name]
+  })
+
+  return setupCamera
+}
+
+},{"gl-mat4/identity":13,"gl-mat4/lookAt":16,"gl-mat4/perspective":19,"mouse-change":155,"mouse-wheel":157}],163:[function(require,module,exports){
 var GL_FLOAT = 5126
 
 function AttributeRecord () {
@@ -37,7 +5427,7 @@ module.exports = function wrapAttributeState (
   }
 }
 
-},{}],2:[function(require,module,exports){
+},{}],164:[function(require,module,exports){
 var check = require('./util/check')
 var isTypedArray = require('./util/is-typed-array')
 var isNDArrayLike = require('./util/is-ndarray')
@@ -446,7 +5836,7 @@ module.exports = function wrapBufferState (gl, stats, config) {
   }
 }
 
-},{"./constants/arraytypes.json":3,"./constants/dtypes.json":4,"./constants/usage.json":6,"./util/check":20,"./util/is-ndarray":25,"./util/is-typed-array":26,"./util/pool":28,"./util/values":31}],3:[function(require,module,exports){
+},{"./constants/arraytypes.json":165,"./constants/dtypes.json":166,"./constants/usage.json":168,"./util/check":182,"./util/is-ndarray":187,"./util/is-typed-array":188,"./util/pool":190,"./util/values":193}],165:[function(require,module,exports){
 module.exports={
   "[object Int8Array]": 5120
 , "[object Int16Array]": 5122
@@ -460,7 +5850,7 @@ module.exports={
 , "[object ArrayBuffer]": 5121
 }
 
-},{}],4:[function(require,module,exports){
+},{}],166:[function(require,module,exports){
 module.exports={
   "int8": 5120
 , "int16": 5122
@@ -472,7 +5862,7 @@ module.exports={
 , "float32": 5126
 }
 
-},{}],5:[function(require,module,exports){
+},{}],167:[function(require,module,exports){
 module.exports={
   "points": 0,
   "point": 0,
@@ -486,14 +5876,14 @@ module.exports={
   "triangle fan": 6
 }
 
-},{}],6:[function(require,module,exports){
+},{}],168:[function(require,module,exports){
 module.exports={
   "static": 35044,
   "dynamic": 35048,
   "stream": 35040
 }
 
-},{}],7:[function(require,module,exports){
+},{}],169:[function(require,module,exports){
 var check = require('./util/check')
 var createEnvironment = require('./util/codegen')
 var loop = require('./util/loop')
@@ -3877,7 +9267,7 @@ module.exports = function reglCore (
   }
 }
 
-},{"./constants/dtypes.json":4,"./constants/primitives.json":5,"./dynamic":8,"./util/check":20,"./util/codegen":22,"./util/is-array-like":24,"./util/is-ndarray":25,"./util/is-typed-array":26,"./util/loop":27}],8:[function(require,module,exports){
+},{"./constants/dtypes.json":166,"./constants/primitives.json":167,"./dynamic":170,"./util/check":182,"./util/codegen":184,"./util/is-array-like":186,"./util/is-ndarray":187,"./util/is-typed-array":188,"./util/loop":189}],170:[function(require,module,exports){
 var VARIABLE_COUNTER = 0
 
 var DYN_FUNC = 0
@@ -3955,7 +9345,7 @@ module.exports = {
   accessor: toAccessorString
 }
 
-},{}],9:[function(require,module,exports){
+},{}],171:[function(require,module,exports){
 var check = require('./util/check')
 var isTypedArray = require('./util/is-typed-array')
 var isNDArrayLike = require('./util/is-ndarray')
@@ -4239,7 +9629,7 @@ module.exports = function wrapElementsState (gl, extensions, bufferState, stats)
   }
 }
 
-},{"./constants/primitives.json":5,"./constants/usage.json":6,"./util/check":20,"./util/is-ndarray":25,"./util/is-typed-array":26,"./util/values":31}],10:[function(require,module,exports){
+},{"./constants/primitives.json":167,"./constants/usage.json":168,"./util/check":182,"./util/is-ndarray":187,"./util/is-typed-array":188,"./util/values":193}],172:[function(require,module,exports){
 var check = require('./util/check')
 
 module.exports = function createExtensionCache (gl, config) {
@@ -4278,7 +9668,7 @@ module.exports = function createExtensionCache (gl, config) {
   }
 }
 
-},{"./util/check":20}],11:[function(require,module,exports){
+},{"./util/check":182}],173:[function(require,module,exports){
 var check = require('./util/check')
 var values = require('./util/values')
 var extend = require('./util/extend')
@@ -5168,7 +10558,7 @@ module.exports = function wrapFBOState (
   })
 }
 
-},{"./util/check":20,"./util/extend":23,"./util/values":31}],12:[function(require,module,exports){
+},{"./util/check":182,"./util/extend":185,"./util/values":193}],174:[function(require,module,exports){
 var GL_SUBPIXEL_BITS = 0x0D50
 var GL_RED_BITS = 0x0D52
 var GL_GREEN_BITS = 0x0D53
@@ -5262,7 +10652,7 @@ module.exports = function (gl, extensions) {
   }
 }
 
-},{}],13:[function(require,module,exports){
+},{}],175:[function(require,module,exports){
 var check = require('./util/check')
 var isTypedArray = require('./util/is-typed-array')
 
@@ -5376,7 +10766,7 @@ module.exports = function wrapReadPixels (
   return readPixels
 }
 
-},{"./util/check":20,"./util/is-typed-array":26}],14:[function(require,module,exports){
+},{"./util/check":182,"./util/is-typed-array":188}],176:[function(require,module,exports){
 var check = require('./util/check')
 var values = require('./util/values')
 
@@ -5625,7 +11015,7 @@ module.exports = function (gl, extensions, limits, stats, config) {
   }
 }
 
-},{"./util/check":20,"./util/values":31}],15:[function(require,module,exports){
+},{"./util/check":182,"./util/values":193}],177:[function(require,module,exports){
 var check = require('./util/check')
 var values = require('./util/values')
 
@@ -5846,7 +11236,7 @@ module.exports = function wrapShaderState (gl, stringStore, stats, config) {
   }
 }
 
-},{"./util/check":20,"./util/values":31}],16:[function(require,module,exports){
+},{"./util/check":182,"./util/values":193}],178:[function(require,module,exports){
 
 module.exports = function stats () {
   return {
@@ -5862,7 +11252,7 @@ module.exports = function stats () {
   }
 }
 
-},{}],17:[function(require,module,exports){
+},{}],179:[function(require,module,exports){
 module.exports = function createStringStore () {
   var stringIds = {'': 0}
   var stringValues = ['']
@@ -5883,7 +11273,7 @@ module.exports = function createStringStore () {
   }
 }
 
-},{}],18:[function(require,module,exports){
+},{}],180:[function(require,module,exports){
 var check = require('./util/check')
 var extend = require('./util/extend')
 var values = require('./util/values')
@@ -7529,7 +12919,7 @@ module.exports = function createTextureSet (
   }
 }
 
-},{"./constants/arraytypes.json":3,"./util/check":20,"./util/extend":23,"./util/is-array-like":24,"./util/is-ndarray":25,"./util/is-typed-array":26,"./util/pool":28,"./util/to-half-float":30,"./util/values":31}],19:[function(require,module,exports){
+},{"./constants/arraytypes.json":165,"./util/check":182,"./util/extend":185,"./util/is-array-like":186,"./util/is-ndarray":187,"./util/is-typed-array":188,"./util/pool":190,"./util/to-half-float":192,"./util/values":193}],181:[function(require,module,exports){
 var GL_QUERY_RESULT_EXT = 0x8866
 var GL_QUERY_RESULT_AVAILABLE_EXT = 0x8867
 var GL_TIME_ELAPSED_EXT = 0x88BF
@@ -7669,7 +13059,7 @@ module.exports = function (gl, extensions) {
   }
 }
 
-},{}],20:[function(require,module,exports){
+},{}],182:[function(require,module,exports){
 // Error checking and parameter validation.
 //
 // Statements for the form `check.someProcedure(...)` get removed by
@@ -8309,14 +13699,14 @@ module.exports = extend(check, {
   textureCube: checkTextureCube
 })
 
-},{"./extend":23,"./is-typed-array":26}],21:[function(require,module,exports){
+},{"./extend":185,"./is-typed-array":188}],183:[function(require,module,exports){
 /* globals performance */
 module.exports =
   (typeof performance !== 'undefined' && performance.now)
   ? function () { return performance.now() }
   : function () { return +(new Date()) }
 
-},{}],22:[function(require,module,exports){
+},{}],184:[function(require,module,exports){
 var extend = require('./extend')
 
 function slice (x) {
@@ -8500,7 +13890,7 @@ module.exports = function createEnvironment () {
   }
 }
 
-},{"./extend":23}],23:[function(require,module,exports){
+},{"./extend":185}],185:[function(require,module,exports){
 module.exports = function (base, opts) {
   var keys = Object.keys(opts)
   for (var i = 0; i < keys.length; ++i) {
@@ -8509,13 +13899,13 @@ module.exports = function (base, opts) {
   return base
 }
 
-},{}],24:[function(require,module,exports){
+},{}],186:[function(require,module,exports){
 var isTypedArray = require('./is-typed-array')
 module.exports = function isArrayLike (s) {
   return Array.isArray(s) || isTypedArray(s)
 }
 
-},{"./is-typed-array":26}],25:[function(require,module,exports){
+},{"./is-typed-array":188}],187:[function(require,module,exports){
 var isTypedArray = require('./is-typed-array')
 
 module.exports = function isNDArrayLike (obj) {
@@ -8530,13 +13920,13 @@ module.exports = function isNDArrayLike (obj) {
       isTypedArray(obj.data)))
 }
 
-},{"./is-typed-array":26}],26:[function(require,module,exports){
+},{"./is-typed-array":188}],188:[function(require,module,exports){
 var dtypes = require('../constants/arraytypes.json')
 module.exports = function (x) {
   return Object.prototype.toString.call(x) in dtypes
 }
 
-},{"../constants/arraytypes.json":3}],27:[function(require,module,exports){
+},{"../constants/arraytypes.json":165}],189:[function(require,module,exports){
 module.exports = function loop (n, f) {
   var result = Array(n)
   for (var i = 0; i < n; ++i) {
@@ -8545,7 +13935,7 @@ module.exports = function loop (n, f) {
   return result
 }
 
-},{}],28:[function(require,module,exports){
+},{}],190:[function(require,module,exports){
 var loop = require('./loop')
 
 var GL_BYTE = 5120
@@ -8639,7 +14029,7 @@ module.exports = {
   freeType: freeType
 }
 
-},{"./loop":27}],29:[function(require,module,exports){
+},{"./loop":189}],191:[function(require,module,exports){
 /* globals requestAnimationFrame, cancelAnimationFrame */
 if (typeof requestAnimationFrame === 'function' &&
     typeof cancelAnimationFrame === 'function') {
@@ -8656,7 +14046,7 @@ if (typeof requestAnimationFrame === 'function' &&
   }
 }
 
-},{}],30:[function(require,module,exports){
+},{}],192:[function(require,module,exports){
 var pool = require('./pool')
 
 var FLOAT = new Float32Array(1)
@@ -8702,12 +14092,12 @@ module.exports = function convertToHalfFloat (array) {
   return ushorts
 }
 
-},{"./pool":28}],31:[function(require,module,exports){
+},{"./pool":190}],193:[function(require,module,exports){
 module.exports = function (obj) {
   return Object.keys(obj).map(function (key) { return obj[key] })
 }
 
-},{}],32:[function(require,module,exports){
+},{}],194:[function(require,module,exports){
 // Context and canvas creation helper functions
 var check = require('./util/check')
 var extend = require('./util/extend')
@@ -8913,7 +14303,7 @@ module.exports = function parseArgs (args_) {
   }
 }
 
-},{"./util/check":20,"./util/extend":23}],33:[function(require,module,exports){
+},{"./util/check":182,"./util/extend":185}],195:[function(require,module,exports){
 var check = require('./lib/util/check')
 var extend = require('./lib/util/extend')
 var dynamic = require('./lib/dynamic')
@@ -9491,14 +14881,2640 @@ module.exports = function wrapREGL (args) {
   return regl
 }
 
-},{"./lib/attribute":1,"./lib/buffer":2,"./lib/core":7,"./lib/dynamic":8,"./lib/elements":9,"./lib/extension":10,"./lib/framebuffer":11,"./lib/limits":12,"./lib/read":13,"./lib/renderbuffer":14,"./lib/shader":15,"./lib/stats":16,"./lib/strings":17,"./lib/texture":18,"./lib/timer":19,"./lib/util/check":20,"./lib/util/clock":21,"./lib/util/extend":23,"./lib/util/raf":29,"./lib/webgl":32}],34:[function(require,module,exports){
+},{"./lib/attribute":163,"./lib/buffer":164,"./lib/core":169,"./lib/dynamic":170,"./lib/elements":171,"./lib/extension":172,"./lib/framebuffer":173,"./lib/limits":174,"./lib/read":175,"./lib/renderbuffer":176,"./lib/shader":177,"./lib/stats":178,"./lib/strings":179,"./lib/texture":180,"./lib/timer":181,"./lib/util/check":182,"./lib/util/clock":183,"./lib/util/extend":185,"./lib/util/raf":191,"./lib/webgl":194}],196:[function(require,module,exports){
+/* global XMLHttpRequest */
+var configParameters = [
+  'manifest',
+  'onDone',
+  'onProgress',
+  'onError'
+]
+
+var manifestParameters = [
+  'type',
+  'src',
+  'stream',
+  'credentials',
+  'parser'
+]
+
+var parserParameters = [
+  'onData',
+  'onDone'
+]
+
+var STATE_ERROR = -1
+var STATE_DATA = 0
+var STATE_COMPLETE = 1
+
+function raise (message) {
+  throw new Error('resl: ' + message)
+}
+
+function checkType (object, parameters, name) {
+  Object.keys(object).forEach(function (param) {
+    if (parameters.indexOf(param) < 0) {
+      raise('invalid parameter "' + param + '" in ' + name)
+    }
+  })
+}
+
+function Loader (name, cancel) {
+  this.state = STATE_DATA
+  this.ready = false
+  this.progress = 0
+  this.name = name
+  this.cancel = cancel
+}
+
+module.exports = function resl (config) {
+  if (typeof config !== 'object' || !config) {
+    raise('invalid or missing configuration')
+  }
+
+  checkType(config, configParameters, 'config')
+
+  var manifest = config.manifest
+  if (typeof manifest !== 'object' || !manifest) {
+    raise('missing manifest')
+  }
+
+  function getFunction (name, dflt) {
+    if (name in config) {
+      var func = config[name]
+      if (typeof func !== 'function') {
+        raise('invalid callback "' + name + '"')
+      }
+      return func
+    }
+    return null
+  }
+
+  var onDone = getFunction('onDone')
+  if (!onDone) {
+    raise('missing onDone() callback')
+  }
+
+  var onProgress = getFunction('onProgress')
+  var onError = getFunction('onError')
+
+  var assets = {}
+
+  var state = STATE_DATA
+
+  function loadXHR (request) {
+    var name = request.name
+    var stream = request.stream
+    var binary = request.type === 'binary'
+    var parser = request.parser
+
+    var xhr = new XMLHttpRequest()
+    var asset = null
+
+    var loader = new Loader(name, cancel)
+
+    if (stream) {
+      xhr.onreadystatechange = onReadyStateChange
+    } else {
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          onReadyStateChange()
+        }
+      }
+    }
+
+    if (binary) {
+      xhr.responseType = 'arraybuffer'
+    }
+
+    function onReadyStateChange () {
+      if (xhr.readyState < 2 ||
+          loader.state === STATE_COMPLETE ||
+          loader.state === STATE_ERROR) {
+        return
+      }
+      if (xhr.status !== 200) {
+        return abort('error loading resource "' + request.name + '"')
+      }
+      if (xhr.readyState > 2 && loader.state === STATE_DATA) {
+        var response
+        if (request.type === 'binary') {
+          response = xhr.response
+        } else {
+          response = xhr.responseText
+        }
+        if (parser.data) {
+          try {
+            asset = parser.data(response)
+          } catch (e) {
+            return abort(e)
+          }
+        } else {
+          asset = response
+        }
+      }
+      if (xhr.readyState > 3 && loader.state === STATE_DATA) {
+        if (parser.done) {
+          try {
+            asset = parser.done()
+          } catch (e) {
+            return abort(e)
+          }
+        }
+        loader.state = STATE_COMPLETE
+      }
+      assets[name] = asset
+      loader.progress = 0.75 * loader.progress + 0.25
+      loader.ready =
+        (request.stream && !!asset) ||
+        loader.state === STATE_COMPLETE
+      notifyProgress()
+    }
+
+    function cancel () {
+      if (loader.state === STATE_COMPLETE || loader.state === STATE_ERROR) {
+        return
+      }
+      xhr.onreadystatechange = null
+      xhr.abort()
+      loader.state = STATE_ERROR
+    }
+
+    // set up request
+    if (request.credentials) {
+      xhr.withCredentials = true
+    }
+    xhr.open('GET', request.src, true)
+    xhr.send()
+
+    return loader
+  }
+
+  function loadElement (request, element) {
+    var name = request.name
+    var parser = request.parser
+
+    var loader = new Loader(name, cancel)
+    var asset = element
+
+    function handleProgress () {
+      if (loader.state === STATE_DATA) {
+        if (parser.data) {
+          try {
+            asset = parser.data(element)
+          } catch (e) {
+            return abort(e)
+          }
+        } else {
+          asset = element
+        }
+      }
+    }
+
+    function onProgress (e) {
+      handleProgress()
+      assets[name] = asset
+      if (e.lengthComputable) {
+        loader.progress = Math.max(loader.progress, e.loaded / e.total)
+      } else {
+        loader.progress = 0.75 * loader.progress + 0.25
+      }
+      notifyProgress(name)
+    }
+
+    function onComplete () {
+      handleProgress()
+      if (loader.state === STATE_DATA) {
+        if (parser.done) {
+          try {
+            asset = parser.done()
+          } catch (e) {
+            return abort(e)
+          }
+        }
+        loader.state = STATE_COMPLETE
+      }
+      loader.progress = 1
+      loader.ready = true
+      assets[name] = asset
+      removeListeners()
+      notifyProgress('finish ' + name)
+    }
+
+    function onError () {
+      abort('error loading asset "' + name + '"')
+    }
+
+    if (request.stream) {
+      element.addEventListener('progress', onProgress)
+    }
+    if (request.type === 'image') {
+      element.addEventListener('load', onComplete)
+    } else {
+      var canPlay = false
+      var loadedMetaData = false
+      element.addEventListener('loadedmetadata', function () {
+        loadedMetaData = true
+        if (canPlay) {
+          onComplete()
+        }
+      })
+      element.addEventListener('canplay', function () {
+        canPlay = true
+        if (loadedMetaData) {
+          onComplete()
+        }
+      })
+    }
+    element.addEventListener('error', onError)
+
+    function removeListeners () {
+      if (request.stream) {
+        element.removeEventListener('progress', onProgress)
+      }
+      if (request.type === 'image') {
+        element.addEventListener('load', onComplete)
+      } else {
+        element.addEventListener('canplay', onComplete)
+      }
+      element.removeEventListener('error', onError)
+    }
+
+    function cancel () {
+      if (loader.state === STATE_COMPLETE || loader.state === STATE_ERROR) {
+        return
+      }
+      loader.state = STATE_ERROR
+      removeListeners()
+      element.src = ''
+    }
+
+    // set up request
+    if (request.credentials) {
+      element.crossOrigin = 'use-credentials'
+    } else {
+      element.crossOrigin = 'anonymous'
+    }
+    element.src = request.src
+
+    return loader
+  }
+
+  var loaders = {
+    text: loadXHR,
+    binary: function (request) {
+      // TODO use fetch API for streaming if supported
+      return loadXHR(request)
+    },
+    image: function (request) {
+      return loadElement(request, document.createElement('img'))
+    },
+    video: function (request) {
+      return loadElement(request, document.createElement('video'))
+    },
+    audio: function (request) {
+      return loadElement(request, document.createElement('audio'))
+    }
+  }
+
+  // First we parse all objects in order to verify that all type information
+  // is correct
+  var pending = Object.keys(manifest).map(function (name) {
+    var request = manifest[name]
+    if (typeof request === 'string') {
+      request = {
+        src: request
+      }
+    } else if (typeof request !== 'object' || !request) {
+      raise('invalid asset definition "' + name + '"')
+    }
+
+    checkType(request, manifestParameters, 'asset "' + name + '"')
+
+    function getParameter (prop, accepted, init) {
+      var value = init
+      if (prop in request) {
+        value = request[prop]
+      }
+      if (accepted.indexOf(value) < 0) {
+        raise('invalid ' + prop + ' "' + value + '" for asset "' + name + '", possible values: ' + accepted)
+      }
+      return value
+    }
+
+    function getString (prop, required, init) {
+      var value = init
+      if (prop in request) {
+        value = request[prop]
+      } else if (required) {
+        raise('missing ' + prop + ' for asset "' + name + '"')
+      }
+      if (typeof value !== 'string') {
+        raise('invalid ' + prop + ' for asset "' + name + '", must be a string')
+      }
+      return value
+    }
+
+    function getParseFunc (name, dflt) {
+      if (name in request.parser) {
+        var result = request.parser[name]
+        if (typeof result !== 'function') {
+          raise('invalid parser callback ' + name + ' for asset "' + name + '"')
+        }
+        return result
+      } else {
+        return dflt
+      }
+    }
+
+    var parser = {}
+    if ('parser' in request) {
+      if (typeof request.parser === 'function') {
+        parser = {
+          data: request.parser
+        }
+      } else if (typeof request.parser === 'object' && request.parser) {
+        checkType(parser, parserParameters, 'parser for asset "' + name + '"')
+        if (!('onData' in parser)) {
+          raise('missing onData callback for parser in asset "' + name + '"')
+        }
+        parser = {
+          data: getParseFunc('onData'),
+          done: getParseFunc('onDone')
+        }
+      } else {
+        raise('invalid parser for asset "' + name + '"')
+      }
+    }
+
+    return {
+      name: name,
+      type: getParameter('type', Object.keys(loaders), 'text'),
+      stream: !!request.stream,
+      credentials: !!request.credentials,
+      src: getString('src', true, ''),
+      parser: parser
+    }
+  }).map(function (request) {
+    return (loaders[request.type])(request)
+  })
+
+  function abort (message) {
+    if (state === STATE_ERROR || state === STATE_COMPLETE) {
+      return
+    }
+    state = STATE_ERROR
+    pending.forEach(function (loader) {
+      loader.cancel()
+    })
+    if (onError) {
+      if (typeof message === 'string') {
+        onError(new Error('resl: ' + message))
+      } else {
+        onError(message)
+      }
+    } else {
+      console.error('resl error:', message)
+    }
+  }
+
+  function notifyProgress (message) {
+    if (state === STATE_ERROR || state === STATE_COMPLETE) {
+      return
+    }
+
+    var progress = 0
+    var numReady = 0
+    pending.forEach(function (loader) {
+      if (loader.ready) {
+        numReady += 1
+      }
+      progress += loader.progress
+    })
+
+    if (numReady === pending.length) {
+      state = STATE_COMPLETE
+      onDone(assets)
+    } else {
+      if (onProgress) {
+        onProgress(progress / pending.length, message)
+      }
+    }
+  }
+
+  if (pending.length === 0) {
+    setTimeout(function () {
+      notifyProgress('done')
+    }, 1)
+  }
+}
+
+},{}],197:[function(require,module,exports){
+'use strict'
+
+var parseUnit = require('parse-unit')
+
+module.exports = toPX
+
+var PIXELS_PER_INCH = 96
+
+function getPropertyInPX(element, prop) {
+  var parts = parseUnit(getComputedStyle(element).getPropertyValue(prop))
+  return parts[0] * toPX(parts[1], element)
+}
+
+//This brutal hack is needed
+function getSizeBrutal(unit, element) {
+  var testDIV = document.createElement('div')
+  testDIV.style['font-size'] = '128' + unit
+  element.appendChild(testDIV)
+  var size = getPropertyInPX(testDIV, 'font-size') / 128
+  element.removeChild(testDIV)
+  return size
+}
+
+function toPX(str, element) {
+  element = element || document.body
+  str = (str || 'px').trim().toLowerCase()
+  if(element === window || element === document) {
+    element = document.body 
+  }
+  switch(str) {
+    case '%':  //Ambiguous, not sure if we should use width or height
+      return element.clientHeight / 100.0
+    case 'ch':
+    case 'ex':
+      return getSizeBrutal(str, element)
+    case 'em':
+      return getPropertyInPX(element, 'font-size')
+    case 'rem':
+      return getPropertyInPX(document.body, 'font-size')
+    case 'vw':
+      return window.innerWidth/100
+    case 'vh':
+      return window.innerHeight/100
+    case 'vmin':
+      return Math.min(window.innerWidth, window.innerHeight) / 100
+    case 'vmax':
+      return Math.max(window.innerWidth, window.innerHeight) / 100
+    case 'in':
+      return PIXELS_PER_INCH
+    case 'cm':
+      return PIXELS_PER_INCH / 2.54
+    case 'mm':
+      return PIXELS_PER_INCH / 25.4
+    case 'pt':
+      return PIXELS_PER_INCH / 72
+    case 'pc':
+      return PIXELS_PER_INCH / 6
+  }
+  return 1
+}
+},{"parse-unit":158}],198:[function(require,module,exports){
 'use strict';
 
 /**
  * Module dependencies.
  */
 
-var reql = require('regl');
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Camera = Camera;
 
-},{"regl":33}]},{},[34])(34)
+var _commands = require('./commands');
+
+/**
+ * Creates a CameraCommand function instance.
+ *
+ * @param {Object} ctx
+ * @param {(Object)?} opts
+ * @return {Function}
+ */
+
+function Camera(ctx) {
+  var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+  return new _commands.CameraCommand(ctx, opts);
+}
+
+},{"./commands":202}],199:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.CameraCommand = exports.CAMERA_ORIENTATION_ORIGIN = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _reglCamera = require('regl-camera');
+
+var _reglCamera2 = _interopRequireDefault(_reglCamera);
+
+var _object = require('./object');
+
+var _utils = require('../utils');
+
+var _vector = require('../vector');
+
+var _defined = require('defined');
+
+var _defined2 = _interopRequireDefault(_defined);
+
+var _glMat = require('gl-mat4');
+
+var _glMat2 = _interopRequireDefault(_glMat);
+
+var _glQuat = require('gl-quat');
+
+var _glQuat2 = _interopRequireDefault(_glQuat);
+
+var _glVec = require('gl-vec3');
+
+var _glVec2 = _interopRequireDefault(_glVec);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ * Scratch matrix
+ *
+ * @private
+ * @const
+ * @type {mat4}
+ */
+
+var scratch = _glMat2.default.identity([]);
+
+/**
+ * Euler angle of the origin camera orienation
+ * express in radians.
+ *
+ * @public
+ * @const
+ * @type {Vector}
+ */
+
+var CAMERA_ORIENTATION_ORIGIN = exports.CAMERA_ORIENTATION_ORIGIN = new _vector.Vector(90 * Math.PI / 180, 0, 0);
+
+/**
+ * CameraCommand class.
+ *
+ * @public
+ * @class CameraCommand
+ * @extends Command
+ */
+
+var CameraCommand = exports.CameraCommand = function (_ObjectCommand) {
+  _inherits(CameraCommand, _ObjectCommand);
+
+  /**
+   * Camera class constructor.
+   *
+   * @param {Context} ctx
+   * @param {Object} opts
+   */
+
+  function CameraCommand(ctx) {
+    var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+    _classCallCheck(this, CameraCommand);
+
+    var worldUp = new _vector.Vector(0, 1, 0);
+    var target = new _vector.Vector(0, 0, 0);
+    var front = new _vector.Vector(0, 0, 1);
+    var right = new _vector.Vector(1, 0, 0);
+    var eye = new _vector.Vector(0, 0, 0);
+    var up = new _vector.Vector(0, 0, 0);
+
+    var _projection = _glMat2.default.identity([]);
+    var _view = _glMat2.default.identity([]);
+
+    var state = {
+      viewportHeight: (0, _defined2.default)(opts.viewportHeight, 1),
+      viewportWidth: (0, _defined2.default)(opts.viewportWidth, 1),
+      near: (0, _defined2.default)(opts.near, 0.01),
+      far: (0, _defined2.default)(opts.far, 1000.0),
+      fov: (0, _defined2.default)(opts.fov, opts.fieldOfView, Math.PI / 4.0)
+    };
+
+    var context = {
+      projection: function projection(_ref) {
+        var viewportWidth = _ref.viewportWidth;
+        var viewportHeight = _ref.viewportHeight;
+
+        update({ viewportWidth: viewportWidth, viewportHeight: viewportHeight });
+        return _projection;
+      },
+
+      view: function view(_ref2) {
+        var viewportWidth = _ref2.viewportWidth;
+        var viewportHeight = _ref2.viewportHeight;
+
+        update({ viewportWidth: viewportWidth, viewportHeight: viewportHeight });
+        return _view;
+      }
+    };
+
+    var uniforms = _extends({}, context);
+    var _render = ctx.regl({ context: context, uniforms: uniforms });
+
+    var _this = _possibleConstructorReturn(this, (CameraCommand.__proto__ || Object.getPrototypeOf(CameraCommand)).call(this, ctx, _extends({}, opts, { render: function render(_) {
+        for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+          args[_key - 1] = arguments[_key];
+        }
+
+        return _render.apply(undefined, args);
+      } })));
+
+    (0, _utils.define)(_this, 'fov', {
+      get: function get() {
+        return state.fov;
+      },
+      set: function set(fov) {
+        return update({ fov: fov });
+      }
+    });
+
+    (0, _utils.define)(_this, 'far', {
+      get: function get() {
+        return state.far;
+      },
+      set: function set(far) {
+        return update({ far: far });
+      }
+    });
+
+    (0, _utils.define)(_this, 'near', {
+      get: function get() {
+        return state.near;
+      },
+      set: function set(near) {
+        return update({ near: near });
+      }
+    });
+
+    (0, _utils.define)(_this, 'projection', { get: function get() {
+        return _projection;
+      } });
+    (0, _utils.define)(_this, 'view', { get: function get() {
+        return _view;
+      } });
+    (0, _utils.define)(_this, 'lookAt', {
+      value: function value(vector) {
+        target.copy(vector);
+        return this;
+      }
+    });
+
+    var update = function update(updates) {
+      var sync = function sync(prop) {
+        if (prop in updates) {
+          state[prop] = updates[prop];
+        }
+      };
+
+      sync('fov');
+      sync('far');
+      sync('near');
+      sync('viewportWidth');
+      sync('viewportHeight');
+
+      var orienation = CAMERA_ORIENTATION_ORIGIN;
+      var position = _this.position;
+      var aspect = state.viewportWidth / state.viewportHeight;
+      var vector = new _vector.Vector(0, 0, 0);
+      var near = state.near;
+      var far = state.far;
+      var fov = state.fov;
+
+      _glVec2.default.set(front, Math.cos(orienation.x) * Math.cos(orienation.y), Math.sin(orienation.y), Math.sin(orienation.x) * Math.sin(orienation.y));
+
+      _glVec2.default.normalize(front, front);
+      _glVec2.default.copy(right, _glVec2.default.normalize([], _glVec2.default.cross([], front, worldUp)));
+      _glVec2.default.copy(up, _glVec2.default.normalize([], _glVec2.default.cross([], right, front)));
+
+      _glMat2.default.perspective(_projection, fov, aspect, near, far);
+
+      if (ctx.previous && ctx.previous.id != _this.id) {
+        _glMat2.default.copy(_this.transform, _glMat2.default.multiply([], ctx.previous.transform, _view));
+      } else {
+        _glMat2.default.copy(_this.transform, _view);
+      }
+
+      _glMat2.default.copy(_view, _this.transform);
+      _glMat2.default.lookAt(_view, position, target, up);
+      _glMat2.default.multiply(_view, _view, _glMat2.default.fromQuat([], _this.rotation));
+
+      _glMat2.default.invert(scratch, _view);
+      _glVec2.default.set(eye, scratch[12], scratch[13], scratch[14]);
+      return _this;
+    };
+    return _this;
+  }
+
+  return CameraCommand;
+}(_object.ObjectCommand);
+
+},{"../utils":220,"../vector":221,"./object":204,"defined":2,"gl-mat4":14,"gl-quat":39,"gl-vec3":96,"regl-camera":162}],200:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+void 0;
+
+/**
+ * No-op to return this only
+ */
+
+var noop = function noop() {
+  return undefined;
+};
+
+/**
+ * Symbol for an internal run method.
+ *
+ * @public
+ * @const
+ * @symbol nun
+ */
+
+var $run = exports.$run = Symbol('run');
+
+/**
+ * Symbol for an internal reference
+ *
+ * @public
+ * @const
+ * @symbol ref
+ */
+
+var $ref = exports.$ref = Symbol('ref');
+
+/**
+ * Symbol for an internal context
+ *
+ * @public
+ * @const
+ * @symbol ctx
+ */
+
+var $ctx = exports.$ctx = Symbol('ctx');
+
+/**
+ * Encode a function for execution within a
+ * Command instance context.
+ *
+ * @public
+ * @param {Function} fn
+ * @return {String}
+ */
+
+var encode = exports.encode = function encode(fn) {
+  return '(' + String(fn) + ')';
+};
+
+/**
+ * Command class.
+ *
+ * @public
+ */
+
+var Command = exports.Command = function (_Function) {
+  _inherits(Command, _Function);
+
+  _createClass(Command, null, [{
+    key: 'codegen',
+
+
+    /**
+     * Generates code executed in an
+     * isolated context.
+     *
+     * @static
+     * @param {Function} fn
+     * @return {String}
+     */
+
+    value: function codegen(fn) {
+      return '\n    var fn = ' + encode(fn) + ';\n    fn.apply(this, arguments);\n    return this;\n    ';
+    }
+
+    /**
+     * Command class constructor.
+     * Assigns a command runner and returns
+     * a command function.
+     *
+     * @constructor
+     * @param {Function} run
+     */
+
+  }]);
+
+  function Command(run) {
+    var _ret;
+
+    _classCallCheck(this, Command);
+
+    var _this = _possibleConstructorReturn(this, (Command.__proto__ || Object.getPrototypeOf(Command)).call(this, Command.codegen(commandRunnerWrap)));
+
+    run = 'function' == typeof run ? run : noop;
+    var state = _defineProperty({}, $run, run);
+    var ctx = _this[$ctx] = new CommandContext(_this, state);
+    var exec = function exec() {
+      for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      return _this.apply(undefined, [ctx, run].concat(args));
+    };
+    var self = _this;
+    return _ret = function _ret() {
+      for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        args[_key2] = arguments[_key2];
+      }
+
+      return exec.call.apply(exec, [self].concat(args));
+    }, _possibleConstructorReturn(_this, _ret);
+  }
+
+  return Command;
+}(Function);
+
+/**
+ * CommandContext class.
+ *
+ * @public
+ */
+
+var CommandContext = exports.CommandContext = function () {
+
+  /**
+   * CommandContext class constructor.
+   *
+   * @param {Command} cmd
+   * @param {(Object)?} state
+   */
+
+  function CommandContext(cmd, state) {
+    _classCallCheck(this, CommandContext);
+
+    this[$ref] = cmd;
+    Object.assign(this, state || {});
+  }
+
+  _createClass(CommandContext, [{
+    key: 'ref',
+    get: function get() {
+      return this[$ref];
+    }
+  }]);
+
+  return CommandContext;
+}();
+
+/**
+ * Command runner wrap that calls a
+ * commands internal run ($run) function.
+ *
+ * @private
+ * @param {CommandContext} ctx
+ * @param {Function} fn
+ * @param {...Mixed} args
+ * @return {Mixed}
+ */
+
+function commandRunnerWrap(ctx, run) {
+  if (this && 'function' == typeof run) {
+    for (var _len3 = arguments.length, args = Array(_len3 > 2 ? _len3 - 2 : 0), _key3 = 2; _key3 < _len3; _key3++) {
+      args[_key3 - 2] = arguments[_key3];
+    }
+
+    run.apply(run, [ctx].concat(args));
+  }
+  return this;
+}
+
+},{}],201:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.FrameCommand = undefined;
+
+var _command = require('./command');
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ * FrameCommand class.
+ *
+ * @public
+ */
+
+var FrameCommand = exports.FrameCommand = function (_Command) {
+  _inherits(FrameCommand, _Command);
+
+  /**
+   * FrameCommand class constructor.
+   *
+   * @param {Context} ctx
+   */
+
+  function FrameCommand(ctx) {
+    _classCallCheck(this, FrameCommand);
+
+    var _this = _possibleConstructorReturn(this, (FrameCommand.__proto__ || Object.getPrototypeOf(FrameCommand)).call(this, function (_, refresh) {
+      _this.ctx.regl.frame(function () {
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+          args[_key] = arguments[_key];
+        }
+
+        ctx.update(function () {
+          if ('function' == typeof refresh) {
+            refresh.apply(undefined, [ctx].concat(args));
+          }
+        });
+      });
+    }));
+
+    _this.ctx = ctx;
+    return _this;
+  }
+
+  return FrameCommand;
+}(_command.Command);
+
+},{"./command":200}],202:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module exports.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _command = require('./command');
+
+Object.defineProperty(exports, 'Command', {
+  enumerable: true,
+  get: function get() {
+    return _command.Command;
+  }
+});
+
+var _media = require('./media');
+
+Object.defineProperty(exports, 'MediaCommand', {
+  enumerable: true,
+  get: function get() {
+    return _media.MediaCommand;
+  }
+});
+
+var _frame = require('./frame');
+
+Object.defineProperty(exports, 'FrameCommand', {
+  enumerable: true,
+  get: function get() {
+    return _frame.FrameCommand;
+  }
+});
+
+var _photo = require('./photo');
+
+Object.defineProperty(exports, 'PhotoCommand', {
+  enumerable: true,
+  get: function get() {
+    return _photo.PhotoCommand;
+  }
+});
+
+var _video = require('./video');
+
+Object.defineProperty(exports, 'VideoCommand', {
+  enumerable: true,
+  get: function get() {
+    return _video.VideoCommand;
+  }
+});
+
+var _sphere = require('./sphere');
+
+Object.defineProperty(exports, 'SphereCommand', {
+  enumerable: true,
+  get: function get() {
+    return _sphere.SphereCommand;
+  }
+});
+
+var _camera = require('./camera');
+
+Object.defineProperty(exports, 'CameraCommand', {
+  enumerable: true,
+  get: function get() {
+    return _camera.CameraCommand;
+  }
+});
+
+var _object = require('./object');
+
+Object.defineProperty(exports, 'ObjectCommand', {
+  enumerable: true,
+  get: function get() {
+    return _object.ObjectCommand;
+  }
+});
+
+var _triangle = require('./triangle');
+
+Object.defineProperty(exports, 'TriangleCommand', {
+  enumerable: true,
+  get: function get() {
+    return _triangle.TriangleCommand;
+  }
+});
+
+},{"./camera":199,"./command":200,"./frame":201,"./media":203,"./object":204,"./photo":205,"./sphere":206,"./triangle":207,"./video":208}],203:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MediaCommand = undefined;
+
+var _command = require('./command');
+
+var _resl = require('resl');
+
+var _resl2 = _interopRequireDefault(_resl);
+
+var _raf = require('raf');
+
+var _raf2 = _interopRequireDefault(_raf);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ * No-op to return undefined
+ */
+
+var noop = function noop() {
+  return void 0;
+};
+
+/**
+ * MediaCommand class.
+ *
+ * @public
+ * @class MediaCommand
+ * @extends Command
+ */
+
+var MediaCommand = exports.MediaCommand = function (_Command) {
+  _inherits(MediaCommand, _Command);
+
+  /**
+   * MediaCommand class constructor that loads
+   * resources from a given manifest using resl
+   *
+   * @param {Object} ctx
+   * @param {Object} manifest
+   */
+
+  function MediaCommand(ctx, manifest) {
+    _classCallCheck(this, MediaCommand);
+
+    var hasProgress = false;
+    var isLoading = false;
+    var hasError = false;
+    var isDone = false;
+
+    var _this = _possibleConstructorReturn(this, (MediaCommand.__proto__ || Object.getPrototypeOf(MediaCommand)).call(this, function () {
+      _this.load();
+    }));
+
+    (0, _raf2.default)(function () {
+      return _this.load();
+    });
+
+    Object.defineProperty(_this, 'manifest', { get: function get() {
+        return manifest;
+      } });
+
+    _this.update = function (newManifest) {
+      Object.assign(manifest, newManifest);
+      return _this;
+    };
+
+    _this.load = function () {
+      if (isLoading || hasProgress || hasError || isDone) {
+        return false;
+      }
+
+      isLoading = true;
+      (0, _raf2.default)(function () {
+        return (0, _resl2.default)({
+          manifest: manifest,
+
+          onDone: function onDone() {
+            isDone = true;
+            void (_this.onloaded || noop).apply(undefined, arguments);
+          },
+
+          onError: function onError() {
+            hasError = true;
+            isDone = true;
+            void (_this.onerror || noop).apply(undefined, arguments);
+          },
+
+          onProgress: function onProgress() {
+            hasProgress = true;
+            isDone = false;
+            void (_this.onprogress || noop).apply(undefined, arguments);
+          }
+        });
+      });
+
+      return true;
+    };
+
+    _this.retry = function () {
+      _this.reset();
+      _this.laod();
+      return _this;
+    };
+
+    _this.reset = function () {
+      hasProgress = false;
+      isLoading = false;
+      hasError = false;
+      isDone = false;
+      return _this;
+    };
+    return _this;
+  }
+
+  return MediaCommand;
+}(_command.Command);
+
+},{"./command":200,"raf":161,"resl":196}],204:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.ObjectCommand = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _glslInjectDefines = require('glsl-inject-defines');
+
+var _glslInjectDefines2 = _interopRequireDefault(_glslInjectDefines);
+
+var _quaternion = require('../quaternion');
+
+var _command = require('./command');
+
+var _utils = require('../utils');
+
+var _vector = require('../vector');
+
+var _glslify = require('glslify');
+
+var _glslify2 = _interopRequireDefault(_glslify);
+
+var _glMat = require('gl-mat4');
+
+var _glMat2 = _interopRequireDefault(_glMat);
+
+var _glVec = require('gl-vec4');
+
+var _glVec2 = _interopRequireDefault(_glVec);
+
+var _glVec3 = require('gl-vec3');
+
+var _glVec4 = _interopRequireDefault(_glVec3);
+
+var _glQuat = require('gl-quat');
+
+var _glQuat2 = _interopRequireDefault(_glQuat);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var vert = '\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\n\nattribute vec3 position;\nattribute vec3 normal;\nattribute vec2 uv;\n\nvarying vec3 vposition;\nvarying vec3 vnormal;\nvarying vec2 vuv;\n\nvoid main() {\n  gl_Position = projection * view * model * vec4(position, 1.0);\n  vposition = position;\n  vnormal = normal;\n  vuv = uv;\n}\n';
+
+var frag = '\nprecision mediump float;\nuniform vec4 color;\nvarying vec2 vuv;\n\n#ifdef HAS_IMAGE\nuniform sampler2D image;\n#endif\n\nvoid main() {\n#ifdef HAS_IMAGE\n  gl_FragColor = vec4(texture2D(image, vuv).rgb, 1.0);\n#else\n  gl_FragColor = color;\n#endif\n}\n';
+
+/**
+ * Current object command counter.
+ *
+ * @type {Number}
+ */
+
+var OBJECT_COMMAND_COUNTER = 0;
+
+/**
+ * ObjectCommand class.
+ *
+ * @public
+ * @class ObjectCommand
+ * @extends Command
+ */
+
+var ObjectCommand = exports.ObjectCommand = function (_Command) {
+  _inherits(ObjectCommand, _Command);
+
+  _createClass(ObjectCommand, null, [{
+    key: 'id',
+
+
+    /**
+     * Returns the next object ID
+     *
+     * @public
+     * @static
+     * @return {Number}
+     */
+
+    value: function id() {
+      return OBJECT_COMMAND_COUNTER++;
+    }
+
+    /**
+     * ObjectCommand class constructor.
+     *
+     * @param {Context} ctx
+     * @param {Object} opts
+     */
+
+  }]);
+
+  function ObjectCommand(ctx, opts) {
+    _classCallCheck(this, ObjectCommand);
+
+    var _model = _glMat2.default.identity([]);
+    var defaults = _extends({}, opts.defaults);
+    var draw = opts.draw;
+
+    if (!draw) {
+      var geometry = opts.geometry || null;
+      var elements = geometry ? geometry.primitive.cells : undefined;
+      var uniforms = _extends({}, opts.uniforms, { model: function model() {
+          return _model;
+        } });
+      var attributes = _extends({}, opts.attributes);
+
+      if (geometry) {
+        if (geometry.primitive.positions) {
+          attributes.position = geometry.primitive.positions;
+        }
+
+        if (geometry.primitive.normals) {
+          attributes.normal = geometry.primitive.normals;
+        }
+
+        if (geometry.primitive.uvs) {
+          attributes.uv = geometry.primitive.uvs;
+        }
+      }
+
+      if (opts.image && opts.image.texture) {
+        uniforms.image = opts.image.texture;
+      } else if (opts.image) {
+        uniforms.image = opts.image;
+      }
+
+      var reglOptions = _extends({}, opts.regl, {
+        uniforms: uniforms,
+        attributes: attributes,
+        vert: opts.vert || vert,
+        frag: opts.frag || frag,
+        count: opts.count || undefined,
+        elements: opts.elements || elements || undefined
+      });
+
+      if (uniforms.image) {
+        reglOptions.frag = (0, _glslInjectDefines2.default)(reglOptions.frag, {
+          HAS_IMAGE: ''
+        });
+      }
+
+      for (var key in reglOptions) {
+        if (undefined == reglOptions[key]) {
+          delete reglOptions[key];
+        }
+      }
+
+      draw = ctx.regl(reglOptions);
+    }
+
+    var update = function update(state) {
+      if ('scale' in state) {
+        Object.assign(_this.scale, state.scale);
+      }
+
+      if ('position' in state) {
+        Object.assign(_this.position, state.position);
+      }
+
+      if ('rotation' in state) {
+        Object.assign(_this.rotation, state.rotation);
+      }
+
+      _glMat2.default.identity(_model);
+      _glMat2.default.translate(_model, _model, _this.position);
+      _glMat2.default.scale(_model, _model, _this.scale);
+      _glMat2.default.multiply(_model, _model, _glMat2.default.fromQuat([], _this.rotation));
+
+      if (ctx.previous && ctx.previous.id != _this.id) {
+        _glMat2.default.copy(_this.transform, _glMat2.default.multiply([], ctx.previous.transform, _model));
+      } else {
+        _glMat2.default.copy(_this.transform, _model);
+      }
+
+      _glMat2.default.copy(_model, _this.transform);
+      return true;
+    };
+
+    var render = opts.render || function (_, state, extra) {
+      var args = null;
+      var next = function next() {
+        return void 0;
+      };
+
+      ctx.push(_this);
+
+      if ('function' == typeof state) {
+        args = [_extends({}, defaults)];
+        next = state;
+      } else {
+        args = [_extends({}, defaults, state)];
+      }
+
+      if (opts.before) {
+        opts.before.apply(opts, _toConsumableArray(args));
+      }
+
+      if (update.apply(undefined, _toConsumableArray(args))) {
+        draw.apply(undefined, _toConsumableArray(args));
+        next.apply(undefined, _toConsumableArray(args));
+      }
+
+      if (opts.after) {
+        opts.after.apply(opts, _toConsumableArray(args));
+      }
+
+      ctx.pop();
+    };
+
+    var _this = _possibleConstructorReturn(this, (ObjectCommand.__proto__ || Object.getPrototypeOf(ObjectCommand)).call(this, render));
+
+    console.log(opts);
+    _this.id = opts.id || ObjectCommand.id();
+    _this.type = opts.type || 'object';
+    _this.scale = opts.scale ? new (Function.prototype.bind.apply(_vector.Vector, [null].concat(_toConsumableArray(opts.scale))))() : new _vector.Vector(1, 1, 1);
+    _this.position = opts.position ? new (Function.prototype.bind.apply(_vector.Vector, [null].concat(_toConsumableArray(opts.position))))() : new _vector.Vector(0, 0, 0);
+    _this.rotation = opts.rotation ? new (Function.prototype.bind.apply(_quaternion.Quaternion, [null].concat(_toConsumableArray(opts.rotation))))() : new _quaternion.Quaternion();
+    _this.transform = _glMat2.default.identity([]);
+    return _this;
+  }
+
+  return ObjectCommand;
+}(_command.Command);
+
+},{"../quaternion":217,"../utils":220,"../vector":221,"./command":200,"gl-mat4":14,"gl-quat":39,"gl-vec3":96,"gl-vec4":126,"glsl-inject-defines":144,"glslify":154}],205:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.PhotoCommand = undefined;
+
+var _media = require('./media');
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ * PhotoCommand class.
+ *
+ * @public
+ * @extends MediaCommand
+ */
+
+var PhotoCommand = exports.PhotoCommand = function (_MediaCommand) {
+  _inherits(PhotoCommand, _MediaCommand);
+
+  function PhotoCommand(ctx, src) {
+    _classCallCheck(this, PhotoCommand);
+
+    var texture = ctx.regl.texture();
+
+    var _this = _possibleConstructorReturn(this, (PhotoCommand.__proto__ || Object.getPrototypeOf(PhotoCommand)).call(this, ctx, {
+      image: {
+        stream: true,
+        parser: texture,
+        type: 'image',
+        src: src
+      }
+    }));
+
+    _this.texture = texture;
+    _this.onloaded = function (_ref) {
+      var image = _ref.image;
+      return void 0;
+    };
+    _this.onprogress = function () {
+      return void 0;
+    };
+
+    // @TODO(werle) - handle errors better
+    _this.onerror = function (err) {
+      return console.error(err);
+    };
+    return _this;
+  }
+
+  return PhotoCommand;
+}(_media.MediaCommand);
+
+},{"./media":203}],206:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.SphereCommand = undefined;
+
+var _sphere = require('../geometry/sphere');
+
+var _object = require('./object');
+
+var _glMat = require('gl-mat4');
+
+var _glMat2 = _interopRequireDefault(_glMat);
+
+var _glslify = require('glslify');
+
+var _glslify2 = _interopRequireDefault(_glslify);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ * SphereCommand class.
+ *
+ * @public
+ * @class SphereCommand
+ * @extends ObjectCommand
+ */
+
+var SphereCommand = exports.SphereCommand = function (_ObjectCommand) {
+  _inherits(SphereCommand, _ObjectCommand);
+
+  function SphereCommand(ctx) {
+    var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+    _classCallCheck(this, SphereCommand);
+
+    var geometry = new _sphere.SphereGeometry(opts.geometry);
+    var defaults = { color: [0, 0, 1, 1] };
+    var uniforms = {
+      image: opts.image && opts.image.texture ? opts.image.texture : opts.image,
+      color: ctx.regl.prop('color')
+    };
+
+    return _possibleConstructorReturn(this, (SphereCommand.__proto__ || Object.getPrototypeOf(SphereCommand)).call(this, ctx, {
+      type: 'sphere',
+      defaults: defaults,
+      uniforms: uniforms,
+      geometry: geometry
+    }));
+  }
+
+  return SphereCommand;
+}(_object.ObjectCommand);
+
+},{"../geometry/sphere":212,"./object":204,"gl-mat4":14,"glslify":154}],207:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.TriangleCommand = undefined;
+
+var _triangle = require('../geometry/triangle');
+
+var _object = require('./object');
+
+var _glslify = require('glslify');
+
+var _glslify2 = _interopRequireDefault(_glslify);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var vert = '\nprecision mediump float;\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\n\nattribute vec2 position;\nvoid main() {\n  gl_Position = projection * view * model * vec4(position, 0.0, 1.0);\n}\n';
+
+/**
+ * TriangleCommand class.
+ *
+ * @public
+ * @class TriangleCommand
+ * @extends Command
+ */
+
+var TriangleCommand = exports.TriangleCommand = function (_ObjectCommand) {
+  _inherits(TriangleCommand, _ObjectCommand);
+
+  function TriangleCommand(ctx) {
+    var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+    _classCallCheck(this, TriangleCommand);
+
+    var geometry = new _triangle.TriangleGeometry(opts.geometry);
+    var uniforms = { color: ctx.regl.prop('color') };
+    var defaults = { color: [0, 0, 1, 1] };
+
+    return _possibleConstructorReturn(this, (TriangleCommand.__proto__ || Object.getPrototypeOf(TriangleCommand)).call(this, ctx, {
+      type: 'triangle',
+      defaults: defaults,
+      uniforms: uniforms,
+      geometry: geometry,
+      count: 3,
+      vert: vert,
+      regl: {}
+    }));
+  }
+
+  return TriangleCommand;
+}(_object.ObjectCommand);
+
+},{"../geometry/triangle":213,"./object":204,"glslify":154}],208:[function(require,module,exports){
+"use strict";
+
+},{}],209:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.CommandContext = exports.defaults = exports.$previous = exports.$current = undefined;
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+exports.Context = Context;
+
+var _events = require('events');
+
+var _glslify = require('glslify');
+
+var _glslify2 = _interopRequireDefault(_glslify);
+
+var _regl = require('regl');
+
+var _regl2 = _interopRequireDefault(_regl);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ * Current command symbol.
+ *
+ * @public
+ * @const
+ * @type {Symbol}
+ */
+
+var $current = exports.$current = Symbol('current');
+
+/**
+ * Previous command symbol.
+ *
+ * @public
+ * @const
+ * @type {Symbol}
+ */
+
+var $previous = exports.$previous = Symbol('previous');
+
+/**
+ * Context class defaults.
+ *
+ * @public
+ * @const
+ * @type {Object}
+ */
+
+var defaults = exports.defaults = {
+  clear: {
+    color: [0, 0, 0, 1],
+    depth: 1
+  }
+};
+
+/**
+ * Creates a new Context instance with
+ * sane defaults.
+ */
+
+function Context(opts) {
+  return new CommandContext(Object.assign(defaults, opts || {}));
+}
+
+/**
+ * CommandContext class.
+ *
+ * @public
+ */
+
+var CommandContext = exports.CommandContext = function (_EventEmitter) {
+  _inherits(CommandContext, _EventEmitter);
+
+  /**
+   * CommandContext class constructor.
+   *
+   * @param {(Object?} initialState
+   * @param {(Object)?} opts
+   */
+
+  function CommandContext() {
+    var initialState = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+    var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+    _classCallCheck(this, CommandContext);
+
+    var _this = _possibleConstructorReturn(this, (CommandContext.__proto__ || Object.getPrototypeOf(CommandContext)).call(this));
+
+    _this.setMaxListeners(Infinity);
+    _this.regl = (0, _regl2.default)(opts.regl);
+    _this.state = initialState;
+    _this.stack = [];
+    _this[$current] = null;
+    _this[$previous] = null;
+    return _this;
+  }
+
+  _createClass(CommandContext, [{
+    key: 'push',
+    value: function push(command) {
+      if ('function' == typeof command) {
+        this.stack.push(command);
+        this[$previous] = this[$current];
+        this[$current] = command;
+      }
+      return this;
+    }
+  }, {
+    key: 'pop',
+    value: function pop() {
+      var command = this.stack.pop();
+      this[$current] = this[$previous];
+      this[$previous] = this.stack[this.stack.length - 1];
+      return command;
+    }
+  }, {
+    key: 'update',
+    value: function update(block) {
+      var fn = function fn() {
+        return void 0;
+      };
+
+      if ('function' == typeof block) {
+        fn = block;
+      } else if (block && 'object' == (typeof block === 'undefined' ? 'undefined' : _typeof(block))) {
+        Object.assign(this.state, block);
+      }
+
+      this.regl.clear(this.state.clear);
+      fn();
+      return this;
+    }
+  }, {
+    key: 'current',
+    get: function get() {
+      return this[$current];
+    }
+  }, {
+    key: 'previous',
+    get: function get() {
+      return this[$previous];
+    }
+  }, {
+    key: 'depth',
+    get: function get() {
+      return this.stack.length - 1;
+    }
+  }]);
+
+  return CommandContext;
+}(_events.EventEmitter);
+
+},{"events":3,"glslify":154,"regl":195}],210:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Frame = Frame;
+
+var _commands = require('./commands');
+
+/**
+ * Creates a FrameCommand function instance.
+ *
+ * @param {Context} ctx
+ * @return {Function}
+ */
+
+function Frame(ctx) {
+  return new _commands.FrameCommand(ctx);
+}
+
+},{"./commands":202}],211:[function(require,module,exports){
+'use strict';
+
+/**
+ * Geometry class.
+ *
+ * @public
+ * @class Geometry
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Geometry = exports.Geometry = function () {
+
+  /**
+   * Geometry class constructor.
+   *
+   * @param {(Object)?} initialState
+   */
+
+  function Geometry(initialState) {
+    _classCallCheck(this, Geometry);
+
+    Object.assign(this, initialState || {});
+  }
+
+  /**
+   * Abstract update method to be overloaded
+   */
+
+  _createClass(Geometry, [{
+    key: 'update',
+    value: function update() {
+      return this;
+    }
+  }]);
+
+  return Geometry;
+}();
+
+},{}],212:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.SphereGeometry = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _primitiveSphere = require('primitive-sphere');
+
+var _primitiveSphere2 = _interopRequireDefault(_primitiveSphere);
+
+var _geometry = require('./geometry');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ * SphereGeometry class.
+ *
+ * @public
+ * @class SphereGeometry
+ * @extends Geometry
+ * @see https://www.npmjs.com/package/primitive-sphere
+ */
+
+var SphereGeometry = exports.SphereGeometry = function (_Geometry) {
+  _inherits(SphereGeometry, _Geometry);
+
+  /**
+   * SphereGeometry class constructor.
+   *
+   * @param {(Object)?} opts
+   * @param {(Number)?} opts.radius
+   * @param {(Number)?} opts.segments
+   * @param {(Object)?} primitive
+   */
+
+  function SphereGeometry() {
+    var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+    var _ref$radius = _ref.radius;
+    var radius = _ref$radius === undefined ? 1 : _ref$radius;
+    var _ref$segments = _ref.segments;
+    var segments = _ref$segments === undefined ? 24 : _ref$segments;
+    var primitive = arguments[1];
+
+    _classCallCheck(this, SphereGeometry);
+
+    primitive = primitive || (0, _primitiveSphere2.default)(radius, { segments: segments });
+    return _possibleConstructorReturn(this, (SphereGeometry.__proto__ || Object.getPrototypeOf(SphereGeometry)).call(this, { radius: radius, segments: segments, primitive: primitive }));
+  }
+
+  /**
+   * Updates SphereGeometry state
+   *
+   * @return {SphereGeometry}
+   */
+
+  _createClass(SphereGeometry, [{
+    key: 'update',
+    value: function update() {
+      var segments = this.segments;
+      var radius = this.radius;
+      this.primitive = (0, _primitiveSphere2.default)(radius, { segments: segments });
+      return this;
+    }
+  }]);
+
+  return SphereGeometry;
+}(_geometry.Geometry);
+
+},{"./geometry":211,"primitive-sphere":160}],213:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.TriangleGeometry = undefined;
+
+var _geometry = require('./geometry');
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ * TriangleGeometry class.
+ *
+ * @public
+ * @class TriangleGeometry
+ * @see https://www.npmjs.com/package/primitive-sphere
+ */
+
+var TriangleGeometry = exports.TriangleGeometry = function (_Geometry) {
+  _inherits(TriangleGeometry, _Geometry);
+
+  /**
+   * TriangleGeometry class constructor.
+   */
+
+  function TriangleGeometry(primitive) {
+    _classCallCheck(this, TriangleGeometry);
+
+    primitive = primitive || {
+      positions: [-0.0, +1.0, +1.0, -1.0, -1.0, -1.0],
+
+      normals: [-0.00000, +0.57735, +0.57735, -0.57735, -0.57735, -0.57735],
+
+      uvs: [-0.0, +1.0, +1.0, -1.0, -1.0, -1.0]
+    };
+
+    return _possibleConstructorReturn(this, (TriangleGeometry.__proto__ || Object.getPrototypeOf(TriangleGeometry)).call(this, { primitive: primitive }));
+  }
+
+  return TriangleGeometry;
+}(_geometry.Geometry);
+
+},{"./geometry":211}],214:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module constants.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _quaternion = require('./quaternion');
+
+Object.defineProperty(exports, 'Quaternion', {
+  enumerable: true,
+  get: function get() {
+    return _quaternion.Quaternion;
+  }
+});
+
+var _triangle = require('./triangle');
+
+Object.defineProperty(exports, 'Triangle', {
+  enumerable: true,
+  get: function get() {
+    return _triangle.Triangle;
+  }
+});
+
+var _context = require('./context');
+
+Object.defineProperty(exports, 'Context', {
+  enumerable: true,
+  get: function get() {
+    return _context.Context;
+  }
+});
+
+var _camera = require('./camera');
+
+Object.defineProperty(exports, 'Camera', {
+  enumerable: true,
+  get: function get() {
+    return _camera.Camera;
+  }
+});
+
+var _vector = require('./vector');
+
+Object.defineProperty(exports, 'Vector', {
+  enumerable: true,
+  get: function get() {
+    return _vector.Vector;
+  }
+});
+
+var _object = require('./object');
+
+Object.defineProperty(exports, 'Object', {
+  enumerable: true,
+  get: function get() {
+    return _object.Object;
+  }
+});
+
+var _sphere = require('./sphere');
+
+Object.defineProperty(exports, 'Sphere', {
+  enumerable: true,
+  get: function get() {
+    return _sphere.Sphere;
+  }
+});
+
+var _frame = require('./frame');
+
+Object.defineProperty(exports, 'Frame', {
+  enumerable: true,
+  get: function get() {
+    return _frame.Frame;
+  }
+});
+
+var _photo = require('./photo');
+
+Object.defineProperty(exports, 'Photo', {
+  enumerable: true,
+  get: function get() {
+    return _photo.Photo;
+  }
+});
+var AXIS_TYPE_VIDEO = exports.AXIS_TYPE_VIDEO = 0x01;
+var AXIS_TYPE_PHOTO = exports.AXIS_TYPE_PHOTO = 0x02;
+
+/**
+ * Module dependencies.
+ */
+
+},{"./camera":198,"./context":209,"./frame":210,"./object":215,"./photo":216,"./quaternion":217,"./sphere":218,"./triangle":219,"./vector":221}],215:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Object = Object;
+
+var _object = require('./object');
+
+var _glslify = require('glslify');
+
+var _glslify2 = _interopRequireDefault(_glslify);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ */
+
+function Object(ctx) {
+  var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+  return new _object.ObjectCommand(ctx, opts);
+}
+
+},{"./object":215,"glslify":154}],216:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Photo = Photo;
+
+var _commands = require('./commands');
+
+/**
+ * Creates a Photo from a context and source.
+ *
+ * @public
+ * @param {Context}
+ * @param {String} src
+ * @return {PhotoCommand}
+ */
+
+function Photo(ctx, src) {
+  return new _commands.PhotoCommand(ctx, src);
+}
+
+},{"./commands":202}],217:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Quaternion = undefined;
+
+var _vector = require('./vector');
+
+var _defined = require('defined');
+
+var _defined2 = _interopRequireDefault(_defined);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ * Quaternion class.
+ *
+ * @public
+ * @class Quaternion
+ * @extends Vector
+ */
+
+var Quaternion = exports.Quaternion = function (_Vector) {
+  _inherits(Quaternion, _Vector);
+
+  /**
+   * Quaternion class constructor.
+   *
+   * @public
+   * @constructor
+   * @param {Number} x
+   * @param {Number} y
+   * @param {Number} z
+   * @param {Number} w
+   */
+
+  function Quaternion() {
+    var x = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
+    var y = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+    var z = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
+    var w = arguments.length <= 3 || arguments[3] === undefined ? 1 : arguments[3];
+
+    _classCallCheck(this, Quaternion);
+
+    return _possibleConstructorReturn(this, (Quaternion.__proto__ || Object.getPrototypeOf(Quaternion)).call(this, (0, _defined2.default)(x, 0), (0, _defined2.default)(y, 0), (0, _defined2.default)(z, 0), (0, _defined2.default)(w, 1)));
+  }
+
+  return Quaternion;
+}(_vector.Vector);
+
+},{"./vector":221,"defined":2}],218:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Sphere = Sphere;
+
+var _commands = require('./commands');
+
+var _glslify = require('glslify');
+
+var _glslify2 = _interopRequireDefault(_glslify);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function Sphere(ctx) {
+  var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+  return new _commands.SphereCommand(ctx, opts);
+}
+
+},{"./commands":202,"glslify":154}],219:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Triangle = Triangle;
+
+var _commands = require('./commands');
+
+var _glslify = require('glslify');
+
+var _glslify2 = _interopRequireDefault(_glslify);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function Triangle(ctx) {
+  var opts = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+  return new _commands.TriangleCommand(ctx, opts);
+}
+
+},{"./commands":202,"glslify":154}],220:[function(require,module,exports){
+'use strict';
+
+/**
+ * Define property helper.
+ *
+ * @public
+ * @param {Object} a
+ * @param {String} b
+ * @param {Object} c
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var define = exports.define = function define(a, b, c) {
+  return Object.defineProperty(a, b, _extends({}, c));
+};
+
+},{}],221:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Vector = undefined;
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _utils = require('./utils');
+
+var _defined = require('defined');
+
+var _defined2 = _interopRequireDefault(_defined);
+
+var _glVec = require('gl-vec4');
+
+var _glVec2 = _interopRequireDefault(_glVec);
+
+var _glVec3 = require('gl-vec3');
+
+var _glVec4 = _interopRequireDefault(_glVec3);
+
+var _glVec5 = require('gl-vec2');
+
+var _glVec6 = _interopRequireDefault(_glVec5);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+// @TODO(werle) - proxy gl-vec{2..4} methods
+
+/**
+ * Vector class.
+ *
+ * @public
+ * @class Vector
+ */
+
+var Vector = exports.Vector = function () {
+
+  /**
+   * Vector class contructor.
+   *
+   * @param {...Mixed} input
+   */
+
+  function Vector() {
+    var _this = this;
+
+    for (var _len = arguments.length, input = Array(_len), _key = 0; _key < _len; _key++) {
+      input[_key] = arguments[_key];
+    }
+
+    _classCallCheck(this, Vector);
+
+    if (1 == input.length && 'object' == _typeof(input[0])) {
+      var tmp = input[0];
+      input[0] = tmp.x || tmp[0] || undefined;
+      input[1] = tmp.y || tmp[1] || undefined;
+      input[2] = tmp.z || tmp[2] || undefined;
+      input[3] = tmp.w || tmp[3] || undefined;
+      input = input.filter(function (x) {
+        return undefined !== x;
+      });
+    }
+
+    this.elements = new Float64Array([].concat(_toConsumableArray(input)));
+
+    (0, _utils.define)(this, '0', {
+      get: function get() {
+        return _this.elements[0];
+      },
+      set: function set(v) {
+        return _this.elements[0] = v;
+      }
+    });
+
+    (0, _utils.define)(this, '1', {
+      get: function get() {
+        return _this.elements[1];
+      },
+      set: function set(v) {
+        return _this.elements[1] = v;
+      }
+    });
+
+    (0, _utils.define)(this, '2', {
+      get: function get() {
+        return _this.elements[2];
+      },
+      set: function set(v) {
+        return _this.elements[2] = v;
+      }
+    });
+
+    (0, _utils.define)(this, '3', {
+      get: function get() {
+        return _this.elements[3];
+      },
+      set: function set(v) {
+        return _this.elements[3] = v;
+      }
+    });
+  }
+
+  _createClass(Vector, [{
+    key: 'set',
+
+
+    /**
+     * Set components-wise values
+     *
+     * @param {Number} x
+     * @param {Number} y
+     * @param {Number} z
+     * @param {Number} w
+     * @return {Vector}
+     */
+
+    value: function set(x, y, z, w) {
+      if (x instanceof Vector) {
+        return this.set(x.x, x.y, x.z, x.w);
+      }
+
+      switch (arguments.length) {
+        case 4:
+          this.elements[3] = (0, _defined2.default)(w, this.elements[3]);
+        case 3:
+          this.elements[2] = (0, _defined2.default)(z, this.elements[2]);
+        case 2:
+          this.elements[1] = (0, _defined2.default)(y, this.elements[1]);
+        case 1:
+          this.elements[0] = (0, _defined2.default)(x, this.elements[0]);
+      }
+      return this;
+    }
+
+    /**
+     * Converts the vector into
+     * a normal Array.
+     *
+     * @return {Array}
+     */
+
+  }, {
+    key: 'toArray',
+    value: function toArray() {
+      return [].concat(_toConsumableArray(this.elements));
+    }
+
+    /**
+     * Returns a JSON serializable value.
+     *
+     * @return {Array}
+     */
+
+  }, {
+    key: 'toJSON',
+    value: function toJSON() {
+      return this.toArray();
+    }
+  }, {
+    key: 'length',
+    get: function get() {
+      return this.elements.length;
+    },
+    set: function set(value) {
+      void value;
+    }
+
+    /**
+     * Returns a reference to the underlying
+     * vector elements.
+     *
+     * @getter
+     * @type {Float64Array}
+     */
+
+  }, {
+    key: 'ref',
+    get: function get() {
+      return this.elements;
+    }
+
+    /**
+     * Returns the component count of the vector
+     *
+     * @getter
+     * @type {Number}
+     */
+
+  }, {
+    key: 'componentLength',
+    get: function get() {
+      return this.elements.length;
+    }
+
+    /**
+     * x component-wise getter.
+     *
+     * @getter
+     * @type {Number}
+     */
+
+  }, {
+    key: 'x',
+    get: function get() {
+      return this.elements[0];
+    }
+
+    /**
+     * x component-wise setter.
+     *
+     * @setter
+     * @type {Number}
+     */
+
+    ,
+    set: function set(x) {
+      this.elements[0] = x;
+    }
+
+    /**
+     * y component-wise getter.
+     *
+     * @getter
+     * @type {Number}
+     */
+
+  }, {
+    key: 'y',
+    get: function get() {
+      return this.elements[1];
+    }
+
+    /**
+     * y component-wise setter.
+     *
+     * @setter
+     * @type {Number}
+     */
+
+    ,
+    set: function set(y) {
+      this.elements[1] = y;
+    }
+
+    /**
+     * z component-wise getter.
+     *
+     * @getter
+     * @type {Number}
+     */
+
+  }, {
+    key: 'z',
+    get: function get() {
+      return this.elements[2];
+    }
+
+    /**
+     * z component-wise setter.
+     *
+     * @setter
+     * @type {Number}
+     */
+
+    ,
+    set: function set(z) {
+      this.elements[2] = z;
+    }
+
+    /**
+     * w component-wise getter.
+     *
+     * @getter
+     * @type {Number}
+     */
+
+  }, {
+    key: 'w',
+    get: function get() {
+      return this[3];
+    }
+
+    /**
+     * w component-wise setter.
+     *
+     * @setter
+     * @type {Number}
+     */
+
+    ,
+    set: function set(w) {
+      this.elements[3] = w;
+    }
+  }]);
+
+  return Vector;
+}();
+
+},{"./utils":220,"defined":2,"gl-vec2":66,"gl-vec3":96,"gl-vec4":126}]},{},[214])(214)
 });

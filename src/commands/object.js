@@ -5,102 +5,17 @@
  */
 
 import injectDefines from 'glsl-inject-defines'
+import { Quaternion, Vector } from '../math'
 import { Command } from './command'
+import { define } from '../utils'
 import glsl from 'glslify'
 import mat4 from 'gl-mat4'
 import vec4 from 'gl-vec4'
 import vec3 from 'gl-vec3'
 import quat from 'gl-quat'
 
-/**
- * Define property helper.
- *
- * @param {Object} a
- * @param {String} b
- * @param {Object} c
- */
-
-const define = (a, b, c) => Object.defineProperty(a, b, { ...c })
-
-const vert = `
-uniform mat4 projection;
-uniform mat4 model;
-uniform mat4 view;
-
-attribute vec3 position;
-attribute vec3 normal;
-attribute vec2 uv;
-
-varying vec3 vposition;
-varying vec3 vnormal;
-varying vec2 vuv;
-
-void main() {
-  gl_Position = projection * view * model * vec4(position, 1.0);
-  vposition = position;
-  vnormal = normal;
-  vuv = uv;
-}
-`
-
-const frag = `
-precision mediump float;
-uniform vec4 color;
-varying vec2 vuv;
-
-#ifdef HAS_IMAGE
-uniform sampler2D image;
-#endif
-
-void main() {
-#ifdef HAS_IMAGE
-  gl_FragColor = vec4(texture2D(image, vuv).rgb, 1.0);
-#else
-  gl_FragColor = color;
-#endif
-}
-`
-
-class VectorWrap {
-  constructor(...input) {
-    this.elements = new Float64Array([...input])
-    define(this, '0', {
-      get: () => this.elements[0],
-      set: (v) => this.elements[0] = v,
-    })
-
-    define(this, '1', {
-      get: () => this.elements[1],
-      set: (v) => this.elements[1] = v,
-    })
-
-    define(this, '2', {
-      get: () => this.elements[2],
-      set: (v) => this.elements[2] = v,
-    })
-
-    define(this, '3', {
-      get: () => this.elements[3],
-      set: (v) => this.elements[3] = v,
-    })
-  }
-
-  get x() { return this.elements[0] }
-  set x(x) { this.elements[0] = x }
-
-  get y() { return this.elements[1] }
-  set y(y) { this.elements[1] = y }
-
-  get z() { return this.elements[2] }
-  set z(z) { this.elements[2] = z }
-
-  get w() { return this[3] }
-  set w(w) { this.elements[3] = w }
-
-  toArray() {
-    return [...this.elements]
-  }
-}
+const vert = glsl(__dirname + '/../glsl/object/vert.glsl')
+const frag = glsl(__dirname + '/../glsl/object/frag.glsl')
 
 /**
  * Current object command counter.
@@ -109,6 +24,13 @@ class VectorWrap {
  */
 
 let OBJECT_COMMAND_COUNTER = 0
+
+/**
+ * ObjectCommand constructor.
+ * @see ObjectCommand
+ */
+
+export default (...args) => new ObjectCommand(...args)
 
 /**
  * ObjectCommand class.
@@ -139,16 +61,30 @@ export class ObjectCommand extends Command {
    * @param {Object} opts
    */
 
-  constructor(ctx, opts) {
-    const model = mat4.identity([])
-    const defaults = {...opts.defaults}
+  constructor(ctx, opts = {}) {
     let draw = opts.draw
+    const model = mat4.identity([])
+    const defaults = {
+      ...opts.defaults,
+      color: [197/255, 148/255, 149/255, 1.0],
+    }
 
+    // use regl draw command if draw() function
+    // was not provided
     if (!draw) {
       const geometry = opts.geometry || null
       const elements = geometry ? geometry.primitive.cells : undefined
-      const uniforms = {...opts.uniforms, model: () => model }
       const attributes = {...opts.attributes}
+
+      const uniforms = {
+        ...opts.uniforms,
+        color: ctx.regl.prop('color'),
+        model: () => model
+      }
+
+      defaults.count = opts.count || undefined
+      defaults.elements = opts.elements || elements || undefined
+      defaults.primitive = opts.primitive || 'triangles'
 
       if (geometry) {
         if (geometry.primitive.positions) {
@@ -170,14 +106,22 @@ export class ObjectCommand extends Command {
         uniforms.image = opts.image
       }
 
+      if (!opts.primitive && opts.wireframe) {
+        opts.primitive = 'lines'
+      }
+
       const reglOptions = {
         ...opts.regl,
         uniforms,
         attributes,
         vert: opts.vert || vert,
         frag: opts.frag || frag,
-        count: opts.count || undefined,
-        elements: opts.elements || elements || undefined,
+        count: null == opts.count ? undefined : ctx.regl.prop('count'),
+        elements: null == elements ? undefined : ctx.regl.prop('elements'),
+        primitive: () => {
+          if (this.wireframe) { return 'line loop' }
+          else { return defaults.primitive }
+        }
       }
 
       if (uniforms.image) {
@@ -195,6 +139,7 @@ export class ObjectCommand extends Command {
       draw = ctx.regl(reglOptions)
     }
 
+    // update state and internal matrices
     const update = (state) => {
       if ('scale' in state) {
         Object.assign(this.scale, state.scale)
@@ -214,7 +159,6 @@ export class ObjectCommand extends Command {
       mat4.multiply(model, model, mat4.fromQuat([], this.rotation))
 
       if (ctx.previous && ctx.previous.id != this.id) {
-        console.log(ctx.previous.type, this.type)
         mat4.copy(this.transform, mat4.multiply([], ctx.previous.transform, model))
       } else {
         mat4.copy(this.transform, model)
@@ -224,6 +168,7 @@ export class ObjectCommand extends Command {
       return true
     }
 
+    // render command state
     const render = opts.render || ((_, state, extra) => {
       let args = null
       let next = () => void 0
@@ -255,11 +200,57 @@ export class ObjectCommand extends Command {
 
     super(render)
 
+    /**
+     * Object ID.
+     *
+     * @type {Number}
+     */
+
     this.id = opts.id || ObjectCommand.id()
+
+    /**
+     * Object type name.
+     *
+     * @type {String}
+     */
+
     this.type = opts.type || 'object'
-    this.scale = new VectorWrap(1, 1, 1)
-    this.position = new VectorWrap(0, 0, 0)
-    this.rotation = new VectorWrap(0, 0, 0, 1)
+
+    /**
+     * Object scale vector.
+     *
+     * @type {Vector}
+     */
+
+    this.scale = opts.scale ? new Vector(...opts.scale) : new Vector(1, 1, 1)
+
+    /**
+     * Object scale vector.
+     *
+     * @type {Vector}
+     */
+
+    this.position = opts.position ? new Vector(...opts.position) : new Vector(0, 0, 0)
+
+    /**
+     * Object rotation quaternion
+     *
+     * @type {Quaternion}
+     */
+
+    this.rotation = opts.rotation ? new Quaternion(...opts.rotation) : new Quaternion()
+
+    /**
+     * Object transform matrix
+     *
+     * @type {Array}
+     */
+
     this.transform = mat4.identity([])
+
+    /**
+     */
+
+    this.wireframe = false
   }
 }

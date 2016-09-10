@@ -19,12 +19,15 @@
   "dependencies": {
     "angle-normals": "^1.0.0",
     "choo": "^3.2.2",
+    "clamp": "^1.0.1",
     "debug": "^2.2.0",
     "define-properties": "^1.1.2",
-    "display-tree": "^1.1.0",
+    "defined": "^1.0.0",
     "fullscreen": "^1.1.0",
+    "geo-3d-box": "^2.0.2",
     "gl-mat4": "^1.1.4",
     "gl-quat": "^1.0.0",
+    "gl-vec2": "^1.0.0",
     "gl-vec3": "^1.0.3",
     "gl-vec4": "^1.0.1",
     "glsl-inject-defines": "^1.0.3",
@@ -32,22 +35,12 @@
     "primitive-sphere": "^2.0.0",
     "raf": "^3.3.0",
     "regl": "^1.1.1",
-    "regl-camera": "^1.0.0",
     "resl": "^1.0.3",
     "yields-keycode": "^1.1.0"
   },
-  "browerify": {
+  "browserify": {
     "transform": [
-      "babelify",
-      {
-        "presets": [
-          "es2015",
-          "stage-0"
-        ],
-        "plugins": [
-          "glslify-babel"
-        ]
-      }
+      "babelify"
     ]
   },
   "standard": {

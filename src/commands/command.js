@@ -1,12 +1,6 @@
 'use strict'
 
 /**
- * Module dependencies.
- */
-
-void 0;
-
-/**
  * No-op to return this only
  */
 
@@ -74,8 +68,7 @@ export class Command extends Function {
     return `
     var fn = ${encode(fn)};
     fn.apply(this, arguments);
-    return this;
-    `
+    return this;`
   }
 
   /**

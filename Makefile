@@ -85,7 +85,8 @@ all: lib dist
 #
 lib: $(SRC) | lib/index.css node_modules
 	BABEL_ENV=$(BABEL_ENV) $(BABEL) src --out-dir $@ --source-maps inline
-	touch $@
+	touch $@pa
+	cp package.json $@
 
 ##
 # Preprocess css through postcss
@@ -146,3 +147,10 @@ clean:
 .PHONY: lint
 lint: node_modules
 	$(STANDARD)
+
+##
+# Publish package
+#
+.PHONY: publish
+publish: lib
+	cd lib && npm publish

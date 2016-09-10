@@ -22,6 +22,13 @@ void main() {
 `
 
 /**
+ * TriangleCommand constructor.
+ * @see TriangleCommand
+ */
+
+export default (...args) => new TriangleCommand(...args)
+
+/**
  * TriangleCommand class.
  *
  * @public
@@ -32,8 +39,8 @@ void main() {
 export class TriangleCommand extends ObjectCommand {
   constructor(ctx, opts = {}) {
     const geometry = new TriangleGeometry(opts.geometry)
-    const uniforms = {color: ctx.regl.prop('color')}
-    const defaults = {color: [0, 0, 1, 1]}
+    const uniforms = {}
+    const defaults = {}
 
     super(ctx, {
       type: 'triangle',
