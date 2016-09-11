@@ -49,7 +49,6 @@ export class TriangleCommand extends ObjectCommand {
       geometry,
       count: 3,
       vert,
-      regl: {}
     })
   }
 }

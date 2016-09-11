@@ -111,6 +111,15 @@ export class CommandContext {
     Object.assign(this, state || {})
   }
 
+  /**
+   * Returns a reference to the command.
+   * This is used in the commandRunnerWrap
+   * function.
+   *
+   * @getter
+   * @private
+   */
+
   get ref() { return this[$ref] }
 }
 

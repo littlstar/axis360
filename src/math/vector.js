@@ -58,6 +58,26 @@ export class Vector {
       get: () => this.elements[3],
       set: (v) => this.elements[3] = v,
     })
+
+    define(this, 'r', {
+      get: () => this.elements[0],
+      set: (v) => this.elements[0] = v,
+    })
+
+    define(this, 'g', {
+      get: () => this.elements[1],
+      set: (v) => this.elements[1] = v,
+    })
+
+    define(this, 'b', {
+      get: () => this.elements[2],
+      set: (v) => this.elements[2] = v,
+    })
+
+    define(this, 'a', {
+      get: () => this.elements[3],
+      set: (v) => this.elements[3] = v,
+    })
   }
 
   get length() {
@@ -206,5 +226,29 @@ export class Vector {
 
   toJSON() {
     return this.toArray()
+  }
+
+  /**
+   * Returns the underlying vector
+   * array value.
+   *
+   * @return {Float64Array}
+   */
+
+  valueOf() {
+    return this.elements
+  }
+
+  /**
+   * Iterator protocol implementation.
+   */
+
+  [Symbol.iterator]() {
+    return (({first = true, elements = this.toArray()}) => ({
+      next: () => ({
+        done: Boolean(elements.length),
+        value: elements.shift()
+      })
+    }))()
   }
 }

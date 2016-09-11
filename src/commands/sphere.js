@@ -26,14 +26,14 @@ export default (...args) => new SphereCommand(...args)
 
 export class SphereCommand extends ObjectCommand {
   constructor(ctx, opts = {}) {
-    const geometry = new SphereGeometry(opts.geometry)
+    const geometry = new SphereGeometry(opts)
     const defaults = {}
     const uniforms = {}
 
-    if (opts.image) {
-      uniforms.image = opts.image && opts.image.texture ?
-        opts.image.texture :
-        opts.image
+    if (opts.map) {
+      uniforms.map = opts.map && opts.map.texture ?
+        opts.map.texture :
+        opts.map
     }
 
     super(ctx, {

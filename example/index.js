@@ -9,8 +9,11 @@ import {
   Context,
   Camera,
   Sphere,
+  Mouse,
   Photo,
+  Video,
   Frame,
+  Object as AxisObject,
   Box,
 } from '../src'
 
@@ -19,30 +22,28 @@ import {
   Vector,
 } from '../src/math'
 
+import { Geometry, } from '../src/geometry'
+
+import normals from 'angle-normals'
+import Bunny from 'bunny'
 import quat from 'gl-quat'
 
 const ctx = Context()
-const box = Box(ctx)
+const camera = Camera(ctx, {fov: 60 * Math.PI / 180, position: [0, 0, 0]})
 const frame = Frame(ctx)
 const photo = Photo(ctx, '/starwars-4k.jpg')
-const camera = Camera(ctx, {position: [0, 0, -10]})
+const video = Video(ctx, 'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/vr.mp4')
+const mouse = Mouse(ctx)
 const sphere = Sphere(ctx, {
-  //image: photo,
-  geometry: {
-    radius: 1,
-    segments: 24
-  }
+  radius: 10,
+  segments: 150,
+  //map: photo
+  map: video
 })
-
-const orientation = new Vector(0, 0)
-const triangle = Triangle(ctx)
-const target = new Vector(0, 0, 0)
-
-window.camera = camera
 
 const RotateCamera = (({
   rotation = new Quaternion(),
-  factor = 0.07,
+  factor = 0.1,
   x = new Quaternion(),
   y = new Quaternion()
 } = {}) => function (orientation) {
@@ -52,20 +53,17 @@ const RotateCamera = (({
   quat.copy(camera.rotation, rotation)
 })()
 
-box.position.x = -2
-frame((_, {time}) => {
-  //sphere.position.x = Math.cos(time)
-  orientation.x += 0.01
-  RotateCamera(orientation)
-  camera(() => {
-    sphere.wireframe = true
-    sphere(() => {
-      triangle.position.z = -Math.cos(time)
-      triangle()
-      triangle.position.z = Math.cos(time)
-      triangle.wireframe = true
-      triangle()
-      box({color: [Math.cos(time), Math.sin(time), Math.cos(time), 1]})
-    })
-  })
-})
+let orientation = new Vector(mouse.deltaX, mouse.deltaY)
+let friction = 0.5
+
+window.video = video
+
+frame(() => camera(() => {
+  if (mouse.buttons) {
+    orientation.x += -0.0033 * mouse.deltaY * friction + (Math.random() * 0.0025)
+    orientation.y += -0.0046 * mouse.deltaX * friction + (Math.random() * 0.0025)
+  }
+  camera.fov += 0.01 * mouse.wheel.dy
+  RotateCamera({x: orientation.x, y: orientation.y})
+  sphere()
+}))

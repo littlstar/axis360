@@ -30,10 +30,10 @@ export class BoxCommand extends ObjectCommand {
     const uniforms = {
     }
 
-    if (opts.image) {
-      uniforms.image = opts.image && opts.image.texture ?
-        opts.image.texture :
-        opts.image
+    if (opts.map) {
+      uniforms.map = opts.map && opts.map.texture ?
+        opts.map.texture :
+        opts.map
     }
 
     super(ctx, {

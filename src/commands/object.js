@@ -8,14 +8,33 @@ import injectDefines from 'glsl-inject-defines'
 import { Quaternion, Vector } from '../math'
 import { Command } from './command'
 import { define } from '../utils'
-import glsl from 'glslify'
+import glslify from 'glslify'
 import mat4 from 'gl-mat4'
 import vec4 from 'gl-vec4'
 import vec3 from 'gl-vec3'
 import quat from 'gl-quat'
 
-const vert = glsl(__dirname + '/../glsl/object/vert.glsl')
-const frag = glsl(__dirname + '/../glsl/object/frag.glsl')
+/**
+ * Default vertex shader for objects.
+ *
+ * @public
+ * @const
+ * @type {String}
+ */
+
+export const DEFAULT_VERTEX_SHADER =
+  glslify(__dirname + '/../glsl/object/vert.glsl')
+
+/**
+ * Default fragment shader for objects.
+ *
+ * @public
+ * @const
+ * @type {String}
+ */
+
+export const DEFAULT_FRAGMENT_SHADER =
+  glslify(__dirname + '/../glsl/object/frag.glsl')
 
 /**
  * Current object command counter.
@@ -64,10 +83,7 @@ export class ObjectCommand extends Command {
   constructor(ctx, opts = {}) {
     let draw = opts.draw
     const model = mat4.identity([])
-    const defaults = {
-      ...opts.defaults,
-      color: [197/255, 148/255, 149/255, 1.0],
-    }
+    const defaults = {...opts.defaults}
 
     // use regl draw command if draw() function
     // was not provided
@@ -75,10 +91,11 @@ export class ObjectCommand extends Command {
       const geometry = opts.geometry || null
       const elements = geometry ? geometry.primitive.cells : undefined
       const attributes = {...opts.attributes}
+      const shaderDefines = {}
 
       const uniforms = {
         ...opts.uniforms,
-        color: ctx.regl.prop('color'),
+        color: () => this.color.elements,
         model: () => model
       }
 
@@ -88,22 +105,25 @@ export class ObjectCommand extends Command {
 
       if (geometry) {
         if (geometry.primitive.positions) {
+          shaderDefines.HAS_POSITIONS = ''
           attributes.position = geometry.primitive.positions
         }
 
         if (geometry.primitive.normals) {
+          shaderDefines.HAS_NORMALS = ''
           attributes.normal = geometry.primitive.normals
         }
 
         if (geometry.primitive.uvs) {
+          shaderDefines.HAS_UVS = ''
           attributes.uv = geometry.primitive.uvs
         }
       }
 
-      if (opts.image && opts.image.texture) {
-        uniforms.image = opts.image.texture
-      } else if (opts.image) {
-        uniforms.image = opts.image
+      if (opts.map && opts.map.texture) {
+        uniforms.map = () => this.map.texture
+      } else if (opts.map) {
+        uniforms.map = () => this.map
       }
 
       if (!opts.primitive && opts.wireframe) {
@@ -114,8 +134,8 @@ export class ObjectCommand extends Command {
         ...opts.regl,
         uniforms,
         attributes,
-        vert: opts.vert || vert,
-        frag: opts.frag || frag,
+        vert: opts.vert || DEFAULT_VERTEX_SHADER,
+        frag: opts.frag || DEFAULT_FRAGMENT_SHADER,
         count: null == opts.count ? undefined : ctx.regl.prop('count'),
         elements: null == elements ? undefined : ctx.regl.prop('elements'),
         primitive: () => {
@@ -124,11 +144,12 @@ export class ObjectCommand extends Command {
         }
       }
 
-      if (uniforms.image) {
-        reglOptions.frag = injectDefines(reglOptions.frag, {
-          HAS_IMAGE: ''
-        })
+      if (uniforms.map) {
+        shaderDefines.HAS_MAP = ''
       }
+
+      reglOptions.frag = injectDefines(reglOptions.frag, shaderDefines)
+      reglOptions.vert = injectDefines(reglOptions.vert, shaderDefines)
 
       for (let key in reglOptions) {
         if (undefined == reglOptions[key]) {
@@ -142,15 +163,19 @@ export class ObjectCommand extends Command {
     // update state and internal matrices
     const update = (state) => {
       if ('scale' in state) {
-        Object.assign(this.scale, state.scale)
+        vec3.copy(this.scale, state.scale)
       }
 
       if ('position' in state) {
-        Object.assign(this.position, state.position)
+        vec3.copy(this.position, state.position)
       }
 
       if ('rotation' in state) {
-        Object.assign(this.rotation, state.rotation)
+        quat.copy(this.rotation, state.rotation)
+      }
+
+      if ('color' in state) {
+        vec4.copy(this.color, state.color)
       }
 
       mat4.identity(model)
@@ -169,9 +194,8 @@ export class ObjectCommand extends Command {
     }
 
     // render command state
-    const render = opts.render || ((_, state, extra) => {
+    const render = opts.render || ((_, state, next = () => void 0) => {
       let args = null
-      let next = () => void 0
 
       ctx.push(this)
 
@@ -222,7 +246,9 @@ export class ObjectCommand extends Command {
      * @type {Vector}
      */
 
-    this.scale = opts.scale ? new Vector(...opts.scale) : new Vector(1, 1, 1)
+    this.scale = opts.scale ?
+      new Vector(...opts.scale) :
+      new Vector(1, 1, 1)
 
     /**
      * Object scale vector.
@@ -230,7 +256,9 @@ export class ObjectCommand extends Command {
      * @type {Vector}
      */
 
-    this.position = opts.position ? new Vector(...opts.position) : new Vector(0, 0, 0)
+    this.position = opts.position ?
+      new Vector(...opts.position) :
+      new Vector(0, 0, 0)
 
     /**
      * Object rotation quaternion
@@ -238,7 +266,9 @@ export class ObjectCommand extends Command {
      * @type {Quaternion}
      */
 
-    this.rotation = opts.rotation ? new Quaternion(...opts.rotation) : new Quaternion()
+    this.rotation = opts.rotation ?
+      new Quaternion(...opts.rotation) :
+      new Quaternion()
 
     /**
      * Object transform matrix
@@ -249,8 +279,30 @@ export class ObjectCommand extends Command {
     this.transform = mat4.identity([])
 
     /**
+     * Boolean to indicate if object should be drawn
+     * with a line primitive.
+     *
+     * @type {Boolean}
      */
 
     this.wireframe = false
+
+    /**
+     * Object color property.
+     *
+     * @type {Vector}
+     */
+
+    this.color = opts.color ?
+      new Vector(...opts.color) :
+      new Vector(197/255, 148/255, 149/255, 1.0)
+
+    /**
+     * Object map if given.
+     *
+     * @type {Media}
+     */
+
+    this.map = opts.map || null
   }
 }

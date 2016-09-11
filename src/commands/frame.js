@@ -31,7 +31,7 @@ export class FrameCommand extends Command {
 
   constructor(ctx) {
     super((_, refresh) => {
-      this.ctx.regl.frame((...args) => {
+      ctx.regl.frame((...args) => {
         ctx.update(() => {
           if ('function' == typeof refresh) {
             refresh(ctx, ...args)
@@ -39,7 +39,5 @@ export class FrameCommand extends Command {
         })
       })
     })
-
-    this.ctx = ctx
   }
 }
