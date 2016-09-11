@@ -43,6 +43,7 @@ export class TriangleCommand extends ObjectCommand {
     const defaults = {}
 
     super(ctx, {
+      ...opts,
       type: 'triangle',
       defaults,
       uniforms,

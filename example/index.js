@@ -43,8 +43,17 @@ const controller = OrbitCameraController(ctx, {
 window.camera = camera
 window.video = video
 
+ctx.focus()
 raf(() => controller.orientation.y = Math.PI / (Math.PI * 0.5))
 frame(() => {
+  if (keyboard.keys.v) {
+    console.log('use video')
+    sphere.map = video
+  } else if (keyboard.keys.p) {
+    console.log('use photo')
+    sphere.map = photo
+  }
+
   camera(() => {
     controller(() => {
       sphere()

@@ -28,16 +28,9 @@ export default (...args) => new BoxCommand(...args)
 export class BoxCommand extends ObjectCommand {
   constructor(ctx, opts = {}) {
     const geometry = new BoxGeometry(opts.geometry)
-    const uniforms = {
-    }
-
-    if (opts.map) {
-      uniforms.map = opts.map && opts.map.texture ?
-        opts.map.texture :
-        opts.map
-    }
-
+    const uniforms = {}
     super(ctx, {
+      ...opts,
       type: 'box',
       uniforms,
       geometry,

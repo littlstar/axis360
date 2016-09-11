@@ -30,13 +30,8 @@ export class SphereCommand extends ObjectCommand {
     const defaults = {}
     const uniforms = {}
 
-    if (opts.map) {
-      uniforms.map = opts.map && opts.map.texture ?
-        opts.map.texture :
-        opts.map
-    }
-
     super(ctx, {
+      ...opts,
       type: 'sphere',
       defaults,
       uniforms,
