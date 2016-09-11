@@ -20,6 +20,7 @@ export * as Math from './math'
  * Axis command API.
  */
 
+export Keyboard from './commands/keyboard'
 export Triangle from './commands/triangle'
 export Object from './commands/object'
 export Sphere from './commands/sphere'

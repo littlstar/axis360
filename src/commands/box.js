@@ -10,7 +10,8 @@ import mat4 from 'gl-mat4'
 import glsl from 'glslify'
 
 /**
- * BoxCommand constructor.
+ * Box function.
+ *
  * @see BoxCommand
  */
 

@@ -4,8 +4,8 @@
  * Module dependencies.
  */
 
+import { define, radians } from '../utils'
 import { ObjectCommand } from './object'
-import { define } from '../utils'
 import { Vector } from '../math'
 import coalesce from 'defined'
 import mat4 from 'gl-mat4'
@@ -38,7 +38,7 @@ const scratch = mat4.identity([])
  */
 
 export const DEFAULT_CAMERA_ORIENTATION_ORIGIN =
-  new Vector(90 * Math.PI / 180, 0, 0)
+  new Vector(radians(90), 0, 0)
 
 /**
  * Default field of view frustrum angle for the
@@ -50,7 +50,7 @@ export const DEFAULT_CAMERA_ORIENTATION_ORIGIN =
  * @type {Number}
  */
 
-export const DEFAULT_CAMERA_FIELD_OF_VIEW = Math.PI/4.0
+export const DEFAULT_CAMERA_FIELD_OF_VIEW = radians(63)
 
 /**
  * Default near value for the persective camera

@@ -96,7 +96,10 @@ export class ObjectCommand extends Command {
       const uniforms = {
         ...opts.uniforms,
         color: () => this.color.elements,
-        model: () => model
+        model: (...args) => {
+          //console.log('model', ...args)
+          return model
+        }
       }
 
       defaults.count = opts.count || undefined
@@ -202,6 +205,8 @@ export class ObjectCommand extends Command {
       if ('function' == typeof state) {
         args = [{...defaults}]
         next = state
+      } else if (Array.isArray(state)) {
+        args = [state.map((o) => Object.assign({...defaults}, o))]
       } else {
         args = [{...defaults, ...state}]
       }

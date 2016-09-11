@@ -29,12 +29,21 @@ export class FrameCommand extends Command {
    * @param {Context} ctx
    */
 
-  constructor(ctx) {
+  constructor(ctx, opts = {}) {
+    const color = ctx.regl.texture({mag: 'linear'})
+    const fbo = ctx.regl.framebuffer({color})
+
+    //const render = ctx.regl({
+      //fbo
+    //})
+
     super((_, refresh) => {
-      ctx.regl.frame((...args) => {
+      ctx.regl.frame((reglCtx, ...args) => {
+        Object.assign(this, reglCtx)
+        ctx.time = reglCtx.time
         ctx.update(() => {
           if ('function' == typeof refresh) {
-            refresh(ctx, ...args)
+            refresh(ctx, reglCtx, ...args)
           }
         })
       })

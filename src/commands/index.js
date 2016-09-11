@@ -5,6 +5,7 @@
  */
 
 export { TriangleCommand } from './triangle'
+export { KeyboardCommand } from './keyboard'
 export { SphereCommand } from './sphere'
 export { CameraCommand } from './camera'
 export { ObjectCommand } from './object'

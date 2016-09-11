@@ -7,10 +7,12 @@
 import onMouseChange from 'mouse-change'
 import onMouseWheel from 'mouse-wheel'
 import { Command } from './command'
+import events from 'dom-events'
 import raf from 'raf'
 
 /**
- * MouseCommand constructor.
+ * Mouse function.
+ *
  * @see MouseCommand
  */
 
@@ -37,6 +39,15 @@ export class MouseCommand extends Command {
     super((_, block) => {
       if ('function' == typeof block) {
         block(this)
+      }
+    })
+
+    // focus/blur context on mouse down
+    events.on(document, 'mousedown', (e) => {
+      if (e.target == ctx.domElement) {
+        ctx.focus()
+      } else {
+        ctx.blur()
       }
     })
 
@@ -105,12 +116,16 @@ export class MouseCommand extends Command {
      * @see https://www.npmjs.com/package/mouse-wheel
      */
 
-    this.wheel = {dx: 0, dy: 0, dz: 0}
+    this.wheel = {
+      currentX: 0, currentY: 0,
+      deltaX: 0, deltaY: 0,
+      prevX: 0, prevY: 0,
+    }
 
     // update state on mouse change and reset
     // delta values on next animation frame
-    onMouseChange((buttons, x, y) => {
-      raf(() => Object.assign(this, {deltaX: 0, deltaY: 0}))
+    onMouseChange(ctx.domElement, (buttons, x, y) => {
+      if (false === this.allowChanges) { return }
       Object.assign(this, {
         buttons,
         currentX: x,
@@ -120,13 +135,34 @@ export class MouseCommand extends Command {
         prevX: this.currentX,
         prevY: this.currentY,
       })
+
+      raf(() => Object.assign(this, {
+        deltaX: 0,
+        deltaY: 0,
+      }))
     })
 
     // update mouse wheel deltas and then
     // reset them on the next animation frame
-    onMouseWheel((dx, dy, dz) => {
-      Object.assign(this.wheel, {dx, dy, dz})
-      raf(() => Object.assign(this.wheel, {dx: 0, dy: 0, dz: 0}))
+    onMouseWheel(ctx.domElement, (dx, dy, dz) => {
+      if (false === this.allowWheel) { return }
+      Object.assign(this.wheel, {
+        currentX: this.wheel.currentX + dx,
+        currentY: this.wheel.currentY + dy,
+        currentZ: this.wheel.currentZ + dz,
+        deltaX: dx,
+        deltaY: dy,
+        deltaZ: dz,
+        prevX: this.wheel.currentX,
+        prevY: this.wheel.currentY,
+        prevZ: this.wheel.currentZ,
+      })
+
+      raf(() => Object.assign(this.wheel, {
+        deltaX: 0,
+        deltaY: 0,
+        deltaZ: 0,
+      }))
     })
   }
 }

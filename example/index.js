@@ -5,7 +5,7 @@
  */
 
 import {
-  Triangle,
+  Keyboard,
   Context,
   Camera,
   Sphere,
@@ -17,53 +17,37 @@ import {
   Box,
 } from '../src'
 
-import {
-  Quaternion,
-  Vector,
-} from '../src/math'
-
-import { Geometry, } from '../src/geometry'
+import { OrbitCameraController } from '../src/controls'
+import { Quaternion, Vector, } from '../src/math'
+import { Geometry } from '../src/geometry'
 
 import normals from 'angle-normals'
 import Bunny from 'bunny'
 import quat from 'gl-quat'
+import raf from 'raf'
 
 const ctx = Context()
-const camera = Camera(ctx, {fov: 60 * Math.PI / 180, position: [0, 0, 0]})
+const camera = Camera(ctx)
 const frame = Frame(ctx)
 const photo = Photo(ctx, '/starwars-4k.jpg')
 const video = Video(ctx, 'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/vr.mp4')
+const keyboard = Keyboard(ctx)
 const mouse = Mouse(ctx)
-const sphere = Sphere(ctx, {
-  radius: 10,
-  segments: 150,
-  //map: photo
-  map: video
+const sphere = Sphere(ctx, {map: video})
+
+const controller = OrbitCameraController(ctx, {
+  target: camera,
+  inputs: {mouse, keyboard},
 })
 
-const RotateCamera = (({
-  rotation = new Quaternion(),
-  factor = 0.1,
-  x = new Quaternion(),
-  y = new Quaternion()
-} = {}) => function (orientation) {
-  quat.setAxisAngle(x, new Vector(1, 0, 0), orientation.x)
-  quat.setAxisAngle(y, new Vector(0, 1, 0), orientation.y)
-  quat.slerp(rotation, rotation, quat.multiply([], x, y), factor)
-  quat.copy(camera.rotation, rotation)
-})()
-
-let orientation = new Vector(mouse.deltaX, mouse.deltaY)
-let friction = 0.5
-
+window.camera = camera
 window.video = video
 
-frame(() => camera(() => {
-  if (mouse.buttons) {
-    orientation.x += -0.0033 * mouse.deltaY * friction + (Math.random() * 0.0025)
-    orientation.y += -0.0046 * mouse.deltaX * friction + (Math.random() * 0.0025)
-  }
-  camera.fov += 0.01 * mouse.wheel.dy
-  RotateCamera({x: orientation.x, y: orientation.y})
-  sphere()
-}))
+raf(() => controller.orientation.y = Math.PI / (Math.PI * 0.5))
+frame(() => {
+  camera(() => {
+    controller(() => {
+      sphere()
+    })
+  })
+})
