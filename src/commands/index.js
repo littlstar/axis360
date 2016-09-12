@@ -4,6 +4,7 @@
  * Module exports.
  */
 
+export { OrientationCommand } from './orientation'
 export { TriangleCommand } from './triangle'
 export { KeyboardCommand } from './keyboard'
 export { SphereCommand } from './sphere'

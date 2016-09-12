@@ -91,7 +91,6 @@ export class OrbitCameraController extends AbstractController {
 
       // update orientation from keyboard input
       keyboard && keyboard((({dx = 0, dy = 0} = {}) => () => {
-
         if (mouse && mouse.buttons) {
           keyboard.reset()
         }
@@ -99,25 +98,53 @@ export class OrbitCameraController extends AbstractController {
         const c = 0.075
         const step = c*friction
         const keys = keyboard.keys
-        const up = keys.up || keys.w || keys.k
-        const down = keys.down || keys.s || keys.j
-        const left = keys.left || keys.a || keys.h
-        const right = keys.right || keys.d || keys.l
 
-        if (up) {
-          dx = dx - step
-          this.orientation.x -= 0.7*step
-        } else if (down) {
-          dx = dx + step
-          this.orientation.x += 0.7*step
+        const states = {
+          up: ['up', 'w', 'k'],
+          down: ['down', 's', 'j'],
+          left: ['left', 'a', 'h'],
+          right: ['right', 'd', 'l'],
+          control: [
+            'right command',
+            'left control',
+            'left command',
+            'right control',
+            'control',
+            'super',
+            'ctrl',
+            'alt',
+            'fn',
+          ]
         }
 
-        if (left) {
+        const on = (which) => states[which].map((key) => keys[key] = true)
+        const off = (which) => states[which].map((key) => keys[key] = false)
+        const value = (which) => states[which].some((key) => Boolean(keys[key]))
+        const shouldIgnoreControl = value('control')
+
+        // @TODO(werle) - should we reset keyboard state ?
+        if (shouldIgnoreControl) {
+          return
+        }
+
+        if (value('up')) {
+          dx = dx - step
+          this.orientation.x -= 0.7*step
+          off('down')
+        } else if (value('down')) {
+          dx = dx + step
+          this.orientation.x += 0.7*step
+          off('up')
+        }
+
+        if (value('left')) {
           dy = dy - step
           this.orientation.y -= step
-        } else if (right) {
+          off('right')
+        } else if (value('right')) {
           dy = dy + step
           this.orientation.y += step
+          off('left')
         }
 
         this.orientation.x += c*dx

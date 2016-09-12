@@ -9,54 +9,17 @@ import glsl from 'glslify'
 import regl from 'regl'
 
 /**
- * `current' command symbol.
- *
- * @public
- * @const
- * @type {Symbol}
+ * Module symbols.
  */
 
-export const $current = Symbol('current')
-
-/**
- * `previous' command symbol.
- *
- * @public
- * @const
- * @type {Symbol}
- */
-
-export const $previous = Symbol('previous')
-
-/**
- * `element' symbol.
- *
- * @public
- * @const
- * @type {Symbol}
- */
-
-export const $domElement = Symbol('element')
-
-/**
- * gl context symbol.
- *
- * @public
- * @const
- * @type {Symbol}
- */
-
-export const $gl = Symbol('gl')
-
-/**
- * `hasFocus' boolean symbol.
- *
- * @public
- * @const
- * @type {Symbol}
- */
-
-export const $hasFocus = Symbol('hasFocus')
+import {
+  $domElement,
+  $hasFocus,
+  $previous,
+  $current,
+  $regl,
+  $gl,
+} from './symbols'
 
 /**
  * Context class defaults.
@@ -81,7 +44,7 @@ export const defaults = {
  */
 
 export function Context(opts) {
-  return new CommandContext(Object.assign(defaults, opts || {}))
+  return new CommandContext({...defaults, ...opts})
 }
 
 /**
@@ -103,6 +66,7 @@ export class CommandContext extends EventEmitter {
 
   constructor(initialState = {}, opts = {}) {
     super()
+
     const reglOptions = { ...opts.regl }
     if (opts.element && 'CANVAS' == opts.element.nodeName) {
       reglOptions.canvas = opts.element
@@ -110,7 +74,6 @@ export class CommandContext extends EventEmitter {
       reglOptions.container = opts.element
     }
 
-    this.setMaxListeners(Infinity)
     this.regl = regl(opts.regl)
     this.state = initialState
     this.stack = []
@@ -120,6 +83,8 @@ export class CommandContext extends EventEmitter {
     this[$previous] = null
     this[$hasFocus] = false
     this[$domElement] = this.regl._gl.canvas
+
+    this.setMaxListeners(Infinity)
   }
 
   /**
@@ -197,6 +162,7 @@ export class CommandContext extends EventEmitter {
 
   blur() {
     this[$hasFocus] = false
+    return this
   }
 
   /**
@@ -229,24 +195,27 @@ export class CommandContext extends EventEmitter {
   }
 
   /**
-   * Updates command context state and
-   * class clear on regl instance.
+   * Updates command context state.
    *
    * @param {Function|Block}
    * @return {CommandContext}
    */
 
   update(block) {
-    let fn = () => void 0
-
-    if ('function' == typeof block) {
-      fn = block
-    } else if (block && 'object' == typeof block) {
+    if (block && 'object' == typeof block) {
       Object.assign(this.state, block)
     }
+    return this
+  }
 
+  /**
+   * Clears the clear buffers in regl.
+   *
+   * @return {CommandContext}
+   */
+
+  clear() {
     this.regl.clear(this.state.clear)
-    fn()
     return this
   }
 }

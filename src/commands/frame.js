@@ -5,6 +5,7 @@
  */
 
 import { Command } from './command'
+import { define } from '../utils'
 
 /**
  * FrameCommand constructor.
@@ -30,23 +31,39 @@ export class FrameCommand extends Command {
    */
 
   constructor(ctx, opts = {}) {
-    const color = ctx.regl.texture({mag: 'linear'})
-    const fbo = ctx.regl.framebuffer({color})
+    // @TODO(werle) - use framebuffer
 
-    //const render = ctx.regl({
-      //fbo
-    //})
+    let tick = null
+    let isRunning = false
+    let reglContext = null
+
+    const queue = []
 
     super((_, refresh) => {
-      ctx.regl.frame((reglCtx, ...args) => {
-        Object.assign(this, reglCtx)
-        ctx.time = reglCtx.time
-        ctx.update(() => {
-          if ('function' == typeof refresh) {
-            refresh(ctx, reglCtx, ...args)
-          }
-        })
-      })
+      this.start()
+      queue.push(refresh)
     })
+
+    /**
+     * Starts the frame loop.
+     *
+     * @return {FrameCommand}
+     */
+
+    this.start = () => {
+      if (isRunning) { return this }
+      tick = ctx.regl.frame((_, ...args) => {
+        reglContext = _
+
+        ctx.clear()
+        for (let refresh of queue) {
+          if ('function' == typeof refresh) {
+            refresh(ctx, reglContext, ...args)
+          }
+        }
+
+      })
+      return this
+    }
   }
 }

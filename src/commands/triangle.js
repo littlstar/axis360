@@ -8,6 +8,7 @@ import { TriangleGeometry } from '../geometry/triangle'
 import { ObjectCommand } from './object'
 import glsl from 'glslify'
 
+// @TODO(werle) - move this into a glsl file
 const vert = `
 precision mediump float;
 

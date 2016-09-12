@@ -9,6 +9,12 @@ import { Command } from '../commands'
 import { define } from '../utils'
 import quat from 'gl-quat'
 
+/**
+ * Static vectors used for reference in
+ * quaternion axis rotations.
+ *
+ */
+
 const XVECTOR = new Vector(1, 0, 0)
 const YVECTOR = new Vector(0, 1, 0)
 const ZVECTOR = new Vector(0, 0, 1)

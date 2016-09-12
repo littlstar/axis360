@@ -1,14 +1,7 @@
 'use strict'
 
 /**
- * Module constants.
- */
-
-export const AXIS_TYPE_VIDEO = 0x01
-export const AXIS_TYPE_PHOTO = 0x02
-
-/**
- * Module dependencies.
+ * Module exports.
  */
 
 export { Command } from './commands'
@@ -20,16 +13,16 @@ export * as Math from './math'
  * Axis command API.
  */
 
+export Orientation from './commands/orientation'
 export Keyboard from './commands/keyboard'
 export Triangle from './commands/triangle'
 export Object from './commands/object'
 export Sphere from './commands/sphere'
 export Camera from './commands/camera'
-export Mouse from './commands/Mouse'
+export Mouse from './commands/mouse'
 export Frame from './commands/frame'
 export Media from './commands/media'
 export Mouse from './commands/mouse'
 export Photo from './commands/photo'
 export Video from './commands/video'
 export Box from './commands/box'
-

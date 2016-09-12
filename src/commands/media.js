@@ -5,6 +5,7 @@
  */
 
 import { Command } from './command'
+import { define } from '../utils'
 import resl from 'resl'
 import raf from 'raf'
 
@@ -43,7 +44,7 @@ export class MediaCommand extends Command {
     let hasProgress = false
     let isLoading = false
     let hasError = false
-    let isDone = false
+    let isDoneLoading = false
 
     super(() => { this.load() })
     raf(() => this.load())
@@ -78,7 +79,7 @@ export class MediaCommand extends Command {
      */
 
     this.load = () => {
-      if (isLoading || hasProgress || hasError || isDone) {
+      if (isLoading || hasProgress || hasError || isDoneLoading) {
         return false
       }
 
@@ -87,25 +88,83 @@ export class MediaCommand extends Command {
         manifest: manifest,
 
         onDone: (...args) => {
-          isDone = true
+          isDoneLoading = true
           void (this.onloaded || noop)(...args)
         },
 
         onError: (...args) => {
           hasError = true
-          isDone = true
+          isDoneLoading = true
           void (this.onerror || noop)(...args)
         },
 
         onProgress: (...args) => {
           hasProgress = true
-          isDone = false
+          isDoneLoading = false
           void (this.onprogress || noop)(...args)
         },
       }))
 
       return true
     }
+
+    /**
+     * Boolean predicate to indicate if media has
+     * completed loaded enough data. All data may not be
+     * loaded if media is a streaming source.
+     *
+     * @public
+     * @getter
+     * @type {Boolean}
+     */
+
+    define(this, 'isDoneLoading', { get: () => isDoneLoading })
+
+    /**
+     * Boolean predicate to indicate if media has
+     * load progress.
+     *
+     * @public
+     * @getter
+     * @type {Boolean}
+     */
+
+    define(this, 'hasProgress', { get: () => hasProgress })
+
+    /**
+     * Boolean predicate to indicate if media has
+     * begun loading.
+     *
+     * @public
+     * @getter
+     * @type {Boolean}
+     */
+
+    define(this, 'isLoading', { get: () => isLoading })
+
+    /**
+     * Boolean predicate to indicate if media loading
+     * encountered an error.
+     *
+     * @public
+     * @getter
+     * @type {Boolean}
+     */
+
+    define(this, 'hasError', { get: () => hasError })
+
+    /**
+     * Boolean predicate to indicate if media has
+     * has data to read from.
+     *
+     * @public
+     * @getter
+     * @type {Boolean}
+     */
+
+    define(this, 'hasData', {
+      get: () => !hasError && (isDoneLoading || hasProgress)
+    })
 
     /**
      * Resets state and loads resources.
@@ -126,10 +185,10 @@ export class MediaCommand extends Command {
      */
 
     this.reset = () => {
+      isDoneLoading = false
       hasProgress = false
       isLoading = false
       hasError = false
-      isDone = false
       return this
     }
   }

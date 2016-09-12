@@ -10,8 +10,6 @@ import vec4 from 'gl-vec4'
 import vec3 from 'gl-vec3'
 import vec2 from 'gl-vec2'
 
-// @TODO(werle) - proxy gl-vec{2..4} methods
-
 /**
  * Vector class.
  *

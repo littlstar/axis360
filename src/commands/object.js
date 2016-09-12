@@ -81,87 +81,13 @@ export class ObjectCommand extends Command {
    */
 
   constructor(ctx, opts = {}) {
-    let draw = opts.draw
-    const model = mat4.identity([])
     const defaults = {...opts.defaults}
+    const model = mat4.identity([])
 
-    // use regl draw command if draw() function
-    // was not provided
-    if (!draw) {
-      const geometry = opts.geometry || null
-      const elements = geometry ? geometry.primitive.cells : undefined
-      const attributes = {...opts.attributes}
-      const shaderDefines = {}
+    let render = null
+    let draw = opts.draw || null
+    let map = opts.map || null
 
-      const uniforms = {
-        ...opts.uniforms,
-        color: () => this.color.elements,
-        model: (...args) => {
-          //console.log('model', ...args)
-          return model
-        }
-      }
-
-      defaults.count = opts.count || undefined
-      defaults.elements = opts.elements || elements || undefined
-      defaults.primitive = opts.primitive || 'triangles'
-
-      if (geometry) {
-        if (geometry.primitive.positions) {
-          shaderDefines.HAS_POSITIONS = ''
-          attributes.position = geometry.primitive.positions
-        }
-
-        if (geometry.primitive.normals) {
-          shaderDefines.HAS_NORMALS = ''
-          attributes.normal = geometry.primitive.normals
-        }
-
-        if (geometry.primitive.uvs) {
-          shaderDefines.HAS_UVS = ''
-          attributes.uv = geometry.primitive.uvs
-        }
-      }
-
-      if (opts.map && opts.map.texture) {
-        uniforms.map = () => this.map.texture
-      } else if (opts.map) {
-        uniforms.map = () => this.map
-      }
-
-      if (!opts.primitive && opts.wireframe) {
-        opts.primitive = 'lines'
-      }
-
-      const reglOptions = {
-        ...opts.regl,
-        uniforms,
-        attributes,
-        vert: opts.vert || DEFAULT_VERTEX_SHADER,
-        frag: opts.frag || DEFAULT_FRAGMENT_SHADER,
-        count: null == opts.count ? undefined : ctx.regl.prop('count'),
-        elements: null == elements ? undefined : ctx.regl.prop('elements'),
-        primitive: () => {
-          if (this.wireframe) { return 'line loop' }
-          else { return defaults.primitive }
-        }
-      }
-
-      if (uniforms.map) {
-        shaderDefines.HAS_MAP = ''
-      }
-
-      reglOptions.frag = injectDefines(reglOptions.frag, shaderDefines)
-      reglOptions.vert = injectDefines(reglOptions.vert, shaderDefines)
-
-      for (let key in reglOptions) {
-        if (undefined == reglOptions[key]) {
-          delete reglOptions[key]
-        }
-      }
-
-      draw = ctx.regl(reglOptions)
-    }
 
     // update state and internal matrices
     const update = (state) => {
@@ -196,38 +122,117 @@ export class ObjectCommand extends Command {
       return true
     }
 
-    // render command state
-    const render = opts.render || ((_, state, next = () => void 0) => {
-      let args = null
+    const configure = () => {
+      // reset draw function
+      if (!opts.draw) { draw = null }
+      // use regl draw command if draw() function
+      // was not provided
+      if (!draw) {
+        const geometry = opts.geometry || null
+        const elements = geometry ? geometry.primitive.cells : undefined
+        const attributes = {...opts.attributes}
+        const shaderDefines = {}
 
-      ctx.push(this)
+        const uniforms = {
+          ...opts.uniforms,
+          color: () => this.color.elements,
+          model: (...args) => model
+        }
 
-      if ('function' == typeof state) {
-        args = [{...defaults}]
-        next = state
-      } else if (Array.isArray(state)) {
-        args = [state.map((o) => Object.assign({...defaults}, o))]
-      } else {
-        args = [{...defaults, ...state}]
+        defaults.count = opts.count || undefined
+        defaults.elements = opts.elements || elements || undefined
+        defaults.primitive = opts.primitive || 'triangles'
+
+        if (geometry) {
+          if (geometry.primitive.positions) {
+            shaderDefines.HAS_POSITIONS = ''
+            attributes.position = geometry.primitive.positions
+          }
+
+          if (geometry.primitive.normals) {
+            shaderDefines.HAS_NORMALS = ''
+            attributes.normal = geometry.primitive.normals
+          }
+
+          if (geometry.primitive.uvs) {
+            shaderDefines.HAS_UVS = ''
+            attributes.uv = geometry.primitive.uvs
+          }
+        }
+
+        if (map) {
+          uniforms.map = () => map && map.texture ? map.texture : map || null
+        }
+
+        if (!opts.primitive && opts.wireframe) {
+          opts.primitive = 'lines'
+        }
+
+        const reglOptions = {
+          ...opts.regl,
+          uniforms,
+          attributes,
+          vert: opts.vert || DEFAULT_VERTEX_SHADER,
+          frag: opts.frag || DEFAULT_FRAGMENT_SHADER,
+          count: null == opts.count ? undefined : ctx.regl.prop('count'),
+          elements: null == elements ? undefined : ctx.regl.prop('elements'),
+          primitive: () => {
+            if (this.wireframe) { return 'line loop' }
+            else { return defaults.primitive }
+          }
+        }
+
+        if (uniforms.map) {
+          shaderDefines.HAS_MAP = ''
+        }
+
+        reglOptions.frag = injectDefines(reglOptions.frag, shaderDefines)
+        reglOptions.vert = injectDefines(reglOptions.vert, shaderDefines)
+
+        for (let key in reglOptions) {
+          if (undefined == reglOptions[key]) {
+            delete reglOptions[key]
+          }
+        }
+
+        draw = ctx.regl(reglOptions)
       }
 
-      if (opts.before) {
-        opts.before(...args)
-      }
+      // configure render command
+      render = opts.render || ((_, state, next = () => void 0) => {
+        let args = null
 
-      if (update(...args)) {
-        draw(...args)
-        next(...args)
-      }
+        ctx.push(this)
 
-      if (opts.after) {
-        opts.after(...args)
-      }
+        if ('function' == typeof state) {
+          args = [{...defaults}]
+          next = state
+        } else if (Array.isArray(state)) {
+          args = [state.map((o) => Object.assign({...defaults}, o))]
+        } else {
+          args = [{...defaults, ...state}]
+        }
 
-      ctx.pop()
-    })
+        if (opts.before) {
+          opts.before(...args)
+        }
 
-    super(render)
+        if (update(...args)) {
+          draw(...args)
+          next(...args)
+        }
+
+        if (opts.after) {
+          opts.after(...args)
+        }
+
+        ctx.pop()
+      })
+    }
+
+    configure()
+
+    super((...args) => render(...args))
 
     /**
      * Object ID.
@@ -308,6 +313,17 @@ export class ObjectCommand extends Command {
      * @type {Media}
      */
 
-    this.map = opts.map || null
+    define(this, 'map', {
+      get: () => map,
+      set: (value) => {
+        if (value && value.texture) {
+          map = value
+          configure()
+        } else if (null == value) {
+          map = null
+          configure()
+        }
+      }
+    })
   }
 }

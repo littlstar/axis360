@@ -7,34 +7,14 @@
 const noop = () => this
 
 /**
- * Symbol for an internal run method.
- *
- * @public
- * @const
- * @symbol nun
+ * Module symbols.
  */
 
-export const $run = Symbol('run')
-
-/**
- * Symbol for an internal reference
- *
- * @public
- * @const
- * @symbol ref
- */
-
-export const $ref = Symbol('ref')
-
-/**
- * Symbol for an internal context
- *
- * @public
- * @const
- * @symbol ctx
- */
-
-export const $ctx = Symbol('ctx')
+import {
+  $ctx,
+  $run,
+  $ref,
+} from '../symbols'
 
 /**
  * Encode a function for execution within a

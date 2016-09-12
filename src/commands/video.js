@@ -35,6 +35,33 @@ export class VideoCommand extends MediaCommand {
     })
 
     /**
+     * Source attribute accessor.
+     *
+     * @type {String}
+     */
+
+    define(this, 'src', {
+      get: () => {
+        return (source && source.src) ?
+          source.src :
+          (this.manifest && this.manifest.video) ?
+            this.manifest.video.src :
+            null
+      },
+
+      set: (value) => {
+        if (source && 'string' == typeof value) {
+          source.src = value
+          if (this.manifest && this.manifest.video) {
+            this.manifest.video.src = value
+            this.reset()
+            this.load()
+          }
+        }
+      }
+    })
+
+    /**
      * Video texture target.
      *
      * @type {REGLTexture}
@@ -53,7 +80,9 @@ export class VideoCommand extends MediaCommand {
       this.texture(video)
       const loop = () => {
         raf(loop)
-        this.map = this.texture.subimage(video)
+        if (this.isDoneLoading) {
+          this.texture = this.texture.subimage(video)
+        }
       }
       raf(loop)
     }
