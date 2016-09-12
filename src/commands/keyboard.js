@@ -71,6 +71,25 @@ export class KeyboardCommand extends Command {
 
     define(this, 'keys', { get: () => ({ ...state.keys }) })
 
+    /**
+     * Resets keyboard state by setting all keycodes
+     * and keys to `false'.
+     *
+     * @public
+     * @return {KeyboardCommand}
+     */
+
+    this.reset = () => {
+      for (let code in state.keycodes) {
+        state.keycodes[code] = false
+      }
+
+      for (let key in state.keys) {
+        state.keys[key] = false
+      }
+      return this
+    }
+
     // update keydown states
     events.on(document, 'keydown', (e) => {
       if (false == ctx.hasFocus) return

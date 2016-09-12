@@ -91,6 +91,11 @@ export class OrbitCameraController extends AbstractController {
 
       // update orientation from keyboard input
       keyboard && keyboard((({dx = 0, dy = 0} = {}) => () => {
+
+        if (mouse && mouse.buttons) {
+          keyboard.reset()
+        }
+
         const c = 0.075
         const step = c*friction
         const keys = keyboard.keys
