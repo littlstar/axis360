@@ -1,6 +1,11 @@
 'use strict'
 
-const PI = Math.PI
+/**
+ * Module dependencies.
+ */
+
+import { version } from './package'
+import createDebug from 'debug'
 
 /**
  * Define property helper.
@@ -21,4 +26,14 @@ export const define = (a, b, c) => Object.defineProperty(a, b, { ...c })
  * @return {Number}
  */
 
-export const radians = (n) => n * Math.PI / 180.0
+export const radians = (n) => n == n ? (n * Math.PI / 180.0) : 0
+
+/**
+ * Utility debug output
+ *
+ * @public
+ * @param {String} fmt
+ * @param {...Mixed} args
+ */
+
+export const debug = createDebug(`[axis@${version}]`)

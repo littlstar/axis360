@@ -89,7 +89,13 @@ export class ObjectCommand extends Command {
     let map = opts.map || null
 
 
-    // update state and internal matrices
+    /**
+     * Updates state and internal matrices.
+     *
+     * @private
+     * @param {(Object)?} state
+     */
+
     const update = (state) => {
       if ('scale' in state) {
         vec3.copy(this.scale, state.scale)
@@ -107,20 +113,29 @@ export class ObjectCommand extends Command {
         vec4.copy(this.color, state.color)
       }
 
+      // update uniform model matrix
       mat4.identity(model)
       mat4.translate(model, model, this.position)
       mat4.scale(model, model, this.scale)
       mat4.multiply(model, model, mat4.fromQuat([], this.rotation))
 
+      // apply and set contextual transform
       if (ctx.previous && ctx.previous.id != this.id) {
         mat4.copy(this.transform, mat4.multiply([], ctx.previous.transform, model))
       } else {
         mat4.copy(this.transform, model)
       }
 
+      // copy transform to uniform model matrix
       mat4.copy(model, this.transform)
-      return true
     }
+
+    /**
+     * Configures object state. This function
+     * may create a new render function from regl
+     *
+     * @private
+     */
 
     const configure = () => {
       // reset draw function
@@ -160,8 +175,10 @@ export class ObjectCommand extends Command {
           }
         }
 
-        if (map) {
+        if (map && map.texture) {
           uniforms.map = () => map && map.texture ? map.texture : map || null
+        } else if (map) {
+          map.once('load', () => configure())
         }
 
         if (!opts.primitive && opts.wireframe) {
@@ -217,10 +234,9 @@ export class ObjectCommand extends Command {
           opts.before(...args)
         }
 
-        if (update(...args)) {
-          draw(...args)
-          next(...args)
-        }
+        update(...args)
+        draw(...args)
+        next(...args)
 
         if (opts.after) {
           opts.after(...args)
@@ -230,8 +246,10 @@ export class ObjectCommand extends Command {
       })
     }
 
+    // initial configuration
     configure()
 
+    // calls current target  render function
     super((...args) => render(...args))
 
     /**

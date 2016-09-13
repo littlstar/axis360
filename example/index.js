@@ -22,6 +22,7 @@ import { Geometry } from '../src/geometry'
 
 import normals from 'angle-normals'
 import Bunny from 'bunny'
+import debug from 'debug'
 import quat from 'gl-quat'
 import raf from 'raf'
 
@@ -32,7 +33,9 @@ const ctx = Context()
 const camera = Camera(ctx)
 const frame = Frame(ctx)
 const photo = Photo(ctx, '/starwars-4k.jpg')
-const video = Video(ctx, 'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/vr.mp4')
+const video = Video(ctx, 'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/vr.mp4', {
+  muted: true
+})
 
 // inputs
 const orientation = Orientation(ctx)
@@ -40,12 +43,14 @@ const keyboard = Keyboard(ctx)
 const mouse = Mouse(ctx)
 
 // shapes
-const sphere = Sphere(ctx)
+const sphere = Sphere(ctx, {map: video})
+
+raf(() => video.play())
 
 // controller
 const controller = OrbitCameraController(ctx, {
   target: camera,
-  inputs: {mouse, keyboard},
+  inputs: {mouse, keyboard, orientation},
 })
 
 // for fun in the console
@@ -55,6 +60,7 @@ window.camera = camera
 window.video = video
 window.photo = photo
 window.mouse = mouse
+window.debug = debug
 
 // focus now
 ctx.focus()

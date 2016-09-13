@@ -31,16 +31,6 @@ export const $previous = Symbol('previous')
 export const $domElement = Symbol('element')
 
 /**
- * gl context symbol.
- *
- * @public
- * @const
- * @type {Symbol}
- */
-
-export const $gl = Symbol('gl')
-
-/**
  * regl context symbol.
  *
  * @public
@@ -89,3 +79,23 @@ export const $ref = Symbol('ref')
  */
 
 export const $ctx = Symbol('ctx')
+
+/**
+ * Symbol for an internal stack.
+ *
+ * @public
+ * @const
+ * @symbol stack
+ */
+
+export const $stack = Symbol('stack')
+
+/**
+ * Symbol for an internal state.
+ *
+ * @public
+ * @const
+ * @symbol state
+ */
+
+export const $state = Symbol('state')

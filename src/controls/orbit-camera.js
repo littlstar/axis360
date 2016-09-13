@@ -58,6 +58,9 @@ export class OrbitCameraController extends AbstractController {
       const friction = this.friction
       const camera = this.target
       const inputs = this.inputs || {}
+
+      // supported inputs
+      const orientation = inputs.orientation
       const keyboard = inputs.keyboard
       const mouse = inputs.mouse
 
@@ -70,9 +73,9 @@ export class OrbitCameraController extends AbstractController {
         const dx = mouse.deltaX
 
         // update if a singled button is pressed
-        if (1 == mouse.buttons) {
+        if (1 == mouse.buttons && (dy || dx)) {
           this.orientation.x += -1*xf*dy*friction + (c*Math.random())
-          this.orientation.y += -1*yf*dx*friction + (c*Math.random())
+          this.orientation.y += -0.8*yf*dx*friction + (c*Math.random())
         }
 
         // clamp at north/south poles
@@ -95,45 +98,35 @@ export class OrbitCameraController extends AbstractController {
           keyboard.reset()
         }
 
-        const c = 0.075
+        let c = 0.07
         const step = c*friction
         const keys = keyboard.keys
-
+        const on = (which) => states[which].map((key) => keys[key] = true)
+        const off = (which) => states[which].map((key) => keys[key] = false)
+        const value = (which) => states[which].some((key) => Boolean(keys[key]))
         const states = {
           up: ['up', 'w', 'k'],
           down: ['down', 's', 'j'],
           left: ['left', 'a', 'h'],
           right: ['right', 'd', 'l'],
           control: [
-            'right command',
-            'left control',
-            'left command',
-            'right control',
             'control',
-            'super',
-            'ctrl',
-            'alt',
-            'fn',
+            'right command', 'left command',
+            'right control', 'left control',
+            'super', 'ctrl', 'alt', 'fn',
           ]
         }
 
-        const on = (which) => states[which].map((key) => keys[key] = true)
-        const off = (which) => states[which].map((key) => keys[key] = false)
-        const value = (which) => states[which].some((key) => Boolean(keys[key]))
-        const shouldIgnoreControl = value('control')
-
         // @TODO(werle) - should we reset keyboard state ?
-        if (shouldIgnoreControl) {
-          return
-        }
+        if (value('control')) { return }
 
         if (value('up')) {
           dx = dx - step
-          this.orientation.x -= 0.7*step
+          this.orientation.x -= step
           off('down')
         } else if (value('down')) {
           dx = dx + step
-          this.orientation.x += 0.7*step
+          this.orientation.x += step
           off('up')
         }
 
@@ -147,9 +140,17 @@ export class OrbitCameraController extends AbstractController {
           off('left')
         }
 
-        this.orientation.x += c*dx
-        this.orientation.y += c*dy
+        c = 0.075
+        if (dx) { this.orientation.x += c*dx}
+        if (dy) { this.orientation.y += c*dy}
       })())
+
+      // update orientation from orientation input
+      orientation && orientation(() => {
+        this.orientation.x -= friction*radians(orientation.deltaBeta)
+        this.orientation.y -= friction*radians(orientation.deltaGamma)
+        this.orientation.z -= friction*radians(orientation.deltaAlpha)
+      })
     })
 
     /**

@@ -7,6 +7,56 @@
 import { Command } from './command'
 import { define } from '../utils'
 import events from 'dom-events'
+import raf from 'raf'
+
+/**
+ * Global orientation state object.
+ *
+ * @private
+ */
+
+const globalState = {
+  absolute: null,
+
+  currentAlpha: 0, // z
+  currentBeta: 0, // x
+  currentGamma: 0, // y
+
+  deltaAlpha: 0,
+  deltaBeta: 0,
+  deltaGamma: 0,
+
+  prevAlpha: 0,
+  prevBeta: 0,
+  prevGamma: 0,
+}
+
+// update global device orientation state
+events.on(window, 'deviceorientation', (e) => {
+  // ZXY
+  const { alpha, beta, gamma, absolute } = e
+
+  Object.assign(globalState, {
+    absolute,
+    currentAlpha: alpha,
+    currentBeta: beta,
+    currentGamma: gamma,
+
+    deltaAlpha: alpha - globalState.currentAlpha,
+    deltaBeta: beta - globalState.currentBeta,
+    deltaGamma: gamma - globalState.currentGamma,
+
+    prevAlpha: alpha - globalState.currentAlpha,
+    prevBeta: beta - globalState.currentBeta,
+    prevGamma: gamma - globalState.currentGamma,
+  })
+
+  raf(() => Object.assign(globalState, {
+    deltaAlpha: 0,
+    deltaBeta: 0,
+    deltaGamma: 0,
+  }))
+})
 
 /**
  * Orientation function.
@@ -34,11 +84,6 @@ export class OrientationCommand extends Command {
    */
 
   constructor(ctx, opts = {}) {
-    super((_, block) => {
-      if ('function' == typeof block) {
-        block(this)
-      }
-    })
 
     /**
      * Orientation state.
@@ -49,29 +94,45 @@ export class OrientationCommand extends Command {
 
     const state = {
       absolute: null,
-      alpha: 0,
-      beta: 0,
-      gamma: 0,
+
+      currentAlpha: 0, // z
+      currentBeta: 0, // x
+      currentGamma: 0, // y
+
+      deltaAlpha: 0,
+      deltaBeta: 0,
+      deltaGamma: 0,
+
+      prevAlpha: 0,
+      prevBeta: 0,
+      prevGamma: 0,
+    }
+
+    super((_, block) => {
+      Object.assign(state, globalState)
+      if ('function' == typeof block) { block(this) }
+    })
+
+    for (let prop in state) {
+      define(this, prop, { get: () => state[prop] })
     }
 
     /**
+     * Resets current state
      *
      * @public
      * @return {OrientationCommand}
      */
 
     this.reset = () => {
+      for (let prop in state) {
+        if ('number' == typeof state[prop]) {
+          state[prop] = 0
+        } else {
+          state[prop] = null
+        }
+      }
       return this
     }
-
-    // update orientation states
-    events.on(document, 'deviceorientation', (e) => {
-      if (false == ctx.hasFocus) { return }
-      console.log('orientation', e)
-      state.absolute = e.absolute
-      state.alpha = e.alpha
-      state.beta = e.beta
-      state.gamma = e.gamma
-    })
   }
 }

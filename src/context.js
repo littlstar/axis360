@@ -6,6 +6,7 @@
 
 import { EventEmitter } from 'events'
 import glsl from 'glslify'
+// @TODO(werle) - consider using multi-regl
 import regl from 'regl'
 
 /**
@@ -17,8 +18,9 @@ import {
   $hasFocus,
   $previous,
   $current,
+  $stack,
+  $state,
   $regl,
-  $gl,
 } from './symbols'
 
 /**
@@ -31,6 +33,7 @@ import {
 
 export const defaults = {
   clear: {
+    // @TODO(werle) - use a color module
     color: [17/255, 17/255, 17/255, 1],
     depth: 1,
   },
@@ -72,17 +75,17 @@ export class CommandContext extends EventEmitter {
       reglOptions.canvas = opts.element
     } else if (opts.element && opts.element.nodeName) {
       reglOptions.container = opts.element
+    } else if ('string' == typeof opts.element) {
+      reglOptions.container = opts.element
     }
 
-    this.regl = regl(opts.regl)
-    this.state = initialState
-    this.stack = []
-
-    this[$gl] = this.regl._gl
+    this[$regl] = regl(opts.regl)
+    this[$stack] = []
+    this[$state] = initialState
     this[$current] = null
     this[$previous] = null
     this[$hasFocus] = false
-    this[$domElement] = this.regl._gl.canvas
+    this[$domElement] = this[$regl]._gl.canvas
 
     this.setMaxListeners(Infinity)
   }
@@ -116,7 +119,7 @@ export class CommandContext extends EventEmitter {
    */
 
   get depth() {
-    return this.stack.length - 1
+    return this[$stack].length - 1
   }
 
   /**
@@ -141,6 +144,28 @@ export class CommandContext extends EventEmitter {
 
   get hasFocus() {
     return this[$hasFocus]
+  }
+
+  /**
+   * regl instance.
+   *
+   * @getter
+   * @type {Function}
+   */
+
+  get regl() {
+    return this[$regl]
+  }
+
+  /**
+   * State object.
+   *
+   * @getter
+   * @type {Object}
+   */
+
+  get state() {
+    return this[$stack]
   }
 
   /**
@@ -174,7 +199,7 @@ export class CommandContext extends EventEmitter {
 
   push(command) {
     if ('function' == typeof command) {
-      this.stack.push(command)
+      this[$stack].push(command)
       this[$previous] = this[$current]
       this[$current] = command
     }
@@ -188,9 +213,9 @@ export class CommandContext extends EventEmitter {
    */
 
   pop() {
-    let command = this.stack.pop()
+    let command = this[$stack].pop()
     this[$current] = this[$previous]
-    this[$previous] = this.stack[this.stack.length - 1]
+    this[$previous] = this[$stack][this[$stack].length - 1]
     return command
   }
 
@@ -203,7 +228,7 @@ export class CommandContext extends EventEmitter {
 
   update(block) {
     if (block && 'object' == typeof block) {
-      Object.assign(this.state, block)
+      Object.assign(this[$state], block)
     }
     return this
   }
@@ -215,8 +240,7 @@ export class CommandContext extends EventEmitter {
    */
 
   clear() {
-    this.regl.clear(this.state.clear)
+    this.regl.clear(this[$state].clear)
     return this
   }
 }
-
