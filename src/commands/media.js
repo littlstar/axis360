@@ -11,13 +11,13 @@ import resl from 'resl'
 import raf from 'raf'
 
 /**
- * Retry timeout in milliseconds.
+ * reload timeout in milliseconds.
  *
  * @private
  * @type {Number}
  */
 
-const RETRY_TIMEOUT = 1000
+const reload_TIMEOUT = 1000
 
 /**
  * No-op to return undefined
@@ -52,31 +52,28 @@ export class MediaCommand extends Command {
    * @constructor
    * @param {Object} ctx
    * @param {Object} manifest
+   * @param {(Object)?} initialState
    */
 
-  constructor(ctx, manifest) {
-    let timeout = RETRY_TIMEOUT
+  constructor(ctx, manifest, initialState = {}) {
+    let timeout = reload_TIMEOUT
     let hasProgress = false
     let isLoading = false
     let hasError = false
     let isDoneLoading = false
 
-    super(() => { this.load() })
+    // load when called as a function
+    super(() => { this.read() })
 
     // mixin and initialize EventEmitter
     EventEmitter.call(this)
     Object.assign(this, EventEmitter.prototype)
     this.setMaxListeners(Infinity)
 
-    raf(() => {
-      this.load()
-      setTimeout(() => {
-        if (hasError || (hasProgress && isLoading && !isDoneLoading)) {
-          debug('retrying....')
-          this.retry()
-        }
-      }, RETRY_TIMEOUT)
-    })
+    // preload unless otherwise specified
+    if (initialState && false !== initialState.preload) {
+      raf(() => this.load())
+    }
 
     /**
      * Manifest object getter.
@@ -159,6 +156,27 @@ export class MediaCommand extends Command {
     }
 
     /**
+     * Calls an abstract _read() method.
+     *
+     * @return {MediaCommand}
+     */
+
+    this.read = () => {
+      this._read()
+      return this
+    }
+
+    /**
+     * Abstract reader method.
+     *
+     * @return {MediaCommand}
+     */
+
+    this._read = () => {
+      return this
+    }
+
+    /**
      * Begins loading of resources described in
      * the manifest object.
      *
@@ -170,6 +188,14 @@ export class MediaCommand extends Command {
       if (isLoading || hasProgress || hasError || isDoneLoading) {
         return false
       }
+
+      // retry timeout
+      setTimeout(() => {
+        if (hasError || (hasProgress && isLoading && !isDoneLoading)) {
+          debug('retrying....')
+          this.reload()
+        }
+      }, reload_TIMEOUT)
 
       isLoading = true
       raf(() => resl({
@@ -200,13 +226,13 @@ export class MediaCommand extends Command {
     }
 
     /**
-     * Resets state and loads resources.
+     * Resets state and reloads resources.
      *
      * @public
      * @return {MediaCommand}
      */
 
-    this.retry = () => {
+    this.reload = () => {
       this.reset()
       this.load()
       return this

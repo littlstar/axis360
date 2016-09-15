@@ -7,6 +7,7 @@
 import { debug, define } from '../utils'
 import { MediaCommand } from './media'
 import events from 'dom-events'
+import clamp from 'clamp'
 import raf from 'raf'
 
 /**
@@ -36,34 +37,18 @@ export class VideoCommand extends MediaCommand {
 
   constructor(ctx, src, initialState = {}) {
     let source = null
+    let volume = 0
+    let isMuted = false
     let isPaused = true
     let isPlaying = false
 
-    super(ctx, {
+    const manifest = {
       video: {
         stream: true,
         type: 'video',
         src: src
       }
-    })
-
-    // set initial video state
-    this.once('load', () => {
-      Object.assign(source, initialState)
-      //events.on(source, '
-    })
-
-    // set to playing state
-    this.once('playing', () => {
-      isPlaying = true
-      isPaused = false
-    })
-
-    // set to paused state
-    this.once('pause', () => {
-      isPlaying = false
-      isPaused = true
-    })
+    }
 
     /**
      * Calls internal video source method
@@ -127,6 +112,56 @@ export class VideoCommand extends MediaCommand {
       return this
     }
 
+    super(ctx, manifest, initialState)
+
+    // set initial video state
+    this.once('load', () => {
+      // set initial set on source
+      Object.assign(source, initialState)
+
+      const proxy = (event, override) => {
+        events.on(source, event, (...args) => {
+          emit(override || event, ...args)
+        })
+      }
+
+      // proxy source events
+      for (let key in HTMLVideoElement.prototype) {
+        if (key.match(/^on[a-z]/)) {
+          proxy(key.replace(/^on/, ''))
+          define(this, key, {
+            get: () => source[key],
+            set: (value) => source[key] = value
+          })
+        }
+      }
+
+      volume = source.volume
+      isMuted = source.muted
+      isPlaying = source.paused
+    })
+
+    // set to playing state
+    this.on('playing', () => {
+      isPlaying = true
+      isPaused = false
+    })
+
+    // set to paused state
+    this.on('pause', () => {
+      isPlaying = false
+      isPaused = true
+    })
+
+    // set volume mute state
+    this.on('mute', () => {
+      isMuted = true
+    })
+
+    this.on('unmute', () => {
+      isMuted = false
+    })
+
     /**
      * Source attribute accessor.
      *
@@ -154,6 +189,39 @@ export class VideoCommand extends MediaCommand {
       }
     })
 
+    // proxy all configurable video properties that serve
+    // some kind of real purpose
+    // @TODO(werle) - support text tracks
+    ;[
+      'playbackRate',
+      'currentTime',
+      'crossOrigin',
+      'currentSrc',
+      'duration',
+      'seekable',
+      'volume',
+      'paused',
+      'played',
+      'prefix',
+      'poster',
+      'title',
+      'muted',
+      'loop',
+    ].map((property) => define(this, property, {
+      get: () => source[property],
+      set: (value) => { source[property] = value }
+    }))
+
+    // proxy dimensions
+    define(this, 'width', { get: () => source.videoWidth })
+    define(this, 'height', { get: () => source.videoHeight })
+    define(this, 'aspectRatio', {
+      get: () => source.videoWidth / source.videoHeight
+    })
+
+    // expose DOM element
+    define(this, 'domElement', { get: () => source })
+
     /**
      * Video texture target.
      *
@@ -168,7 +236,7 @@ export class VideoCommand extends MediaCommand {
      * @return {VideoCommand}
      */
 
-    this.play = () => call('play') && emit('play')
+    this.play = () => call('play')
 
     /**
      * Pauses the video.
@@ -176,7 +244,7 @@ export class VideoCommand extends MediaCommand {
      * @return {VideoCommand}
      */
 
-    this.pause = () => call('pause') && emit('pause')
+    this.pause = () => call('pause')
 
     /**
      * Mutes the video
@@ -195,34 +263,31 @@ export class VideoCommand extends MediaCommand {
     this.unmute = () => set('muted', false) && emit('unmute')
 
     /**
-     * Sets video volume.
-     *
-     * @return {VideoCommand}
-     */
-
-    this.volume = (volume) => set('volume', volume) && emit('volume', volume)
-
-    /**
-     * Callback when photo has loaded.
+     * Callback when video  has loaded.
      *
      * @type {Function}
      */
 
     this.onloaded = ({video}) => {
       source = video
-      this.emit('load')
-      this.texture = ctx.regl.texture(video)
-      const loop = () => {
-        debug('VideoCommand: loop')
-        raf(loop)
-        if (this.isDoneLoading) {
-          this.texture = this.texture.subimage(video)
-        } else {
-          console.log('noooo')
-        }
+      this.texture = ctx.regl.texture({
+        mag: 'linear',
+        min: 'linear',
+        wrap: ['clamp', 'clamp'],
+        data: video,
+      })
 
+      this.emit('load')
+
+      let lastRead = 0
+      this._read = () => {
+        const now = Date.now()
+        if (isPlaying && (now - lastRead >= 64) && this.isDoneLoading && video.readyState >= video.HAVE_ENOUGH_DATA) {
+          lastRead = now
+          debug('VideoCommand: read')
+          this.texture(video)
+        }
       }
-      raf(loop)
     }
   }
 }

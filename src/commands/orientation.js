@@ -38,6 +38,7 @@ events.on(window, 'deviceorientation', (e) => {
 
   Object.assign(globalState, {
     absolute,
+
     currentAlpha: alpha,
     currentBeta: beta,
     currentGamma: gamma,
@@ -46,9 +47,9 @@ events.on(window, 'deviceorientation', (e) => {
     deltaBeta: beta - globalState.currentBeta,
     deltaGamma: gamma - globalState.currentGamma,
 
-    prevAlpha: alpha - globalState.currentAlpha,
-    prevBeta: beta - globalState.currentBeta,
-    prevGamma: gamma - globalState.currentGamma,
+    prevAlpha: globalState.currentAlpha,
+    prevBeta: globalState.currentBeta,
+    prevGamma: globalState.currentGamma,
   })
 
   raf(() => Object.assign(globalState, {

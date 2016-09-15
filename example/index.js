@@ -11,9 +11,11 @@ import {
   Camera,
   Sphere,
   Mouse,
+  Touch,
   Photo,
   Video,
   Frame,
+  Box,
 } from '../src'
 
 import { OrbitCameraController } from '../src/controls'
@@ -33,34 +35,46 @@ const ctx = Context()
 const camera = Camera(ctx)
 const frame = Frame(ctx)
 const photo = Photo(ctx, '/starwars-4k.jpg')
-const video = Video(ctx, 'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/vr.mp4', {
+/*const video = Video(ctx,
+                    //'http://360.littlstar.com/production/a0a5746e-87ac-4f20-9724-ecba40429e54/mobile.mp4', {
+                    'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/vr.mp4', {
+  //preload: false,
   muted: true
-})
+})*/
 
 // inputs
 const orientation = Orientation(ctx)
 const keyboard = Keyboard(ctx)
+const touch = Touch(ctx)
 const mouse = Mouse(ctx)
 
 // shapes
-const sphere = Sphere(ctx, {map: video})
+const sphere = Sphere(ctx, {
+  //map: video
+  map: photo
+})
+//const box = Box(ctx, {map: video})
 
-raf(() => video.play())
+//raf(() => video.play())
 
 // controller
 const controller = OrbitCameraController(ctx, {
   target: camera,
-  inputs: {mouse, keyboard, orientation},
+  inputs: {touch, mouse, keyboard, orientation},
 })
 
 // for fun in the console
-window.keyboard = keyboard
-window.sphere = sphere
-window.camera = camera
-window.video = video
-window.photo = photo
-window.mouse = mouse
-window.debug = debug
+Object.assign(window, {
+  keyboard,
+  sphere,
+  camera,
+  //video,
+  touch,
+  photo,
+  mouse,
+  debug,
+  ctx,
+})
 
 // focus now
 ctx.focus()
@@ -72,13 +86,14 @@ raf(() => controller.orientation.y = Math.PI / (Math.PI * 0.5))
 frame(() => {
 
   // handle sphere map changes
-  toggleSphereMap()
+  //toggleSphereMap()
 
   // update controller state
   controller()
 
   // draw camera scene
   camera(() => {
+    //box()
     sphere()
   })
 })

@@ -41,8 +41,9 @@
     "pointer-lock": "0.0.4",
     "primitive-sphere": "^2.0.0",
     "raf": "^3.3.0",
-    "regl": "^1.1.1",
+    "regl": "^1.2.1",
     "resl": "^1.0.3",
+    "touch-position": "^2.0.0",
     "yields-keycode": "^1.1.0"
   },
   "browserify": {

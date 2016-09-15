@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 
+import { debug, define } from '../utils'
 import { MediaCommand } from './media'
 
 /**
@@ -17,19 +18,84 @@ export default (...args) => new PhotoCommand(...args)
  * PhotoCommand class.
  *
  * @public
+ * @class PhotoCommand
  * @extends MediaCommand
  */
 
 export class PhotoCommand extends MediaCommand {
-  constructor(ctx, src) {
-    const texture = ctx.regl.texture()
 
-    super(ctx, {
+  /**
+   * PhotoCommand class constructor.
+   *
+   * @constructor
+   * @param {Context} ctx
+   * @param {String} src
+   * @param {(Object)?} initialState
+   */
+
+  constructor(ctx, src, initialState = {}) {
+    let source = null
+
+    const manifest = {
       image: {
         stream: true,
-        parser: texture,
         type: 'image',
         src: src
+      }
+    }
+
+    super(ctx, manifest, initialState)
+
+    /**
+     * Sets an internal photo source property
+     * value. This function is used
+     * to proxy a class method to a photo
+     * element property
+     *
+     * @private
+     * @param {String} method
+     * @param {...Mixed} args
+     * @return {PhotoCommand|Mixed}
+     */
+
+    const set = (property, value) => {
+      if (source) {
+        if (undefined === value) {
+          return source[property]
+        } else {
+          debug('PhotoCommand: set %s=%s', property, value)
+          source[property] = value
+        }
+      } else {
+        this.once('load', () => { this[property] = value })
+      }
+      return this
+    }
+
+    /**
+     * Source attribute accessor.
+     *
+     * @type {String}
+     */
+
+    define(this, 'src', {
+      get: () => {
+        return (source && source.src) ?
+          source.src :
+          (this.manifest && this.manifest.image) ?
+            this.manifest.image.src :
+            null
+      },
+
+      set: (value) => {
+        if (source && 'string' == typeof value) {
+          source.src = value
+          if (this.manifest && this.manifest.image) {
+            this.manifest.image.src = value
+            this.reset()
+            this.load()
+          }
+        }
       }
     })
 
@@ -39,32 +105,18 @@ export class PhotoCommand extends MediaCommand {
      * @type {REGLTexture}
      */
 
-    this.texture = texture
+    this.texture = null
 
     /**
-     * Callback when photo has loaded.
+     * Callback when photo  has loaded.
      *
      * @type {Function}
      */
 
-    this.onloaded = ({image}) => void 0
-
-    /**
-     * Callback when photo has load progress.
-     *
-     * @type {Function}
-     */
-
-    this.onprogress = () => void 0
-
-    /**
-     * Callback when photo has loading has
-     * encountered an error.
-     *
-     * @type {Function}
-     */
-
-    // @TODO(werle) - handle errors better
-    this.onerror = (err) => console.error(err)
+    this.onloaded = ({image}) => {
+      source = image
+      this.texture = ctx.regl.texture(image)
+      this.emit('load')
+    }
   }
 }

@@ -63,6 +63,7 @@ export class OrbitCameraController extends AbstractController {
       const orientation = inputs.orientation
       const keyboard = inputs.keyboard
       const mouse = inputs.mouse
+      const touch = inputs.touch
 
       // update orientation from coordinates
       mouse && mouse(() => {
@@ -150,6 +151,20 @@ export class OrbitCameraController extends AbstractController {
         this.orientation.x -= friction*radians(orientation.deltaBeta)
         this.orientation.y -= friction*radians(orientation.deltaGamma)
         this.orientation.z -= friction*radians(orientation.deltaAlpha)
+      })
+
+      // update orientation from touch input
+      touch && touch(() => {
+        const xf = X_AXIS_MOUSE_FRICTION
+        const yf = Y_AXIS_MOUSE_FRICTION
+        const dx = touch.deltaX
+        const dy = touch.deltaY
+        const c = 0.075
+
+        if (touch.touches && touch.touches.length) {
+          this.orientation.x -= c*xf*dy*friction
+          this.orientation.y -= c*yf*dx*friction
+        }
       })
     })
 

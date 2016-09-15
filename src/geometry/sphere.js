@@ -27,7 +27,7 @@ export class SphereGeometry extends Geometry {
    * @param {(Object)?} primitive
    */
 
-  constructor({radius = 1, segments = 64} = {}, primitive) {
+  constructor({radius = 1, segments = 128} = {}, primitive) {
     primitive = primitive || PrimitiveSphere(radius, {segments})
     super({radius, segments, primitive})
   }

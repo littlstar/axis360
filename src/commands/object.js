@@ -88,7 +88,6 @@ export class ObjectCommand extends Command {
     let draw = opts.draw || null
     let map = opts.map || null
 
-
     /**
      * Updates state and internal matrices.
      *
@@ -159,6 +158,10 @@ export class ObjectCommand extends Command {
         defaults.primitive = opts.primitive || 'triangles'
 
         if (geometry) {
+          if (this) {
+            this.geometry = geometry
+          }
+
           if (geometry.primitive.positions) {
             shaderDefines.HAS_POSITIONS = ''
             attributes.position = geometry.primitive.positions
@@ -176,7 +179,14 @@ export class ObjectCommand extends Command {
         }
 
         if (map && map.texture) {
-          uniforms.map = () => map && map.texture ? map.texture : map || null
+          uniforms.map = () => {
+            if (map && map.texture) {
+              if ('function' == typeof map) { map() }
+              return map.texture
+            }
+
+            return null
+          }
         } else if (map) {
           map.once('load', () => configure())
         }

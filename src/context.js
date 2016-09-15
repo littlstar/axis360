@@ -79,6 +79,10 @@ export class CommandContext extends EventEmitter {
       reglOptions.container = opts.element
     }
 
+    reglOptions.stencil = {
+      enable: true
+    }
+
     this[$regl] = regl(opts.regl)
     this[$stack] = []
     this[$state] = initialState

@@ -125,7 +125,6 @@ export class MouseCommand extends Command {
     // update state on mouse change and reset
     // delta values on next animation frame
     onMouseChange(ctx.domElement, (buttons, x, y) => {
-      if (false === this.allowChanges) { return }
       Object.assign(this, {
         buttons,
         currentX: x,
