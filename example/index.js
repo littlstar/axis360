@@ -14,11 +14,16 @@ import {
   Touch,
   Photo,
   Video,
+  Audio,
   Frame,
   Box,
 } from '../src'
 
-import { OrbitCameraController } from '../src/controls'
+import {
+  SpatialAudioController,
+  OrbitCameraController,
+} from '../src/controls'
+
 import { Quaternion, Vector, } from '../src/math'
 import { Geometry } from '../src/geometry'
 
@@ -34,13 +39,16 @@ const ctx = Context()
 // objects
 const camera = Camera(ctx)
 const frame = Frame(ctx)
-const photo = Photo(ctx, '/starwars-4k.jpg')
-/*const video = Video(ctx,
+const photo = Photo(ctx, '/starwars-4k.jpg', {preload: false})
+const audio = Audio(ctx, '/magnificat.wav')
+const video = Video(ctx,
                     //'http://360.littlstar.com/production/a0a5746e-87ac-4f20-9724-ecba40429e54/mobile.mp4', {
-                    'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/vr.mp4', {
+                    //'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/vr.mp4',
+                    'https://videos.littlstar.com/ee10e9b6-559f-4e6c-ae10-40d1f482ebdc/web.mp4',
+{
   //preload: false,
-  muted: true
-})*/
+  //muted: true
+})
 
 // inputs
 const orientation = Orientation(ctx)
@@ -50,17 +58,24 @@ const mouse = Mouse(ctx)
 
 // shapes
 const sphere = Sphere(ctx, {
-  //map: video
-  map: photo
+  map: video
+  //map: photo
 })
 //const box = Box(ctx, {map: video})
 
-//raf(() => video.play())
+raf(() => video.play())
 
-// controller
-const controller = OrbitCameraController(ctx, {
+// orbit controller
+const orbitController = OrbitCameraController(ctx, {
   target: camera,
   inputs: {touch, mouse, keyboard, orientation},
+})
+
+const spatialAudioController = SpatialAudioController(ctx, {
+  //target: audio,
+  target: video,
+  source: camera,
+  ambisonic: true,
 })
 
 // for fun in the console
@@ -68,7 +83,8 @@ Object.assign(window, {
   keyboard,
   sphere,
   camera,
-  //video,
+  audio,
+  video,
   touch,
   photo,
   mouse,
@@ -79,8 +95,11 @@ Object.assign(window, {
 // focus now
 ctx.focus()
 
-// orient controller to "center" of photo/video
-raf(() => controller.orientation.y = Math.PI / (Math.PI * 0.5))
+// orient controllers to "center" of photo/video
+raf(() => {
+  const y = Math.PI / (Math.PI * 0.5)
+  orbitController.orientation.y = y
+})
 
 // axis animation frame loop
 frame(() => {
@@ -88,8 +107,9 @@ frame(() => {
   // handle sphere map changes
   //toggleSphereMap()
 
-  // update controller state
-  controller()
+  // update controller states
+  orbitController()
+  spatialAudioController()
 
   // draw camera scene
   camera(() => {

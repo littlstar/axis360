@@ -89,6 +89,15 @@ export class AbstractController extends Command {
     let target = opts.target || null
 
     /**
+     * Source ObjectCommand instance.
+     *
+     * @private
+     * @type {ObjectCommand}
+     */
+
+    let source = opts.source || null
+
+    /**
      * Updates controller state.
      *
      * @private
@@ -139,6 +148,16 @@ export class AbstractController extends Command {
      */
 
     define(this, 'target', { get: () => target })
+
+    /**
+     * Source getter.
+     *
+     * @public
+     * @getter
+     * @type {ObjectCommand}
+     */
+
+    define(this, 'source', { get: () => source })
 
     /**
      * Orientation getter.

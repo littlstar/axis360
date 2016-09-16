@@ -6,7 +6,7 @@
 
 import { debug, define } from '../utils'
 import { EventEmitter } from 'events'
-import { Command } from './command'
+import { ObjectCommand } from './object'
 import resl from 'resl'
 import raf from 'raf'
 
@@ -43,7 +43,7 @@ export default (...args) => new MediaCommand(...args)
  * @extends Command
  */
 
-export class MediaCommand extends Command {
+export class MediaCommand extends ObjectCommand {
 
   /**
    * MediaCommand class constructor that loads
@@ -63,7 +63,10 @@ export class MediaCommand extends Command {
     let isDoneLoading = false
 
     // load when called as a function
-    super(() => { this.read() })
+    super(ctx, {
+      render: () => this.read(),
+      draw: () => this.read(),
+    })
 
     // mixin and initialize EventEmitter
     EventEmitter.call(this)

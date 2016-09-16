@@ -250,3 +250,11 @@ export class Vector {
     }))()
   }
 }
+
+/**
+ * Instanced x, y, z vectors
+ */
+
+export const XVector3 = new Vector(1, 0, 0)
+export const YVector3 = new Vector(0, 1, 0)
+export const ZVector3 = new Vector(0, 0, 1)

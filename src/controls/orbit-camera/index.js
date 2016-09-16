@@ -4,9 +4,11 @@
  * Module dependencies.
  */
 
-import { AbstractController } from './controller'
-import { radians } from '../utils'
+import { AbstractController } from '../controller'
+import { radians } from '../../utils'
 import clamp from 'clamp'
+
+import applyMouseInput from './mouse'
 
 /**
  * OrbitCameraController function.
@@ -65,33 +67,7 @@ export class OrbitCameraController extends AbstractController {
       const mouse = inputs.mouse
       const touch = inputs.touch
 
-      // update orientation from coordinates
-      mouse && mouse(() => {
-        const c = 0.0025
-        const xf = X_AXIS_MOUSE_FRICTION
-        const yf = Y_AXIS_MOUSE_FRICTION
-        const dy = mouse.deltaY
-        const dx = mouse.deltaX
-
-        // update if a singled button is pressed
-        if (1 == mouse.buttons && (dy || dx)) {
-          this.orientation.x += -1*xf*dy*friction + (c*Math.random())
-          this.orientation.y += -0.8*yf*dx*friction + (c*Math.random())
-        }
-
-        // clamp at north/south poles
-        if (false !== opts.lockPoles) {
-          this.orientation.x = clamp(this.orientation.x, radians(-90), radians(90))
-        }
-      })
-
-      // update field of view from mouse wheel
-      mouse && mouse(() => {
-        const c = 0.033
-        const dv = c*friction*mouse.wheel.deltaY
-        camera.fov += dv
-        camera.fov = clamp(camera.fov, radians(0.1) , radians(180))
-      })
+      if (mouse) { applyMouseInput(this, mouse) }
 
       // update orientation from keyboard input
       keyboard && keyboard((({dx = 0, dy = 0} = {}) => () => {
