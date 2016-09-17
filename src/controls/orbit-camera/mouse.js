@@ -29,7 +29,7 @@ const Y_AXIS_MOUSE_FRICTION = 0.0046
  * @param {MouseCommand} mouse
  */
 
-export default (camera, mouse) => {
+export default (camera, mouse, opts = {}) => {
   const friction = camera.friction
   // update orientation from coordinates
   mouse && mouse(() => {
@@ -41,8 +41,8 @@ export default (camera, mouse) => {
 
     // update if a singled button is pressed
     if (1 == mouse.buttons && (dy || dx)) {
-      camera.orientation.x += -1*xf*dy*friction + (c*Math.random())
-      camera.orientation.y += -0.8*yf*dx*friction + (c*Math.random())
+      camera.orientation.x += (false == opts.invert ? 1 : -1)*xf*dy*friction + (c*Math.random())
+      camera.orientation.y += (false == opts.invert ? 1 : -1)*0.8*yf*dx*friction + (c*Math.random())
     }
 
     // clamp at north/south poles

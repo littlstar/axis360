@@ -60,7 +60,7 @@ export class KeyboardCommand extends Command {
      * @type {Object}
      */
 
-    define(this, 'keycodes', { get: () => ({ ...state.keycodes }) })
+    define(this, 'keycodes', { get: () => state.keycodes })
 
     /**
      * Key names map getter.
@@ -69,7 +69,7 @@ export class KeyboardCommand extends Command {
      * @type {Object}
      */
 
-    define(this, 'keys', { get: () => ({ ...state.keys }) })
+    define(this, 'keys', { get: () => state.keys })
 
     /**
      * Resets keyboard state by setting all keycodes

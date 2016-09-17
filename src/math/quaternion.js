@@ -4,8 +4,16 @@
  * Module dependencies.
  */
 
-import { Vector } from './vector'
 import coalesce from 'defined'
+import quat from 'gl-quat'
+
+import {
+  Vector,
+  XVector3,
+  YVector3,
+  ZVector3,
+} from './vector'
+
 
 /**
  * Quaternion class.
@@ -34,4 +42,38 @@ export class Quaternion extends Vector {
           coalesce(z, 0),
           coalesce(w, 1))
   }
+
+
+  /**
+   * Rotates target at given orientation.
+   *
+   * @public
+   * @param {Quaternion} target
+   * @param {Object} angles
+   * @param {Number} interpolationFactor
+   */
+
+  static slerpTargetFromAxisAngles(target,
+                                   angles,
+                                   interpolationFactor = 0.1) {
+    const multiply = (...args) => quat.multiply([], ...args)
+    const slerp = (t, ...args) => quat.slerp(t, t, ...args)
+
+    const vx = XVector3, vy = YVector3, vz = ZVector3
+    const ax = angles.x, ay = angles.y, az = angles.z
+    const x = _scratchX, y = _scratchY, z = _scratchZ
+
+    const f = interpolationFactor
+    const t = target
+
+    quat.setAxisAngle(x, vx, ax)
+    quat.setAxisAngle(y, vy, ay)
+    quat.setAxisAngle(z, vz, az)
+
+    slerp(t, multiply(multiply(x, y), z), f)
+  }
 }
+
+const _scratchX = new Quaternion()
+const _scratchY = new Quaternion()
+const _scratchZ = new Quaternion()

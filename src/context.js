@@ -123,7 +123,7 @@ export class CommandContext extends EventEmitter {
    */
 
   get depth() {
-    return this[$stack].length - 1
+    return this[$stack].length
   }
 
   /**

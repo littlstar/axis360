@@ -114,9 +114,9 @@ export class ObjectCommand extends Command {
 
       // update uniform model matrix
       mat4.identity(model)
+      mat4.multiply(model, model, mat4.fromQuat([], this.rotation))
       mat4.translate(model, model, this.position)
       mat4.scale(model, model, this.scale)
-      mat4.multiply(model, model, mat4.fromQuat([], this.rotation))
 
       // apply and set contextual transform
       if (ctx.previous && ctx.previous.id != this.id) {

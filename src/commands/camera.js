@@ -94,7 +94,7 @@ export class CameraCommand extends ObjectCommand {
   constructor(ctx, opts = {}) {
     const worldUp = new Vector(0, 1, 0)
     const target = new Vector(0, 0, 0)
-    const front = new Vector(0, 0, 1)
+    const front = new Vector(0, 0, -1)
     const right = new Vector(1, 0, 0)
     const eye = new Vector(0, 0, 0)
     const up = new Vector(0, 0, 0)
@@ -231,6 +231,54 @@ export class CameraCommand extends ObjectCommand {
     define(this, 'view', { get: () => view })
 
     /**
+     * Camera world up vector.
+     *
+     * @type {Vector}
+     */
+
+    define(this, 'worldUp', { get: () => worldUp })
+
+    /**
+     * Camera front vector.
+     *
+     * @type {Vector}
+     */
+
+    define(this, 'front', { get: () => front })
+
+    /**
+     * Camera right vector.
+     *
+     * @type {Vector}
+     */
+
+    define(this, 'right', { get: () => right })
+
+    /**
+     * Camera eye vector.
+     *
+     * @type {Vector}
+     */
+
+    define(this, 'eye', { get: () => eye })
+
+    /**
+     * Camera up vector.
+     *
+     * @type {Vector}
+     */
+
+    define(this, 'up', { get: () => up })
+
+    /**
+     * Camera lookAt target vector.
+     *
+     * @type {Vector}
+     */
+
+    define(this, 'target', { get: () => target })
+
+    /**
      * Looks at a target vector.
      *
      * @type {Number}
@@ -238,7 +286,7 @@ export class CameraCommand extends ObjectCommand {
 
     define(this, 'lookAt', {
       value(vector) {
-        target.copy(vector)
+        vec3.copy(target, vector)
         return this
       }
     })

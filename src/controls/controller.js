@@ -7,6 +7,7 @@
 import { Quaternion, Vector } from '../math'
 import { Command } from '../commands'
 import { define } from '../utils'
+import vec3 from 'gl-vec3'
 import quat from 'gl-quat'
 
 /**
@@ -80,6 +81,15 @@ export class AbstractController extends Command {
     }, opts)
 
     /**
+     * Controller rotation quaternion.
+     *
+     * @private
+     * @type {Quaternion}
+     */
+
+    let rotation = new Quaternion()
+
+    /**
      * Target ObjectCommand instance.
      *
      * @private
@@ -127,16 +137,9 @@ export class AbstractController extends Command {
      */
 
     const rotateTarget = () => {
-      const x = state.quaternions.x
-      const y = state.quaternions.y
-      const z = state.quaternions.z
-      quat.setAxisAngle(x, XVECTOR, state.orientation.x)
-      quat.setAxisAngle(y, YVECTOR, state.orientation.y)
-      quat.setAxisAngle(z, ZVECTOR, state.orientation.z)
-      quat.slerp(target.rotation,
-                 target.rotation,
-                 quat.multiply([], quat.multiply([], x, y), z),
-                 state.interpolationFactor)
+      Quaternion.slerpTargetFromAxisAngles(rotation,
+                                           state.orientation,
+                                           state.interpolationFactor)
     }
 
     /**
@@ -148,6 +151,16 @@ export class AbstractController extends Command {
      */
 
     define(this, 'target', { get: () => target })
+
+    /**
+     * Rotation getter.
+     *
+     * @public
+     * @getter
+     * @type {ObjectCommand}
+     */
+
+    define(this, 'rotation', { get: () => rotation })
 
     /**
      * Source getter.

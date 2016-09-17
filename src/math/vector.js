@@ -242,12 +242,7 @@ export class Vector {
    */
 
   [Symbol.iterator]() {
-    return (({first = true, elements = this.toArray()}) => ({
-      next: () => ({
-        done: Boolean(elements.length),
-        value: elements.shift()
-      })
-    }))()
+    return this.toArray()[Symbol.iterator]()
   }
 }
 

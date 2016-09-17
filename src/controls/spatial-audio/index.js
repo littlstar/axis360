@@ -3,9 +3,9 @@
  */
 
 import { Omnitone as omnitone } from 'omnitone'
-import { AbstractController } from './controller'
+import { AbstractController } from '../controller'
 import defaultAudioContext from 'audio-context'
-import { radians } from '../utils'
+import { radians } from '../../utils'
 import clamp from 'clamp'
 import quat from 'gl-quat'
 import vec3 from 'gl-vec3'
@@ -15,13 +15,13 @@ import raf from 'raf'
 import {
   Quaternion,
   Vector,
-} from '../math'
+} from '../../math'
 
 import {
   XVector3,
   YVector3,
   ZVector3,
-} from '../math/vector'
+} from '../../math/vector'
 
 /**
  * SpatialAudioController function.
@@ -74,10 +74,10 @@ export class SpatialAudioController extends AbstractController {
         if (!opts.ambisonic) {
           return
         } else if (!target || !source) {
-          console.log('missing target or source')
+          // @TODO(werle) - log error
           return
         } else if (null != foaDecoder) {
-          console.log('foaDecoder already initialized')
+          // @TODO(werle) - log error
           return
         }
 

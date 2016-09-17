@@ -20,6 +20,7 @@ import {
 } from '../src'
 
 import {
+  FirstPersonCameraController,
   SpatialAudioController,
   OrbitCameraController,
 } from '../src/controls'
@@ -61,16 +62,24 @@ const sphere = Sphere(ctx, {
   map: video
   //map: photo
 })
-//const box = Box(ctx, {map: video})
 
-raf(() => video.play())
+const box = Box(ctx)
+
+//raf(() => video.play())
 
 // orbit controller
 const orbitController = OrbitCameraController(ctx, {
+  inputs: {touch, mouse, orientation},
   target: camera,
-  inputs: {touch, mouse, keyboard, orientation},
+  invert: false,
+  transform: true,
 })
 
+// first person controller
+const fpController = FirstPersonCameraController(ctx, {
+  inputs: {keyboard},
+  target: camera,
+})
 const spatialAudioController = SpatialAudioController(ctx, {
   //target: audio,
   target: video,
@@ -89,11 +98,16 @@ Object.assign(window, {
   photo,
   mouse,
   debug,
+  box,
   ctx,
 })
 
 // focus now
 ctx.focus()
+
+box.position.x = -5
+box.position.y = -5
+box.position.z = -5
 
 // orient controllers to "center" of photo/video
 raf(() => {
@@ -108,12 +122,13 @@ frame(() => {
   //toggleSphereMap()
 
   // update controller states
+  fpController()
   orbitController()
   spatialAudioController()
 
   // draw camera scene
   camera(() => {
-    //box()
+    box()
     sphere()
   })
 })
