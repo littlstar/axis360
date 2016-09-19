@@ -17,16 +17,16 @@ import {
   Audio,
   Frame,
   Box,
-} from '../src'
+} from '../../src'
 
 import {
   FirstPersonCameraController,
   AmbisonicAudioController,
   OrbitCameraController,
-} from '../src/controls'
+} from '../../src/controls'
 
-import { Quaternion, Vector, } from '../src/math'
-import { Geometry } from '../src/geometry'
+import { Quaternion, Vector, } from '../../src/math'
+import { Geometry } from '../../src/geometry'
 
 import normals from 'angle-normals'
 import Bunny from 'bunny'

@@ -4,8 +4,8 @@
 
 import { Omnitone as omnitone } from 'omnitone'
 import { AbstractController } from '../controller'
+import { define, radians } from '../../utils'
 import defaultAudioContext from 'audio-context'
-import { radians } from '../../utils'
 import clamp from 'clamp'
 import quat from 'gl-quat'
 import vec3 from 'gl-vec3'
@@ -54,6 +54,9 @@ export class AmbisonicAudioController extends AbstractController {
     let isFoaDecoderInitialized = false
 
     super(ctx, { ...opts }, (_, updates = {}, target) => { })
+
+    define(this, 'audioContext', { get: () => audioContext })
+    define(this, 'foaDecoder', { get: () => foaDecoder })
 
     if (opts) {
       if (opts.audioContext instanceof window.AudioContext) {

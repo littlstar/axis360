@@ -126,12 +126,10 @@ node_modules: package.json
 doc: node_modules $(SRC)
 	./scripts/generate_documentation.sh $(CWD) public/doc
 
-##
-# Starts the "example" server
-#
-.PHONY: example
-example:
-	$(BUDO) example/index.js -p 3000 --dir example --dir public/assets --live -- $(BROWSERIFY_TRANSFORM)
+
+.PHONY: example/*
+example/*:
+	$(BUDO) $@/index.js -p 3000 --dir $@ --dir public/assets --live -- $(BROWSERIFY_TRANSFORM)
 
 ##
 # Cleans all built files
