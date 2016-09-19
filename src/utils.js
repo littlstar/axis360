@@ -37,3 +37,15 @@ export const radians = (n) => n == n ? (n * Math.PI / 180.0) : 0
  */
 
 export const debug = createDebug(`[axis@${version}]`)
+
+/**
+ * Simple linear inerpolation function.
+ *
+ * @public
+ * @param {Number} v0
+ * @param {Number} v1
+ * @param {Number} t
+ * @return {Number}
+ */
+
+export const lerp = (v0, v1, t) => v0*(1 - t) + v1*t

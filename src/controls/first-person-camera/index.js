@@ -11,6 +11,7 @@ import clamp from 'clamp'
 import quat from 'gl-quat'
 import vec3 from 'gl-vec3'
 
+import { DEFAULT_FRICTION  } from '../orbit-camera'
 import applyKeyboardInput from './keyboard'
 import applyMouseInput from '../orbit-camera/mouse'
 
@@ -21,12 +22,6 @@ import applyMouseInput from '../orbit-camera/mouse'
  */
 
 export default (...args) => new FirstPersonCameraController(...args)
-
-/**
- * Default friction value applied to inputs.
- */
-
-const DEFAULT_FRICTION = 0.8
 
 /**
  * FirstPersonCameraController class
@@ -46,18 +41,13 @@ export class FirstPersonCameraController extends AbstractController {
    */
 
   constructor(ctx, opts = {}) {
-    const target = new Vector(0, 0, 0)
     super(ctx, { ...opts, rotate: false }, (_, updates) => {
+      const { keyboard, mouse } = this.inputs
       const friction = this.friction
       const camera = this.target
-      const inputs = this.inputs || {}
 
-      // supported inputs
-      const keyboard = inputs.keyboard
-      const mouse = inputs.mouse
-
-      if (keyboard) { applyKeyboardInput(this, keyboard) }
-      if (mouse) { applyMouseInput(this, mouse) }
+      if (keyboard) { applyKeyboardInput(this, keyboard, opts) }
+      if (mouse) { applyMouseInput(this, mouse, opts) }
     })
 
     /**

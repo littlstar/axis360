@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 
+import { mappings } from '../../commands/keyboard'
 import { radians } from '../../utils'
 import clamp from 'clamp'
 
@@ -21,43 +22,30 @@ export default (camera, keyboard, {dx = 0, dy = 0} = {}) => {
     let c = 0.07
     const step = c*friction
     const keys = keyboard.keys
-    const on = (which) => states[which].map((key) => keys[key] = true)
-    const off = (which) => states[which].map((key) => keys[key] = false)
-    const value = (which) => states[which].some((key) => Boolean(keys[key]))
-    const states = {
-      up: ['up', 'w', 'k'],
-      down: ['down', 's', 'j'],
-      left: ['left', 'a', 'h'],
-      right: ['right', 'd', 'l'],
-      control: [
-        'control',
-        'right command', 'left command',
-        'right control', 'left control',
-        'super', 'ctrl', 'alt', 'fn',
-      ]
-    }
 
     // @TODO(werle) - should we reset keyboard state ?
-    if (value('control')) { return }
-
-    if (value('up')) {
-      dx = dx - step
-      camera.orientation.x -= step
-      off('down')
-    } else if (value('down')) {
-      dx = dx + step
-      camera.orientation.x += step
-      off('up')
+    if (mappings.value('control', keys)) {
+      return
     }
 
-    if (value('left')) {
+    if (mappings.value('up', keys)) {
+      dx = dx - step
+      camera.orientation.x -= step
+      mappings.off('down', keys)
+    } else if (mappings.value('down', keys)) {
+      dx = dx + step
+      camera.orientation.x += step
+      mappings.off('up', keys)
+    }
+
+    if (mappings.value('left', keys)) {
       dy = dy - step
       camera.orientation.y -= step
-      off('right')
-    } else if (value('right')) {
+      mappings.off('right', keys)
+    } else if (mappings.value('right', keys)) {
       dy = dy + step
       camera.orientation.y += step
-      off('left')
+      mappings.off('left', keys)
     }
 
     c = 0.075

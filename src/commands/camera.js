@@ -29,7 +29,7 @@ export default (...args) => new CameraCommand(...args)
 const scratch = mat4.identity([])
 
 /**
- * Euler angle of the origin camera orienation
+ * Euler angle of the origin camera orientation
  * express in radians.
  *
  * @public
@@ -38,6 +38,7 @@ const scratch = mat4.identity([])
  */
 
 export const DEFAULT_CAMERA_ORIENTATION_ORIGIN =
+  // pitch, yaw, roll
   new Vector(radians(90), 0, 0)
 
 /**
@@ -50,7 +51,7 @@ export const DEFAULT_CAMERA_ORIENTATION_ORIGIN =
  * @type {Number}
  */
 
-export const DEFAULT_CAMERA_FIELD_OF_VIEW = radians(63)
+export const DEFAULT_CAMERA_FIELD_OF_VIEW = radians(60)
 
 /**
  * Default near value for the persective camera
@@ -102,6 +103,9 @@ export class CameraCommand extends ObjectCommand {
     const projection = mat4.identity([])
     const view = mat4.identity([])
 
+    const orientation = Object.assign(DEFAULT_CAMERA_ORIENTATION_ORIGIN, {
+    })
+
     const state = {
       viewportHeight: coalesce(opts.viewportHeight, 1),
       viewportWidth: coalesce(opts.viewportWidth, 1),
@@ -139,7 +143,6 @@ export class CameraCommand extends ObjectCommand {
       sync('viewportWidth')
       sync('viewportHeight')
 
-      const orienation = DEFAULT_CAMERA_ORIENTATION_ORIGIN
       const position = this.position
       const aspect = state.viewportWidth / state.viewportHeight
       const vector = new Vector(0, 0, 0)
@@ -149,9 +152,9 @@ export class CameraCommand extends ObjectCommand {
 
       // update camera direction vectors
       vec3.set(front,
-        Math.cos(orienation.x) * Math.cos(orienation.y),
-        Math.sin(orienation.y),
-        Math.sin(orienation.x) * Math.sin(orienation.y)
+        Math.cos(orientation.x) * Math.cos(orientation.y),
+        Math.sin(orientation.y),
+        Math.sin(orientation.x) * Math.sin(orientation.y)
       )
 
       vec3.normalize(front, front)
@@ -277,6 +280,14 @@ export class CameraCommand extends ObjectCommand {
      */
 
     define(this, 'target', { get: () => target })
+
+    /**
+     * Camera orientation vector.
+     *
+     * @type {Vector}
+     */
+
+    define(this, 'orientation', { get: () => orientation })
 
     /**
      * Looks at a target vector.

@@ -8,6 +8,7 @@ import { Command } from './command'
 import { define } from '../utils'
 import keycode from 'keycode'
 import events from 'dom-events'
+import raf from 'raf'
 
 /**
  * Keyboard function.
@@ -16,6 +17,31 @@ import events from 'dom-events'
  */
 
 export default (...args) => new KeyboardCommand(...args)
+
+/**
+ * Alias key mappings.
+ *
+ * @public
+ * @const
+ * @type {Object}
+ */
+
+export const mappings = {
+  up: ['up', 'w', 'k'],
+  down: ['down', 's', 'j'],
+  left: ['left', 'a', 'h'],
+  right: ['right', 'd', 'l'],
+  control: [
+    'control',
+    'right command', 'left command',
+    'right control', 'left control',
+    'super', 'ctrl', 'alt', 'fn',
+  ],
+
+  on(which, keys) { return this[which].map((key) => keys[key] = true) },
+  off(which, keys) { return this[which].map((key) => keys[key] = false) },
+  value(which, keys) { return this[which].some((key) => Boolean(keys[key])) },
+}
 
 /**
  * KeyboardCommand class
@@ -39,6 +65,10 @@ export class KeyboardCommand extends Command {
       if ('function' == typeof block) {
         block(this)
       }
+    })
+
+    ctx.on('blur', () => {
+      raf(() => this.reset())
     })
 
     /**
@@ -70,6 +100,18 @@ export class KeyboardCommand extends Command {
      */
 
     define(this, 'keys', { get: () => state.keys })
+
+    /**
+     * Predicate to determine if
+     * any key is pressed.
+     *
+     * @getter
+     * @type {Boolean}
+     */
+
+    define(this, 'isKeydown', {
+      get: () => Object.keys(state.keys).some((key) => state.keys[key])
+    })
 
     /**
      * Resets keyboard state by setting all keycodes

@@ -5,7 +5,7 @@
  */
 
 import { AbstractController } from '../controller'
-import { radians } from '../../utils'
+import { lerp, radians } from '../../utils'
 import clamp from 'clamp'
 import quat from 'gl-quat'
 import vec3 from 'gl-vec3'
@@ -25,9 +25,13 @@ export default (...args) => new OrbitCameraController(...args)
 
 /**
  * Default friction value applied to inputs.
+ *
+ * @public
+ * @const
+ * @type {Number}
  */
 
-const DEFAULT_FRICTION = 0.8
+export const DEFAULT_FRICTION = 0.8
 
 /**
  * OrbitCameraController class
@@ -63,12 +67,24 @@ export class OrbitCameraController extends AbstractController {
       if (touch) { applyTouchInput(this, touch, opts) }
       if (mouse) { applyMouseInput(this, mouse, opts) }
 
+      const { x: ax, y: ay, z: az } = this.orientation
+      const { x: cx, y: cy, z: cz } = camera.orientation
+      const f = 1
+
       if (true == opts.transform) {
-        vec3.transformQuat(camera.target, camera.target, this.rotation)
-        //console.log('transform', ...this.rotation)
-      } else {
-        quat.copy(camera.rotation, this.rotation)
+        const f = 1.0
+        const rx = clamp(lerp(cx, ax, 0.7), radians(-90), radians(90))
+        const ry = lerp(cy, ay, f)
+        //quat.copy(camera.rotation, this.rotation)
+        //camera.orientation.z = lerp(cx, ax, 0.7)
+        //camera.target.x = camera.position.x * this.orientation.x
+        //camera.target.y = camera.position.y * this.orientation.y
+        //vec3.transformQuat(camera.position, camera.position, this.rotation)
+        //camera.target.z = camera.position.z * this.orientation.x
+        //vec3.transformQuat(camera.target, camera.target, this.rotation)
       }
+
+      quat.copy(camera.rotation, this.rotation)
     })
 
     /**

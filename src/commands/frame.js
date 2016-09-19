@@ -58,7 +58,7 @@ export class FrameCommand extends Command {
         ctx.clear()
         for (let refresh of queue) {
           if ('function' == typeof refresh) {
-            refresh(ctx, reglContext, ...args)
+            refresh(reglContext, ...args)
           }
         }
 

@@ -21,7 +21,7 @@ import {
 
 import {
   FirstPersonCameraController,
-  SpatialAudioController,
+  AmbisonicAudioController,
   OrbitCameraController,
 } from '../src/controls'
 
@@ -63,7 +63,14 @@ const sphere = Sphere(ctx, {
   //map: photo
 })
 
-const box = Box(ctx)
+const boxes = Array(10).fill(0).map((_, i) => Box(ctx, {
+  position: new Vector(
+    2*i*Math.random(),
+    Math.sin(i*Math.random()),
+    2*i*Math.random()
+  ),
+
+}))
 
 //raf(() => video.play())
 
@@ -71,8 +78,9 @@ const box = Box(ctx)
 const orbitController = OrbitCameraController(ctx, {
   inputs: {touch, mouse, orientation},
   target: camera,
-  invert: false,
+  //invert: false,
   transform: true,
+  //rotate: false,
 })
 
 // first person controller
@@ -80,7 +88,7 @@ const fpController = FirstPersonCameraController(ctx, {
   inputs: {keyboard},
   target: camera,
 })
-const spatialAudioController = SpatialAudioController(ctx, {
+const ambisonicAudioController = AmbisonicAudioController(ctx, {
   //target: audio,
   target: video,
   source: camera,
@@ -98,16 +106,12 @@ Object.assign(window, {
   photo,
   mouse,
   debug,
-  box,
+  boxes,
   ctx,
 })
 
 // focus now
 ctx.focus()
-
-box.position.x = -5
-box.position.y = -5
-box.position.z = -5
 
 // orient controllers to "center" of photo/video
 raf(() => {
@@ -116,7 +120,7 @@ raf(() => {
 })
 
 // axis animation frame loop
-frame(() => {
+frame(({time}) => {
 
   // handle sphere map changes
   //toggleSphereMap()
@@ -124,12 +128,20 @@ frame(() => {
   // update controller states
   fpController()
   orbitController()
-  spatialAudioController()
+  ambisonicAudioController()
 
   // draw camera scene
   camera(() => {
-    box()
-    sphere()
+    for (let box of boxes) {
+      const color = new Vector(
+        Math.cos(box.id*time),
+        Math.sin(box.id*time),
+        Math.cos(box.id*time),
+        1
+      )
+
+      box({color})
+    }
   })
 })
 

@@ -24,25 +24,25 @@ import {
 } from '../../math/vector'
 
 /**
- * SpatialAudioController function.
+ * AmbisonicAudioController function.
  *
- * @see SpatialAudioController
+ * @see AmbisonicAudioController
  */
 
-export default (...args) => new SpatialAudioController(...args)
+export default (...args) => new AmbisonicAudioController(...args)
 
 /**
- * SpatialAudioController class
+ * AmbisonicAudioController class
  *
  * @public
- * @class SpatialAudioController
+ * @class AmbisonicAudioController
  * @extends AbstractController
  */
 
-export class SpatialAudioController extends AbstractController {
+export class AmbisonicAudioController extends AbstractController {
 
   /**
-   * SpatialAudioController class constructor.
+   * AmbisonicAudioController class constructor.
    *
    * @param {Context} ctx
    * @param {Object} opts
@@ -51,14 +51,9 @@ export class SpatialAudioController extends AbstractController {
   constructor(ctx, opts = {}) {
     let foaDecoder = null
     let audioContext = null
-    let isAmbisonic = Boolean(opts.ambisonic || false)
     let isFoaDecoderInitialized = false
 
-    super(ctx, { ...opts }, (_, updates = {}, target) => {
-      if ('ambisonic' in updates) {
-        isAmbisonic = Boolean(updates.ambisonic || false)
-      }
-    })
+    super(ctx, { ...opts }, (_, updates = {}, target) => { })
 
     if (opts) {
       if (opts.audioContext instanceof window.AudioContext) {
@@ -71,9 +66,7 @@ export class SpatialAudioController extends AbstractController {
         const target = this.target
         const source = this.source
 
-        if (!opts.ambisonic) {
-          return
-        } else if (!target || !source) {
+        if (!target || !source) {
           // @TODO(werle) - log error
           return
         } else if (null != foaDecoder) {
@@ -84,8 +77,7 @@ export class SpatialAudioController extends AbstractController {
         foaDecoder = omnitone.createFOADecoder(
           audioContext,
           target.domElement,
-          Object.assign({ channelMap: [0, 1, 2, 3] },
-                        opts.ambisonic)
+          Object.assign({ channelMap: [0, 1, 2, 3] }, opts)
         )
 
         foaDecoder.initialize()

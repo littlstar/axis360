@@ -40,8 +40,13 @@ export class AbstractController extends Command {
 
   constructor(ctx, opts = {}, update = () => void 0) {
     super((_, updates) => {
+      if (false == ctx.hasFocus) {
+        return
+      }
+
       updateState(updates)
       syncTarget()
+
       if ('function' == typeof updates) {
         updates(_)
         update(_, {...state}, target)

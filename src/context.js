@@ -5,6 +5,7 @@
  */
 
 import { EventEmitter } from 'events'
+import events from 'dom-events'
 import glsl from 'glslify'
 // @TODO(werle) - consider using multi-regl
 import regl from 'regl'
@@ -92,6 +93,12 @@ export class CommandContext extends EventEmitter {
     this[$domElement] = this[$regl]._gl.canvas
 
     this.setMaxListeners(Infinity)
+
+    events.on(this[$domElement], 'focus', () => this.focus())
+    events.on(this[$domElement], 'blur', () => this.blur())
+    events.on(window, 'blur', () => {
+      this.blur()
+    })
   }
 
   /**
@@ -180,6 +187,7 @@ export class CommandContext extends EventEmitter {
 
   focus() {
     this[$hasFocus] = true
+    this.emit('focus')
     return this
   }
 
@@ -191,6 +199,7 @@ export class CommandContext extends EventEmitter {
 
   blur() {
     this[$hasFocus] = false
+    this.emit('blur')
     return this
   }
 
