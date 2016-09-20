@@ -14,11 +14,6 @@ BIN := node_modules/.bin
 BROWSERIFY := $(BIN)/browserify
 
 ##
-# Path to `postcss`
-#
-POSTCSS := $(BIN)/postcss
-
-##
 # Path to `babel`
 #
 BABEL := $(BIN)/babel
@@ -34,11 +29,6 @@ BUDO := $(BIN)/budo
 STANDARD := $(BIN)/standard
 
 ##
-# CSS source files
-#
-CSS := $(wildcard src/*.css src/*/*.css)
-
-##
 # Module source (js)
 #
 SRC := $(wildcard src/*.js src/*/*.js)
@@ -46,12 +36,12 @@ SRC := $(wildcard src/*.js src/*/*.js)
 ##
 # Main javascript entry
 #
-MAIN = src/index.js
+SRC_MAIN = src/index.js
 
 ##
-# Main css entry
+# Main compiled javascript entry
 #
-MAINCSS := src/index.css
+LIB_MAIN = lib/index.js
 
 ##
 # Global namespace target
@@ -83,36 +73,21 @@ all: lib dist
 ##
 # Builds all files
 #
-lib: $(SRC) | lib/index.css node_modules
+lib: $(SRC) | node_modules
 	BABEL_ENV=$(BABEL_ENV) $(BABEL) src --out-dir $@ --source-maps inline
-	touch $@pa
 	cp package.json $@
-
-##
-# Preprocess css through postcss
-#
-lib/index.css: $(CSS) node_modules
-	$(BUILD_PARENT_DIRECTORY)
-	@#$(POSTCSS) -u autoprefixer $(MAINCSS) -o $@
 
 ##
 # Builds all dist files
 #
-dist: dist/axis.js dist/axis.css
+dist: dist/axis.js
 
 ##
 # Builds javascript dist file
 #
-dist/axis.js: node_modules $(SRC)
+dist/axis.js: node_modules lib
 	$(BUILD_PARENT_DIRECTORY)
-	$(BROWSERIFY) $(BROWSERIFY_TRANSFORM) --standalone $(GLOBAL_NAMESPACE) $(MAIN) > $@
-
-##
-# Builds CSS dist file
-#
-dist/axis.css: node_modules $(CSS)
-	$(BUILD_PARENT_DIRECTORY)
-	@#$(POSTCSS) --use autoprefixer --output $@ $(MAINCSS)
+	$(BROWSERIFY) $(BROWSERIFY_TRANSFORM) --standalone $(GLOBAL_NAMESPACE) $(LIB_MAIN) > $@
 
 ##
 # Builds node modules

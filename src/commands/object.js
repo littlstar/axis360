@@ -22,8 +22,7 @@ import quat from 'gl-quat'
  * @type {String}
  */
 
-export const DEFAULT_VERTEX_SHADER =
-  glslify(__dirname + '/../glsl/object/vert.glsl')
+export const DEFAULT_VERTEX_SHADER = glslify('../glsl/object/vert.glsl')
 
 /**
  * Default fragment shader for objects.
@@ -33,8 +32,7 @@ export const DEFAULT_VERTEX_SHADER =
  * @type {String}
  */
 
-export const DEFAULT_FRAGMENT_SHADER =
-  glslify(__dirname + '/../glsl/object/frag.glsl')
+export const DEFAULT_FRAGMENT_SHADER = glslify('../glsl/object/frag.glsl')
 
 /**
  * Current object command counter.
