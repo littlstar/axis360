@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 
-import { Command } from './command'
+import { Command } from '../command'
 import { define } from '../utils'
 import events from 'dom-events'
 import raf from 'raf'

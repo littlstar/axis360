@@ -4,14 +4,14 @@
  * Module dependencies.
  */
 
-import { AbstractController } from '../controller'
-import { lerp, radians } from '../../utils'
 import clamp from 'clamp'
 import quat from 'gl-quat'
 import vec3 from 'gl-vec3'
 
+import { ControllerCommand } from '../../controller'
 import applyOrientationInput from './orientation'
 import applyKeyboardInput from './keyboard'
+import { lerp, radians } from '../../utils'
 import applyMouseInput from './mouse'
 import applyTouchInput from './touch'
 
@@ -38,10 +38,10 @@ export const DEFAULT_FRICTION = 0.8
  *
  * @public
  * @class OrbitCameraController
- * @extends AbstractController
+ * @extends ControllerCommand
  */
 
-export class OrbitCameraController extends AbstractController {
+export class OrbitCameraController extends ControllerCommand {
 
   /**
    * OrbitCameraController class constructor.
@@ -55,6 +55,10 @@ export class OrbitCameraController extends AbstractController {
       const friction = this.friction
       const camera = this.target
       const inputs = this.inputs || {}
+
+      if (true != opts.invert) {
+        opts.invert = false
+      }
 
       // supported inputs
       const orientation = inputs.orientation

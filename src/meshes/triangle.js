@@ -5,7 +5,7 @@
  */
 
 import { TriangleGeometry } from '../geometry/triangle'
-import { ObjectCommand } from './object'
+import { MeshCommand } from '../mesh'
 import glsl from 'glslify'
 
 // @TODO(werle) - move this into a glsl file
@@ -37,7 +37,7 @@ export default (...args) => new TriangleCommand(...args)
  * @extends Command
  */
 
-export class TriangleCommand extends ObjectCommand {
+export class TriangleCommand extends MeshCommand {
   constructor(ctx, opts = {}) {
     const geometry = new TriangleGeometry(opts.geometry)
     const uniforms = {}

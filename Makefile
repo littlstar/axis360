@@ -103,6 +103,7 @@ doc: node_modules $(SRC)
 
 
 .PHONY: example/*
+example/*: NODE_PATH="$(NODE_PATH):$(CWD)/example/"
 example/*:
 	$(BUDO) $@/index.js -p 3000 --dir $@ --dir public/assets --live -- $(BROWSERIFY_TRANSFORM)
 

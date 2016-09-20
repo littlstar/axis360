@@ -5,7 +5,7 @@
  */
 
 import { BoxGeometry } from '../geometry/box'
-import { ObjectCommand } from './object'
+import { MeshCommand } from '../mesh'
 import mat4 from 'gl-mat4'
 import glsl from 'glslify'
 
@@ -22,10 +22,10 @@ export default (...args) => new BoxCommand(...args)
  *
  * @public
  * @class BoxCommand
- * @extends ObjectCommand
+ * @extends MeshCommand
  */
 
-export class BoxCommand extends ObjectCommand {
+export class BoxCommand extends MeshCommand {
   constructor(ctx, opts = {}) {
     const geometry = new BoxGeometry(opts.geometry)
     const uniforms = {}

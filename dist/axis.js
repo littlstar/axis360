@@ -2298,7 +2298,7 @@ function _inherits(subClass, superClass) {
  * @type {String}
  */
 
-var DEFAULT_VERTEX_SHADER = exports.DEFAULT_VERTEX_SHADER = '#define GLSLIFY 1\n/Users/josephwerle/repos/littlstar/axis2/src/commands';
+var DEFAULT_VERTEX_SHADER = exports.DEFAULT_VERTEX_SHADER = 'precision highp float;\n#define GLSLIFY 1\n\n/**\n * Shader uniforms.\n */\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\n\n/**\n * Shader IO.\n */\n\n#ifdef HAS_POSITIONS\nattribute vec3 position;\nvarying vec3 vposition;\n#endif\n\n#ifdef HAS_NORMALS\nattribute vec3 normal;\nvarying vec3 vnormal;\n#endif\n\n#ifdef HAS_UVS\nattribute vec2 uv;\nvarying vec2 vuv;\n#endif\n\n/**\n * Shader entry.\n */\n\nvoid main() {\n#ifdef HAS_POSITIONS\n  gl_Position = projection * view * model * vec4(position, 1.0);\n#elif defined HAS_NORMALS\n  gl_Position = projection * view * model * vec4(normal, 1.0);\n#elif defined HAS_UVS\n  gl_Position = projection * view * model * vec4(vec3(uv, 1.0), 1.0);\n#endif\n\n#ifdef HAS_POSITIONS\n  vposition = position;\n#endif\n\n#ifdef HAS_NORMALS\n  vnormal = normal;\n#endif\n\n#ifdef HAS_UVS\n  vuv = uv;\n#endif\n}\n';
 
 /**
  * Default fragment shader for objects.
@@ -2308,7 +2308,7 @@ var DEFAULT_VERTEX_SHADER = exports.DEFAULT_VERTEX_SHADER = '#define GLSLIFY 1\n
  * @type {String}
  */
 
-var DEFAULT_FRAGMENT_SHADER = exports.DEFAULT_FRAGMENT_SHADER = '#define GLSLIFY 1\n/Users/josephwerle/repos/littlstar/axis2/src/commands';
+var DEFAULT_FRAGMENT_SHADER = exports.DEFAULT_FRAGMENT_SHADER = 'precision mediump float;\n#define GLSLIFY 1\n\n/**\n * Shader uniforms.\n */\n\nuniform vec4 color;\n\n#ifdef HAS_MAP\nuniform sampler2D map;\n#endif\n\n/**\n * Shader IO.\n */\n\n#ifdef HAS_POSITIONS\nvarying vec3 vposition;\n#endif\n\n#ifdef HAS_NORMALS\nvarying vec3 vnormal;\n#endif\n\n#ifdef HAS_UVS\nvarying vec2 vuv;\n#endif\n\n/**\n * Shader entry.\n */\n\nvoid main() {\n#ifdef HAS_MAP\n#ifdef HAS_UVS\n  gl_FragColor = vec4(texture2D(map, vuv).rgb, 1.0);\n#else\n  gl_FragColor = color;\n#endif\n#else\n  gl_FragColor = color;\n#endif\n}\n';
 
 /**
  * Current object command counter.
@@ -3909,8 +3909,6 @@ var _extends = Object.assign || function (target) {
  * Module symbols.
  */
 
-exports.Context = Context;
-
 var _events = require('events');
 
 var _domEvents = require('dom-events');
@@ -3972,9 +3970,9 @@ var defaults = exports.defaults = {
  * @param {Object} opts
  */
 
-function Context(opts) {
+exports.default = function (opts) {
   return new CommandContext(_extends({}, defaults, opts));
-}
+};
 
 /**
  * CommandContext class.
@@ -5303,7 +5301,6 @@ module.exports={
   "name": "axis",
   "version": "2.0.0",
   "description": "Spherical content rendering engine",
-  "main": "index.js",
   "scripts": {
     "test": "node test",
     "build": "browserify app/main.js -o public/js/bundle.js"

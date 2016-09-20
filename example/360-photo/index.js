@@ -4,17 +4,14 @@
  * Module dependencies.
  */
 
-import {
-  Keyboard,
-  Context,
-  Camera,
-  Sphere,
-  Mouse,
-  Photo,
-  Frame,
-} from '../../src'
-
-import { OrbitCameraController } from '../../src/controls'
+import OrbitCameraController from 'axis/controls/orbit-camera'
+import Keyboard from 'axis/inputs/keyboard'
+import Context from 'axis/context'
+import Camera from 'axis/camera'
+import Sphere from 'axis/meshes/sphere'
+import Mouse from 'axis/inputs/mouse'
+import Image from 'axis/media/image'
+import Frame from 'axis/frame'
 import raf from 'raf'
 
 // axis context
@@ -23,8 +20,8 @@ const ctx = Context()
 // objects
 const camera = Camera(ctx)
 const frame = Frame(ctx)
-const photo = Photo(ctx, '/govball.jpg', {crossorigin: true})
-const sphere = Sphere(ctx, { map: photo })
+const image = Image(ctx, '/govball.jpg', {crossorigin: true})
+const sphere = Sphere(ctx, { map: image })
 
 // inputs
 const keyboard = Keyboard(ctx)
@@ -34,12 +31,13 @@ const mouse = Mouse(ctx)
 const orbitController = OrbitCameraController(ctx, {
   inputs: {mouse, keyboard},
   target: camera,
+  invert: true,
 })
 
 // focus now
 ctx.focus()
 
-// orient controllers to "center" of photo/video
+// orient controllers to "center" of image/video
 raf(() => {
   const y = Math.PI / (Math.PI * 0.5)
   orbitController.orientation.y = y

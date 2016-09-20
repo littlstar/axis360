@@ -4,29 +4,22 @@
  * Module dependencies.
  */
 
-import {
-  Orientation,
-  Keyboard,
-  Context,
-  Camera,
-  Sphere,
-  Mouse,
-  Touch,
-  Photo,
-  Video,
-  Audio,
-  Frame,
-  Box,
-} from '../../src'
+import FirstPersonCameraController from 'axis/controls/first-person-camera'
+import AmbisonicAudioController from 'axis/controls/ambisonic-audio'
+import OrbitCameraController from 'axis/controls/orbit-camera'
+import Orientation from 'axis/inputs/orientation'
+import Keyboard from 'axis/inputs/keyboard'
+import Context from 'axis/context'
+import Sphere from 'axis/meshes/sphere'
+import Camera from 'axis/camera'
+import Mouse from 'axis/inputs/mouse'
+import Video from 'axis/media/video'
+import Image from 'axis/media/image'
+import Frame from 'axis/frame'
+import Box from 'axis/meshes/box'
 
-import {
-  FirstPersonCameraController,
-  AmbisonicAudioController,
-  OrbitCameraController,
-} from '../../src/controls'
-
-import { Quaternion, Vector, } from '../../src/math'
-import { Geometry } from '../../src/geometry'
+import { Quaternion, Vector } from 'axis/math'
+import { Geometry } from 'axis/geometry/geometry'
 
 import normals from 'angle-normals'
 import Bunny from 'bunny'
@@ -40,8 +33,7 @@ const ctx = Context()
 // objects
 const camera = Camera(ctx)
 const frame = Frame(ctx)
-const photo = Photo(ctx, '/starwars-4k.jpg', {preload: false})
-const audio = Audio(ctx, '/magnificat.wav')
+const image = Image(ctx, '/starwars-4k.jpg', {preload: false})
 const video = Video(ctx,
                     //'http://360.littlstar.com/production/a0a5746e-87ac-4f20-9724-ecba40429e54/mobile.mp4', {
                     //'http://360.littlstar.com/production/0f87492e-647e-4862-adb2-73e70160f5ea/vr.mp4',
@@ -54,13 +46,12 @@ const video = Video(ctx,
 // inputs
 const orientation = Orientation(ctx)
 const keyboard = Keyboard(ctx)
-const touch = Touch(ctx)
 const mouse = Mouse(ctx)
 
 // shapes
 const sphere = Sphere(ctx, {
   map: video
-  //map: photo
+  //map: image
 })
 
 const boxes = Array(10).fill(0).map((_, i) => Box(ctx, {
@@ -76,7 +67,7 @@ const boxes = Array(10).fill(0).map((_, i) => Box(ctx, {
 
 // orbit controller
 const orbitController = OrbitCameraController(ctx, {
-  inputs: {touch, mouse, orientation},
+  inputs: {mouse, orientation},
   target: camera,
   invert: false,
   //rotate: false,
@@ -99,10 +90,8 @@ Object.assign(window, {
   keyboard,
   sphere,
   camera,
-  audio,
   video,
-  touch,
-  photo,
+  image,
   mouse,
   debug,
   boxes,
@@ -112,7 +101,7 @@ Object.assign(window, {
 // focus now
 ctx.focus()
 
-// orient controllers to "center" of photo/video
+// orient controllers to "center" of image/video
 raf(() => {
   const y = Math.PI / (Math.PI * 0.5)
   orbitController.orientation.y = y
@@ -120,9 +109,6 @@ raf(() => {
 
 // axis animation frame loop
 frame(({time}) => {
-
-  // handle sphere map changes
-  //toggleSphereMap()
 
   // update controller states
   fpController()
@@ -143,21 +129,3 @@ frame(({time}) => {
     }
   })
 })
-
-/**
- * Toggles sphere map bassed on key input.
- *
- * @key v - Toggle video
- * @key p - Toggle photo
- * @key n - Show nothing
- */
-
-function toggleSphereMap() {
-  if (keyboard.keys.v && sphere.map != video) {
-    sphere.map = video
-  } else if (keyboard.keys.p && sphere.map != photo) {
-    sphere.map = photo
-  } else if (keyboard.keys.n) {
-    sphere.map = null
-  }
-}

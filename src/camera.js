@@ -4,9 +4,9 @@
  * Module dependencies.
  */
 
-import { define, radians } from '../utils'
-import { ObjectCommand } from './object'
-import { Vector } from '../math'
+import { define, radians } from './utils'
+import { MeshCommand } from './mesh'
+import { Vector } from './math'
 import coalesce from 'defined'
 import mat4 from 'gl-mat4'
 import vec3 from 'gl-vec3'
@@ -83,7 +83,7 @@ export const DEFAULT_CAMERA_FAR = 1000.0
  * @extends Command
  */
 
-export class CameraCommand extends ObjectCommand {
+export class CameraCommand extends MeshCommand {
 
   /**
    * Camera class constructor.

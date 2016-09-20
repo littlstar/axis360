@@ -6,7 +6,7 @@
 
 import onMouseChange from 'mouse-change'
 import onMouseWheel from 'mouse-wheel'
-import { Command } from './command'
+import { Command } from '../command'
 import events from 'dom-events'
 import raf from 'raf'
 

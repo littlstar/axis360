@@ -4,9 +4,9 @@
  * Module dependencies.
  */
 
-import { Quaternion, Vector } from '../math'
-import { Command } from '../commands'
-import { define } from '../utils'
+import { Quaternion, Vector } from './math'
+import { Command } from './command'
+import { define } from './utils'
 import vec3 from 'gl-vec3'
 import quat from 'gl-quat'
 
@@ -21,18 +21,18 @@ const YVECTOR = new Vector(0, 1, 0)
 const ZVECTOR = new Vector(0, 0, 1)
 
 /**
- * AbstractController class.
+ * ControllerCommand class.
  *
  * @public
  * @abstract
- * @class AbstractController
+ * @class ControllerCommand
  * @extends Command
  */
 
-export class AbstractController extends Command {
+export class ControllerCommand extends Command {
 
   /**
-   * AbstractController class contructor.
+   * ControllerCommand class contructor.
    *
    * @param {Context} ctx
    * @param {Object} opts
@@ -60,7 +60,7 @@ export class AbstractController extends Command {
     })
 
     /**
-     * Controller middleware
+     * ControllerCommand middleware
      *
      * @private
      * @const
@@ -70,7 +70,7 @@ export class AbstractController extends Command {
     const middleware = []
 
     /**
-     * Controller state.
+     * ControllerCommand state.
      *
      * @private
      * @const
@@ -86,7 +86,7 @@ export class AbstractController extends Command {
     }, opts)
 
     /**
-     * Controller rotation quaternion.
+     * ControllerCommand rotation quaternion.
      *
      * @private
      * @type {Quaternion}
@@ -95,19 +95,19 @@ export class AbstractController extends Command {
     let rotation = new Quaternion()
 
     /**
-     * Target ObjectCommand instance.
+     * Target MeshCommand instance.
      *
      * @private
-     * @type {ObjectCommand}
+     * @type {MeshCommand}
      */
 
     let target = opts.target || null
 
     /**
-     * Source ObjectCommand instance.
+     * Source MeshCommand instance.
      *
      * @private
-     * @type {ObjectCommand}
+     * @type {MeshCommand}
      */
 
     let source = opts.source || null
@@ -152,7 +152,7 @@ export class AbstractController extends Command {
      *
      * @public
      * @getter
-     * @type {ObjectCommand}
+     * @type {MeshCommand}
      */
 
     define(this, 'target', { get: () => target })
@@ -162,7 +162,7 @@ export class AbstractController extends Command {
      *
      * @public
      * @getter
-     * @type {ObjectCommand}
+     * @type {MeshCommand}
      */
 
     define(this, 'rotation', { get: () => rotation })
@@ -172,7 +172,7 @@ export class AbstractController extends Command {
      *
      * @public
      * @getter
-     * @type {ObjectCommand}
+     * @type {MeshCommand}
      */
 
     define(this, 'source', { get: () => source })
@@ -192,8 +192,8 @@ export class AbstractController extends Command {
      * object.
      *
      * @public
-     * @param {ObjectCommand} object
-     * @return {AbstractController}
+     * @param {MeshCommand} object
+     * @return {ControllerCommand}
      */
 
     this.connect = (object) => {
@@ -208,7 +208,7 @@ export class AbstractController extends Command {
      * radians.
      *
      * @param {Number} radians
-     * @return {AbstractController}
+     * @return {ControllerCommand}
      */
 
     this.setAxisAngleX = (radians) => {
@@ -221,7 +221,7 @@ export class AbstractController extends Command {
      * radians.
      *
      * @param {Number} radians
-     * @return {AbstractController}
+     * @return {ControllerCommand}
      */
 
     this.setAxisAngleY = (radians) => {
@@ -234,7 +234,7 @@ export class AbstractController extends Command {
      * radians.
      *
      * @param {Number} radians
-     * @return {AbstractController}
+     * @return {ControllerCommand}
      */
 
     this.setAxisAngleZ = (radians) => {
@@ -246,7 +246,7 @@ export class AbstractController extends Command {
      * Installs controller middleware.
      *
      * @param {Function} fn
-     * @return {AbstractController}
+     * @return {ControllerCommand}
      */
 
     this.use = (fn) => {

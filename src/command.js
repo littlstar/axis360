@@ -14,7 +14,7 @@ import {
   $ctx,
   $run,
   $ref,
-} from '../symbols'
+} from './symbols'
 
 /**
  * Encode a function for execution within a

@@ -47,9 +47,7 @@ export const defaults = {
  * @param {Object} opts
  */
 
-export function Context(opts) {
-  return new CommandContext({...defaults, ...opts})
-}
+export default (opts) => new CommandContext({...defaults, ...opts})
 
 /**
  * CommandContext class.

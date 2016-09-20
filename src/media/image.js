@@ -5,27 +5,27 @@
  */
 
 import { debug, define } from '../utils'
-import { MediaCommand } from './media'
+import { MediaCommand } from '../media'
 
 /**
- * PhotoCommand constructor.
- * @see PhotoCommand
+ * Image constructor.
+ * @see Image
  */
 
-export default (...args) => new PhotoCommand(...args)
+export default (...args) => new Image(...args)
 
 /**
- * PhotoCommand class.
+ * Image class.
  *
  * @public
- * @class PhotoCommand
+ * @class Image
  * @extends MediaCommand
  */
 
-export class PhotoCommand extends MediaCommand {
+export class Image extends MediaCommand {
 
   /**
-   * PhotoCommand class constructor.
+   * Image class constructor.
    *
    * @constructor
    * @param {Context} ctx
@@ -46,16 +46,18 @@ export class PhotoCommand extends MediaCommand {
 
     super(ctx, manifest, initialState)
 
+    this.type = 'image'
+
     /**
-     * Sets an internal photo source property
+     * Sets an internal image source property
      * value. This function is used
-     * to proxy a class method to a photo
+     * to proxy a class method to a image
      * element property
      *
      * @private
      * @param {String} method
      * @param {...Mixed} args
-     * @return {PhotoCommand|Mixed}
+     * @return {Image|Mixed}
      */
 
     const set = (property, value) => {
@@ -63,7 +65,7 @@ export class PhotoCommand extends MediaCommand {
         if (undefined === value) {
           return source[property]
         } else {
-          debug('PhotoCommand: set %s=%s', property, value)
+          debug('Image: set %s=%s', property, value)
           source[property] = value
         }
       } else {
@@ -100,7 +102,7 @@ export class PhotoCommand extends MediaCommand {
     })
 
     /**
-     * Photo texture target.
+     * Image texture target.
      *
      * @type {REGLTexture}
      */
@@ -108,7 +110,7 @@ export class PhotoCommand extends MediaCommand {
     this.texture = null
 
     /**
-     * Callback when photo  has loaded.
+     * Callback when image has loaded.
      *
      * @type {Function}
      */

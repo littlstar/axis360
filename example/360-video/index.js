@@ -4,17 +4,14 @@
  * Module dependencies.
  */
 
-import {
-  Keyboard,
-  Context,
-  Camera,
-  Sphere,
-  Mouse,
-  Video,
-  Frame,
-} from '../../src'
-
-import { OrbitCameraController } from '../../src/controls'
+import OrbitCameraController from 'axis/controls/orbit-camera'
+import Keyboard from 'axis/inputs/keyboard'
+import Context from 'axis/context'
+import Camera from 'axis/camera'
+import Sphere from 'axis/meshes/sphere'
+import Mouse from 'axis/inputs/mouse'
+import Video from 'axis/media/video'
+import Frame from 'axis/frame'
 import raf from 'raf'
 
 // axis context
@@ -34,6 +31,7 @@ const mouse = Mouse(ctx)
 const orbitController = OrbitCameraController(ctx, {
   inputs: {mouse, keyboard},
   target: camera,
+  invert: true,
 })
 
 // focus now

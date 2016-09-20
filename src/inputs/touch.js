@@ -5,7 +5,7 @@
  */
 
 import { emitter as TouchPosition } from 'touch-position'
-import { Command } from './command'
+import { Command } from '../command'
 import events from 'dom-events'
 import raf from 'raf'
 

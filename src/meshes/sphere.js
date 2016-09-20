@@ -5,7 +5,7 @@
  */
 
 import { SphereGeometry } from '../geometry/sphere'
-import { ObjectCommand } from './object'
+import { MeshCommand } from '../mesh'
 import mat4 from 'gl-mat4'
 import glsl from 'glslify'
 
@@ -21,10 +21,10 @@ export default (...args) => new SphereCommand(...args)
  *
  * @public
  * @class SphereCommand
- * @extends ObjectCommand
+ * @extends MeshCommand
  */
 
-export class SphereCommand extends ObjectCommand {
+export class SphereCommand extends MeshCommand {
   constructor(ctx, opts = {}) {
     const geometry = new SphereGeometry(opts)
     const defaults = {}

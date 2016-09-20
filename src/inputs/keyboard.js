@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 
-import { Command } from './command'
+import { Command } from '../command'
 import { define } from '../utils'
 import keycode from 'keycode'
 import events from 'dom-events'
@@ -17,31 +17,6 @@ import raf from 'raf'
  */
 
 export default (...args) => new KeyboardCommand(...args)
-
-/**
- * Alias key mappings.
- *
- * @public
- * @const
- * @type {Object}
- */
-
-export const mappings = {
-  up: ['up', 'w', 'k'],
-  down: ['down', 's', 'j'],
-  left: ['left', 'a', 'h'],
-  right: ['right', 'd', 'l'],
-  control: [
-    'control',
-    'right command', 'left command',
-    'right control', 'left control',
-    'super', 'ctrl', 'alt', 'fn',
-  ],
-
-  on(which, keys) { return this[which].map((key) => keys[key] = true) },
-  off(which, keys) { return this[which].map((key) => keys[key] = false) },
-  value(which, keys) { return this[which].some((key) => Boolean(keys[key])) },
-}
 
 /**
  * KeyboardCommand class
@@ -82,6 +57,40 @@ export class KeyboardCommand extends Command {
       keycodes: {},
       keys: {}
     }
+
+    /**
+     * Alias key mappings.
+     *
+     * @const
+     * @type {Object}
+     */
+
+    const mappings = {
+      up: ['up', 'w'],
+      down: ['down', 's'],
+      left: ['left', 'a'],
+      right: ['right', 'd'],
+      control: [
+        'control',
+        'right command', 'left command',
+        'right control', 'left control',
+        'super', 'ctrl', 'alt', 'fn',
+      ],
+
+      on(which, keys) { return this[which].map((key) => keys[key] = true) },
+      off(which, keys) { return this[which].map((key) => keys[key] = false) },
+      value(which, keys) { return this[which].some((key) => Boolean(keys[key])) },
+    }
+
+    /**
+     * State alias key mappings.
+     *
+     * @public
+     * @getter
+     * @type {Object}
+     */
+
+    define(this, 'aliasMappings', { get: () => mappings })
 
     /**
      * Key codes map getter.

@@ -4,7 +4,6 @@
  * Module dependencies.
  */
 
-import { mappings } from '../../commands/keyboard'
 import { radians } from '../../utils'
 import clamp from 'clamp'
 
@@ -24,28 +23,28 @@ export default (camera, keyboard, {dx = 0, dy = 0} = {}) => {
     const keys = keyboard.keys
 
     // @TODO(werle) - should we reset keyboard state ?
-    if (mappings.value('control', keys)) {
+    if (keyboard.aliasMappings.value('control', keys)) {
       return
     }
 
-    if (mappings.value('up', keys)) {
+    if (keyboard.aliasMappings.value('up', keys)) {
       dx = dx - step
       camera.orientation.x -= step
-      mappings.off('down', keys)
-    } else if (mappings.value('down', keys)) {
+      keyboard.aliasMappings.off('down', keys)
+    } else if (keyboard.aliasMappings.value('down', keys)) {
       dx = dx + step
       camera.orientation.x += step
-      mappings.off('up', keys)
+      keyboard.aliasMappings.off('up', keys)
     }
 
-    if (mappings.value('left', keys)) {
+    if (keyboard.aliasMappings.value('left', keys)) {
       dy = dy - step
       camera.orientation.y -= step
-      mappings.off('right', keys)
-    } else if (mappings.value('right', keys)) {
+      keyboard.aliasMappings.off('right', keys)
+    } else if (keyboard.aliasMappings.value('right', keys)) {
       dy = dy + step
       camera.orientation.y += step
-      mappings.off('left', keys)
+      keyboard.aliasMappings.off('left', keys)
     }
 
     c = 0.075

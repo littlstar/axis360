@@ -1,10 +1,10 @@
+'use strict'
+
 /**
  * Module dependencies.
  */
 
 import { Omnitone as omnitone } from 'omnitone'
-import { AbstractController } from '../controller'
-import { define, radians } from '../../utils'
 import defaultAudioContext from 'audio-context'
 import clamp from 'clamp'
 import quat from 'gl-quat'
@@ -12,37 +12,31 @@ import vec3 from 'gl-vec3'
 import mat3 from 'gl-mat3'
 import raf from 'raf'
 
-import {
-  Quaternion,
-  Vector,
-} from '../../math'
-
-import {
-  XVector3,
-  YVector3,
-  ZVector3,
-} from '../../math/vector'
+import { XVector3, YVector3, ZVector3, } from '../../math/vector'
+import { Quaternion, Vector, } from '../../math'
+import { ControllerCommand } from '../../controller'
+import { define, radians } from '../../utils'
 
 /**
- * AmbisonicAudioController function.
+ * AmbisonicAudioControllerCommand function.
  *
- * @see AmbisonicAudioController
+ * @see AmbisonicAudioControllerCommand
  */
 
-export default (...args) => new AmbisonicAudioController(...args)
+export default (...args) => new AmbisonicAudioControllerCommand(...args)
 
 /**
- * AmbisonicAudioController class
+ * AmbisonicAudioControllerCommand class
  *
  * @public
- * @class AmbisonicAudioController
- * @extends AbstractController
+ * @class AmbisonicAudioControllerCommand
+ * @extends ControllerCommand
  */
 
-export class AmbisonicAudioController extends AbstractController {
+export class AmbisonicAudioControllerCommand extends ControllerCommand {
 
   /**
-   * AmbisonicAudioController class constructor.
+   * AmbisonicAudioControllerCommand class constructor.
    *
    * @param {Context} ctx
    * @param {Object} opts

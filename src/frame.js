@@ -5,7 +5,7 @@
  */
 
 import { Command } from './command'
-import { define } from '../utils'
+import { define } from './utils'
 
 /**
  * FrameCommand constructor.

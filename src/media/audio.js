@@ -5,29 +5,27 @@
  */
 
 import { debug, define } from '../utils'
-import { MediaCommand } from './media'
+import { MediaCommand } from '../media'
 import events from 'dom-events'
-import clamp from 'clamp'
-import raf from 'raf'
 
 /**
- * VideoCommand constructor.
- * @see VideoCommand
+ * AudioCommand constructor.
+ * @see AudioCommand
  */
 
-export default (...args) => new VideoCommand(...args)
+export default (...args) => new AudioCommand(...args)
 
 /**
- * VideoCommand class.
+ * AudioCommand class.
  *
  * @public
  * @extends MediaCommand
  */
 
-export class VideoCommand extends MediaCommand {
+export class AudioCommand extends MediaCommand {
 
   /**
-   * VideoCommand class constructor.
+   * AudioCommand class constructor.
    *
    * @constructor
    * @param {Context} ctx
@@ -43,28 +41,28 @@ export class VideoCommand extends MediaCommand {
     let isPlaying = false
 
     const manifest = {
-      video: {
+      audio: {
         stream: true,
-        type: 'video',
+        type: 'audio',
         src: src
       }
     }
 
     /**
-     * Calls internal video source method
+     * Calls internal audio source method
      * with arguments. This function is used
-     * to proxy a class method to a video
+     * to proxy a class method to a audio
      * element method.
      *
      * @private
      * @param {String} method
      * @param {...Mixed} args
-     * @return {VideoCommand}
+     * @return {AudioCommand}
      */
 
     const call = (method, ...args) => {
       if (source) {
-        debug('VideoCommand: call %s(%j)', method, args)
+        debug('AudioCommand: call %s(%j)', method, args)
         source[method](...args)
       } else {
         this.once('load', () => this[method](...args))
@@ -73,15 +71,15 @@ export class VideoCommand extends MediaCommand {
     }
 
     /**
-     * Sets an internal video source property
+     * Sets an internal audio source property
      * value. This function is used
-     * to proxy a class method to a video
+     * to proxy a class method to a audio
      * element property
      *
      * @private
      * @param {String} method
      * @param {...Mixed} args
-     * @return {VideoCommand|Mixed}
+     * @return {AudioCommand|Mixed}
      */
 
     const set = (property, value) => {
@@ -89,7 +87,7 @@ export class VideoCommand extends MediaCommand {
         if (undefined === value) {
           return source[property]
         } else {
-          debug('VideoCommand: set %s=%s', property, value)
+          debug('AudioCommand: set %s=%s', property, value)
           source[property] = value
         }
       } else {
@@ -104,7 +102,7 @@ export class VideoCommand extends MediaCommand {
      * @private
      * @param {String} event
      * @param {...Mixed} args
-     * @return {VideoCommand}
+     * @return {AudioCommand}
      */
 
     const emit = (event, ...args) => {
@@ -114,7 +112,7 @@ export class VideoCommand extends MediaCommand {
 
     super(ctx, manifest, initialState)
 
-    // set initial video state
+    // set initial audio state
     this.once('load', () => {
       // set initial set on source
       Object.assign(source, initialState)
@@ -126,7 +124,7 @@ export class VideoCommand extends MediaCommand {
       }
 
       // proxy source events
-      for (let key in HTMLVideoElement.prototype) {
+      for (let key in HTMLAudioElement.prototype) {
         if (key.match(/^on[a-z]/)) {
           proxy(key.replace(/^on/, ''))
           define(this, key, {
@@ -172,16 +170,16 @@ export class VideoCommand extends MediaCommand {
       get: () => {
         return (source && source.src) ?
           source.src :
-          (this.manifest && this.manifest.video) ?
-            this.manifest.video.src :
+          (this.manifest && this.manifest.audio) ?
+            this.manifest.audio.src :
             null
       },
 
       set: (value) => {
         if (source && 'string' == typeof value) {
           source.src = value
-          if (this.manifest && this.manifest.video) {
-            this.manifest.video.src = value
+          if (this.manifest && this.manifest.audio) {
+            this.manifest.audio.src = value
             this.reset()
             this.load()
           }
@@ -189,11 +187,10 @@ export class VideoCommand extends MediaCommand {
       }
     })
 
-    // proxy all configurable video properties that serve
+    // proxy all configurable audio properties that serve
     // some kind of real purpose
     // @TODO(werle) - support text tracks
     ;[
-      'playbackRate',
       'currentTime',
       'crossOrigin',
       'currentSrc',
@@ -203,8 +200,6 @@ export class VideoCommand extends MediaCommand {
       'paused',
       'played',
       'prefix',
-      'poster',
-      'title',
       'muted',
       'loop',
     ].map((property) => define(this, property, {
@@ -212,82 +207,49 @@ export class VideoCommand extends MediaCommand {
       set: (value) => { source[property] = value }
     }))
 
-    // proxy dimensions
-    define(this, 'width', { get: () => source.videoWidth })
-    define(this, 'height', { get: () => source.videoHeight })
-    define(this, 'aspectRatio', {
-      get: () => source.videoWidth / source.videoHeight
-    })
-
     // expose DOM element
     define(this, 'domElement', { get: () => source })
 
     /**
-     * Video texture target.
+     * Plays the audio.
      *
-     * @type {REGLTexture}
-     */
-
-    this.texture = null
-
-    /**
-     * Plays the video.
-     *
-     * @return {VideoCommand}
+     * @return {AudioCommand}
      */
 
     this.play = () => call('play')
 
     /**
-     * Pauses the video.
+     * Pauses the audio.
      *
-     * @return {VideoCommand}
+     * @return {AudioCommand}
      */
 
     this.pause = () => call('pause')
 
     /**
-     * Mutes the video
+     * Mutes the audio
      *
-     * @return {VideoCommand}
+     * @return {AudioCommand}
      */
 
     this.mute = () => set('muted', true) && emit('mute')
 
     /**
-     * Unutes the video
+     * Unutes the audio
      *
-     * @return {VideoCommand}
+     * @return {AudioCommand}
      */
 
     this.unmute = () => set('muted', false) && emit('unmute')
 
     /**
-     * Callback when video  has loaded.
+     * Callback when audio has loaded.
      *
      * @type {Function}
      */
 
-    this.onloaded = ({video}) => {
-      source = video
-      this.texture = ctx.regl.texture({
-        mag: 'linear',
-        min: 'linear',
-        wrap: ['clamp', 'clamp'],
-        data: video,
-      })
-
-      this.emit('load')
-
-      let lastRead = 0
-      this._read = () => {
-        const now = Date.now()
-        if (isPlaying && (now - lastRead >= 64) && this.isDoneLoading && video.readyState >= video.HAVE_ENOUGH_DATA) {
-          lastRead = now
-          debug('VideoCommand: read')
-          this.texture(video)
-        }
-      }
+    this.onloaded = ({audio}) => {
+      source = audio
     }
   }
 }

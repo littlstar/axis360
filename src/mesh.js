@@ -5,9 +5,9 @@
  */
 
 import injectDefines from 'glsl-inject-defines'
-import { Quaternion, Vector } from '../math'
+import { Quaternion, Vector } from './math'
 import { Command } from './command'
-import { define } from '../utils'
+import { define } from './utils'
 import glslify from 'glslify'
 import mat4 from 'gl-mat4'
 import vec4 from 'gl-vec4'
@@ -15,52 +15,52 @@ import vec3 from 'gl-vec3'
 import quat from 'gl-quat'
 
 /**
- * Default vertex shader for objects.
+ * Default vertex shader for a mesh.
  *
  * @public
  * @const
  * @type {String}
  */
 
-export const DEFAULT_VERTEX_SHADER = glslify('../glsl/object/vert.glsl')
+export const DEFAULT_VERTEX_SHADER = glslify('./glsl/mesh/vert.glsl')
 
 /**
- * Default fragment shader for objects.
+ * Default fragment shader for a mesh.
  *
  * @public
  * @const
  * @type {String}
  */
 
-export const DEFAULT_FRAGMENT_SHADER = glslify('../glsl/object/frag.glsl')
+export const DEFAULT_FRAGMENT_SHADER = glslify('./glsl/mesh/frag.glsl')
 
 /**
- * Current object command counter.
+ * Current mesh command counter.
  *
  * @type {Number}
  */
 
-let OBJECT_COMMAND_COUNTER = 0
+let MESH_COMMAND_COUNTER = 0
 
 /**
- * ObjectCommand constructor.
- * @see ObjectCommand
+ * MeshCommand constructor.
+ * @see MeshCommand
  */
 
-export default (...args) => new ObjectCommand(...args)
+export default (...args) => new MeshCommand(...args)
 
 /**
- * ObjectCommand class.
+ * MeshCommand class.
  *
  * @public
- * @class ObjectCommand
+ * @class MeshCommand
  * @extends Command
  */
 
-export class ObjectCommand extends Command {
+export class MeshCommand extends Command {
 
   /**
-   * Returns the next object ID
+   * Returns the next mesh D
    *
    * @public
    * @static
@@ -68,11 +68,11 @@ export class ObjectCommand extends Command {
    */
 
   static id() {
-    return OBJECT_COMMAND_COUNTER ++
+    return MESH_COMMAND_COUNTER ++
   }
 
   /**
-   * ObjectCommand class constructor.
+   * MeshCommand class constructor.
    *
    * @param {Context} ctx
    * @param {Object} opts
@@ -128,7 +128,7 @@ export class ObjectCommand extends Command {
     }
 
     /**
-     * Configures object state. This function
+     * Configures mesh state. This function
      * may create a new render function from regl
      *
      * @private
@@ -261,15 +261,15 @@ export class ObjectCommand extends Command {
     super((...args) => render(...args))
 
     /**
-     * Object ID.
+     * Mesh ID.
      *
      * @type {Number}
      */
 
-    this.id = opts.id || ObjectCommand.id()
+    this.id = opts.id || MeshCommand.id()
 
     /**
-     * Object type name.
+     * Mesh type name.
      *
      * @type {String}
      */
@@ -277,7 +277,7 @@ export class ObjectCommand extends Command {
     this.type = opts.type || 'object'
 
     /**
-     * Object scale vector.
+     * Mesh scale vector.
      *
      * @type {Vector}
      */
@@ -287,7 +287,7 @@ export class ObjectCommand extends Command {
       new Vector(1, 1, 1)
 
     /**
-     * Object scale vector.
+     * Mesh scale vector.
      *
      * @type {Vector}
      */
@@ -297,7 +297,7 @@ export class ObjectCommand extends Command {
       new Vector(0, 0, 0)
 
     /**
-     * Object rotation quaternion
+     * Mesh rotation quaternion
      *
      * @type {Quaternion}
      */
@@ -307,7 +307,7 @@ export class ObjectCommand extends Command {
       new Quaternion()
 
     /**
-     * Object transform matrix
+     * Mesh transform matrix
      *
      * @type {Array}
      */
@@ -315,7 +315,7 @@ export class ObjectCommand extends Command {
     this.transform = mat4.identity([])
 
     /**
-     * Boolean to indicate if object should be drawn
+     * Boolean to indicate if mesh should be drawn
      * with a line primitive.
      *
      * @type {Boolean}
@@ -324,7 +324,7 @@ export class ObjectCommand extends Command {
     this.wireframe = false
 
     /**
-     * Object color property.
+     * Mesh color property.
      *
      * @type {Vector}
      */
@@ -334,7 +334,7 @@ export class ObjectCommand extends Command {
       new Vector(197/255, 148/255, 149/255, 1.0)
 
     /**
-     * Object map if given.
+     * Mesh texture map if given.
      *
      * @type {Media}
      */

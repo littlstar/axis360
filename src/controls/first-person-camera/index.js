@@ -4,16 +4,16 @@
  * Module dependencies.
  */
 
-import { AbstractController } from '../controller'
-import { define, radians } from '../../utils'
-import { Vector } from '../../math'
 import clamp from 'clamp'
 import quat from 'gl-quat'
 import vec3 from 'gl-vec3'
 
+import { ControllerCommand } from '../../controller'
 import { DEFAULT_FRICTION  } from '../orbit-camera'
+import { define, radians } from '../../utils'
 import applyKeyboardInput from './keyboard'
 import applyMouseInput from '../orbit-camera/mouse'
+import { Vector } from '../../math'
 
 /**
  * FirstPersonCameraController function.
@@ -28,10 +28,10 @@ export default (...args) => new FirstPersonCameraController(...args)
  *
  * @public
  * @class FirstPersonCameraController
- * @extends AbstractController
+ * @extends ControllerCommand
  */
 
-export class FirstPersonCameraController extends AbstractController {
+export class FirstPersonCameraController extends ControllerCommand {
 
   /**
    * FirstPersonCameraController class constructor.
