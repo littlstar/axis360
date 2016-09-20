@@ -78,8 +78,7 @@ const boxes = Array(10).fill(0).map((_, i) => Box(ctx, {
 const orbitController = OrbitCameraController(ctx, {
   inputs: {touch, mouse, orientation},
   target: camera,
-  //invert: false,
-  transform: true,
+  invert: false,
   //rotate: false,
 })
 
