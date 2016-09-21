@@ -4,9 +4,11 @@
  * Module dependencies.
  */
 
+import { define, radians, getScreenOrientation } from '../utils'
+import { Quaternion } from '../math'
 import { Command } from '../command'
-import { define } from '../utils'
 import events from 'dom-events'
+import quat from 'gl-quat'
 import raf from 'raf'
 
 /**
@@ -16,6 +18,7 @@ import raf from 'raf'
  */
 
 const globalState = {
+  hasDeviceOrientation: false,
   absolute: null,
 
   currentAlpha: 0, // z
@@ -35,6 +38,14 @@ const globalState = {
 events.on(window, 'deviceorientation', (e) => {
   // ZXY
   const { alpha, beta, gamma, absolute } = e
+
+  if (alpha && beta && gamma) {
+    global.hasDeviceOrientation = true
+  }
+
+  if (false == global.hasDeviceOrientation) {
+    return
+  }
 
   Object.assign(globalState, {
     absolute,
@@ -110,8 +121,49 @@ export class OrientationCommand extends Command {
     }
 
     super((_, block) => {
-      Object.assign(state, globalState)
-      if ('function' == typeof block) { block(this) }
+      Object.assign(state, { ...globalState }, {
+        const {currentAlpha, currentBeta, currentGamma} = globalState
+        rotation: (() => {
+          // borrowed from https://github.com/hawksley/eleVR-Web-Player/blob/master/js/phonevr.js
+          const z = radians(currentAlpha)/2.0
+          const x = radians(currentBeta)/2.0
+          const y = radians(currentGamma)/2.0
+          const cX = Math.cos(x)
+          const cY = Math.cos(y)
+          const cZ = Math.cos(z)
+          const sX = Math.sin(x)
+          const sY = Math.sin(y)
+          const sZ = Math.sin(z)
+
+          const deviceOrientation = new Quaternion(
+            (cX * cY * cZ - sX * sY * sZ),
+            (sX * cY * cZ - cX * sY * sZ),
+            (cX * sY * cZ + sX * cY * sZ),
+            (cX * cY * sZ + sX * sY * cZ)
+          )
+
+          const screenOrientation = radians(getScreenOrientation())/2.0
+          const screenTransform = new Quaternion(
+            0,
+            0,
+            -Math.sin(screenTransform),
+            Math.cos(screenTransform)
+          )
+
+          const deviceRotation = new Quaternion()
+          quat.multiply(deviceRotation, deviceOrientation, screenTransform)
+
+          // @see https://github.com/hawksley/eleVR-Web-Player/blob/master/js/phonevr.js#L53
+          const r22 = Math.sqrt(0.5);
+          quat.multiply(deviceRotation, quat.fromValues(-r22, 0, 0, r22), deviceRotation);
+
+          return deviceRotation
+        }())
+      })
+
+      if ('function' == typeof block) {
+        block(this)
+      }
     })
 
     for (let prop in state) {

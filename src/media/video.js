@@ -218,7 +218,7 @@ export class Video extends MediaCommand {
     define(this, 'width', { get: () => source.videoWidth })
     define(this, 'height', { get: () => source.videoHeight })
     define(this, 'aspectRatio', {
-      get: () => source.videoWidth / source.videoHeight
+      get: () => source ? source.videoWidth / source.videoHeight : 1
     })
 
     // expose DOM element

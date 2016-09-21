@@ -28,12 +28,6 @@ export default (...args) => new BoxCommand(...args)
 export class BoxCommand extends MeshCommand {
   constructor(ctx, opts = {}) {
     const geometry = new BoxGeometry(opts.geometry)
-    const uniforms = {}
-    super(ctx, {
-      ...opts,
-      type: 'box',
-      uniforms,
-      geometry,
-    })
+    super(ctx, { ...opts, type: 'box', geometry })
   }
 }

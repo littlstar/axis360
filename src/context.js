@@ -47,20 +47,20 @@ export const defaults = {
  * @param {Object} opts
  */
 
-export default (opts) => new CommandContext({...defaults, ...opts})
+export default (opts) => new Context({...defaults, ...opts})
 
 /**
- * CommandContext class.
+ * Context class.
  *
  * @public
- * @class CommandContext
+ * @class Context
  * @extends EventEmitter
  */
 
-export class CommandContext extends EventEmitter {
+export class Context extends EventEmitter {
 
   /**
-   * CommandContext class constructor.
+   * Context class constructor.
    *
    * @param {(Object)?} initialState
    * @param {(Object)?} opts
@@ -78,10 +78,6 @@ export class CommandContext extends EventEmitter {
       reglOptions.container = opts.element
     }
 
-    reglOptions.stencil = {
-      enable: true
-    }
-
     this[$regl] = regl(opts.regl)
     this[$stack] = []
     this[$state] = initialState
@@ -94,9 +90,7 @@ export class CommandContext extends EventEmitter {
 
     events.on(this[$domElement], 'focus', () => this.focus())
     events.on(this[$domElement], 'blur', () => this.blur())
-    events.on(window, 'blur', () => {
-      this.blur()
-    })
+    events.on(window, 'blur', () => this.blur())
   }
 
   /**
@@ -180,7 +174,7 @@ export class CommandContext extends EventEmitter {
   /**
    * Focuses context.
    *
-   * @return {CommandContext}
+   * @return {Context}
    */
 
   focus() {
@@ -192,7 +186,7 @@ export class CommandContext extends EventEmitter {
   /**
    * Blurs context.
    *
-   * @return {CommandContext}
+   * @return {Context}
    */
 
   blur() {
@@ -205,7 +199,7 @@ export class CommandContext extends EventEmitter {
    * Pushes command to context stack.
    *
    * @param {Command} command
-   * @return {CommandContext}
+   * @return {Context}
    */
 
   push(command) {
@@ -220,7 +214,7 @@ export class CommandContext extends EventEmitter {
   /**
    * Pops tail of context command stack.
    *
-   * @return {CommandContext}
+   * @return {Context}
    */
 
   pop() {
@@ -234,7 +228,7 @@ export class CommandContext extends EventEmitter {
    * Updates command context state.
    *
    * @param {Function|Block}
-   * @return {CommandContext}
+   * @return {Context}
    */
 
   update(block) {
@@ -247,7 +241,7 @@ export class CommandContext extends EventEmitter {
   /**
    * Clears the clear buffers in regl.
    *
-   * @return {CommandContext}
+   * @return {Context}
    */
 
   clear() {

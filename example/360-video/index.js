@@ -4,14 +4,14 @@
  * Module dependencies.
  */
 
-import OrbitCameraController from 'axis/controls/orbit-camera'
-import Keyboard from 'axis/inputs/keyboard'
-import Context from 'axis/context'
-import Camera from 'axis/camera'
-import Sphere from 'axis/meshes/sphere'
-import Mouse from 'axis/inputs/mouse'
-import Video from 'axis/media/video'
-import Frame from 'axis/frame'
+import OrbitCameraController from 'axis-3d/controls/orbit-camera'
+import Keyboard from 'axis-3d/input/keyboard'
+import Context from 'axis-3d/context'
+import Camera from 'axis-3d/camera'
+import Sphere from 'axis-3d/mesh/sphere'
+import Mouse from 'axis-3d/input/mouse'
+import Video from 'axis-3d/media/video'
+import Frame from 'axis-3d/frame'
 import raf from 'raf'
 
 // axis context

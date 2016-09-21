@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 
-import { Geometry } from './geometry'
+import { Geometry } from '../geometry'
 
 /**
  * TriangleGeometry class.
@@ -23,21 +23,21 @@ export class TriangleGeometry extends Geometry {
   constructor(primitive) {
     primitive = primitive || {
       positions: [
-        -0.0, +1.0,
-        +1.0, -1.0,
-        -1.0, -1.0,
+        [-0.0, +1.0],
+        [+1.0, -1.0],
+        [-1.0, -1.0],
       ],
 
       normals: [
-        -0.00000, +0.57735,
-        +0.57735, -0.57735,
-        -0.57735, -0.57735,
+        [-0.00000, +0.57735],
+        [+0.57735, -0.57735],
+        [-0.57735, -0.57735],
       ],
 
       uvs: [
-        -0.0, +1.0,
-        +1.0, -1.0,
-        -1.0, -1.0,
+        [-0.0, +1.0],
+        [+1.0, -1.0],
+        [-1.0, -1.0],
       ],
     }
 

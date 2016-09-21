@@ -27,15 +27,6 @@ export default (...args) => new SphereCommand(...args)
 export class SphereCommand extends MeshCommand {
   constructor(ctx, opts = {}) {
     const geometry = new SphereGeometry(opts)
-    const defaults = {}
-    const uniforms = {}
-
-    super(ctx, {
-      ...opts,
-      type: 'sphere',
-      defaults,
-      uniforms,
-      geometry,
-    })
+    super(ctx, { ...opts, type: 'sphere', geometry })
   }
 }

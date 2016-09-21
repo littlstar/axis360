@@ -5,7 +5,7 @@
  */
 
 import PrimitiveSphere from 'primitive-sphere'
-import { Geometry } from './geometry'
+import { Geometry } from '../geometry'
 
 /**
  * SphereGeometry class.

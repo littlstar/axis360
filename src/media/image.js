@@ -46,6 +46,16 @@ export class Image extends MediaCommand {
 
     super(ctx, manifest, initialState)
 
+    // proxy dimensions
+    define(this, 'width', { get: () => source.width })
+    define(this, 'height', { get: () => source.height })
+    define(this, 'aspectRatio', {
+      get: () => source ? source.width / source.height : 1
+    })
+
+    // expose DOM element
+    define(this, 'domElement', { get: () => source })
+
     this.type = 'image'
 
     /**

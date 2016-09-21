@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 
+import getBoundingBox from 'bound-points'
 import injectDefines from 'glsl-inject-defines'
 import { Quaternion, Vector } from './math'
 import { Command } from './command'
@@ -12,6 +13,7 @@ import glslify from 'glslify'
 import mat4 from 'gl-mat4'
 import vec4 from 'gl-vec4'
 import vec3 from 'gl-vec3'
+import vec2 from 'gl-vec2'
 import quat from 'gl-quat'
 
 /**
@@ -82,6 +84,7 @@ export class MeshCommand extends Command {
     const defaults = {...opts.defaults}
     const model = mat4.identity([])
 
+    let boundingBox = null
     let render = null
     let draw = opts.draw || null
     let map = opts.map || null
@@ -254,11 +257,11 @@ export class MeshCommand extends Command {
       })
     }
 
-    // initial configuration
-    configure()
-
     // calls current target  render function
     super((...args) => render(...args))
+
+    // initial configuration
+    configure()
 
     /**
      * Mesh ID.
@@ -332,6 +335,52 @@ export class MeshCommand extends Command {
     this.color = opts.color ?
       new Vector(...opts.color) :
       new Vector(197/255, 148/255, 149/255, 1.0)
+
+    /**
+     * Computed bounding
+     *
+     * @type {Array<Vector>}
+     */
+
+    define(this, 'boundingBox', {
+      get() {
+        if (null == this.geometry) {
+          return null
+        } else if (boundingBox) {
+          return boundingBox
+        }
+
+        boundingBox =
+          getBoundingBox(this.geometry.positions)
+          .map((vec) => new Vector(...vec))
+      }
+    })
+
+    /**
+     * Computed size.
+     *
+     * @type {Vector}
+     */
+
+    define(this, 'size', {
+      get() {
+        // trigger compute with getter
+       void this.boundingBox
+        if (null == boundingBox) {
+          return null
+        }
+
+        const min = boundingBox[0]
+        const max = boundingBox[1]
+        const dimension = boundingBox[0].length
+
+        switch (dimension) {
+          case 3: return vec3.subtract(new Vector(0, 0, 0), max, min)
+          case 2: return vec2.subtract(new Vector(0, 0, 0), max, min)
+          default: return null
+        }
+      }
+    })
 
     /**
      * Mesh texture map if given.

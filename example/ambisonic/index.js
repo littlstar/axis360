@@ -4,17 +4,17 @@
  * Module dependencies.
  */
 
-import AmbisonicAudioController from 'axis/controls/ambisonic-audio'
-import OrbitCameraController from 'axis/controls/orbit-camera'
+import AmbisonicAudioController from 'axis-3d/controls/ambisonic-audio'
+import OrbitCameraController from 'axis-3d/controls/orbit-camera'
 import WebAudioAnalyser from 'web-audio-analyser'
-import { Vector } from 'axis/math'
-import Keyboard from 'axis/inputs/keyboard'
-import Context from 'axis/context'
-import Camera from 'axis/camera'
-import Mouse from 'axis/inputs/mouse'
-import Audio from 'axis/media/audio'
-import Frame from 'axis/frame'
-import Box from 'axis/meshes/box'
+import { Vector } from 'axis-3d/math'
+import Keyboard from 'axis-3d/input/keyboard'
+import Context from 'axis-3d/context'
+import Camera from 'axis-3d/camera'
+import Mouse from 'axis-3d/input/mouse'
+import Audio from 'axis-3d/media/audio'
+import Frame from 'axis-3d/frame'
+import Box from 'axis/mesh/box'
 import raf from 'raf'
 
 // axis context

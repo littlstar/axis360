@@ -5,7 +5,7 @@
  */
 
 import PrimitiveBox from 'geo-3d-box'
-import { Geometry } from './geometry'
+import { Geometry } from '../geometry'
 
 /**
  * BoxGeometry class.
