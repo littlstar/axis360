@@ -4,22 +4,22 @@
  * Module dependencies.
  */
 
-import FirstPersonCameraController from 'axis-3d/controls/first-person-camera'
-import AmbisonicAudioController from 'axis-3d/controls/ambisonic-audio'
-import OrbitCameraController from 'axis-3d/controls/orbit-camera'
-import Orientation from 'axis-3d/input/orientation'
-import Keyboard from 'axis-3d/input/keyboard'
-import Context from 'axis-3d/context'
-import Sphere from 'axis-3d/mesh/sphere'
-import Camera from 'axis-3d/camera'
-import Mouse from 'axis-3d/input/mouse'
-import Video from 'axis-3d/media/video'
-import Image from 'axis-3d/media/image'
-import Frame from 'axis-3d/frame'
-import Box from 'axis-3d/mesh/box'
+import FirstPersonCameraController from 'axis3d/controls/first-person-camera'
+import AmbisonicAudioController from 'axis3d/controls/ambisonic-audio'
+import OrbitCameraController from 'axis3d/controls/orbit-camera'
+import Orientation from 'axis3d/input/orientation'
+import Keyboard from 'axis3d/input/keyboard'
+import Context from 'axis3d/context'
+import Sphere from 'axis3d/mesh/sphere'
+import Camera from 'axis3d/camera'
+import Mouse from 'axis3d/input/mouse'
+import Video from 'axis3d/media/video'
+import Image from 'axis3d/media/image'
+import Frame from 'axis3d/frame'
+import Box from 'axis3d/mesh/box'
 
-import { Quaternion, Vector } from 'axis-3d/math'
-import { Geometry } from 'axis-3d/geometry/geometry'
+import { Quaternion, Vector } from 'axis3d/math'
+import { Geometry } from 'axis3d/geometry'
 
 import normals from 'angle-normals'
 import Bunny from 'bunny'
@@ -103,8 +103,7 @@ ctx.focus()
 
 // orient controllers to "center" of image/video
 raf(() => {
-  const y = Math.PI / (Math.PI * 0.5)
-  orbitController.orientation.y = y
+  orbitController.orientation.y = Math.PI / 2
 })
 
 // axis animation frame loop

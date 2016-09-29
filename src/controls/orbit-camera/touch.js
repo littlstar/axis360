@@ -8,24 +8,24 @@ import { radians } from '../../utils'
 import clamp from 'clamp'
 
 /**
- * Applies touch changes to orbit camera from
+ * Applies touch changes to orbit orbitCamera from
  * touch input
  *
- * @param {OrbitCameraController} camera
+ * @param {OrbitorbitCameraController} orbitCamera
  * @param {TouchCommand} touch
  */
 
-export default (camera, touch) => {
+export default (orbitCamera, {touch}) => {
   // update orientation from touch input
   touch && touch(() => {
-    const friction = camera.friction
+    const friction = orbitCamera.friction
     const dx = touch.deltaX
     const dy = touch.deltaY
     const c = 0.075
 
     if (touch.touches && touch.touches.length) {
-      camera.orientation.x -= c*dy*friction
-      camera.orientation.y -= c*dx*friction
+      orbitCamera.orientation.x -= c*dy*friction
+      orbitCamera.orientation.y -= c*dx*friction
     }
   })
 }

@@ -103,8 +103,7 @@ export class CameraCommand extends MeshCommand {
     const projection = mat4.identity([])
     const view = mat4.identity([])
 
-    const orientation = Object.assign(DEFAULT_CAMERA_ORIENTATION_ORIGIN, {
-    })
+    const orientation = Object.assign(DEFAULT_CAMERA_ORIENTATION_ORIGIN, { })
 
     const state = {
       viewportHeight: coalesce(opts.viewportHeight, 1),
@@ -182,7 +181,10 @@ export class CameraCommand extends MeshCommand {
       return this
     }
 
-    super(ctx, {...opts, render: (_, ...args) => render(...args) })
+    super(ctx, {...opts, render: (_, state, ...args) => {
+      update(state)
+      return render(state, ...args)
+    }})
 
     /**
      * Camera field of view value.

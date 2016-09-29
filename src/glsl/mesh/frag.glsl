@@ -32,12 +32,8 @@ varying vec2 vuv;
 
 #pragma glslify: export(main)
 void main() {
-#ifdef HAS_MAP
-#ifdef HAS_UVS
-  gl_FragColor = vec4(texture2D(map, vuv).rgb, 1.0);
-#else
-  gl_FragColor = color;
-#endif
+#if defined(HAS_MAP) && defined(HAS_UVS)
+  gl_FragColor = texture2D(map, vuv);
 #else
   gl_FragColor = color;
 #endif

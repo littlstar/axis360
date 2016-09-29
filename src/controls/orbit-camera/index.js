@@ -53,7 +53,7 @@ export class OrbitCameraController extends ControllerCommand {
   constructor(ctx, opts = {}) {
     super(ctx, { ...opts }, (_, updates, target) => {
       const friction = this.friction
-      const camera = this.target
+      const camera = updates.target || this.target
       const inputs = this.inputs || {}
 
       if (true != opts.invert) {
@@ -66,10 +66,10 @@ export class OrbitCameraController extends ControllerCommand {
       const mouse = inputs.mouse
       const touch = inputs.touch
 
-      if (orientation) { applyOrientationInput(this, orientation, opts) }
-      if (keyboard) { applyKeyboardInput(this, keyboard, opts) }
-      if (touch) { applyTouchInput(this, touch, opts) }
-      if (mouse) { applyMouseInput(this, mouse, opts) }
+      if (orientation) { applyOrientationInput(this, {orientation}, opts) }
+      if (keyboard) { applyKeyboardInput(this, {keyboard}, opts) }
+      if (touch) { applyTouchInput(this, {touch}, opts) }
+      if (mouse) { applyMouseInput(this, {mouse}, opts) }
 
       const { x: ax, y: ay, z: az } = this.orientation
       const { x: cx, y: cy, z: cz } = camera.orientation

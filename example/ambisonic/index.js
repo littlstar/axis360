@@ -4,17 +4,17 @@
  * Module dependencies.
  */
 
-import AmbisonicAudioController from 'axis-3d/controls/ambisonic-audio'
-import OrbitCameraController from 'axis-3d/controls/orbit-camera'
+import AmbisonicAudioController from 'axis3d/controls/ambisonic-audio'
+import OrbitCameraController from 'axis3d/controls/orbit-camera'
 import WebAudioAnalyser from 'web-audio-analyser'
-import { Vector } from 'axis-3d/math'
-import Keyboard from 'axis-3d/input/keyboard'
-import Context from 'axis-3d/context'
-import Camera from 'axis-3d/camera'
-import Mouse from 'axis-3d/input/mouse'
-import Audio from 'axis-3d/media/audio'
-import Frame from 'axis-3d/frame'
-import Box from 'axis/mesh/box'
+import { Vector } from 'axis3d/math'
+import Keyboard from 'axis3d/input/keyboard'
+import Context from 'axis3d/context'
+import Camera from 'axis3d/camera'
+import Mouse from 'axis3d/input/mouse'
+import Audio from 'axis3d/media/audio'
+import Frame from 'axis3d/frame'
+import Box from 'axis3d/mesh/box'
 import raf from 'raf'
 
 // axis context
@@ -36,6 +36,16 @@ const boxes = Array(100).fill(0).map((_, i) => Box(ctx, {
     2.0*(i + 1)*Math.random()
   )
 }))
+
+const colors = []
+for (let box of boxes) {
+  colors.push(new Vector(
+    Math.cos(box.id),
+    Math.sin(box.id),
+    Math.cos(box.id),
+    1
+  ))
+}
 
 // orbit controller
 const orbitController = OrbitCameraController(ctx, {
@@ -67,14 +77,10 @@ Object.assign(window, {
   ctx,
 })
 
-// focus now
-ctx.focus()
-
 // orient controllers to "center" of photo/video
 raf(() => {
-  const y = Math.PI / (Math.PI * 0.5)
-  orbitController.orientation.y = y
   audio.play()
+  ctx.focus()
 })
 
 // axis animation frame loop
@@ -89,9 +95,11 @@ frame(({time}) => {
 
   // draw camera scene
   camera(() => {
-    const coef = 1
-    for (let box of boxes) {
-      const color = new Vector(
+    for (let i = 0; i < boxes.length; ++i) {
+      const box = boxes[i]
+      const color = colors[i]
+
+      color.set(
         Math.cos(0.5*time*box.id),
         Math.sin(0.5*time*box.id),
         Math.cos(0.5*time*box.id),

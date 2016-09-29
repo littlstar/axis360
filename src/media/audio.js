@@ -110,6 +110,13 @@ export class AudioCommand extends MediaCommand {
       return this
     }
 
+    // sanitize initialState object
+    for (let key in initialState) {
+      if (undefined === initialState[key]) {
+        delete initialState[key]
+      }
+    }
+
     super(ctx, manifest, initialState)
 
     // set initial audio state

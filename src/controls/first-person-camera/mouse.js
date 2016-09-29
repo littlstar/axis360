@@ -22,15 +22,15 @@ const X_AXIS_MOUSE_FRICTION = 0.0033
 const Y_AXIS_MOUSE_FRICTION = 0.0046
 
 /**
- * Applies orientation changes to orbit camera from
+ * Applies orientation changes to orbit fpCamera from
  * mouse input
  *
- * @param {OrbitCameraController} camera
+ * @param {OrbitfpCameraController} fpCamera
  * @param {MouseCommand} mouse
  */
 
-export default (camera, mouse, opts = {}) => {
-  const friction = camera.friction
+export default (fpCamera, {mouse}, opts = {}) => {
+  const friction = fpCamera.friction
   // update orientation from coordinates
   mouse && mouse(() => {
     const c = 0.0025
@@ -41,19 +41,19 @@ export default (camera, mouse, opts = {}) => {
 
     // update if a singled button is pressed
     if (1 == mouse.buttons && (dy || dx)) {
-      camera.orientation.x += (false == opts.invert ? 1 : -1)*xf*dy*friction + (c*Math.random())
-      camera.orientation.y += (false == opts.invert ? 1 : -1)*0.8*yf*dx*friction + (c*Math.random())
+      fpCamera.orientation.x += (false == opts.invert ? 1 : -1)*xf*dy*friction + (c*Math.random())
+      fpCamera.orientation.y += (false == opts.invert ? 1 : -1)*0.8*yf*dx*friction + (c*Math.random())
     }
 
     // clamp at north/south poles
-    camera.orientation.x = clamp(camera.orientation.x, radians(-90), radians(90))
+    fpCamera.orientation.x = clamp(fpCamera.orientation.x, radians(-90), radians(90))
   })
 
   // update field of view from mouse wheel
   mouse && mouse(() => {
     const c = 0.033
     const dv = c*friction*mouse.wheel.deltaY
-    camera.fov += dv
-    camera.fov = clamp(camera.fov, radians(0.1) , radians(180))
+    fpCamera.fov += dv
+    fpCamera.fov = clamp(fpCamera.fov, radians(0.1) , radians(180))
   })
 }

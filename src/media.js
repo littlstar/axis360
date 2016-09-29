@@ -17,7 +17,7 @@ import raf from 'raf'
  * @type {Number}
  */
 
-const reload_TIMEOUT = 1000
+const RELOAD_TIMEOUT = 1000
 
 /**
  * No-op to return undefined
@@ -56,7 +56,7 @@ export class MediaCommand extends MeshCommand {
    */
 
   constructor(ctx, manifest, initialState = {}) {
-    let timeout = reload_TIMEOUT
+    let timeout = RELOAD_TIMEOUT
     let hasProgress = false
     let isLoading = false
     let hasError = false
@@ -65,7 +65,7 @@ export class MediaCommand extends MeshCommand {
     // load when called as a function
     super(ctx, {
       type: 'media',
-      render: () => this.read(),
+      render: (_, state, next) => this.read(next),
       draw: () => this.read(),
     })
 
@@ -165,8 +165,8 @@ export class MediaCommand extends MeshCommand {
      * @return {MediaCommand}
      */
 
-    this.read = () => {
-      this._read()
+    this.read = (done = () => void 0) => {
+      this._read(done)
       return this
     }
 
@@ -176,7 +176,8 @@ export class MediaCommand extends MeshCommand {
      * @return {MediaCommand}
      */
 
-    this._read = () => {
+    this._read = (done = () => void 0) => {
+      done()
       return this
     }
 
@@ -189,21 +190,35 @@ export class MediaCommand extends MeshCommand {
      */
 
     this.load = () => {
+      const requested = {}
+
       if (isLoading || hasProgress || hasError || isDoneLoading) {
+        return false
+      }
+
+      for (let key in manifest) {
+        if ('object' == typeof manifest[key]) {
+          if ('string' == typeof manifest[key].src) {
+            requested[key] = manifest[key]
+          }
+        }
+      }
+
+      if (0 == Object.keys(requested).length) {
         return false
       }
 
       // retry timeout
       setTimeout(() => {
-        if (hasError || (hasProgress && isLoading && !isDoneLoading)) {
+        if (hasError || ((hasProgress || isLoading) && !isDoneLoading)) {
           debug('retrying....')
           this.reload()
         }
-      }, reload_TIMEOUT)
+      }, RELOAD_TIMEOUT)
 
       isLoading = true
       raf(() => resl({
-        manifest: manifest,
+        manifest: requested,
 
         onDone: (...args) => {
           isDoneLoading = true

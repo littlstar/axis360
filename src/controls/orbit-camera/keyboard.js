@@ -8,16 +8,16 @@ import { radians } from '../../utils'
 import clamp from 'clamp'
 
 /**
- * Applies orientation changes to orbit camera from
+ * Applies orientation changes to orbit orbitCamera from
  * keyboard input
  *
- * @param {OrbitCameraController} camera
+ * @param {OrbitorbitCameraController} orbitCamera
  * @param {KeyboardCommand} keyboard
  */
 
-export default (camera, keyboard, {dx = 0, dy = 0} = {}) => {
+export default (orbitCamera, {keyboard}, opts = {}, {dx = 0, dy = 0} = {}) => {
   keyboard && keyboard(() => {
-    const friction = camera.friction
+    const friction = orbitCamera.friction
     let c = 0.07
     const step = c*friction
     const keys = keyboard.keys
@@ -28,27 +28,28 @@ export default (camera, keyboard, {dx = 0, dy = 0} = {}) => {
     }
 
     if (keyboard.aliasMappings.value('up', keys)) {
-      dx = dx - step
-      camera.orientation.x -= step
+      dx = dx + step
+      orbitCamera.orientation.x -= step
       keyboard.aliasMappings.off('down', keys)
     } else if (keyboard.aliasMappings.value('down', keys)) {
-      dx = dx + step
-      camera.orientation.x += step
+      dx = dx - step
+      orbitCamera.orientation.x += step
       keyboard.aliasMappings.off('up', keys)
     }
 
     if (keyboard.aliasMappings.value('left', keys)) {
-      dy = dy - step
-      camera.orientation.y -= step
+      dy = dy + step
+      orbitCamera.orientation.y -= step
       keyboard.aliasMappings.off('right', keys)
     } else if (keyboard.aliasMappings.value('right', keys)) {
-      dy = dy + step
-      camera.orientation.y += step
+      dy = dy - step
+      orbitCamera.orientation.y += step
       keyboard.aliasMappings.off('left', keys)
     }
 
     c = 0.075
-    if (dx) { camera.orientation.x += c*dx}
-    if (dy) { camera.orientation.y += c*dy}
+    if (dx) { orbitCamera.orientation.x += c*dx}
+    if (dy) { orbitCamera.orientation.y += c*dy}
+
   })
 }

@@ -44,6 +44,14 @@ export class FrameCommand extends Command {
       queue.push(refresh)
     })
 
+    const scope = ctx.regl({
+      uniforms: {
+        resolution: ({viewportWidth, viewportHeight}) => ([
+          viewportWidth, viewportHeight
+        ])
+      }
+    })
+
     /**
      * Starts the frame loop.
      *
@@ -54,15 +62,29 @@ export class FrameCommand extends Command {
       if (isRunning) { return this }
       tick = ctx.regl.frame((_, ...args) => {
         reglContext = _
-
-        ctx.clear()
-        for (let refresh of queue) {
-          if ('function' == typeof refresh) {
-            refresh(reglContext, ...args)
+        scope(() => {
+          ctx.clear()
+          for (let refresh of queue) {
+            if ('function' == typeof refresh) {
+              refresh(reglContext, ...args)
+            }
           }
-        }
-
+        })
       })
+      return this
+    }
+
+    /**
+     * Stops the frame loop
+     *
+     * @return {FrameCommand}
+     */
+
+    this.stop = () => {
+      if (tick) {
+        tick.cancel()
+        tick = null
+      }
       return this
     }
   }

@@ -148,7 +148,7 @@ export class MouseCommand extends Command {
     // update mouse wheel deltas and then
     // reset them on the next animation frame
     onMouseWheel(ctx.domElement, (dx, dy, dz) => {
-      if (false === this.allowWheel) { return }
+      if (false === opts.allowWheel) { return }
       Object.assign(this.wheel, {
         currentX: this.wheel.currentX + dx,
         currentY: this.wheel.currentY + dy,

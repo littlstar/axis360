@@ -122,9 +122,9 @@ export class OrientationCommand extends Command {
 
     super((_, block) => {
       Object.assign(state, { ...globalState }, {
-        const {currentAlpha, currentBeta, currentGamma} = globalState
         rotation: (() => {
           // borrowed from https://github.com/hawksley/eleVR-Web-Player/blob/master/js/phonevr.js
+          const {currentAlpha, currentBeta, currentGamma} = globalState
           const z = radians(currentAlpha)/2.0
           const x = radians(currentBeta)/2.0
           const y = radians(currentGamma)/2.0
@@ -158,7 +158,7 @@ export class OrientationCommand extends Command {
           quat.multiply(deviceRotation, quat.fromValues(-r22, 0, 0, r22), deviceRotation);
 
           return deviceRotation
-        }())
+        })()
       })
 
       if ('function' == typeof block) {

@@ -4,9 +4,9 @@
  * Module dependencies.
  */
 
+import { Quaternion, Vector } from './math'
 import getBoundingBox from 'bound-points'
 import injectDefines from 'glsl-inject-defines'
-import { Quaternion, Vector } from './math'
 import { Command } from './command'
 import { define } from './utils'
 import glslify from 'glslify'
@@ -81,11 +81,14 @@ export class MeshCommand extends Command {
    */
 
   constructor(ctx, opts = {}) {
-    const defaults = {...opts.defaults}
+    const reglOptions = { ...opts.regl }
+    const defaults = { ...opts.defaults }
     const model = mat4.identity([])
 
     let boundingBox = null
+    let blending = null
     let render = null
+    let envmap = null
     let draw = opts.draw || null
     let map = opts.map || null
 
@@ -111,6 +114,17 @@ export class MeshCommand extends Command {
 
       if ('color' in state) {
         vec4.copy(this.color, state.color)
+      }
+
+      if ('wireframe' in state) {
+        this.wireframe = Boolean(state.wireframe)
+      }
+
+      if ('map' in state && map != state.map) {
+        map = state.map
+        configure()
+      } else if ('envmap' in state && envmap != state.envmap) {
+        this.envmap = state.map
       }
 
       // update uniform model matrix
@@ -151,7 +165,7 @@ export class MeshCommand extends Command {
         const uniforms = {
           ...opts.uniforms,
           color: () => this.color.elements,
-          model: (...args) => model
+          model: () => model
         }
 
         defaults.count = opts.count || undefined
@@ -196,19 +210,18 @@ export class MeshCommand extends Command {
           opts.primitive = 'lines'
         }
 
-        const reglOptions = {
-          ...opts.regl,
-          uniforms,
-          attributes,
-          vert: opts.vert || DEFAULT_VERTEX_SHADER,
-          frag: opts.frag || DEFAULT_FRAGMENT_SHADER,
+        Object.assign(reglOptions, {
+          uniforms, attributes,
+          vert: undefined !== opts.vert ? opts.vert : DEFAULT_VERTEX_SHADER,
+          frag: undefined !== opts.frag ? opts.frag : DEFAULT_FRAGMENT_SHADER,
           count: null == opts.count ? undefined : ctx.regl.prop('count'),
+          blend: blending ? blending : false,
           elements: null == elements ? undefined : ctx.regl.prop('elements'),
           primitive: () => {
             if (this.wireframe) { return 'line loop' }
             else { return defaults.primitive }
           }
-        }
+        })
 
         if (uniforms.map) {
           shaderDefines.HAS_MAP = ''
@@ -218,7 +231,7 @@ export class MeshCommand extends Command {
         reglOptions.vert = injectDefines(reglOptions.vert, shaderDefines)
 
         for (let key in reglOptions) {
-          if (undefined == reglOptions[key]) {
+          if (undefined === reglOptions[key]) {
             delete reglOptions[key]
           }
         }
@@ -351,8 +364,8 @@ export class MeshCommand extends Command {
         }
 
         boundingBox =
-          getBoundingBox(this.geometry.positions)
-          .map((vec) => new Vector(...vec))
+          getBoundingBox(this.geometry.positions).map((p) => new Vector(...p))
+        return boundingBox
       }
     })
 
@@ -365,8 +378,7 @@ export class MeshCommand extends Command {
     define(this, 'size', {
       get() {
         // trigger compute with getter
-       void this.boundingBox
-        if (null == boundingBox) {
+        if (null == this.boundingBox) {
           return null
         }
 
@@ -391,13 +403,58 @@ export class MeshCommand extends Command {
     define(this, 'map', {
       get: () => map,
       set: (value) => {
-        if (value && value.texture) {
-          map = value
-          configure()
-        } else if (null == value) {
+        if (value) {
+          if (value.texture && (value != map || value.texture != map)) {
+            map = value
+            configure()
+          } else if (value && value != map) {
+            map = value
+            configure()
+          }
+        } else if (null == value && null != map) {
           map = null
           configure()
         }
+      }
+    })
+
+    /**
+     * Mesh texture environment map if given.
+     *
+     * @type {Media}
+     */
+
+    define(this, 'envmap', {
+      get: () => envmap,
+      set: (value) => {
+        if (null == value) {
+          envmap = null
+        } else if (value != envmap) {
+          envmap = value
+          this.map = value
+          this.scale.x = -1
+
+          // @TODO(werle) flipY should be exposed from texture constructor
+          if (envmap.texture && envmap.texture && envmap.texture._texture.flipY) {
+            this.scale.y = -1
+          }
+        }
+      }
+    })
+
+    this.envmap = opts.envmap
+
+    /**
+     * Toggles blending.
+     *
+     * @type {Boolean}
+     */
+
+    define(this, 'blending', {
+      get: () => blending,
+      set: (value) => {
+        blending = value
+        configure()
       }
     })
   }

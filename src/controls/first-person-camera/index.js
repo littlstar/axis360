@@ -46,8 +46,8 @@ export class FirstPersonCameraController extends ControllerCommand {
       const friction = this.friction
       const camera = this.target
 
-      if (keyboard) { applyKeyboardInput(this, keyboard, opts) }
-      if (mouse) { applyMouseInput(this, mouse, opts) }
+      if (keyboard) { applyKeyboardInput(this, {keyboard}, opts) }
+      if (mouse) { applyMouseInput(this, {mouse}, opts) }
     })
 
     /**

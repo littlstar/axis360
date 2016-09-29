@@ -40,8 +40,12 @@ export class ControllerCommand extends Command {
 
   constructor(ctx, opts = {}, update = () => void 0) {
     super((_, updates) => {
-      if (false == ctx.hasFocus) {
-        return
+      if (updates && 'target' in updates) {
+        target = updates.target
+      }
+
+      if (updates && 'source' in updates) {
+        source = updates.source
       }
 
       updateState(updates)
@@ -49,13 +53,12 @@ export class ControllerCommand extends Command {
 
       if ('function' == typeof updates) {
         updates(_)
-        update(_, {...state}, target)
-      } else {
-        update(_, {...state}, target)
       }
 
+      update(_, {...state}, target, source)
+
       for (let fn of middleware) {
-        fn(this, _, {...state}, target)
+        fn(this, _, {...state}, target, source)
       }
     })
 
@@ -78,8 +81,8 @@ export class ControllerCommand extends Command {
      */
 
     const state = Object.assign({
-      interpolationFactor: 0.1,
-      orientation: new Vector(0, 0, 0),
+      interpolationFactor: 0.15,
+      orientation: Object.assign(new Vector(0, 0, 0), opts.orientation),
       quaternions: {
         x: new Quaternion(), y: new Quaternion(), z: new Quaternion()
       },
@@ -121,7 +124,10 @@ export class ControllerCommand extends Command {
 
     const updateState = (updates) => {
       if (updates && 'object' == typeof updates) {
-        Object.assign(state, updates)
+        Object.assign(state, updates, {
+          orientation: Object.assign(state.orientation, updates.orientation),
+          quaternions: Object.assign(state.orientation, updates.orientation),
+        })
       }
     }
 

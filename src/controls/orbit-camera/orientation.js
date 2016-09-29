@@ -8,19 +8,19 @@ import { radians } from '../../utils'
 import clamp from 'clamp'
 
 /**
- * Applies orientation changes to orbit camera from
+ * Applies orientation changes to orbit orbitCamera from
  * orientation input
  *
- * @param {OrbitCameraController} camera
+ * @param {OrbitorbitCameraController} orbitCamera
  * @param {OrientationCommand} orientation
  */
 
-export default (camera, orientation) => {
+export default (orbitCamera, {orientation}) => {
   // update orientation from orientation input
   orientation && orientation(() => {
-    const friction = camera.friction
-    camera.orientation.x -= friction*radians(orientation.deltaBeta)
-    camera.orientation.y -= friction*radians(orientation.deltaGamma)
-    camera.orientation.z -= friction*radians(orientation.deltaAlpha)
+    const friction = orbitCamera.friction
+    orbitCamera.orientation.x -= friction*radians(orientation.deltaBeta)
+    orbitCamera.orientation.y -= friction*radians(orientation.deltaGamma)
+    orbitCamera.orientation.z -= friction*radians(orientation.deltaAlpha)
   })
 }

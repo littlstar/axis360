@@ -3,31 +3,33 @@
 /**
  * Module dependencies.
  */
-
 import { debug, define } from '../utils'
 import { MediaCommand } from '../media'
+import { ImageCommand } from './image'
+import isPowerOfTwo from 'is-power-of-two'
 import events from 'dom-events'
 import clamp from 'clamp'
 import raf from 'raf'
 
 /**
- * Video constructor.
+ * VideoCommand constructor.
  * @see Video
  */
 
-export default (...args) => new Video(...args)
+export default (...args) => new VideoCommand(...args)
 
 /**
- * Video class.
+ * VideoCommand class.
  *
  * @public
+ * @class VideoCommand
  * @extends MediaCommand
  */
 
-export class Video extends MediaCommand {
+export class VideoCommand extends MediaCommand {
 
   /**
-   * Video class constructor.
+   * VideoCommand class constructor.
    *
    * @constructor
    * @param {Context} ctx
@@ -37,18 +39,43 @@ export class Video extends MediaCommand {
 
   constructor(ctx, src, initialState = {}) {
     let source = null
+    let poster = null
     let volume = 0
     let isMuted = false
     let isPaused = true
     let isPlaying = false
 
+    /**
+     * Texture state used for regl texture updates.
+     *
+     * @private
+     */
+
+    const textureState = Object.assign({
+      format: 'rgba',
+      flipY: true,
+      wrap: ['clamp', 'clamp'],
+      mag: 'linear',
+      min: 'linear',
+    }, initialState.texture)
+
+    delete initialState.texture
+
+    /**
+     * Video manifest for resl.
+     *
+     * @private
+     */
+
     const manifest = {
-      video: {
+      video: Object.assign({
         stream: true,
         type: 'video',
         src: src
-      }
+      }, initialState.manifest)
     }
+
+    delete initialState.manifest
 
     /**
      * Calls internal video source method
@@ -59,7 +86,7 @@ export class Video extends MediaCommand {
      * @private
      * @param {String} method
      * @param {...Mixed} args
-     * @return {Video}
+     * @return {VideoCommand}
      */
 
     const call = (method, ...args) => {
@@ -81,7 +108,7 @@ export class Video extends MediaCommand {
      * @private
      * @param {String} method
      * @param {...Mixed} args
-     * @return {Video|Mixed}
+     * @return {VideoCommand|Mixed}
      */
 
     const set = (property, value) => {
@@ -89,7 +116,7 @@ export class Video extends MediaCommand {
         if (undefined === value) {
           return source[property]
         } else {
-          debug('Video: set %s=%s', property, value)
+          debug('VideoCommand: set %s=%s', property, value)
           source[property] = value
         }
       } else {
@@ -104,7 +131,7 @@ export class Video extends MediaCommand {
      * @private
      * @param {String} event
      * @param {...Mixed} args
-     * @return {Video}
+     * @return {VideoCommand}
      */
 
     const emit = (event, ...args) => {
@@ -112,11 +139,30 @@ export class Video extends MediaCommand {
       return this
     }
 
+    // sanitize initialState object
+    for (let key in initialState) {
+      if (undefined === initialState[key]) {
+        delete initialState[key]
+      }
+    }
+
     super(ctx, manifest, initialState)
 
+    // set mesh type
     this.type = 'video'
 
-    // set initial video state
+    this.on('load', () => {
+      const needsMipmaps = (
+        isPowerOfTwo(source.videoHeight) &&
+        isPowerOfTwo(source.videoWidth)
+      )
+
+      if (needsMipmaps) {
+        textureState.mipmap = needsMipmaps
+        textureState.min = 'linear mipmap nearest'
+      }
+    })
+
     this.once('load', () => {
       // set initial set on source
       Object.assign(source, initialState)
@@ -140,7 +186,8 @@ export class Video extends MediaCommand {
 
       volume = source.volume
       isMuted = source.muted
-      isPlaying = source.paused
+      isPaused = source.paused
+      isPlaying = !isPaused
     })
 
     // set to playing state
@@ -156,13 +203,8 @@ export class Video extends MediaCommand {
     })
 
     // set volume mute state
-    this.on('mute', () => {
-      isMuted = true
-    })
-
-    this.on('unmute', () => {
-      isMuted = false
-    })
+    this.on('mute', () => { isMuted = true })
+    this.on('unmute', () => { isMuted = false })
 
     /**
      * Source attribute accessor.
@@ -205,20 +247,33 @@ export class Video extends MediaCommand {
       'paused',
       'played',
       'prefix',
-      'poster',
       'title',
       'muted',
       'loop',
     ].map((property) => define(this, property, {
-      get: () => source[property],
-      set: (value) => { source[property] = value }
+      get: () => source ? source[property] : null,
+      set: (value) => {
+        if (source) {
+          source[property] = value
+        } else {
+          this.once('load', () => { source[property] = value })
+        }
+      }
     }))
 
     // proxy dimensions
-    define(this, 'width', { get: () => source.videoWidth })
-    define(this, 'height', { get: () => source.videoHeight })
+    define(this, 'width', { get: () => source ? source.videoWidth : 0})
+    define(this, 'height', { get: () => source ? source.videoHeight : 0})
     define(this, 'aspectRatio', {
-      get: () => source ? source.videoWidth / source.videoHeight : 1
+      get: () => {
+        if (source) {
+          return source.videoWidth/source.videoHeight
+        } else if (poster) {
+          return poster.aspectRatio
+        }
+
+        return 1
+      }
     })
 
     // expose DOM element
@@ -230,12 +285,14 @@ export class Video extends MediaCommand {
      * @type {REGLTexture}
      */
 
-    this.texture = null
+    this.texture = initialState && initialState.texture ?
+      initialState.texture :
+        ctx.regl.texture(textureState)
 
     /**
      * Plays the video.
      *
-     * @return {Video}
+     * @return {VideoCommand}
      */
 
     this.play = () => call('play')
@@ -243,7 +300,7 @@ export class Video extends MediaCommand {
     /**
      * Pauses the video.
      *
-     * @return {Video}
+     * @return {VideoCommand}
      */
 
     this.pause = () => call('pause')
@@ -251,7 +308,7 @@ export class Video extends MediaCommand {
     /**
      * Mutes the video
      *
-     * @return {Video}
+     * @return {VideoCommand}
      */
 
     this.mute = () => set('muted', true) && emit('mute')
@@ -259,7 +316,7 @@ export class Video extends MediaCommand {
     /**
      * Unutes the video
      *
-     * @return {Video}
+     * @return {VideoCommand}
      */
 
     this.unmute = () => set('muted', false) && emit('unmute')
@@ -272,24 +329,51 @@ export class Video extends MediaCommand {
 
     this.onloaded = ({video}) => {
       source = video
-      this.texture = ctx.regl.texture({
-        mag: 'linear',
-        min: 'linear',
-        wrap: ['clamp', 'clamp'],
-        data: video,
-      })
 
       this.emit('load')
 
+      if (null == poster) {
+        this.texture({ ...textureState, data: video})
+      }
+
       let lastRead = 0
-      this._read = () => {
+      this._read = (done) => {
         const now = Date.now()
         if (isPlaying && (now - lastRead >= 64) && this.isDoneLoading && video.readyState >= video.HAVE_ENOUGH_DATA) {
           lastRead = now
-          debug('Video: read')
-          this.texture(video)
+          debug('VideoCommand: read')
+          this.texture({ ...textureState, data: video})
+          done()
         }
       }
+    }
+
+    /**
+     * Video poster image.
+     *
+     * @type {ImageCommand|String}
+     */
+
+    define(this, 'poster', {
+      get: () => source ? source.poster : null,
+      set: (value) => {
+        if (value) {
+          if (source) {
+            source.poster = value
+          } else {
+            this.once('load', () => { source.poster = value })
+          }
+
+          if (null == poster) {
+            poster = new ImageCommand(ctx, value, {texture: this.texture})
+          }
+        }
+      },
+    })
+
+    // set poster if applicable
+    if (initialState && initialState.poster) {
+      this.poster = initialState.poster
     }
   }
 }

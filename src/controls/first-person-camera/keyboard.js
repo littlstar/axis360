@@ -10,16 +10,16 @@ import clamp from 'clamp'
 import vec3 from 'gl-vec3'
 
 /**
- * Applies orientation changes to first person camera from
+ * Applies orientation changes to first person fpCamera from
  * keyboard input
  *
- * @param {FirstPersonCameraController} camera
+ * @param {FirstPersonfpCameraController} fpCamera
  * @param {KeyboardCommand} keyboard
  */
 
-export default (camera, keyboard) => {
-  const { mouse } = camera.inputs
-  const position = camera.target.position
+export default (fpCamera, {keyboard}) => {
+  const { mouse } = fpCamera.inputs
+  const position = fpCamera.target.position
   const front = new Vector(0, 0, -1)
   const up = new Vector(0, 1, 0)
 
@@ -28,7 +28,7 @@ export default (camera, keyboard) => {
     if (mouse && mouse.buttons) { return }
 
     const lastPosition = vec3.copy([], position)
-    const friction = camera.friction
+    const friction = fpCamera.friction
     const step = 0.07*friction
     const keys = keyboard.keys
 
@@ -61,6 +61,6 @@ export default (camera, keyboard) => {
       keyboard.aliasMappings.off('left', keys)
     }
 
-    camera.target.lookAt(vec3.add([], position, front))
+    fpCamera.target.lookAt(vec3.add([], position, front))
   })
 }

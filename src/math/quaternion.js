@@ -58,6 +58,7 @@ export class Quaternion extends Vector {
                                    interpolationFactor = 0.1) {
     const multiply = (...args) => quat.multiply([], ...args)
     const slerp = (t, ...args) => quat.slerp(t, t, ...args)
+    const set = (...args) => quat.setAxisAngle(...args)
 
     const vx = XVector3, vy = YVector3, vz = ZVector3
     const ax = angles.x, ay = angles.y, az = angles.z
@@ -66,9 +67,9 @@ export class Quaternion extends Vector {
     const f = interpolationFactor
     const t = target
 
-    quat.setAxisAngle(x, vx, ax)
-    quat.setAxisAngle(y, vy, ay)
-    quat.setAxisAngle(z, vz, az)
+    set(x, vx, ax)
+    set(y, vy, ay)
+    set(z, vz, az)
 
     slerp(t, multiply(multiply(x, y), z), f)
   }

@@ -4,14 +4,14 @@
  * Module dependencies.
  */
 
-import OrbitCameraController from 'axis-3d/controls/orbit-camera'
-import Keyboard from 'axis-3d/input/keyboard'
-import Context from 'axis-3d/context'
-import Camera from 'axis-3d/camera'
-import Sphere from 'axis-3d/mesh/sphere'
-import Mouse from 'axis-3d/input/mouse'
-import Image from 'axis-3d/media/image'
-import Frame from 'axis-3d/frame'
+import OrbitCameraController from 'axis3d/controls/orbit-camera'
+import Keyboard from 'axis3d/input/keyboard'
+import Context from 'axis3d/context'
+import Camera from 'axis3d/camera'
+import Sphere from 'axis3d/mesh/sphere'
+import Mouse from 'axis3d/input/mouse'
+import Image from 'axis3d/media/image'
+import Frame from 'axis3d/frame'
 import raf from 'raf'
 
 // axis context
@@ -25,7 +25,7 @@ const sphere = Sphere(ctx, { map: image })
 
 // inputs
 const keyboard = Keyboard(ctx)
-const mouse = Mouse(ctx)
+const mouse = Mouse(ctx, {allowWheel: true})
 
 // orbit controller
 const orbitController = OrbitCameraController(ctx, {
@@ -34,13 +34,11 @@ const orbitController = OrbitCameraController(ctx, {
   invert: true,
 })
 
-// focus now
-ctx.focus()
-
 // orient controllers to "center" of image/video
 raf(() => {
-  const y = Math.PI / (Math.PI * 0.5)
-  orbitController.orientation.y = y
+  orbitController.orientation.y = Math.PI / 2
+  // focus now
+  ctx.focus()
 })
 
 // axis animation frame loop
@@ -49,7 +47,5 @@ frame(({time}) => {
   orbitController()
 
   // draw camera scene
-  camera(() => {
-    sphere()
-  })
+  camera(() => { sphere() })
 })

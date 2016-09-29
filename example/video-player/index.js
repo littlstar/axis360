@@ -4,17 +4,17 @@
  * Module dependencies.
  */
 
-import Keyboard from 'axis-3d/input/keyboard'
-import Context from 'axis-3d/context'
-import Camera from 'axis-3d/camera'
-import Plane from 'axis-3d/mesh/plane'
-import Video from 'axis-3d/media/video'
-import Frame from 'axis-3d/frame'
-import Mouse from 'axis-3d/input/mouse'
+import Keyboard from 'axis3d/input/keyboard'
+import Context from 'axis3d/context'
+import Camera from 'axis3d/camera'
+import Plane from 'axis3d/mesh/plane'
+import Video from 'axis3d/media/video'
+import Frame from 'axis3d/frame'
+import Mouse from 'axis3d/input/mouse'
 import raf from 'raf'
 
 // axis context
-const ctx = Context()
+const ctx = Context({}, {regl: {attributes: {antialias: true}}})
 
 // objects
 const camera = Camera(ctx)
@@ -28,6 +28,8 @@ Object.assign(window, {
 
 camera.position.z = 1
 
+raf(() => video.play())
+
 // axis animation frame loop
 frame(({time, viewportWidth, viewportHeight}) => {
   //if (
@@ -36,9 +38,8 @@ frame(({time, viewportWidth, viewportHeight}) => {
   const width = plane.size.x
   const dist = camera.position.z - plane.position.z
   const fov = 2.0*Math.atan((width/aspectRatio) / (2.0*dist))
-  camera.fov = fov
   // draw camera scene
-  camera(() => {
+  camera({fov}, () => {
     plane.scale.set(1, height / video.aspectRatio, 1)
     plane()
   })
