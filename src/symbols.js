@@ -99,3 +99,13 @@ export const $stack = Symbol('stack')
  */
 
 export const $state = Symbol('state')
+
+/**
+ * Symbol for a regl context.
+ *
+ * @public
+ * @const
+ * @symbol reglContext
+ */
+
+export const $reglContext = Symbol('reglContext')

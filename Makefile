@@ -56,7 +56,7 @@ BABEL_ENV ?= commonjs
 ##
 # Browserify transform
 #
-BROWSERIFY_TRANSFORM := -t rollupify -t babelify
+BROWSERIFY_TRANSFORM := -t babelify
 
 ##
 # Ensures parent directory is built
@@ -87,7 +87,7 @@ dist: dist/axis.js
 #
 dist/axis.js: node_modules lib
 	$(BUILD_PARENT_DIRECTORY)
-	$(BROWSERIFY) $(BROWSERIFY_TRANSFORM) -t uglifyify --standalone $(GLOBAL_NAMESPACE) $(LIB_MAIN) > $@
+	$(BROWSERIFY) $(BROWSERIFY_TRANSFORM) -t uglifyify -t rollupify --standalone $(GLOBAL_NAMESPACE) $(LIB_MAIN) > $@
 
 ##
 # Builds node modules

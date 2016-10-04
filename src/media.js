@@ -57,10 +57,12 @@ export class MediaCommand extends MeshCommand {
 
   constructor(ctx, manifest, initialState = {}) {
     let timeout = RELOAD_TIMEOUT
+
+    let isDoneLoading = false
+    let isCancelled = false
     let hasProgress = false
     let isLoading = false
     let hasError = false
-    let isDoneLoading = false
 
     // load when called as a function
     super(ctx, {
@@ -133,7 +135,7 @@ export class MediaCommand extends MeshCommand {
     define(this, 'hasError', { get: () => hasError })
 
     /**
-     * Boolean predicate to indicate if media has
+     * Boolean predicate to indicate if media enough
      * has data to read from.
      *
      * @public
@@ -144,6 +146,17 @@ export class MediaCommand extends MeshCommand {
     define(this, 'hasData', {
       get: () => !hasError && (isDoneLoading || hasProgress)
     })
+
+    /**
+     * Boolean predicate to indicate if media loading has
+     * been cancelled.
+     *
+     * @public
+     * @getter
+     * @type {Boolean}
+     */
+
+    define(this, 'isCancelled', { get: () => isCancelled })
 
     /**
      * Updates media state with
@@ -192,7 +205,7 @@ export class MediaCommand extends MeshCommand {
     this.load = () => {
       const requested = {}
 
-      if (isLoading || hasProgress || hasError || isDoneLoading) {
+      if (isCancelled || isLoading || hasProgress || hasError || isDoneLoading) {
         return false
       }
 
@@ -266,9 +279,23 @@ export class MediaCommand extends MeshCommand {
 
     this.reset = () => {
       isDoneLoading = false
+      isCancelled = false
       hasProgress = false
       isLoading = false
       hasError = false
+      return this
+    }
+
+    /**
+     * Cancels loading.
+     *
+     * @public
+     * @return {MediaCommand}
+     */
+
+    this.cancel = () => {
+      this.reset()
+      isCancelled = true
       return this
     }
 

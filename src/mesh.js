@@ -5,6 +5,7 @@
  */
 
 import { Quaternion, Vector } from './math'
+import { $reglContext } from './symbols'
 import getBoundingBox from 'bound-points'
 import injectDefines from 'glsl-inject-defines'
 import { Command } from './command'
@@ -85,12 +86,20 @@ export class MeshCommand extends Command {
     const defaults = { ...opts.defaults }
     const model = mat4.identity([])
 
+    let hasInitialUpdate = false
     let boundingBox = null
     let blending = null
     let render = null
     let envmap = null
     let draw = opts.draw || null
     let map = opts.map || null
+
+    const previous = {
+      rotation: new Quaternion(0, 0, 0, 1),
+      position: new Vector(0, 0, 0),
+      scale: new Vector(0, 0, 0),
+      color: new Vector(0, 0, 0, 0),
+    }
 
     /**
      * Updates state and internal matrices.
@@ -100,20 +109,34 @@ export class MeshCommand extends Command {
      */
 
     const update = (state) => {
+      let needsUpdate = !hasInitialUpdate
+
       if ('scale' in state) {
-        vec3.copy(this.scale, state.scale)
+        if (vec3.distance(previous.scale, state.scale)) {
+          needsUpdate = true
+          vec3.copy(this.scale, state.scale)
+        }
       }
 
       if ('position' in state) {
-        vec3.copy(this.position, state.position)
+        if (vec3.distance(previous.position, state.position)) {
+          needsUpdate = true
+          vec3.copy(this.position, state.position)
+        }
       }
 
       if ('rotation' in state) {
-        quat.copy(this.rotation, state.rotation)
+        if (vec4.distance(previous.rotation, state.rotation)) {
+          needsUpdate = true
+          quat.copy(this.rotation, state.rotation)
+        }
       }
 
       if ('color' in state) {
-        vec4.copy(this.color, state.color)
+        if (vec4.distance(previous.color, state.color)) {
+          needsUpdate = true
+          vec4.copy(this.color, state.color)
+        }
       }
 
       if ('wireframe' in state) {
@@ -121,27 +144,50 @@ export class MeshCommand extends Command {
       }
 
       if ('map' in state && map != state.map) {
+        needsUpdate = true
         map = state.map
         configure()
       } else if ('envmap' in state && envmap != state.envmap) {
+        needsUpdate = true
         this.envmap = state.map
+      }
+
+      if (ctx.previous && ctx.previous.id != this.id) {
+        needsUpdate = true
+      }
+
+      if (false == needsUpdate) {
+        return
+      }
+
+      hasInitialUpdate = true
+
+      if (envmap) {
+        this.scale.x = -1
+        // @TODO(werle) flipY should be exposed from texture constructor
+        if (envmap.texture && envmap.texture && envmap.texture._texture.flipY) {
+          this.scale.y = -1
+        }
       }
 
       // update uniform model matrix
       mat4.identity(model)
-      mat4.multiply(model, model, mat4.fromQuat([], this.rotation))
       mat4.translate(model, model, this.position)
+      mat4.multiply(model, model, mat4.fromQuat([], this.rotation))
       mat4.scale(model, model, this.scale)
 
       // apply and set contextual transform
       if (ctx.previous && ctx.previous.id != this.id) {
-        mat4.copy(this.transform, mat4.multiply([], ctx.previous.transform, model))
+        mat4.multiply(this.transform, ctx.previous.transform, model)
+        mat4.copy(model, this.transform)
       } else {
         mat4.copy(this.transform, model)
       }
 
-      // copy transform to uniform model matrix
-      mat4.copy(model, this.transform)
+      previous.rotation = this.rotation
+      previous.position = this.position
+      previous.color = this.color
+      previous.scale = this.scale
     }
 
     /**
@@ -152,11 +198,13 @@ export class MeshCommand extends Command {
      */
 
     const configure = () => {
+      const self = this
+      if (!self) { return }
       // reset draw function
       if (!opts.draw) { draw = null }
       // use regl draw command if draw() function
       // was not provided
-      if (!draw) {
+      if (false !== draw && 'function' != typeof draw) {
         const geometry = opts.geometry || null
         const elements = geometry ? geometry.primitive.cells : undefined
         const attributes = {...opts.attributes}
@@ -164,19 +212,17 @@ export class MeshCommand extends Command {
 
         const uniforms = {
           ...opts.uniforms,
-          color: () => this.color.elements,
-          model: () => model
+          color() { return self.color ? self.color.elements : [0, 0, 0, 0]},
+          model() { return model },
         }
 
-        defaults.count = opts.count || undefined
-        defaults.elements = opts.elements || elements || undefined
         defaults.primitive = opts.primitive || 'triangles'
 
-        if (geometry) {
-          if (this) {
-            this.geometry = geometry
-          }
+        if (geometry && !this.geometry) {
+          this.geometry = geometry
+        }
 
+        if (geometry) {
           if (geometry.primitive.positions) {
             shaderDefines.HAS_POSITIONS = ''
             attributes.position = geometry.primitive.positions
@@ -211,17 +257,34 @@ export class MeshCommand extends Command {
         }
 
         Object.assign(reglOptions, {
+          context: {
+            color: uniforms.color(),
+            model: uniforms.model(),
+          },
+
           uniforms, attributes,
           vert: undefined !== opts.vert ? opts.vert : DEFAULT_VERTEX_SHADER,
           frag: undefined !== opts.frag ? opts.frag : DEFAULT_FRAGMENT_SHADER,
-          count: null == opts.count ? undefined : ctx.regl.prop('count'),
           blend: blending ? blending : false,
-          elements: null == elements ? undefined : ctx.regl.prop('elements'),
           primitive: () => {
             if (this.wireframe) { return 'line loop' }
             else { return defaults.primitive }
           }
         })
+
+        if (geometry) {
+          Object.assign(reglOptions, {
+            elements: geometry && geometry.cells || function (ctx, props) {
+              props = props || {}
+              return props.elements || geometry ? geometry.cells : null
+            },
+
+          })
+
+          if (opts.count) {
+            reglOptions.count = opts.count
+          }
+        }
 
         if (uniforms.map) {
           shaderDefines.HAS_MAP = ''
@@ -236,11 +299,17 @@ export class MeshCommand extends Command {
           }
         }
 
+        for (let key in defaults) {
+          if (undefined === defaults[key]) {
+            delete defaults[key]
+          }
+        }
+
         draw = ctx.regl(reglOptions)
       }
 
       // configure render command
-      render = opts.render || ((_, state, next = () => void 0) => {
+      render = opts.render || ((_, state = {}, next = () => void 0) => {
         let args = null
 
         ctx.push(this)
@@ -248,6 +317,7 @@ export class MeshCommand extends Command {
         if ('function' == typeof state) {
           args = [{...defaults}]
           next = state
+          state = {}
         } else if (Array.isArray(state)) {
           args = [state.map((o) => Object.assign({...defaults}, o))]
         } else {
@@ -258,9 +328,13 @@ export class MeshCommand extends Command {
           opts.before(...args)
         }
 
+        const props = Array.isArray(state)
+          ? state.map((o) => ({ ...defaults, ...o }))
+          : ({...defaults, ...state})
+
         update(...args)
-        draw(...args)
-        next(...args)
+        draw(props)
+        next({...(ctx[$reglContext] || {}), ...reglOptions.context, })
 
         if (opts.after) {
           opts.after(...args)
@@ -268,13 +342,15 @@ export class MeshCommand extends Command {
 
         ctx.pop()
       })
+
+      previous.rotation = this.rotation
+      previous.position = this.position
+      previous.color = this.color
+      previous.scale = this.scale
     }
 
     // calls current target  render function
     super((...args) => render(...args))
-
-    // initial configuration
-    configure()
 
     /**
      * Mesh ID.
@@ -303,7 +379,7 @@ export class MeshCommand extends Command {
       new Vector(1, 1, 1)
 
     /**
-     * Mesh scale vector.
+     * Mesh position vector.
      *
      * @type {Vector}
      */
@@ -432,12 +508,6 @@ export class MeshCommand extends Command {
         } else if (value != envmap) {
           envmap = value
           this.map = value
-          this.scale.x = -1
-
-          // @TODO(werle) flipY should be exposed from texture constructor
-          if (envmap.texture && envmap.texture && envmap.texture._texture.flipY) {
-            this.scale.y = -1
-          }
         }
       }
     })
@@ -457,5 +527,8 @@ export class MeshCommand extends Command {
         configure()
       }
     })
+
+    // initial configuration
+    configure()
   }
 }

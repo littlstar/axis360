@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 
+import { $reglContext } from './symbols'
 import { Command } from './command'
 import { define } from './utils'
 
@@ -33,18 +34,26 @@ export class FrameCommand extends Command {
   constructor(ctx, opts = {}) {
     // @TODO(werle) - use framebuffer
 
-    let tick = null
-    let isRunning = false
     let reglContext = null
+    let isRunning = false
+    let tick = null
 
     const queue = []
 
     super((_, refresh) => {
-      this.start()
       queue.push(refresh)
+      if (false == isRunning) {
+        this.start()
+      }
     })
 
     const scope = ctx.regl({
+      context: {
+        resolution: ({viewportWidth, viewportHeight}) => ([
+          viewportWidth, viewportHeight
+        ])
+      },
+
       uniforms: {
         resolution: ({viewportWidth, viewportHeight}) => ([
           viewportWidth, viewportHeight
@@ -61,8 +70,9 @@ export class FrameCommand extends Command {
     this.start = () => {
       if (isRunning) { return this }
       tick = ctx.regl.frame((_, ...args) => {
-        reglContext = _
-        scope(() => {
+        scope((_) => {
+          reglContext = _
+          ctx[$reglContext] = reglContext
           ctx.clear()
           for (let refresh of queue) {
             if ('function' == typeof refresh) {

@@ -37,6 +37,7 @@ export class ImageCommand extends MediaCommand {
 
   constructor(ctx, src, initialState = {}) {
     let source = null
+    let texture = null
 
     const manifest = {
       image: {
@@ -88,8 +89,8 @@ export class ImageCommand extends MediaCommand {
     })
 
     // dimensions
-    define(this, 'width', { get: () => source.width || source.shape[0] || 0})
-    define(this, 'height', { get: () => source.height || source.shape[1] || 0})
+    define(this, 'width', { get: () => source ? source.width || source.shape[0] || 0 : 0})
+    define(this, 'height', { get: () => source ? source.height || source.shape[1] || 0 : 0})
     define(this, 'aspectRatio', { get: () => this.width/this.height || 1 })
 
     // expose DOM element when available
@@ -158,6 +159,23 @@ export class ImageCommand extends MediaCommand {
      * @type {REGLTexture}
      */
 
+    define(this, 'texture', {
+      get: () => texture,
+      set: (value) => {
+        if (texture && null === value) {
+          texture.destroy()
+          texture = ctx.regl.texture({ ...textureState })
+        } else {
+          texture = ctx.regl.texture({ ...textureState })
+        }
+
+        if (value && texture) {
+          texture.destroy()
+          texture = value
+        }
+      }
+    })
+
     this.texture = initialState && initialState.texture ?
       initialState.texture :
         ctx.regl.texture({ ...textureState })
@@ -165,7 +183,7 @@ export class ImageCommand extends MediaCommand {
     if ('object' == typeof src) {
       source = src
       Object.assign(textureState, src)
-      this.texture({ ...textureState })
+      texture({ ...textureState, src})
       raf(() => this.emit('load'))
     }
 
@@ -178,7 +196,7 @@ export class ImageCommand extends MediaCommand {
     this.onloaded = ({image}) => {
       source = image
       textureState.data = source
-      this.texture({ ...textureState })
+      texture({ ...textureState })
       this.emit('load')
     }
   }

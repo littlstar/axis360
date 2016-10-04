@@ -41,7 +41,7 @@ const orbitController = OrbitCameraController(ctx, {
 
 // orient controllers to "center" of video/video
 raf(() => {
-  orbitController.orientation.y = 3 * Math.PI / 2
+  orbitController.orientation.y = -Math.PI / 2
 
   // play next frame
   video.play()

@@ -1118,7 +1118,7 @@ exports.default = function (e, t) {
     var e = arguments.length <= 0 || void 0 === arguments[0] ? {} : arguments[0],
         n = arguments.length <= 1 || void 0 === arguments[1] ? {} : arguments[1],
         o = arguments.length <= 2 || void 0 === arguments[2] ? _regl2.default : arguments[2];_classCallCheck(this, t);var s = _possibleConstructorReturn(this, (t.__proto__ || Object.getPrototypeOf(t)).call(this)),
-        r = _extends({}, n.regl);return n.element && "CANVAS" == n.element.nodeName ? r.canvas = n.element : n.element && n.element.nodeName ? r.container = n.element : "string" == typeof n.element && (r.container = n.element), s[_symbols.$regl] = o(n.regl), s[_symbols.$stack] = [], s[_symbols.$state] = e, s[_symbols.$current] = null, s[_symbols.$previous] = null, s[_symbols.$hasFocus] = !1, s[_symbols.$domElement] = s[_symbols.$regl]._gl.canvas, s.setMaxListeners(1 / 0), _domEvents2.default.on(s[_symbols.$domElement], "focus", function () {
+        r = _extends({}, n.regl);return n.element && "CANVAS" == n.element.nodeName ? r.canvas = n.element : n.element && n.element.nodeName ? r.container = n.element : "string" == typeof n.element && (r.container = n.element), s[_symbols.$regl] = o(n.regl), s[_symbols.$stack] = [], s[_symbols.$state] = e, s[_symbols.$current] = null, s[_symbols.$previous] = null, s[_symbols.$hasFocus] = !1, s[_symbols.$domElement] = s[_symbols.$regl]._gl.canvas, s[_symbols.$reglContext] = null, s.setMaxListeners(1 / 0), _domEvents2.default.on(s[_symbols.$domElement], "focus", function () {
       return s.focus();
     }), _domEvents2.default.on(s[_symbols.$domElement], "blur", function () {
       return s.blur();
@@ -1603,7 +1603,6 @@ module.exports={
   },
   "browserify": {
     "transform": [
-      "rollupify",
       "babelify"
     ]
   },
@@ -1626,7 +1625,7 @@ module.exports={
     "browserify": "^13.1.0",
     "budo": "^9.0.0",
     "bunny": "^1.0.1",
-    "glslify": "^5.1.0",
+    "glslify": "^6.0.0",
     "glslify-babel": "^1.0.1",
     "rollupify": "^0.3.4",
     "standard": "^8.0.0",
@@ -1648,6 +1647,7 @@ var $ref = exports.$ref = Symbol("ref");
 var $ctx = exports.$ctx = Symbol("ctx");
 var $stack = exports.$stack = Symbol("stack");
 var $state = exports.$state = Symbol("state");
+var $reglContext = exports.$reglContext = Symbol("reglContext");
 
 },{}],28:[function(require,module,exports){
 'use strict';
@@ -7098,12 +7098,15 @@ function tokenizeString(str, opt) {
 }
 
 },{"./index":180}],187:[function(require,module,exports){
-module.exports = function() {
-  throw new Error(
-      "It appears that you're using glslify in browserify without "
-    + "its transform applied. Make sure that you've set up glslify as a source transform: "
-    + "https://github.com/substack/node-browserify#browserifytransform"
-  )
+module.exports = function(strings) {
+  if (typeof strings === 'string') strings = [strings]
+  var exprs = [].slice.call(arguments,1)
+  var parts = []
+  for (var i = 0; i < strings.length-1; i++) {
+    parts.push(strings[i], exprs[i] || '')
+  }
+  parts.push(strings[i])
+  return parts.join('')
 }
 
 },{}],188:[function(require,module,exports){

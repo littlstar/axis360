@@ -15,6 +15,7 @@ import regl from 'regl'
  */
 
 import {
+  $reglContext,
   $domElement,
   $hasFocus,
   $previous,
@@ -85,6 +86,7 @@ export class Context extends EventEmitter {
     this[$previous] = null
     this[$hasFocus] = false
     this[$domElement] = this[$regl]._gl.canvas
+    this[$reglContext] = null
 
     this.setMaxListeners(Infinity)
 

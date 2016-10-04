@@ -181,10 +181,18 @@ export class CameraCommand extends MeshCommand {
       return this
     }
 
-    super(ctx, {...opts, render: (_, state, ...args) => {
-      update(state)
-      return render(state, ...args)
-    }})
+    super(ctx, {
+      ...opts,
+      draw: false,
+      render(_, state, ...args) {
+        if ('object' == typeof state) {
+          update(state)
+          render(state, ...args)
+        } else if ('function' == typeof state) {
+          render(state)
+        }
+      }
+    })
 
     /**
      * Camera field of view value.

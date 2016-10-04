@@ -41,6 +41,7 @@ export class VideoCommand extends MediaCommand {
     let source = null
     let poster = null
     let volume = 0
+    let texture = null
     let isMuted = false
     let isPaused = true
     let isPlaying = false
@@ -53,7 +54,6 @@ export class VideoCommand extends MediaCommand {
 
     const textureState = Object.assign({
       format: 'rgba',
-      flipY: true,
       wrap: ['clamp', 'clamp'],
       mag: 'linear',
       min: 'linear',
@@ -280,16 +280,6 @@ export class VideoCommand extends MediaCommand {
     define(this, 'domElement', { get: () => source })
 
     /**
-     * Video texture target.
-     *
-     * @type {REGLTexture}
-     */
-
-    this.texture = initialState && initialState.texture ?
-      initialState.texture :
-        ctx.regl.texture(textureState)
-
-    /**
      * Plays the video.
      *
      * @return {VideoCommand}
@@ -333,7 +323,8 @@ export class VideoCommand extends MediaCommand {
       this.emit('load')
 
       if (null == poster) {
-        this.texture({ ...textureState, data: video})
+        textureState.data = video
+        texture({ ...textureState })
       }
 
       let lastRead = 0
@@ -342,11 +333,35 @@ export class VideoCommand extends MediaCommand {
         if (isPlaying && (now - lastRead >= 64) && this.isDoneLoading && video.readyState >= video.HAVE_ENOUGH_DATA) {
           lastRead = now
           debug('VideoCommand: read')
-          this.texture({ ...textureState, data: video})
+          textureState.data = source
+          texture({ ...textureState })
           done()
         }
       }
     }
+
+    /**
+     * Image texture target.
+     *
+     * @type {REGLTexture}
+     */
+
+    define(this, 'texture', {
+      get: () => texture,
+      set: (value) => {
+        if (texture && null === value) {
+          texture.destroy()
+          texture = ctx.regl.texture({ ...textureState })
+        } else {
+          texture = ctx.regl.texture({ ...textureState })
+        }
+
+        if (value && texture) {
+          texture.destroy()
+          texture = value
+        }
+      }
+    })
 
     /**
      * Video poster image.
@@ -359,17 +374,23 @@ export class VideoCommand extends MediaCommand {
       set: (value) => {
         if (value) {
           if (source) {
-            source.poster = value
+            source.poster = value.src || value
           } else {
-            this.once('load', () => { source.poster = value })
+            this.once('load', () => { source.poster = value.src || value })
           }
 
           if (null == poster) {
-            poster = new ImageCommand(ctx, value, {texture: this.texture})
+            if (value) {
+              poster = new ImageCommand(ctx, value.src || value, {texture})
+            }
           }
         }
       },
     })
+
+    this.texture = initialState && initialState.texture ?
+      initialState.texture :
+        ctx.regl.texture({ ...textureState })
 
     // set poster if applicable
     if (initialState && initialState.poster) {

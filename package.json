@@ -58,7 +58,6 @@
   },
   "browserify": {
     "transform": [
-      "rollupify",
       "babelify"
     ]
   },
@@ -81,7 +80,7 @@
     "browserify": "^13.1.0",
     "budo": "^9.0.0",
     "bunny": "^1.0.1",
-    "glslify": "^5.1.0",
+    "glslify": "^6.0.0",
     "glslify-babel": "^1.0.1",
     "rollupify": "^0.3.4",
     "standard": "^8.0.0",

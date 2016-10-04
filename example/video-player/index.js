@@ -26,13 +26,12 @@ Object.assign(window, {
   ctx, camera, frame, video, plane
 })
 
-camera.position.z = 1
+camera.position.z = -1
 
 raf(() => video.play())
 
 // axis animation frame loop
 frame(({time, viewportWidth, viewportHeight}) => {
-  //if (
   const aspectRatio = viewportWidth/viewportHeight
   const height = plane.size.y
   const width = plane.size.x
