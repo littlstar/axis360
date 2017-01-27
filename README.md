@@ -10,7 +10,7 @@ Fisheye.
 
 ## Status
 
-Stable
+  Stable (DEPRECATED) - See [https://github.com/littlstar/axis3d](Axis3D)
 
 ## Installation
 
